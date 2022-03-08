@@ -7,13 +7,19 @@ import os
 from collections import defaultdict
 import pathlib
 from config import SCHEMA_VERSION
-from sqlalchemy import Integer, String, Boolean, DateTime, Float, Numeric
-
-
+from sqlalchemy import Integer, String, Boolean, DateTime, Float
+import json
 
 
 ALLOWED_EXTENSIONS = ['.csv', '.xls', '.xlsx']
 
+schema_mapper = {
+    'integer': Integer(),
+    'float': Float(),
+    'string': String(),
+    'boolean': Boolean(),
+    'datetime': DateTime()
+}
 
 def preprocess_df(self):
     """
@@ -52,7 +58,7 @@ def get_df_column_type(df, col_name) -> Tuple[str, bool]:
 
 
 def get_file_extension(filename):
-    file_extension = pathlib.Path('my_file.txt').suffix
+    file_extension = pathlib.Path(filename).suffix
     if file_extension in ALLOWED_EXTENSIONS:
         return file_extension
     raise ValueError(f"File extension for {filename} did not match allowed extensions.")
@@ -171,7 +177,7 @@ def is_null_value(val):
     return val is None or val == ''
 
 
-def diagnose_dataset(filepath: str, id_col: str, threshold: float = 0.2):
+def diagnose_dataset(filepath: str, threshold: float = 0.2):
     """
     Generates an initial diagnostic for the dataset before any pre-processing and type validation.
 
@@ -181,7 +187,6 @@ def diagnose_dataset(filepath: str, id_col: str, threshold: float = 0.2):
     Throws a KeyError if the `id_col` does not exist in the dataset.
 
     :param filepath:
-    :param id_col: specify this only for non-JSON datasets # TODO add this check
     :param threshold:
     :return:
     """
@@ -189,32 +194,32 @@ def diagnose_dataset(filepath: str, id_col: str, threshold: float = 0.2):
     stream = read_file_as_stream(filepath)
     num_rows = 0
     col_to_null_count = defaultdict(int)
-    null_rows = set()
     for row in stream:
-        row_id = row[id_col]
         num_rows += 1
         for k, v in row.items():
             if is_null_value(v):
                 col_to_null_count[k] += 1
-                null_rows.add(row_id)
 
     null_cols = [col for col, count in col_to_null_count.items() if count / num_rows >= threshold]
-    return null_cols, null_rows, num_rows
+    return null_cols, num_rows
 
 
 def convert_schema_to_dtypes(schema):
     dtypes = {}
-    mapper = {
-        'integer': Integer(),
-        'number': Float(),
-        'float': Float(),
-        'string': String(),
-        'boolean': Boolean()
-    }
-    version = schema['version'] # no current use
+    # version = schema['version']
     for field in schema['fields']:
-        dtypes[field['name']] = mapper[field['value']]
+        dtypes[field['name']] = schema_mapper[field['value'].lower()]
     return dtypes
+
+
+def load_schema(filepath):
+    return json.load(filepath)
+
+
+def validate_schema(schema: Dict[str, any]):
+    for k, v in schema.items():
+        if v not in schema_mapper:
+            raise ValueError(f"Unrecognized column data type: {v}")
 
 
 def propose_schema(filepath: str, columns: Collection[str], num_rows: int, sample_size: int = 1000) -> Dict[str, str]:
@@ -234,9 +239,14 @@ def propose_schema(filepath: str, columns: Collection[str], num_rows: int, sampl
         if random() <= sample_proba:
             dataset.append(dict(row.items()))
     df = pd.DataFrame(dataset, columns=columns)
-    schema = {k: v for k, v in build_table_schema(df).items() if k == 'fields'}
-    schema['version'] = SCHEMA_VERSION
-    return schema
+    schema = build_table_schema(df)
+    retval = {}
+    retval['fields'] = schema['fields']
+    for entry in retval['fields']:
+        if entry['type'] == 'number':
+            entry['type'] = 'float'
+    retval['version'] = SCHEMA_VERSION
+    return retval
 
 
 def get_dataset_columns(filepath):

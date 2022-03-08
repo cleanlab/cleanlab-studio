@@ -35,10 +35,28 @@ def login(config):
 def dataset(config):
     pass
 
-# @dataset.command()
-# @click.option('-f', '--file', type=click.Path(), help='Dataset filepath', required=True)
-# def generate_schema():
-#     pass
+
+@dataset.command()
+@click.option('--filepath', '-f', type=click.Path(), help='Dataset filepath', required=True)
+@click.option('--output', '-o', type=click.Path(), help='Output filepath', default='schema.json')
+@auth_config
+def schema(config, filepath, output):
+    null_columns, num_rows = diagnose_dataset(filepath)
+    if len(null_columns) > 0:
+        click.secho(
+            f"Columns with null values in >=20% of rows:",
+            fg='red'
+        )
+        click.echo(f"{null_columns}")
+        click.secho("No schema will be generated for these columns.\n", fg='yellow')
+
+    cols = set(get_dataset_columns(filepath)) - set(null_columns)
+    retval = propose_schema(filepath, cols, num_rows)
+    click.echo(f"Writing schema to {output}\n")
+    with open(output, 'w') as f:
+        f.write(json.dumps(retval, indent=2))
+
+    click.echo(json.dumps(retval, indent=2))
 
 @dataset.command()
 @click.option('--filepath', '-f', type=click.Path(), prompt=True, help='Dataset filepath', required=True)
@@ -77,7 +95,7 @@ def upload(config, filepath, modality, id_col, name, id, schema, threshold):
             raise ClickException(f"Could not find specified ID column '{id_col}' in dataset columns: {dataset_cols}")
 
     ### Drop null columns
-    null_columns, null_rows, num_rows = diagnose_dataset(filepath, id_col, threshold)
+    null_columns, num_rows = diagnose_dataset(filepath, threshold)
 
     if len(null_columns) > 0:
         click.secho(
@@ -88,13 +106,21 @@ def upload(config, filepath, modality, id_col, name, id, schema, threshold):
             click.echo(col)
         proceed = click.confirm("Proceed with dropping columns before upload?")
         if not proceed:
-            raise ClickException("Columns with null values were not dropped.")
+            raise ClickException(style("Columns with null values were not dropped.", fg='red'))
 
+    kept_columns = set(dataset_cols) - set(null_columns)
     # Propose and confirm schema
     if schema:
         pass
     else: # generate schema
-        proposed_schema = generate_schema(filepath, num_rows)
+        proposed_schema = propose_schema(filepath, kept_columns, num_rows)
+        click.secho(
+            f"No schema was provided. We propose the following schema based on your dataset: {proposed_schema}",
+            fg='yellow'
+        )
+        proceed = click.confirm("Use this schema?")
+        if not proceed:
+            raise ClickException("Proposed schema does not fit use case, please submit your own schema")
 
 
 
