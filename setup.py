@@ -6,9 +6,15 @@ setup(
     py_modules=['hello'],
     install_requires=[
         'Click',
+        'colorama',
+        'pandas',
+        'pyexcel',
+        'pyexcel-xls',
+        'pyexcel-xlsx',
+        'sqlalchemy'
     ],
     entry_points="""
         [console_scripts]
-        cl=cleanlab_pro:main
+        cleanlab=cleanlab_pro:main
     """
 )
