@@ -201,13 +201,21 @@ def diagnose_dataset(filepath: str, id_col: str, threshold: float = 0.2):
     null_cols = [col for col, count in col_to_null_count.items() if count / num_rows >= threshold]
     return null_cols, null_rows, num_rows
 
+
 def convert_schema_to_dtypes(schema):
     dtypes = {}
     mapper = {
-        'integer': Integer()
+        'integer': Integer(),
+        'number': Float(),
+        'float': Float(),
+        'string': String(),
+        'boolean': Boolean()
     }
+    version = schema['version'] # no current use
     for field in schema['fields']:
-        dtypes[field['name']] =
+        dtypes[field['name']] = mapper[field['value']]
+    return dtypes
+
 
 def propose_schema(filepath: str, columns: Collection[str], num_rows: int, sample_size: int = 1000) -> Dict[str, str]:
     """
