@@ -20,17 +20,17 @@ auth_config = click.make_pass_decorator(AuthConfig, ensure=True)
 
 @click.group()
 @auth_config
-def main(config):
+def cli(config):
     pass
 
 
-@main.command()
+@cli.command()
 @auth_config
 def login(config):
     click.echo("I am logged in!")
 
 
-@main.group()
+@cli.group()
 @auth_config
 def dataset(config):
     pass
@@ -60,19 +60,26 @@ def schema(config, filepath, output):
 
 @dataset.command()
 @click.option('--filepath', '-f', type=click.Path(), prompt=True, help='Dataset filepath', required=True)
-@click.option('--modality', '-m', type=str, prompt=True, help="Data modality: text, tabular, or image")
-@click.option('--id_col', type=str, prompt=True, help="Name of ID column; optional for JSON datasets")
-@click.option('--name', type=str, help='Name of dataset')
 @click.option('--id', type=str, help="If resuming upload or appending to an existing dataset, specify the dataset ID")
-@click.option('--schema', type=click.Path(), help="Filepath to schema JSON file.")
+@click.option('--schema', type=click.Path(), help="If uploading with a schema, specify the schema JSON filepath.")
+@click.option('--name', type=str, help='If uploading a new dataset, specify a dataset name.')
+@click.option('--id_col', type=str, help="If uploading a new dataset without a schema, specify the ID column.")
+@click.option('--modality', '-m', type=str, help="If uploading a new dataset without a schema, specify data modality: text, tabular, or image")
 @click.option('--threshold', type=float, default=0.2,
-              help="Float between 0 and 1 representing the percentage of null values "
-                   "a column is allowed to have, otherwise it is dropped. Default: 0.2")
+              help="If uploading a new dataset without a schema, specify threshold, a float between 0 and 1 "
+                   "representing the percentage of null values a column is allowed to have, before it is dropped. "
+                   "Default: 0.2")
 @auth_config
-def upload(config, filepath, modality, id_col, name, id, schema, threshold):
+def upload(config, filepath, id, modality, id_col, name, schema, threshold):
     # Authenticate
     click.echo(config.status())
     filetype = get_file_extension(filepath)
+
+    # Check if resuming upload
+    if id is not None:
+        ## fetch dataset schema
+        saved_schema = get_dataset_schema(id)
+        upload_rows(filepath, saved_schema)
 
     ## Pre-checks
     if id is None and modality is None:
@@ -94,15 +101,6 @@ def upload(config, filepath, modality, id_col, name, id, schema, threshold):
 
     ## Validation and pre-processing checks
 
-    ### check that ID column exists
-    dataset_cols = get_dataset_columns(filepath)
-    if filetype != 'json':
-        if id_col not in dataset_cols:
-            raise ClickException(style(
-                f"Could not find specified ID column '{id_col}' in dataset columns: {dataset_cols}",
-                fg='red'
-            ))
-
     ### Drop null columns
     null_columns, num_rows = diagnose_dataset(filepath, threshold)
 
@@ -123,13 +121,24 @@ def upload(config, filepath, modality, id_col, name, id, schema, threshold):
             null_columns = []
             # raise ClickException(style("Columns with null values were not dropped.", fg='red'))
 
+    ### check that ID column exists
+    dataset_cols = get_dataset_columns(filepath)
     kept_columns = set(dataset_cols) - set(null_columns)
-    # Propose and confirm schema
+
+    ## check that ID column is kept
+    if filetype != 'json':
+        if id_col not in kept_columns:
+            raise ClickException(style(
+                f"Could not find specified ID column '{id_col}' in dataset columns: {kept_columns}",
+                fg='red'
+            ))
+
+    # Validate schema if present, otherwise propose and confirm schema
     if schema:
         click.secho("Validating schema...", fg='yellow')
         loaded_schema = load_schema(schema)
         try:
-            validate_schema_fields(loaded_schema['fields'], kept_columns) # TODO add version check
+            validate_schema_fields(loaded_schema, kept_columns)
         except ValueError as e:
             raise ClickException(style(str(e), fg='red'))
         click.secho("Specified schema data types are valid!", fg='green')
