@@ -1,3 +1,7 @@
+"""
+Contains utility functions for interacting with files and schemas
+"""
+
 import pandas as pd
 from pandas.io.json import build_table_schema
 from typing import Tuple, Optional, Iterable, Dict, List, Collection, Set
@@ -9,7 +13,7 @@ import pathlib
 from config import SCHEMA_VERSION
 from sqlalchemy import Integer, String, Boolean, DateTime, Float
 import json
-
+from api_service import *
 
 ALLOWED_EXTENSIONS = ['.csv', '.xls', '.xlsx']
 
@@ -217,15 +221,28 @@ def load_schema(filepath):
         return json.load(f)
 
 
-def validate_schema_fields(fields: List[Dict[str, str]], columns: Set[str]):
-    schema_columns = set([x['name'] for x in fields])
+def validate_schema_fields(schema, columns: Set[str]):
+    """
+    Checks that:
+    (1) all schema column names are strings
+    (2) the schema is not missing any kept columns in the dataset
+    (3) all schema column types are recognized
+
+    :param schema:
+    :param columns:
+    :return: raises a ValueError if any checks fail
+    """
+    schema_columns = set(schema['fields'])
+    for col in schema_columns:
+        if not isinstance(col, str):
+            raise ValueError(f"All schema columns must be strings. Found invalid column name: {col}")
+
     if not columns.issubset(schema_columns):
         raise ValueError(f"Schema is missing columns: {columns - schema_columns}")
 
-    for entry in fields:
-        if entry['type'] not in schema_mapper:
-            raise ValueError(f"Unrecognized column data type: {entry['type']}")
-
+    for column_type in schema['fields'].values():
+        if column_type not in schema_mapper:
+            raise ValueError(f"Unrecognized column data type: {column_type}")
 
 
 def propose_schema(filepath: str, columns: Collection[str], num_rows: int, sample_size: int = 1000) -> Dict[str, str]:
@@ -247,10 +264,12 @@ def propose_schema(filepath: str, columns: Collection[str], num_rows: int, sampl
     df = pd.DataFrame(dataset, columns=columns)
     schema = build_table_schema(df)
     retval = {}
-    retval['fields'] = schema['fields']
-    for entry in retval['fields']:
-        if entry['type'] == 'number':
-            entry['type'] = 'float'
+    retval['fields'] = {}
+    for entry in schema['fields']:
+        column_type = entry['type']
+        if column_type == 'number':
+            column_type = 'float'
+        retval['fields'][entry['name']] = column_type
     retval['version'] = SCHEMA_VERSION
     return retval
 
@@ -272,3 +291,17 @@ def read_file_as_stream(filepath):
     if ext in ['.csv', '.xls', '.xlsx']:
         for r in pyexcel.iget_records(file_name=filepath):
             yield r
+
+def validate_row(row, schema):
+    pass
+
+def upload_rows(filepath, schema):
+    """
+
+    :param filepath: path to dataset file
+    :param schema: a validated schema
+    :return: None
+    """
+    for r in read_file_as_stream(filepath):
+        pass
+
