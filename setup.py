@@ -15,6 +15,6 @@ setup(
     ],
     entry_points="""
         [console_scripts]
-        cleanlab=cleanlab_pro:main
+        cleanlab=dataset:cli
     """
 )
