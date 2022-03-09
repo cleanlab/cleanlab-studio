@@ -1,18 +1,20 @@
 """
 Contains utility functions for interacting with files and schemas
 """
-
+import click
 import pandas as pd
 from pandas.io.json import build_table_schema
-from typing import Tuple, Optional, Iterable, Dict, List, Collection, Set
+from typing import Tuple, Optional, Iterable, Dict, List, Collection, Set, Generator, Any
 from random import sample, random
 import pyexcel
 import os
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import pathlib
 from config import SCHEMA_VERSION
 from sqlalchemy import Integer, String, Boolean, DateTime, Float
 import json
+from dateutil.parser import parse, ParserError
+from click import ClickException, style
 from api_service import *
 
 ALLOWED_EXTENSIONS = ['.csv', '.xls', '.xlsx']
@@ -225,7 +227,7 @@ def validate_schema_fields(schema, columns: Set[str]):
     """
     Checks that:
     (1) all schema column names are strings
-    (2) the schema is not missing any kept columns in the dataset
+    (2) all schema columns exist in the dataset columns
     (3) all schema column types are recognized
 
     :param schema:
@@ -237,8 +239,8 @@ def validate_schema_fields(schema, columns: Set[str]):
         if not isinstance(col, str):
             raise ValueError(f"All schema columns must be strings. Found invalid column name: {col}")
 
-    if not columns.issubset(schema_columns):
-        raise ValueError(f"Schema is missing columns: {columns - schema_columns}")
+    if not schema_columns.issubset(columns):
+        raise ValueError(f"Dataset is missing schema columns: {schema_columns - columns}")
 
     for column_type in schema['fields'].values():
         if column_type not in schema_mapper:
@@ -263,7 +265,7 @@ def propose_schema(filepath: str, columns: Collection[str], num_rows: int, sampl
             dataset.append(dict(row.items()))
     df = pd.DataFrame(dataset, columns=columns)
     schema = build_table_schema(df)
-    retval = {}
+    retval = dict()
     retval['fields'] = {}
     for entry in schema['fields']:
         column_type = entry['type']
@@ -280,7 +282,7 @@ def get_dataset_columns(filepath):
         return list(r.keys())
 
 
-def read_file_as_stream(filepath):
+def read_file_as_stream(filepath) -> Generator[OrderedDict[str, Any]]:
     """
     Opens a file and reads it as a stream (aka row-by-row) to limit memory usage
     :param filepath: path to target file
@@ -295,13 +297,77 @@ def read_file_as_stream(filepath):
 def validate_row(row, schema):
     pass
 
-def upload_rows(filepath, schema):
+
+def upload_rows(filepath: str, schema: Dict[str, Any], existing_ids: Optional[Collection[str]]=None):
     """
 
     :param filepath: path to dataset file
     :param schema: a validated schema
+    :param existing_ids:
     :return: None
     """
-    for r in read_file_as_stream(filepath):
-        pass
+    id_col = schema['id_column']
+    fields = schema['fields']
+    columns = list(schema['fields'].keys())
+    existing_ids = [] if existing_ids is None else set(existing_ids)
+
+    rows = []
+
+    for entry in read_file_as_stream(filepath):
+        row_id = None
+        try:
+            row_id = entry[id_col]
+            if is_null_value(row_id):
+                raise TypeError("Missing ID value.")
+            if row_id in existing_ids: continue
+
+            row = {c: entry[c] for c in columns}
+            for col_name, col_val in row.items():
+                col_type = fields[col_name]
+
+                if is_null_value(col_val):
+                    raise TypeError(f"Missing value for column: {col_name}")
+                if col_type == 'string':
+                    row[col_name] = str(col_type) # type coercion
+                elif col_type == 'integer':
+                    if not isinstance(col_val, int):
+                        raise TypeError(f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'")
+                elif col_type == 'float':
+                    if not (isinstance(col_val, int) or isinstance(col_val, float)):
+                        raise TypeError(f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'")
+                elif col_type == 'boolean':
+                    if not isinstance(col_val, bool):
+                        if col_val.lower() == 'true':
+                            row[col_name] = True
+                        elif col_val.lower() == 'false':
+                            row[col_name] = False
+                        else:
+                            raise TypeError(f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'")
+                elif col_type == 'datetime':
+                    if isinstance(col_val, str):
+                        try:
+                            parse(col_val)
+                        except (ParserError, TypeError) as e:
+                            raise TypeError(f"Expected datetime 'str', 'int', or 'float' "
+                                            f"but was unable to parse "
+                                            f"'{col_val}' with type '{type(col_val)}'. "
+                                            f"Datetime strings must be parsable by datetime.util.parse.")
+                    elif not (isinstance(col_val, int) or isinstance(col_val, float)):
+                        raise TypeError(f"Expected datetime 'str', 'int', or 'float', but got "
+                                        f"'{col_val}' with type '{type(col_val)}'.")
+
+            # check passed
+            rows.append(row)
+
+            # if sufficiently large, POST to API
+
+
+        except (KeyError, TypeError) as e:
+            if row_id:
+                click.secho(f"Dropping row ID ({row_id}): {str(e)}")
+            else:
+                click.secho(f"Dropping row with no ID column: {entry}")
+
+
+
 
