@@ -76,10 +76,16 @@ def upload(config, filepath, modality, id_col, name, id, schema, threshold):
 
     ## Pre-checks
     if id is None and modality is None:
-        raise click.ClickException('You must specify a modality (--modality <MODALITY>) for a new dataset upload.')
+        raise click.ClickException(style(
+            'You must specify a modality (--modality <MODALITY>) for a new dataset upload.',
+            fg='red'
+        ))
 
     if filetype != 'json' and id_col is None:
-        raise click.ClickException('An ID column (--id_col <ID column name>) must be specified for non-JSON datasets.')
+        raise click.ClickException(style(
+            'An ID column (--id_col <ID column name>) must be specified for non-JSON datasets.',
+            fg='red'
+        ))
 
     if name is None:
         name = get_filename(filepath)
@@ -92,7 +98,10 @@ def upload(config, filepath, modality, id_col, name, id, schema, threshold):
     dataset_cols = get_dataset_columns(filepath)
     if filetype != 'json':
         if id_col not in dataset_cols:
-            raise ClickException(f"Could not find specified ID column '{id_col}' in dataset columns: {dataset_cols}")
+            raise ClickException(style(
+                f"Could not find specified ID column '{id_col}' in dataset columns: {dataset_cols}",
+                fg='red'
+            ))
 
     ### Drop null columns
     null_columns, num_rows = diagnose_dataset(filepath, threshold)
@@ -104,14 +113,26 @@ def upload(config, filepath, modality, id_col, name, id, schema, threshold):
         )
         for col in null_columns:
             click.echo(col)
-        proceed = click.confirm("Proceed with dropping columns before upload?")
+        proceed = click.confirm("Proceed with dropping columns before upload? (Recommended)")
         if not proceed:
-            raise ClickException(style("Columns with null values were not dropped.", fg='red'))
+            click.secho(
+                "Dropping none of the columns with null values. "
+                "Note that rows with missing values will still be dropped as part of the upload step.",
+                fg='red'
+            )
+            null_columns = []
+            # raise ClickException(style("Columns with null values were not dropped.", fg='red'))
 
     kept_columns = set(dataset_cols) - set(null_columns)
     # Propose and confirm schema
     if schema:
-        pass
+        click.secho("Validating schema...", fg='yellow')
+        loaded_schema = load_schema(schema)
+        try:
+            validate_schema_fields(loaded_schema['fields'], kept_columns) # TODO add version check
+        except ValueError as e:
+            raise ClickException(style(str(e), fg='red'))
+        click.secho("Specified schema data types are valid!", fg='green')
     else: # generate schema
         proposed_schema = propose_schema(filepath, kept_columns, num_rows)
         click.secho(
@@ -120,7 +141,9 @@ def upload(config, filepath, modality, id_col, name, id, schema, threshold):
         )
         proceed = click.confirm("Use this schema?")
         if not proceed:
-            raise ClickException("Proposed schema does not fit use case, please submit your own schema")
+            raise ClickException(style(
+                "Proposed schema rejected. Please submit your own schema using --schema.", fg='red'
+            ))
 
 
 

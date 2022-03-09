@@ -46,8 +46,11 @@ For Unix timestamps, use the `integer` type.
 `version` indicates the current Cleanlab schema version at time of schema creation. 
 The current Cleanlab schema version is `1.0`.
 
-The CLI can generate a proposed schema for you: `cleanlab dataset schema --file <filepath> --output <output_filepath>`.
-By default, `cleanlab dataset schema --file <filepath>` outputs a schema to `schema.json`.
+The CLI can generate a proposed schema for you: 
+
+`cleanlab dataset schema --file <filepath>`.
+
+By default, this outputs a schema to `schema.json`. You may further configure this with `--output <filepath>`.
 
 ### For developers
 1. Set up and activate your virtual environment

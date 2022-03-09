@@ -1,6 +1,6 @@
 import pandas as pd
 from pandas.io.json import build_table_schema
-from typing import Tuple, Optional, Iterable, Dict, List, Collection
+from typing import Tuple, Optional, Iterable, Dict, List, Collection, Set
 from random import sample, random
 import pyexcel
 import os
@@ -213,13 +213,19 @@ def convert_schema_to_dtypes(schema):
 
 
 def load_schema(filepath):
-    return json.load(filepath)
+    with open(filepath, 'r') as f:
+        return json.load(f)
 
 
-def validate_schema(schema: Dict[str, any]):
-    for k, v in schema.items():
-        if v not in schema_mapper:
-            raise ValueError(f"Unrecognized column data type: {v}")
+def validate_schema_fields(fields: List[Dict[str, str]], columns: Set[str]):
+    schema_columns = set([x['name'] for x in fields])
+    if not columns.issubset(schema_columns):
+        raise ValueError(f"Schema is missing columns: {columns - schema_columns}")
+
+    for entry in fields:
+        if entry['type'] not in schema_mapper:
+            raise ValueError(f"Unrecognized column data type: {entry['type']}")
+
 
 
 def propose_schema(filepath: str, columns: Collection[str], num_rows: int, sample_size: int = 1000) -> Dict[str, str]:
