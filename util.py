@@ -14,6 +14,7 @@ from config import SCHEMA_VERSION
 from sqlalchemy import Integer, String, Boolean, DateTime, Float
 import json
 from dateutil.parser import parse, ParserError
+from sys import getsizeof
 from click import ClickException, style
 from api_service import *
 
@@ -55,14 +56,6 @@ def preprocess_df(self):
     }
 
 
-def get_df_column_type(df, col_name) -> Tuple[str, bool]:
-    """
-    Get data type of specified dataframe column
-    """
-    vals = list(df[col_name][~df[col_name].isna()])
-    return infer_data_type(vals)
-
-
 def get_file_extension(filename):
     file_extension = pathlib.Path(filename).suffix
     if file_extension in ALLOWED_EXTENSIONS:
@@ -76,39 +69,6 @@ def is_allowed_extension(filename):
 
 def get_filename(filepath):
     return os.path.split(filepath)[-1]
-
-def infer_data_type(vals) -> Tuple[str, bool]:
-    """
-    Infer the data type of a collection of a values using simple heuristics.
-
-    :param vals: an iterable containing data values
-    :return: (text, categorical, or numeric), bool for whether column is possibly an id
-    """
-    counts = {
-        'string': 0,
-        'numeric': 0
-    }
-    sample_size = 100
-
-    ratio_unique = len(set(vals)) / len(vals)
-
-    id_like = ratio_unique >= 0.90  # accounting for datasets with duplicate IDs
-
-    for x in sample(vals, sample_size):
-        if isinstance(x, str):
-            counts['string'] += 1
-        elif isinstance(x, float) or isinstance(x, int):
-            counts['numeric'] += 1
-
-    if counts['string'] >= 10 and counts['numeric'] >= 10:
-        return "string", id_like
-    elif counts['numeric'] > 0:
-        return 'numeric', id_like
-    elif counts['string'] > 0:
-        if ratio_unique < 0.2:  # heuristic: there should be on average >=5 examples for each string example
-            return 'categorical', id_like
-        else:
-            return 'text', id_like
 
 
 def read_file_as_df(filepath, filetype):
@@ -247,11 +207,87 @@ def validate_schema_fields(schema, columns: Set[str]):
             raise ValueError(f"Unrecognized column data type: {column_type}")
 
 
-def propose_schema(filepath: str, columns: Collection[str], num_rows: int, sample_size: int = 1000) -> Dict[str, str]:
+def multiple_separate_words_detected(values):
+    avg_num_words = sum([len(str(v).split()) for v in values]) / len(values)
+    return avg_num_words >= 3
+
+
+def infer_category(values: Collection[any]):
+    """
+    Infer the category of a collection of a values using simple heuristics.
+
+    :param valuess: a Collection of data values
+    """
+    counts = {
+        'string': 0,
+        'integer': 0,
+        'float': 0,
+        'boolean': 0
+    }
+    ID_RATIO_THRESHOLD = 0.97 # lowerbound
+    CATEGORICAL_RATIO_THRESHOLD = 0.20 # upperbound
+    STRING_RATIO_THRESHOLD = 0.95
+    INT_RATIO_THRESHOLD = 0.95
+    FLOAT_RATIO_THRESHOLD = 0.95
+    BOOL_RATIO_THRESHOLD = 0.95
+
+    ratio_unique = len(set(values)) / len(values)
+
+    for v in values:
+        if isinstance(v, str):
+            counts['string'] += 1
+        elif isinstance(v, float):
+            counts['float'] += 1
+        elif isinstance(v, int):
+            counts['integer'] += 1
+        else:
+            raise ValueError(f"Value {v} has an unrecognized type: {type(v)}")
+
+    ratios = {k: v / len(values) for k, v in counts.items()}
+
+    try:
+        # check for datetime first
+        val_sample = sample(list(values), 10)
+        for s in val_sample:
+            pd.to_datetime(s)
+        return "datetime"
+    except (ValueError, TypeError):
+        pass
+
+    if ratios['string'] >= STRING_RATIO_THRESHOLD:
+        # is string type
+        if ratio_unique >= ID_RATIO_THRESHOLD:
+            # almost all unique values, i.e. either ID, text
+            if multiple_separate_words_detected(values):
+                return "text"
+            else:
+                return "id"
+        else:
+            return "categorical"
+
+    elif ratios['integer'] >= INT_RATIO_THRESHOLD:
+        if ratio_unique >= ID_RATIO_THRESHOLD:
+            return "id"
+        elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
+            return "categorical"
+        else:
+            return "numeric"
+    elif ratios['float'] >= FLOAT_RATIO_THRESHOLD:
+        return "numeric"
+    elif ratios['boolean'] >= BOOL_RATIO_THRESHOLD:
+        return None
+    else:
+        return None
+
+
+def propose_schema(filepath: str, columns: Collection[str], id_column: str, modality: str,
+                   num_rows: int, sample_size: int = 1000) -> Dict[str, str]:
     """
     Generates a schema for a dataset based on a sample of up to 1000 of the dataset's rows.
     :param filepath:
     :param columns: columns to generate a schema for
+    :param id_column: ID column name
+    :param modality: text or tabular
     :param num_rows: number of rows in dataset
     :param sample_size:
     :return:
@@ -268,10 +304,21 @@ def propose_schema(filepath: str, columns: Collection[str], num_rows: int, sampl
     retval = dict()
     retval['fields'] = {}
     for entry in schema['fields']:
-        column_type = entry['type']
-        if column_type == 'number':
-            column_type = 'float'
-        retval['fields'][entry['name']] = column_type
+        col_name = entry['name']
+        col_type = entry['type']
+        col_vals = list(df[col_name][~df[col_name].isna()])
+        col_category = infer_category(col_vals)
+        if col_type == 'number':
+            col_type = 'float'
+
+        retval['fields'][entry['name']] = {
+            "type": col_type,
+        }
+        if col_category is not None:
+            retval['fields'][entry['name']]['category'] = col_category
+
+    retval['id_column'] = id_column
+    retval['modality'] = modality
     retval['version'] = SCHEMA_VERSION
     return retval
 
@@ -294,16 +341,15 @@ def read_file_as_stream(filepath) -> Generator[OrderedDict[str, Any]]:
         for r in pyexcel.iget_records(file_name=filepath):
             yield r
 
-def validate_row(row, schema):
-    pass
 
-
-def upload_rows(filepath: str, schema: Dict[str, Any], existing_ids: Optional[Collection[str]]=None):
+def upload_rows(filepath: str, schema: Dict[str, Any], existing_ids: Optional[Collection[str]] = None,
+                payload_size: int = 10):
     """
 
     :param filepath: path to dataset file
     :param schema: a validated schema
     :param existing_ids:
+    :param payload_size: size of each chunk of rows uploaded, in MB
     :return: None
     """
     id_col = schema['id_column']
@@ -312,6 +358,8 @@ def upload_rows(filepath: str, schema: Dict[str, Any], existing_ids: Optional[Co
     existing_ids = [] if existing_ids is None else set(existing_ids)
 
     rows = []
+    row_size = None
+    rows_per_payload = None
 
     for entry in read_file_as_stream(filepath):
         row_id = None
@@ -323,44 +371,41 @@ def upload_rows(filepath: str, schema: Dict[str, Any], existing_ids: Optional[Co
 
             row = {c: entry[c] for c in columns}
             for col_name, col_val in row.items():
-                col_type = fields[col_name]
+                col_type = fields[col_name]['type']
+                col_category = fields[col_name]['category']
 
-                if is_null_value(col_val):
-                    raise TypeError(f"Missing value for column: {col_name}")
-                if col_type == 'string':
-                    row[col_name] = str(col_type) # type coercion
-                elif col_type == 'integer':
-                    if not isinstance(col_val, int):
-                        raise TypeError(f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'")
-                elif col_type == 'float':
-                    if not (isinstance(col_val, int) or isinstance(col_val, float)):
-                        raise TypeError(f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'")
-                elif col_type == 'boolean':
-                    if not isinstance(col_val, bool):
-                        if col_val.lower() == 'true':
-                            row[col_name] = True
-                        elif col_val.lower() == 'false':
-                            row[col_name] = False
-                        else:
-                            raise TypeError(f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'")
-                elif col_type == 'datetime':
-                    if isinstance(col_val, str):
-                        try:
-                            parse(col_val)
-                        except (ParserError, TypeError) as e:
-                            raise TypeError(f"Expected datetime 'str', 'int', or 'float' "
-                                            f"but was unable to parse "
-                                            f"'{col_val}' with type '{type(col_val)}'. "
-                                            f"Datetime strings must be parsable by datetime.util.parse.")
-                    elif not (isinstance(col_val, int) or isinstance(col_val, float)):
-                        raise TypeError(f"Expected datetime 'str', 'int', or 'float', but got "
-                                        f"'{col_val}' with type '{type(col_val)}'.")
+                if col_category == 'datetime':
+                    try:
+                        pd.to_datetime(col_val)
+                    except (ValueError, TypeError):
+                        raise TypeError(f"Unable to parse '{col_val}' with type '{type(col_val)}'. "
+                                        f"Datetime strings must be parsable by pd.to_datetime.")
+                else:
+                    if col_type == 'string':
+                        row[col_name] = str(col_type) # type coercion
+                    elif col_type == 'integer':
+                        if not isinstance(col_val, int):
+                            raise TypeError(f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'")
+                    elif col_type == 'float':
+                        if not (isinstance(col_val, int) or isinstance(col_val, float)):
+                            raise TypeError(f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'")
+                    elif col_type == 'boolean':
+                        if not isinstance(col_val, bool):
+                            if col_val.lower() == 'true':
+                                row[col_name] = True
+                            elif col_val.lower() == 'false':
+                                row[col_name] = False
+                            else:
+                                raise TypeError(f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'")
 
+            if row_size is None:
+                row_size = getsizeof(row)
+                rows_per_payload = int(payload_size * 10**6 / row_size)
             # check passed
             rows.append(row)
-
-            # if sufficiently large, POST to API
-
+            if len(rows) >= rows_per_payload:
+                # if sufficiently large, POST to API TODO
+                pass
 
         except (KeyError, TypeError) as e:
             if row_id:
