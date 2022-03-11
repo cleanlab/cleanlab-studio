@@ -1,6 +1,6 @@
+from util import *
 import click
 from click import ClickException, style
-from util import *
 
 class AuthConfig:
     def __init__(self):
@@ -65,94 +65,75 @@ def schema(config, filepath, output):
 @click.option('--name', type=str, help='If uploading a new dataset, specify a dataset name.')
 @click.option('--id_col', type=str, help="If uploading a new dataset without a schema, specify the ID column.")
 @click.option('--modality', '-m', type=str, help="If uploading a new dataset without a schema, specify data modality: text, tabular, or image")
-@click.option('--threshold', type=float, default=0.2,
-              help="If uploading a new dataset without a schema, specify threshold, a float between 0 and 1 "
-                   "representing the percentage of null values a column is allowed to have, before it is dropped. "
-                   "Default: 0.2")
 @auth_config
-def upload(config, filepath, id, modality, id_col, name, schema, threshold):
+def upload(config, filepath, id, modality, id_col, name, schema):
     # Authenticate
     click.echo(config.status())
     filetype = get_file_extension(filepath)
+    columns = get_dataset_columns(filepath)
 
     # Check if resuming upload
     if id is not None:
-        ## fetch dataset schema
         saved_schema = get_dataset_schema(id)
-        upload_rows(filepath, saved_schema)
+        existing_ids = get_existing_ids(id)
+        upload_rows(filepath, saved_schema, existing_ids)
 
-    ## Pre-checks
-    if id is None and modality is None:
+    # First upload
+    ## Check if uploading with schema
+    if schema is not None:
+        click.secho("Validating provided schema...", fg='yellow')
+        loaded_schema = load_schema(schema)
+        try:
+            validate_schema(loaded_schema, columns)
+        except ValueError as e:
+            raise ClickException(style(str(e), fg='red'))
+        click.secho("Specified schema data types are valid!", fg='green')
+        upload_rows(filepath, schema)
+
+
+    ## No schema, propose and confirm a schema
+    ### Check that all required arguments are present
+    if modality is None:
         raise click.ClickException(style(
             'You must specify a modality (--modality <MODALITY>) for a new dataset upload.',
             fg='red'
         ))
 
-    if filetype != 'json' and id_col is None:
+    if id_col is None:
         raise click.ClickException(style(
-            'An ID column (--id_col <ID column name>) must be specified for non-JSON datasets.',
+            'You must specify an ID column (--id_col <ID column name>) for a new dataset upload.',
             fg='red'
         ))
 
-    if name is None:
-        name = get_filename(filepath)
-        click.echo(f"No dataset name provided, setting default filename: {name}\n")
-    click.echo(f"Uploading {filepath} with {modality} modality named {name} of ID {id} with schema {schema}\n")
+    if id_col not in columns:
+        raise ClickException(style(
+            f"Could not find specified ID column '{id_col}' in dataset columns: {columns}",
+            fg='red'
+        ))
 
-    ## Validation and pre-processing checks
+    num_rows = get_num_rows(filepath)
 
-    ### Drop null columns
-    null_columns, num_rows = diagnose_dataset(filepath, threshold)
-
-    if len(null_columns) > 0:
+    ### Propose schema
+    proposed_schema = propose_schema(filepath, columns, id_col, modality, name, num_rows)
+    click.secho(
+        f"No schema was provided. We propose the following schema based on your dataset: {proposed_schema}",
+        fg='yellow'
+    )
+    proceed_upload = click.confirm("Use this schema?")
+    if not proceed_upload:
         click.secho(
-            "We found columns with null values in >= {:.2f}% (--threshold) of rows.".format(threshold * 100),
+            "Proposed schema rejected. Please submit your own schema using --schema. "
+            "A starter schema can be generated for your dataset using 'cleanlab dataset schema -f <filepath>'\n\n",
             fg='red'
         )
-        for col in null_columns:
-            click.echo(col)
-        proceed = click.confirm("Proceed with dropping columns before upload? (Recommended)")
-        if not proceed:
-            click.secho(
-                "Dropping none of the columns with null values. "
-                "Note that rows with missing values will still be dropped as part of the upload step.",
-                fg='red'
-            )
-            null_columns = []
-            # raise ClickException(style("Columns with null values were not dropped.", fg='red'))
 
-    ### check that ID column exists
-    dataset_cols = get_dataset_columns(filepath)
-    kept_columns = set(dataset_cols) - set(null_columns)
+    save_schema = click.prompt("Would you like to save the generated schema to 'schema.json'?")
+    if save_schema:
+        dump_schema('./schema.json', proposed_schema)
+        click.secho("Saved schema to 'schema.json'.", fg='green')
 
-    ## check that ID column is kept
-    if filetype != 'json':
-        if id_col not in kept_columns:
-            raise ClickException(style(
-                f"Could not find specified ID column '{id_col}' in dataset columns: {kept_columns}",
-                fg='red'
-            ))
-
-    # Validate schema if present, otherwise propose and confirm schema
-    if schema:
-        click.secho("Validating schema...", fg='yellow')
-        loaded_schema = load_schema(schema)
-        try:
-            validate_schema_fields(loaded_schema, kept_columns)
-        except ValueError as e:
-            raise ClickException(style(str(e), fg='red'))
-        click.secho("Specified schema data types are valid!", fg='green')
-    else: # generate schema
-        proposed_schema = propose_schema(filepath, kept_columns, num_rows)
-        click.secho(
-            f"No schema was provided. We propose the following schema based on your dataset: {proposed_schema}",
-            fg='yellow'
-        )
-        proceed = click.confirm("Use this schema?")
-        if not proceed:
-            raise ClickException(style(
-                "Proposed schema rejected. Please submit your own schema using --schema.", fg='red'
-            ))
+    if proceed_upload:
+        upload_rows(filepath, proposed_schema)
 
 
 

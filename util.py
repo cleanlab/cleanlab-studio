@@ -139,8 +139,17 @@ def extract_details(self):
     }
     return retval
 
+
 def is_null_value(val):
     return val is None or val == ''
+
+
+def get_num_rows(filepath: str):
+    stream = read_file_as_stream(filepath)
+    num_rows = 0
+    for _ in stream:
+        num_rows += 1
+    return num_rows
 
 
 def diagnose_dataset(filepath: str, threshold: float = 0.2):
@@ -182,8 +191,11 @@ def load_schema(filepath):
     with open(filepath, 'r') as f:
         return json.load(f)
 
+def dump_schema(filepath, schema):
+    with open(filepath, 'w') as f:
+        f.write(json.dumps(schema, indent=2))
 
-def validate_schema_fields(schema, columns: Set[str]):
+def validate_schema(schema, columns: Set[str]):
     """
     Checks that:
     (1) all schema column names are strings
@@ -245,16 +257,15 @@ def infer_category(values: Collection[any]):
 
     ratios = {k: v / len(values) for k, v in counts.items()}
 
-    try:
-        # check for datetime first
-        val_sample = sample(list(values), 10)
-        for s in val_sample:
-            pd.to_datetime(s)
-        return "datetime"
-    except (ValueError, TypeError):
-        pass
-
     if ratios['string'] >= STRING_RATIO_THRESHOLD:
+        try:
+            # check for datetime first
+            val_sample = sample(list(values), 10)
+            for s in val_sample:
+                pd.to_datetime(s)
+            return "datetime"
+        except (ValueError, TypeError):
+            pass
         # is string type
         if ratio_unique >= ID_RATIO_THRESHOLD:
             # almost all unique values, i.e. either ID, text
@@ -280,13 +291,14 @@ def infer_category(values: Collection[any]):
         return None
 
 
-def propose_schema(filepath: str, columns: Collection[str], id_column: str, modality: str,
+def propose_schema(filepath: str, columns: Collection[str], id_column: str, modality: str, name: str,
                    num_rows: int, sample_size: int = 1000) -> Dict[str, str]:
     """
     Generates a schema for a dataset based on a sample of up to 1000 of the dataset's rows.
     :param filepath:
     :param columns: columns to generate a schema for
     :param id_column: ID column name
+    :param name: name of dataset
     :param modality: text or tabular
     :param num_rows: number of rows in dataset
     :param sample_size:
@@ -319,6 +331,7 @@ def propose_schema(filepath: str, columns: Collection[str], id_column: str, moda
 
     retval['id_column'] = id_column
     retval['modality'] = modality
+    retval['name'] = name
     retval['version'] = SCHEMA_VERSION
     return retval
 
@@ -329,7 +342,7 @@ def get_dataset_columns(filepath):
         return list(r.keys())
 
 
-def read_file_as_stream(filepath) -> Generator[OrderedDict[str, Any]]:
+def read_file_as_stream(filepath) -> Generator[OrderedDict[str, Any], None, None]:
     """
     Opens a file and reads it as a stream (aka row-by-row) to limit memory usage
     :param filepath: path to target file
@@ -342,7 +355,8 @@ def read_file_as_stream(filepath) -> Generator[OrderedDict[str, Any]]:
             yield r
 
 
-def upload_rows(filepath: str, schema: Dict[str, Any], existing_ids: Optional[Collection[str]] = None,
+def upload_rows(filepath: str, schema: Dict[str, Any],
+                existing_ids: Optional[Collection[str]] = None,
                 payload_size: int = 10):
     """
 
@@ -365,8 +379,6 @@ def upload_rows(filepath: str, schema: Dict[str, Any], existing_ids: Optional[Co
         row_id = None
         try:
             row_id = entry[id_col]
-            if is_null_value(row_id):
-                raise TypeError("Missing ID value.")
             if row_id in existing_ids: continue
 
             row = {c: entry[c] for c in columns}
