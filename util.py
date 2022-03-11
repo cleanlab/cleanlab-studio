@@ -3,6 +3,7 @@ Contains utility functions for interacting with files and schemas
 """
 import click
 import pandas as pd
+from pandas import NaT
 from pandas.io.json import build_table_schema
 from typing import Tuple, Optional, Iterable, Dict, List, Collection, Set, Generator, Any
 from random import sample, random
@@ -195,7 +196,7 @@ def dump_schema(filepath, schema):
     with open(filepath, 'w') as f:
         f.write(json.dumps(schema, indent=2))
 
-def validate_schema(schema, columns: Set[str]):
+def validate_schema(schema, columns: Collection[str]):
     """
     Checks that:
     (1) all schema column names are strings
@@ -206,7 +207,13 @@ def validate_schema(schema, columns: Set[str]):
     :param columns:
     :return: raises a ValueError if any checks fail
     """
+    for key in ['fields', 'metadata', 'version']:
+        if key not in schema:
+            raise KeyError(f"Schema is missing '{key}' key.")
+
     schema_columns = set(schema['fields'])
+    columns = set(columns)
+
     for col in schema_columns:
         if not isinstance(col, str):
             raise ValueError(f"All schema columns must be strings. Found invalid column name: {col}")
@@ -218,6 +225,10 @@ def validate_schema(schema, columns: Set[str]):
         if column_type not in schema_mapper:
             raise ValueError(f"Unrecognized column data type: {column_type}")
 
+    metadata = schema['metadata']
+    for key in ['id_column', 'modality']:
+        if key not in metadata:
+            raise KeyError(f"Metadata is missing the '{key}' key.")
 
 def multiple_separate_words_detected(values):
     avg_num_words = sum([len(str(v).split()) for v in values]) / len(values)
@@ -228,7 +239,7 @@ def infer_category(values: Collection[any]):
     """
     Infer the category of a collection of a values using simple heuristics.
 
-    :param valuess: a Collection of data values
+    :param values: a Collection of data values
     """
     counts = {
         'string': 0,
@@ -244,7 +255,7 @@ def infer_category(values: Collection[any]):
     BOOL_RATIO_THRESHOLD = 0.95
 
     ratio_unique = len(set(values)) / len(values)
-
+    print(ratio_unique)
     for v in values:
         if isinstance(v, str):
             counts['string'] += 1
@@ -262,7 +273,9 @@ def infer_category(values: Collection[any]):
             # check for datetime first
             val_sample = sample(list(values), 10)
             for s in val_sample:
-                pd.to_datetime(s)
+                res = pd.to_datetime(s)
+                if res is NaT:
+                    raise ValueError
             return "datetime"
         except (ValueError, TypeError):
             pass
@@ -273,8 +286,10 @@ def infer_category(values: Collection[any]):
                 return "text"
             else:
                 return "id"
-        else:
+        elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
             return "categorical"
+        else:
+            return "text"
 
     elif ratios['integer'] >= INT_RATIO_THRESHOLD:
         if ratio_unique >= ID_RATIO_THRESHOLD:
@@ -312,26 +327,46 @@ def propose_schema(filepath: str, columns: Collection[str], id_column: str, moda
         if random() <= sample_proba:
             dataset.append(dict(row.items()))
     df = pd.DataFrame(dataset, columns=columns)
-    schema = build_table_schema(df)
+    schema = build_table_scema(df, index=False)
     retval = dict()
     retval['fields'] = {}
     for entry in schema['fields']:
         col_name = entry['name']
         col_type = entry['type']
-        col_vals = list(df[col_name][~df[col_name].isna()])
-        col_category = infer_category(col_vals)
         if col_type == 'number':
             col_type = 'float'
+
+        col_vals = list(df[col_name][~df[col_name].isna()])
+        col_vals = [v for v in col_vals if v != '']
+
+        if len(col_vals) == 0: # all values in column are empty, give default string, text
+            retval['fields'][entry['name']] = {
+                'type': 'string',
+                'category': 'text'
+            }
+            continue
+
+        print("\n" + col_name)
+        print(col_type)
+        col_category = infer_category(col_vals)
+        print(col_category)
+
 
         retval['fields'][entry['name']] = {
             "type": col_type,
         }
+
+        if col_type == 'string' and col_category is None:
+            col_category = 'text'
+
         if col_category is not None:
             retval['fields'][entry['name']]['category'] = col_category
 
-    retval['id_column'] = id_column
-    retval['modality'] = modality
-    retval['name'] = name
+    retval['metadata'] = {
+        'id_column': id_column,
+        'modality': modality,
+        'name': name
+    }
     retval['version'] = SCHEMA_VERSION
     return retval
 

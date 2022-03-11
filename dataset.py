@@ -39,34 +39,28 @@ def dataset(config):
 @dataset.command()
 @click.option('--filepath', '-f', type=click.Path(), help='Dataset filepath', required=True)
 @click.option('--output', '-o', type=click.Path(), help='Output filepath', default='schema.json')
+@click.option('--id_col', type=str, prompt=True, help="If uploading a new dataset without a schema, specify the ID column.")
+@click.option('--modality', '-m', prompt=True, type=str, help="If uploading a new dataset without a schema, specify data modality: text, tabular, or image")
+@click.option('--name', type=str, help='If uploading a new dataset without a schema, specify a dataset name.')
 @auth_config
-def schema(config, filepath, output):
-    null_columns, num_rows = diagnose_dataset(filepath)
-    if len(null_columns) > 0:
-        click.secho(
-            f"Columns with null values in >=20% of rows:",
-            fg='red'
-        )
-        click.echo(f"{null_columns}")
-        click.secho("No schema will be generated for these columns.\n", fg='yellow')
+def schema(config, filepath, output, id_col, modality, name):
+    num_rows = get_num_rows(filepath)
+    cols = get_dataset_columns(filepath)
+    schema = propose_schema(filepath, cols, id_col, modality, name, num_rows)
+    click.secho(f"Writing schema to {output}\n")
 
-    cols = set(get_dataset_columns(filepath)) - set(null_columns)
-    retval = propose_schema(filepath, cols, num_rows)
-    click.echo(f"Writing schema to {output}\n")
-    with open(output, 'w') as f:
-        f.write(json.dumps(retval, indent=2))
-
-    click.echo(json.dumps(retval, indent=2))
+    dump_schema(output, schema)
+    # click.echo(json.dumps(schema, indent=2))
 
 @dataset.command()
 @click.option('--filepath', '-f', type=click.Path(), prompt=True, help='Dataset filepath', required=True)
 @click.option('--id', type=str, help="If resuming upload or appending to an existing dataset, specify the dataset ID")
-@click.option('--schema', type=click.Path(), help="If uploading with a schema, specify the schema JSON filepath.")
-@click.option('--name', type=str, help='If uploading a new dataset, specify a dataset name.')
+@click.option('--schema', type=click.Path(), help="If uploading with a schema, specify the JSON schema filepath.")
 @click.option('--id_col', type=str, help="If uploading a new dataset without a schema, specify the ID column.")
 @click.option('--modality', '-m', type=str, help="If uploading a new dataset without a schema, specify data modality: text, tabular, or image")
+@click.option('--name', type=str, help='If uploading a new dataset without a schema, specify a dataset name.')
 @auth_config
-def upload(config, filepath, id, modality, id_col, name, schema):
+def upload(config, filepath, id, schema, id_col, modality, name):
     # Authenticate
     click.echo(config.status())
     filetype = get_file_extension(filepath)
