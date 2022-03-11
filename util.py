@@ -20,13 +20,13 @@ import pyexcel
 import os
 from collections import defaultdict, OrderedDict
 import pathlib
-from config import SCHEMA_VERSION
 from sqlalchemy import Integer, String, Boolean, DateTime, Float
 import json
 from sys import getsizeof
 from api_service import *
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
+SCHEMA_VERSION = "1.0"
 
 schema_mapper = {
     "string": String(),
