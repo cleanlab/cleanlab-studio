@@ -1,37 +1,10 @@
 from util import *
 import click
 from click import ClickException, style
-
-
-class AuthConfig:
-    def __init__(self):
-        self.username = None
-        self.password = None
-        self.bearer = None
-
-    def status(self):
-        if self.bearer:
-            click.echo("Currently logged in!")
-        else:
-            click.echo("Not logged in.")
-
-
-auth_config = click.make_pass_decorator(AuthConfig, ensure=True)
+from auth.auth import auth_config
 
 
 @click.group()
-@auth_config
-def cli(config):
-    pass
-
-
-@cli.command()
-@auth_config
-def login(config):
-    click.echo("I am logged in!")
-
-
-@cli.group()
 @auth_config
 def dataset(config):
     pass
@@ -176,7 +149,7 @@ def upload(config, filepath, id, schema, id_col, modality, name):
 
     save_schema = click.prompt("Would you like to save the generated schema to 'schema.json'?")
     if save_schema:
-        dump_schema("./schema.json", proposed_schema)
+        dump_schema("../schema.json", proposed_schema)
         click.secho("Saved schema to 'schema.json'.", fg="green")
 
     if proceed_upload:

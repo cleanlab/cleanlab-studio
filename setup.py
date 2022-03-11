@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="cleanlab-cli",
     version="0.1",
-    py_modules=["hello"],
+    py_modules=["main"],
     install_requires=[
         "Click",
         "colorama",
@@ -15,6 +15,6 @@ setup(
     ],
     entry_points="""
         [console_scripts]
-        cleanlab=dataset:cli
+        cleanlab=main:cli
     """,
 )
