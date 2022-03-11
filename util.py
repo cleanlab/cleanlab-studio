@@ -4,7 +4,6 @@ Contains utility functions for interacting with files and schemas
 import click
 import pandas as pd
 from pandas import NaT
-from pandas.io.json import build_table_schema
 from typing import Tuple, Optional, Iterable, Dict, List, Collection, Set, Generator, Any
 from random import sample, random
 import pyexcel
@@ -22,11 +21,18 @@ from api_service import *
 ALLOWED_EXTENSIONS = ['.csv', '.xls', '.xlsx']
 
 schema_mapper = {
+    'string': String(),
     'integer': Integer(),
     'float': Float(),
-    'string': String(),
     'boolean': Boolean(),
     'datetime': DateTime()
+}
+
+TYPE_TO_CATEGORIES = {
+    'string': {'text', 'categorical', 'datetime', 'id'},
+    'integer': {'categorical', 'datetime', 'id', 'numeric'},
+    'float': {'datetime', 'numeric'},
+    'boolean': set()
 }
 
 def preprocess_df(self):
@@ -196,6 +202,7 @@ def dump_schema(filepath, schema):
     with open(filepath, 'w') as f:
         f.write(json.dumps(schema, indent=2))
 
+
 def validate_schema(schema, columns: Collection[str]):
     """
     Checks that:
@@ -221,12 +228,19 @@ def validate_schema(schema, columns: Collection[str]):
     if not schema_columns.issubset(columns):
         raise ValueError(f"Dataset is missing schema columns: {schema_columns - columns}")
 
-    for column_type in schema['fields'].values():
+    for spec in schema['fields'].values():
+        column_type = spec['type']
+        column_category = spec.get('category', None)
         if column_type not in schema_mapper:
             raise ValueError(f"Unrecognized column data type: {column_type}")
 
+        if column_category:
+            if column_category not in TYPE_TO_CATEGORIES[column_type]:
+                raise ValueError(f"Invalid column category: '{column_category}'. "
+                                 f"Accepted categories for type '{column_type}' are: {TYPE_TO_CATEGORIES[column_type]}")
+
     metadata = schema['metadata']
-    for key in ['id_column', 'modality']:
+    for key in ['id_column', 'modality', 'name']:
         if key not in metadata:
             raise KeyError(f"Metadata is missing the '{key}' key.")
 
@@ -235,9 +249,9 @@ def multiple_separate_words_detected(values):
     return avg_num_words >= 3
 
 
-def infer_category(values: Collection[any]):
+def infer_type_and_category(values: Collection[any]):
     """
-    Infer the category of a collection of a values using simple heuristics.
+    Infer the type and category of a collection of a values using simple heuristics.
 
     :param values: a Collection of data values
     """
@@ -255,7 +269,6 @@ def infer_category(values: Collection[any]):
     BOOL_RATIO_THRESHOLD = 0.95
 
     ratio_unique = len(set(values)) / len(values)
-    print(ratio_unique)
     for v in values:
         if isinstance(v, str):
             counts['string'] += 1
@@ -276,34 +289,34 @@ def infer_category(values: Collection[any]):
                 res = pd.to_datetime(s)
                 if res is NaT:
                     raise ValueError
-            return "datetime"
+            return 'string', 'datetime'
         except (ValueError, TypeError):
             pass
         # is string type
         if ratio_unique >= ID_RATIO_THRESHOLD:
             # almost all unique values, i.e. either ID, text
             if multiple_separate_words_detected(values):
-                return "text"
+                return 'string', 'text'
             else:
-                return "id"
+                return 'string', 'id'
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
-            return "categorical"
+            return 'string', 'categorical'
         else:
-            return "text"
+            return 'string', 'text'
 
     elif ratios['integer'] >= INT_RATIO_THRESHOLD:
         if ratio_unique >= ID_RATIO_THRESHOLD:
-            return "id"
+            return 'integer', 'id'
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
-            return "categorical"
+            return 'integer', 'categorical'
         else:
-            return "numeric"
+            return 'integer', 'numeric'
     elif ratios['float'] >= FLOAT_RATIO_THRESHOLD:
-        return "numeric"
+        return 'float', 'numeric'
     elif ratios['boolean'] >= BOOL_RATIO_THRESHOLD:
-        return None
+        return 'boolean', None
     else:
-        return None
+        return 'string', 'text'
 
 
 def propose_schema(filepath: str, columns: Collection[str], id_column: str, modality: str, name: str,
@@ -327,40 +340,30 @@ def propose_schema(filepath: str, columns: Collection[str], id_column: str, moda
         if random() <= sample_proba:
             dataset.append(dict(row.items()))
     df = pd.DataFrame(dataset, columns=columns)
-    schema = build_table_schema(df, index=False)
     retval = dict()
     retval['fields'] = {}
-    for entry in schema['fields']:
-        col_name = entry['name']
-        col_type = entry['type']
-        if col_type == 'number':
-            col_type = 'float'
 
+    for col_name in columns:
         col_vals = list(df[col_name][~df[col_name].isna()])
         col_vals = [v for v in col_vals if v != '']
 
         if len(col_vals) == 0: # all values in column are empty, give default string, text
-            retval['fields'][entry['name']] = {
+            retval['fields'][col_name] = {
                 'type': 'string',
                 'category': 'text'
             }
             continue
 
-        print("\n" + col_name)
-        print(col_type)
-        col_category = infer_category(col_vals)
-        print(col_category)
+        col_type, col_category = infer_type_and_category(col_vals)
 
-
-        retval['fields'][entry['name']] = {
-            "type": col_type,
+        field_spec = {
+            'type': col_type,
+            'category': col_category
         }
 
-        if col_type == 'string' and col_category is None:
-            col_category = 'text'
+        if col_category is None: del field_spec['category']
 
-        if col_category is not None:
-            retval['fields'][entry['name']]['category'] = col_category
+        retval['fields'][col_name] = field_spec
 
     retval['metadata'] = {
         'id_column': id_column,
@@ -401,9 +404,13 @@ def upload_rows(filepath: str, schema: Dict[str, Any],
     :param payload_size: size of each chunk of rows uploaded, in MB
     :return: None
     """
-    id_col = schema['id_column']
     fields = schema['fields']
     columns = list(schema['fields'].keys())
+
+    metadata = schema['metadata']
+    id_col = metadata['id_column']
+    modality = metadata['modality']
+    name = metadata['name']
     existing_ids = [] if existing_ids is None else set(existing_ids)
 
     rows = []
@@ -420,6 +427,8 @@ def upload_rows(filepath: str, schema: Dict[str, Any],
             for col_name, col_val in row.items():
                 col_type = fields[col_name]['type']
                 col_category = fields[col_name]['category']
+
+                if col_val == '': continue
 
                 if col_category == 'datetime':
                     try:

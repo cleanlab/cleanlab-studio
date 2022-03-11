@@ -48,9 +48,9 @@ def schema(config, filepath, output, id_col, modality, name):
     cols = get_dataset_columns(filepath)
     schema = propose_schema(filepath, cols, id_col, modality, name, num_rows)
     click.secho(f"Writing schema to {output}\n")
-
     dump_schema(output, schema)
-    # click.echo(json.dumps(schema, indent=2))
+    click.echo(json.dumps(schema, indent=2))
+    click.secho("\nSaved.", fg='green')
 
 @dataset.command()
 @click.option('--filepath', '-f', type=click.Path(), prompt=True, help='Dataset filepath', required=True)
@@ -71,6 +71,7 @@ def upload(config, filepath, id, schema, id_col, modality, name):
         saved_schema = get_dataset_schema(id)
         existing_ids = get_existing_ids(id)
         upload_rows(filepath, saved_schema, existing_ids)
+        return
 
     # First upload
     ## Check if uploading with schema
@@ -82,8 +83,8 @@ def upload(config, filepath, id, schema, id_col, modality, name):
         except ValueError as e:
             raise ClickException(style(str(e), fg='red'))
         click.secho("Specified schema data types are valid!", fg='green')
-        upload_rows(filepath, schema)
-
+        upload_rows(filepath, loaded_schema)
+        return
 
     ## No schema, propose and confirm a schema
     ### Check that all required arguments are present
