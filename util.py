@@ -327,7 +327,7 @@ def propose_schema(filepath: str, columns: Collection[str], id_column: str, moda
         if random() <= sample_proba:
             dataset.append(dict(row.items()))
     df = pd.DataFrame(dataset, columns=columns)
-    schema = build_table_scema(df, index=False)
+    schema = build_table_schema(df, index=False)
     retval = dict()
     retval['fields'] = {}
     for entry in schema['fields']:
