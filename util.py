@@ -4,7 +4,17 @@ Contains utility functions for interacting with files and schemas
 import click
 import pandas as pd
 from pandas import NaT
-from typing import Tuple, Optional, Iterable, Dict, List, Collection, Set, Generator, Any
+from typing import (
+    Tuple,
+    Optional,
+    Iterable,
+    Dict,
+    List,
+    Collection,
+    Set,
+    Generator,
+    Any,
+)
 from random import sample, random
 import pyexcel
 import os
@@ -13,27 +23,26 @@ import pathlib
 from config import SCHEMA_VERSION
 from sqlalchemy import Integer, String, Boolean, DateTime, Float
 import json
-from dateutil.parser import parse, ParserError
 from sys import getsizeof
-from click import ClickException, style
 from api_service import *
 
-ALLOWED_EXTENSIONS = ['.csv', '.xls', '.xlsx']
+ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
 schema_mapper = {
-    'string': String(),
-    'integer': Integer(),
-    'float': Float(),
-    'boolean': Boolean(),
-    'datetime': DateTime()
+    "string": String(),
+    "integer": Integer(),
+    "float": Float(),
+    "boolean": Boolean(),
+    "datetime": DateTime(),
 }
 
 TYPE_TO_CATEGORIES = {
-    'string': {'text', 'categorical', 'datetime', 'id'},
-    'integer': {'categorical', 'datetime', 'id', 'numeric'},
-    'float': {'datetime', 'numeric'},
-    'boolean': set()
+    "string": {"text", "categorical", "datetime", "id"},
+    "integer": {"categorical", "datetime", "id", "numeric"},
+    "float": {"datetime", "numeric"},
+    "boolean": set(),
 }
+
 
 def preprocess_df(self):
     """
@@ -57,9 +66,9 @@ def preprocess_df(self):
     num_dupe_rows = len1 - len2
     num_na_rows = len2 - len3
     return {
-        'num_dupe_rows': num_dupe_rows,
-        'num_na_rows': num_na_rows,
-        'cols_dropped': cols_to_drop
+        "num_dupe_rows": num_dupe_rows,
+        "num_na_rows": num_na_rows,
+        "cols_dropped": cols_to_drop,
     }
 
 
@@ -79,15 +88,15 @@ def get_filename(filepath):
 
 
 def read_file_as_df(filepath, filetype):
-    if filetype == '.json':
+    if filetype == ".json":
         df = pd.read_json(filepath, convert_axes=False, convert_dates=False).T
-        df.index = df.index.astype('str')
-        df['id'] = df.index
-    elif filetype in '.csv':
+        df.index = df.index.astype("str")
+        df["id"] = df.index
+    elif filetype in ".csv":
         df = pd.read_csv(filepath)
-    elif filetype in ['.xls', '.xlsx']:
+    elif filetype in [".xls", ".xlsx"]:
         df = pd.read_excel(filepath)
-    elif filetype in ['.parquet']:
+    elif filetype in [".parquet"]:
         df = pd.read_parquet(filepath)
     else:
         raise ValueError(f"Failed to read filetype: {filetype}")
@@ -99,9 +108,9 @@ def extract_details(self):
     stats = self.preprocess_details
     cols = list(df.columns)
 
-    id_column = self._find_best_matching_column('id', cols)
-    text_column = self._find_best_matching_column('text', cols)
-    label_column = self._find_best_matching_column('label', cols)
+    id_column = self._find_best_matching_column("id", cols)
+    text_column = self._find_best_matching_column("text", cols)
+    label_column = self._find_best_matching_column("label", cols)
 
     special_columns = [id_column, text_column, label_column]
     special_columns = [c for c in special_columns if c is not None]
@@ -115,11 +124,11 @@ def extract_details(self):
         column_type, id_like = get_df_column_type(df, col)
         if id_like:
             possible_id_cols.append(col)
-        if column_type == 'numeric':
+        if column_type == "numeric":
             numeric_cols.append(col)
-        elif column_type == 'categorical':
+        elif column_type == "categorical":
             categorical_cols.append(col)
-        elif column_type == 'text':
+        elif column_type == "text":
             possible_text_cols.append(col)
 
     possible_feature_cols = numeric_cols + categorical_cols
@@ -128,27 +137,27 @@ def extract_details(self):
     unused_columns = list(set(cols) - used_columns)
 
     retval = {
-        'num_rows': len(df),
-        'dupe_rows': stats['num_dupe_rows'],
-        'cols_dropped': stats['cols_dropped'],
-        'na_rows': stats['num_na_rows'],
-        'filetype': self.filetype,
-        'filename': self.filename,
-        'id_col': id_column,
-        'text_col': text_column,
-        'label_col': label_column,
-        'cols': cols,
-        'possible_id_cols': possible_id_cols,
-        'possible_feature_cols': possible_feature_cols,
-        'possible_label_cols': categorical_cols,
-        'possible_text_cols': possible_text_cols,
-        'unused_cols': unused_columns
+        "num_rows": len(df),
+        "dupe_rows": stats["num_dupe_rows"],
+        "cols_dropped": stats["cols_dropped"],
+        "na_rows": stats["num_na_rows"],
+        "filetype": self.filetype,
+        "filename": self.filename,
+        "id_col": id_column,
+        "text_col": text_column,
+        "label_col": label_column,
+        "cols": cols,
+        "possible_id_cols": possible_id_cols,
+        "possible_feature_cols": possible_feature_cols,
+        "possible_label_cols": categorical_cols,
+        "possible_text_cols": possible_text_cols,
+        "unused_cols": unused_columns,
     }
     return retval
 
 
 def is_null_value(val):
-    return val is None or val == ''
+    return val is None or val == ""
 
 
 def get_num_rows(filepath: str):
@@ -189,17 +198,18 @@ def diagnose_dataset(filepath: str, threshold: float = 0.2):
 def convert_schema_to_dtypes(schema):
     dtypes = {}
     # version = schema['version']
-    for field in schema['fields']:
-        dtypes[field['name']] = schema_mapper[field['value'].lower()]
+    for field in schema["fields"]:
+        dtypes[field["name"]] = schema_mapper[field["value"].lower()]
     return dtypes
 
 
 def load_schema(filepath):
-    with open(filepath, 'r') as f:
+    with open(filepath, "r") as f:
         return json.load(f)
 
+
 def dump_schema(filepath, schema):
-    with open(filepath, 'w') as f:
+    with open(filepath, "w") as f:
         f.write(json.dumps(schema, indent=2))
 
 
@@ -214,35 +224,40 @@ def validate_schema(schema, columns: Collection[str]):
     :param columns:
     :return: raises a ValueError if any checks fail
     """
-    for key in ['fields', 'metadata', 'version']:
+    for key in ["fields", "metadata", "version"]:
         if key not in schema:
             raise KeyError(f"Schema is missing '{key}' key.")
 
-    schema_columns = set(schema['fields'])
+    schema_columns = set(schema["fields"])
     columns = set(columns)
 
     for col in schema_columns:
         if not isinstance(col, str):
-            raise ValueError(f"All schema columns must be strings. Found invalid column name: {col}")
+            raise ValueError(
+                f"All schema columns must be strings. Found invalid column name: {col}"
+            )
 
     if not schema_columns.issubset(columns):
         raise ValueError(f"Dataset is missing schema columns: {schema_columns - columns}")
 
-    for spec in schema['fields'].values():
-        column_type = spec['type']
-        column_category = spec.get('category', None)
+    for spec in schema["fields"].values():
+        column_type = spec["type"]
+        column_category = spec.get("category", None)
         if column_type not in schema_mapper:
             raise ValueError(f"Unrecognized column data type: {column_type}")
 
         if column_category:
             if column_category not in TYPE_TO_CATEGORIES[column_type]:
-                raise ValueError(f"Invalid column category: '{column_category}'. "
-                                 f"Accepted categories for type '{column_type}' are: {TYPE_TO_CATEGORIES[column_type]}")
+                raise ValueError(
+                    f"Invalid column category: '{column_category}'. "
+                    f"Accepted categories for type '{column_type}' are: {TYPE_TO_CATEGORIES[column_type]}"
+                )
 
-    metadata = schema['metadata']
-    for key in ['id_column', 'modality', 'name']:
+    metadata = schema["metadata"]
+    for key in ["id_column", "modality", "name"]:
         if key not in metadata:
             raise KeyError(f"Metadata is missing the '{key}' key.")
+
 
 def multiple_separate_words_detected(values):
     avg_num_words = sum([len(str(v).split()) for v in values]) / len(values)
@@ -255,14 +270,9 @@ def infer_type_and_category(values: Collection[any]):
 
     :param values: a Collection of data values
     """
-    counts = {
-        'string': 0,
-        'integer': 0,
-        'float': 0,
-        'boolean': 0
-    }
-    ID_RATIO_THRESHOLD = 0.97 # lowerbound
-    CATEGORICAL_RATIO_THRESHOLD = 0.20 # upperbound
+    counts = {"string": 0, "integer": 0, "float": 0, "boolean": 0}
+    ID_RATIO_THRESHOLD = 0.97  # lowerbound
+    CATEGORICAL_RATIO_THRESHOLD = 0.20  # upperbound
     STRING_RATIO_THRESHOLD = 0.95
     INT_RATIO_THRESHOLD = 0.95
     FLOAT_RATIO_THRESHOLD = 0.95
@@ -271,17 +281,17 @@ def infer_type_and_category(values: Collection[any]):
     ratio_unique = len(set(values)) / len(values)
     for v in values:
         if isinstance(v, str):
-            counts['string'] += 1
+            counts["string"] += 1
         elif isinstance(v, float):
-            counts['float'] += 1
+            counts["float"] += 1
         elif isinstance(v, int):
-            counts['integer'] += 1
+            counts["integer"] += 1
         else:
             raise ValueError(f"Value {v} has an unrecognized type: {type(v)}")
 
     ratios = {k: v / len(values) for k, v in counts.items()}
 
-    if ratios['string'] >= STRING_RATIO_THRESHOLD:
+    if ratios["string"] >= STRING_RATIO_THRESHOLD:
         try:
             # check for datetime first
             val_sample = sample(list(values), 10)
@@ -289,38 +299,45 @@ def infer_type_and_category(values: Collection[any]):
                 res = pd.to_datetime(s)
                 if res is NaT:
                     raise ValueError
-            return 'string', 'datetime'
+            return "string", "datetime"
         except (ValueError, TypeError):
             pass
         # is string type
         if ratio_unique >= ID_RATIO_THRESHOLD:
             # almost all unique values, i.e. either ID, text
             if multiple_separate_words_detected(values):
-                return 'string', 'text'
+                return "string", "text"
             else:
-                return 'string', 'id'
+                return "string", "id"
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
-            return 'string', 'categorical'
+            return "string", "categorical"
         else:
-            return 'string', 'text'
+            return "string", "text"
 
-    elif ratios['integer'] >= INT_RATIO_THRESHOLD:
+    elif ratios["integer"] >= INT_RATIO_THRESHOLD:
         if ratio_unique >= ID_RATIO_THRESHOLD:
-            return 'integer', 'id'
+            return "integer", "id"
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
-            return 'integer', 'categorical'
+            return "integer", "categorical"
         else:
-            return 'integer', 'numeric'
-    elif ratios['float'] >= FLOAT_RATIO_THRESHOLD:
-        return 'float', 'numeric'
-    elif ratios['boolean'] >= BOOL_RATIO_THRESHOLD:
-        return 'boolean', None
+            return "integer", "numeric"
+    elif ratios["float"] >= FLOAT_RATIO_THRESHOLD:
+        return "float", "numeric"
+    elif ratios["boolean"] >= BOOL_RATIO_THRESHOLD:
+        return "boolean", None
     else:
-        return 'string', 'text'
+        return "string", "text"
 
 
-def propose_schema(filepath: str, columns: Collection[str], id_column: str, modality: str, name: str,
-                   num_rows: int, sample_size: int = 1000) -> Dict[str, str]:
+def propose_schema(
+    filepath: str,
+    columns: Collection[str],
+    id_column: str,
+    modality: str,
+    name: str,
+    num_rows: int,
+    sample_size: int = 1000,
+) -> Dict[str, str]:
     """
     Generates a schema for a dataset based on a sample of up to 1000 of the dataset's rows.
     :param filepath:
@@ -341,36 +358,27 @@ def propose_schema(filepath: str, columns: Collection[str], id_column: str, moda
             dataset.append(dict(row.items()))
     df = pd.DataFrame(dataset, columns=columns)
     retval = dict()
-    retval['fields'] = {}
+    retval["fields"] = {}
 
     for col_name in columns:
         col_vals = list(df[col_name][~df[col_name].isna()])
-        col_vals = [v for v in col_vals if v != '']
+        col_vals = [v for v in col_vals if v != ""]
 
-        if len(col_vals) == 0: # all values in column are empty, give default string, text
-            retval['fields'][col_name] = {
-                'type': 'string',
-                'category': 'text'
-            }
+        if len(col_vals) == 0:  # all values in column are empty, give default string, text
+            retval["fields"][col_name] = {"type": "string", "category": "text"}
             continue
 
         col_type, col_category = infer_type_and_category(col_vals)
 
-        field_spec = {
-            'type': col_type,
-            'category': col_category
-        }
+        field_spec = {"type": col_type, "category": col_category}
 
-        if col_category is None: del field_spec['category']
+        if col_category is None:
+            del field_spec["category"]
 
-        retval['fields'][col_name] = field_spec
+        retval["fields"][col_name] = field_spec
 
-    retval['metadata'] = {
-        'id_column': id_column,
-        'modality': modality,
-        'name': name
-    }
-    retval['version'] = SCHEMA_VERSION
+    retval["metadata"] = {"id_column": id_column, "modality": modality, "name": name}
+    retval["version"] = SCHEMA_VERSION
     return retval
 
 
@@ -388,14 +396,17 @@ def read_file_as_stream(filepath) -> Generator[OrderedDict[str, Any], None, None
     """
     ext = get_file_extension(filepath)
 
-    if ext in ['.csv', '.xls', '.xlsx']:
+    if ext in [".csv", ".xls", ".xlsx"]:
         for r in pyexcel.iget_records(file_name=filepath):
             yield r
 
 
-def upload_rows(filepath: str, schema: Dict[str, Any],
-                existing_ids: Optional[Collection[str]] = None,
-                payload_size: int = 10):
+def upload_rows(
+    filepath: str,
+    schema: Dict[str, Any],
+    existing_ids: Optional[Collection[str]] = None,
+    payload_size: int = 10,
+):
     """
 
     :param filepath: path to dataset file
@@ -404,13 +415,13 @@ def upload_rows(filepath: str, schema: Dict[str, Any],
     :param payload_size: size of each chunk of rows uploaded, in MB
     :return: None
     """
-    fields = schema['fields']
-    columns = list(schema['fields'].keys())
+    fields = schema["fields"]
+    columns = list(schema["fields"].keys())
 
-    metadata = schema['metadata']
-    id_col = metadata['id_column']
-    modality = metadata['modality']
-    name = metadata['name']
+    metadata = schema["metadata"]
+    id_col = metadata["id_column"]
+    modality = metadata["modality"]
+    name = metadata["name"]
     existing_ids = [] if existing_ids is None else set(existing_ids)
 
     rows = []
@@ -421,38 +432,50 @@ def upload_rows(filepath: str, schema: Dict[str, Any],
         row_id = None
         try:
             row_id = entry[id_col]
-            if row_id in existing_ids: continue
+            if row_id in existing_ids:
+                continue
+            if row_id == "":
+                raise ValueError("Missing ID column field")
 
             row = {c: entry[c] for c in columns}
             for col_name, col_val in row.items():
-                col_type = fields[col_name]['type']
-                col_category = fields[col_name]['category']
+                col_type = fields[col_name]["type"]
+                col_category = fields[col_name]["category"]
 
-                if col_val == '': continue
+                if col_val == "":
+                    continue
 
-                if col_category == 'datetime':
+                if col_category == "datetime":
                     try:
                         pd.to_datetime(col_val)
                     except (ValueError, TypeError):
-                        raise TypeError(f"Unable to parse '{col_val}' with type '{type(col_val)}'. "
-                                        f"Datetime strings must be parsable by pd.to_datetime.")
+                        raise TypeError(
+                            f"Unable to parse '{col_val}' with type '{type(col_val)}'. "
+                            f"Datetime strings must be parsable by pd.to_datetime."
+                        )
                 else:
-                    if col_type == 'string':
-                        row[col_name] = str(col_type) # type coercion
-                    elif col_type == 'integer':
+                    if col_type == "string":
+                        row[col_name] = str(col_type)  # type coercion
+                    elif col_type == "integer":
                         if not isinstance(col_val, int):
-                            raise TypeError(f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'")
-                    elif col_type == 'float':
+                            raise TypeError(
+                                f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
+                            )
+                    elif col_type == "float":
                         if not (isinstance(col_val, int) or isinstance(col_val, float)):
-                            raise TypeError(f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'")
-                    elif col_type == 'boolean':
+                            raise TypeError(
+                                f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
+                            )
+                    elif col_type == "boolean":
                         if not isinstance(col_val, bool):
-                            if col_val.lower() == 'true':
+                            if col_val.lower() == "true":
                                 row[col_name] = True
-                            elif col_val.lower() == 'false':
+                            elif col_val.lower() == "false":
                                 row[col_name] = False
                             else:
-                                raise TypeError(f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'")
+                                raise TypeError(
+                                    f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'"
+                                )
 
             if row_size is None:
                 row_size = getsizeof(row)
@@ -461,7 +484,8 @@ def upload_rows(filepath: str, schema: Dict[str, Any],
             rows.append(row)
             if len(rows) >= rows_per_payload:
                 # if sufficiently large, POST to API TODO
-                pass
+                click.secho("Uploading row chunk...", fg="blue")
+                rows = []
 
         except (KeyError, TypeError) as e:
             if row_id:
@@ -469,6 +493,6 @@ def upload_rows(filepath: str, schema: Dict[str, Any],
             else:
                 click.secho(f"Dropping row with no ID column: {entry}")
 
-
-
-
+    if len(rows) > 0:
+        click.secho("Uploading last row chunk...", fg="blue")
+    click.secho("Upload completed.", fg="green")
