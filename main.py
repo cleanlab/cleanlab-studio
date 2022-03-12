@@ -1,5 +1,5 @@
 import click
-from dataset.dataset import dataset
+from dataset.commands import dataset
 from auth.auth import login, auth_config
 
 
