@@ -1,5 +1,6 @@
 import click
 
+
 class AuthConfig:
     def __init__(self):
         self.username = None
@@ -19,5 +20,3 @@ auth_config = click.make_pass_decorator(AuthConfig, ensure=True)
 @click.command()
 def login(config):
     click.echo("I am logged in!")
-
-
