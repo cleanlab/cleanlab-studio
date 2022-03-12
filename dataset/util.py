@@ -103,57 +103,57 @@ def read_file_as_df(filepath, filetype):
     return df
 
 
-def extract_details(self):
-    df = self.dataframe
-    stats = self.preprocess_details
-    cols = list(df.columns)
-
-    id_column = self._find_best_matching_column("id", cols)
-    text_column = self._find_best_matching_column("text", cols)
-    label_column = self._find_best_matching_column("label", cols)
-
-    special_columns = [id_column, text_column, label_column]
-    special_columns = [c for c in special_columns if c is not None]
-
-    numeric_cols = []
-    categorical_cols = []
-    possible_id_cols = []
-    possible_text_cols = []
-
-    for col in cols:
-        column_type, id_like = get_df_column_type(df, col)
-        if id_like:
-            possible_id_cols.append(col)
-        if column_type == "numeric":
-            numeric_cols.append(col)
-        elif column_type == "categorical":
-            categorical_cols.append(col)
-        elif column_type == "text":
-            possible_text_cols.append(col)
-
-    possible_feature_cols = numeric_cols + categorical_cols
-
-    used_columns = set(possible_feature_cols + special_columns)
-    unused_columns = list(set(cols) - used_columns)
-
-    retval = {
-        "num_rows": len(df),
-        "dupe_rows": stats["num_dupe_rows"],
-        "cols_dropped": stats["cols_dropped"],
-        "na_rows": stats["num_na_rows"],
-        "filetype": self.filetype,
-        "filename": self.filename,
-        "id_col": id_column,
-        "text_col": text_column,
-        "label_col": label_column,
-        "cols": cols,
-        "possible_id_cols": possible_id_cols,
-        "possible_feature_cols": possible_feature_cols,
-        "possible_label_cols": categorical_cols,
-        "possible_text_cols": possible_text_cols,
-        "unused_cols": unused_columns,
-    }
-    return retval
+# def extract_details(self):
+#     df = self.dataframe
+#     stats = self.preprocess_details
+#     cols = list(df.columns)
+#
+#     id_column = self._find_best_matching_column("id", cols)
+#     text_column = self._find_best_matching_column("text", cols)
+#     label_column = self._find_best_matching_column("label", cols)
+#
+#     special_columns = [id_column, text_column, label_column]
+#     special_columns = [c for c in special_columns if c is not None]
+#
+#     numeric_cols = []
+#     categorical_cols = []
+#     possible_id_cols = []
+#     possible_text_cols = []
+#
+#     for col in cols:
+#         column_type, id_like = get_df_column_type(df, col)
+#         if id_like:
+#             possible_id_cols.append(col)
+#         if column_type == "numeric":
+#             numeric_cols.append(col)
+#         elif column_type == "categorical":
+#             categorical_cols.append(col)
+#         elif column_type == "text":
+#             possible_text_cols.append(col)
+#
+#     possible_feature_cols = numeric_cols + categorical_cols
+#
+#     used_columns = set(possible_feature_cols + special_columns)
+#     unused_columns = list(set(cols) - used_columns)
+#
+#     retval = {
+#         "num_rows": len(df),
+#         "dupe_rows": stats["num_dupe_rows"],
+#         "cols_dropped": stats["cols_dropped"],
+#         "na_rows": stats["num_na_rows"],
+#         "filetype": self.filetype,
+#         "filename": self.filename,
+#         "id_col": id_column,
+#         "text_col": text_column,
+#         "label_col": label_column,
+#         "cols": cols,
+#         "possible_id_cols": possible_id_cols,
+#         "possible_feature_cols": possible_feature_cols,
+#         "possible_label_cols": categorical_cols,
+#         "possible_text_cols": possible_text_cols,
+#         "unused_cols": unused_columns,
+#     }
+#     return retval
 
 
 def is_null_value(val):
@@ -388,7 +388,7 @@ def get_dataset_columns(filepath):
         return list(r.keys())
 
 
-def read_file_as_stream(filepath) -> Generator[OrderedDict[str, Any], None, None]:
+def read_file_as_stream(filepath) -> Generator[OrderedDict, None, None]:
     """
     Opens a file and reads it as a stream (aka row-by-row) to limit memory usage
     :param filepath: path to target file
@@ -493,6 +493,10 @@ def upload_rows(
             else:
                 click.secho(f"Dropping row with no ID column: {entry}")
 
+    click.secho("Uploading last row chunk...", fg="blue")
+
     if len(rows) > 0:
-        click.secho("Uploading last row chunk...", fg="blue")
+        # TODO upload
+        pass
+
     click.secho("Upload completed.", fg="green")

@@ -10,7 +10,27 @@ def dataset(config):
     pass
 
 
-@dataset.command()
+@dataset.group()
+@auth_config
+def schema(config):
+    pass
+
+
+@schema.command(name="validate")
+@click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=True)
+@click.option("--schema", "-s", type=click.Path(), help="Schema filepath", required=True)
+@auth_config
+def validate_schema_command(config, filepath, schema):
+    cols = get_dataset_columns(filepath)
+    loaded_schema = load_schema(schema)
+    try:
+        validate_schema(loaded_schema, cols)
+    except ValueError as e:
+        raise ClickException(style(str(e), fg="red"))
+    click.secho("Provided schema is valid!", fg="green")
+
+
+@schema.command(name="generate")
 @click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=True)
 @click.option("--output", "-o", type=click.Path(), help="Output filepath", default="schema.json")
 @click.option(
@@ -32,7 +52,7 @@ def dataset(config):
     help="If uploading a new dataset without a schema, specify a dataset name.",
 )
 @auth_config
-def schema(config, filepath, output, id_col, modality, name):
+def generate_schema_command(config, filepath, output, id_col, modality, name):
     num_rows = get_num_rows(filepath)
     cols = get_dataset_columns(filepath)
     schema = propose_schema(filepath, cols, id_col, modality, name, num_rows)
@@ -136,10 +156,12 @@ def upload(config, filepath, id, schema, id_col, modality, name):
     ### Propose schema
     proposed_schema = propose_schema(filepath, columns, id_col, modality, name, num_rows)
     click.secho(
-        f"No schema was provided. We propose the following schema based on your dataset: {proposed_schema}",
+        f"No schema was provided. We propose the following schema based on your dataset:",
         fg="yellow",
     )
-    proceed_upload = click.confirm("Use this schema?")
+    click.echo(json.dumps(proposed_schema, indent=2))
+
+    proceed_upload = click.confirm("\n\nUse this schema?")
     if not proceed_upload:
         click.secho(
             "Proposed schema rejected. Please submit your own schema using --schema. "
