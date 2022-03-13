@@ -250,8 +250,8 @@ def validate_schema(schema, columns: Collection[str]):
         if column_category:
             if column_category not in TYPE_TO_CATEGORIES[column_type]:
                 raise ValueError(
-                    f"Invalid column category: '{column_category}'. "
-                    f"Accepted categories for type '{column_type}' are: {TYPE_TO_CATEGORIES[column_type]}"
+                    f"Invalid column category: '{column_category}'. Accepted categories for type"
+                    f" '{column_type}' are: {TYPE_TO_CATEGORIES[column_type]}"
                 )
 
     metadata = schema["metadata"]
@@ -455,7 +455,7 @@ def upload_rows(
                     except (ValueError, TypeError):
                         raise TypeError(
                             f"Unable to parse '{col_val}' with type '{type(col_val)}'. "
-                            f"Datetime strings must be parsable by pd.to_datetime."
+                            "Datetime strings must be parsable by pd.to_datetime."
                         )
                 else:
                     if col_type == "string":
@@ -478,7 +478,8 @@ def upload_rows(
                                 row[col_name] = False
                             else:
                                 raise TypeError(
-                                    f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'"
+                                    f"Expected 'bool' but got '{col_val}' with type"
+                                    f" '{type(col_val)}'"
                                 )
 
             if row_size is None:

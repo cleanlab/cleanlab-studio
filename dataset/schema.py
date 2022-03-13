@@ -35,7 +35,10 @@ def validate_schema_command(filepath, schema):
     "-m",
     prompt=True,
     type=str,
-    help="If uploading a new dataset without a schema, specify data modality: text, tabular, or image",
+    help=(
+        "If uploading a new dataset without a schema, specify data modality: text, tabular, or"
+        " image"
+    ),
 )
 @click.option(
     "--name",

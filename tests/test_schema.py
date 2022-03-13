@@ -26,7 +26,8 @@ def test_generate_schema():
                 assert result.exit_code == 0
             except AssertionError:
                 raise AssertionError(
-                    f"Generate schema for {ext} failed with exit code: {result.exit_code}, exception: {result.exception}"
+                    f"Generate schema for {ext} failed with exit code: {result.exit_code},"
+                    f" exception: {result.exception}"
                 )
 
             result = runner.invoke(
@@ -36,7 +37,8 @@ def test_generate_schema():
                 assert result.exit_code == 0
             except AssertionError:
                 raise AssertionError(
-                    f"Validate schema for {ext} failed with exit code: {result.exit_code}, exception: {result.exception}"
+                    f"Validate schema for {ext} failed with exit code: {result.exit_code},"
+                    f" exception: {result.exception}"
                 )
 
 

@@ -32,7 +32,10 @@ from auth.auth import auth_config
     "--modality",
     "-m",
     type=str,
-    help="If uploading a new dataset without a schema, specify data modality: text, tabular, or image",
+    help=(
+        "If uploading a new dataset without a schema, specify data modality: text, tabular, or"
+        " image"
+    ),
 )
 @click.option(
     "--name",
@@ -80,7 +83,8 @@ def upload(config, filepath, id, schema, id_col, modality, name):
     if id_col is None:
         raise click.ClickException(
             style(
-                "You must specify an ID column (--id_col <ID column name>) for a new dataset upload.",
+                "You must specify an ID column (--id_col <ID column name>) for a new dataset"
+                " upload.",
                 fg="red",
             )
         )
@@ -106,8 +110,9 @@ def upload(config, filepath, id, schema, id_col, modality, name):
     proceed_upload = click.confirm("\n\nUse this schema?")
     if not proceed_upload:
         click.secho(
-            "Proposed schema rejected. Please submit your own schema using --schema. "
-            "A starter schema can be generated for your dataset using 'cleanlab dataset schema -f <filepath>'\n\n",
+            "Proposed schema rejected. Please submit your own schema using --schema. A starter"
+            " schema can be generated for your dataset using 'cleanlab dataset schema -f"
+            " <filepath>'\n\n",
             fg="red",
         )
 
