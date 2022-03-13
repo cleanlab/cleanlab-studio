@@ -113,7 +113,7 @@ def upload(config, filepath, id, schema, id_col, modality, name):
 
     save_schema = click.prompt("Would you like to save the generated schema to 'schema.json'?")
     if save_schema:
-        dump_schema("../schema.json", proposed_schema)
+        dump_schema("schema.json", proposed_schema)
         click.secho("Saved schema to 'schema.json'.", fg="green")
 
     if proceed_upload:

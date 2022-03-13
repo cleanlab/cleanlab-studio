@@ -1,2 +1,5 @@
 black
 pre-commit
+openpyxl
+pyexcel-xlsx
+pyexcel-xls

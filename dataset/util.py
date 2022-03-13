@@ -87,19 +87,20 @@ def get_filename(filepath):
     return os.path.split(filepath)[-1]
 
 
-def read_file_as_df(filepath, filetype):
-    if filetype == ".json":
+def read_file_as_df(filepath):
+    ext = get_file_extension(filepath)
+    if ext == ".json":
         df = pd.read_json(filepath, convert_axes=False, convert_dates=False).T
         df.index = df.index.astype("str")
         df["id"] = df.index
-    elif filetype in ".csv":
+    elif ext in ".csv":
         df = pd.read_csv(filepath)
-    elif filetype in [".xls", ".xlsx"]:
+    elif ext in [".xls", ".xlsx"]:
         df = pd.read_excel(filepath)
-    elif filetype in [".parquet"]:
+    elif ext in [".parquet"]:
         df = pd.read_parquet(filepath)
     else:
-        raise ValueError(f"Failed to read filetype: {filetype}")
+        raise ValueError(f"Failed to read filetype: {ext}")
     return df
 
 
@@ -376,6 +377,9 @@ def propose_schema(
             del field_spec["category"]
 
         retval["fields"][col_name] = field_spec
+
+    if name is None:
+        name = get_filename(filepath)
 
     retval["metadata"] = {"id_column": id_column, "modality": modality, "name": name}
     retval["version"] = SCHEMA_VERSION
