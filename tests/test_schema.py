@@ -1,8 +1,6 @@
 from click.testing import CliRunner
 from dataset.schema import generate_schema_command, validate_schema_command
 from dataset.util import read_file_as_df
-import pandas as pd
-import os
 
 sample_csv = "resources/datasets/sample.csv"
 
