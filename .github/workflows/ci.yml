@@ -23,4 +23,4 @@ jobs:
         python -m pip install -r cleanlab_cli/tests/requirements_test.txt
     - name: Run tests
       run: |
-        python tests/test_schema.py
+        python cleanlab_cli/tests/test_schema.py
