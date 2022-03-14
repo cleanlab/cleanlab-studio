@@ -1,7 +1,7 @@
-from dataset.util import *
+from cleanlab_cli.dataset.util import *
 import click
 from click import ClickException, style
-from auth.auth import auth_config
+from cleanlab_cli.auth.auth import auth_config
 
 
 @click.command()

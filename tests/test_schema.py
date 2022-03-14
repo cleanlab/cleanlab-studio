@@ -1,8 +1,10 @@
 from click.testing import CliRunner
-from dataset.schema import generate_schema_command, validate_schema_command
-from dataset.util import read_file_as_df
+from cleanlab_cli.dataset.schema import generate_schema_command, validate_schema_command
+from cleanlab_cli.dataset.util import read_file_as_df
+import os
+from os.path import dirname, abspath
 
-sample_csv = "resources/datasets/sample.csv"
+sample_csv = os.path.join(abspath(dirname(__file__)), "resources/datasets/sample.csv")
 
 
 def test_generate_schema():

@@ -15,6 +15,6 @@ setup(
     ],
     entry_points="""
         [console_scripts]
-        cleanlab=main:cli
+        cleanlab=cleanlab_cli.main:cli
     """,
 )

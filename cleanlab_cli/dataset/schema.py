@@ -1,4 +1,4 @@
-from dataset.util import *
+from cleanlab_cli.dataset.util import *
 import click
 from click import ClickException, style
 
