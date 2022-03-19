@@ -32,7 +32,7 @@ schema_mapper = {
     "string": String(),
     "integer": Integer(),
     "float": Float(),
-    "boolean": Boolean(),
+    # "boolean": Boolean(),
     "datetime": DateTime(),
 }
 
@@ -40,7 +40,7 @@ TYPE_TO_CATEGORIES = {
     "string": {"text", "categorical", "datetime", "id"},
     "integer": {"categorical", "datetime", "id", "numeric"},
     "float": {"datetime", "numeric"},
-    "boolean": set(),
+    # "boolean": set(),
 }
 
 
@@ -225,6 +225,8 @@ def validate_schema(schema, columns: Collection[str]):
     :param columns:
     :return: raises a ValueError if any checks fail
     """
+
+    # Check that schema is complete with fields, metadata, and version
     for key in ["fields", "metadata", "version"]:
         if key not in schema:
             raise KeyError(f"Schema is missing '{key}' key.")
@@ -232,15 +234,18 @@ def validate_schema(schema, columns: Collection[str]):
     schema_columns = set(schema["fields"])
     columns = set(columns)
 
+    # Check that schema fields are strings
     for col in schema_columns:
         if not isinstance(col, str):
             raise ValueError(
                 f"All schema columns must be strings. Found invalid column name: {col}"
             )
 
+    # Check that the dataset has all columns specified in the schema
     if not schema_columns.issubset(columns):
         raise ValueError(f"Dataset is missing schema columns: {schema_columns - columns}")
 
+    # Check that each field has a category that matches the base type
     for spec in schema["fields"].values():
         column_type = spec["type"]
         column_category = spec.get("category", None)
@@ -254,10 +259,19 @@ def validate_schema(schema, columns: Collection[str]):
                     f" '{column_type}' are: {TYPE_TO_CATEGORIES[column_type]}"
                 )
 
+    # Check that metadata is complete
     metadata = schema["metadata"]
     for key in ["id_column", "modality", "name"]:
         if key not in metadata:
             raise KeyError(f"Metadata is missing the '{key}' key.")
+
+    # Check that specified ID column has the category 'id'
+    id_col_name = metadata["id_column"]
+    id_col_spec_category = schema["fields"][id_col_name]["category"]
+    if id_col_spec_category != "id":
+        raise ValueError(
+            f"The specified ID column '{id_col_name}' must have category 'id' in the schema fields."
+        )
 
 
 def multiple_separate_words_detected(values):
@@ -325,7 +339,7 @@ def infer_type_and_category(values: Collection[any]):
     elif ratios["float"] >= FLOAT_RATIO_THRESHOLD:
         return "float", "numeric"
     elif ratios["boolean"] >= BOOL_RATIO_THRESHOLD:
-        return "boolean", None
+        return "string", "categorical"
     else:
         return "string", "text"
 
