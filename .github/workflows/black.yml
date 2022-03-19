@@ -1,4 +1,4 @@
-name: Lint
+name: Formatter
 
 on: [push, pull_request]
 
