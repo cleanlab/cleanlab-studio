@@ -31,7 +31,7 @@ schema_mapper = {
     "string": String(),
     "integer": Integer(),
     "float": Float(),
-    # "boolean": Boolean(),
+    "boolean": Boolean(),
     "datetime": DateTime(),
 }
 
@@ -39,7 +39,7 @@ TYPE_TO_CATEGORIES = {
     "string": {"text", "categorical", "datetime", "id"},
     "integer": {"categorical", "datetime", "id", "numeric"},
     "float": {"datetime", "numeric"},
-    # "boolean": set(),
+    "boolean": {"boolean"},
 }
 
 
@@ -330,9 +330,6 @@ def propose_schema(
         else:
             modality = "text"
 
-    if id_column is None:
-        pass
-
     dataset = []
     sample_proba = 1 if sample_size >= num_rows else sample_size / num_rows
     for row in stream:
@@ -389,14 +386,14 @@ def read_file_as_stream(filepath) -> Generator[OrderedDict, None, None]:
             yield r
 
 
-def validate_row(
+def validate_and_process_record(
     record,
     schema,
     columns: Optional[List[str]] = None,
     existing_ids: Optional[Collection[str]] = None,
 ):
     fields = schema["fields"]
-    id_col = schema["metadataa"]["id_column"]
+    id_col = schema["metadata"]["id_column"]
 
     if columns is None:
         columns = list(fields)
@@ -406,7 +403,7 @@ def validate_row(
     row_id = record[id_col]
 
     if row_id in existing_ids:
-        return  # TODO should duplicate IDs be silent?
+        return  # TODO should duplicate IDs be silent? Can't distinguish between resumes and actual duplicates
 
     if row_id == "":
         raise ValueError("Missing ID column field")
@@ -482,7 +479,7 @@ def upload_rows(
 
     for record in read_file_as_stream(filepath):
         try:
-            row = validate_row(record, schema, columns, existing_ids)
+            row = validate_and_process_record(record, schema, columns, existing_ids)
             if row_size is None:
                 row_size = getsizeof(row)
                 rows_per_payload = int(payload_size * 10**6 / row_size)
