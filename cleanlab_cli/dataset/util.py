@@ -23,7 +23,6 @@ import pathlib
 from sqlalchemy import Integer, String, Boolean, DateTime, Float
 import json
 from sys import getsizeof
-from api_service import *
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 SCHEMA_VERSION = "1.0"
@@ -104,59 +103,6 @@ def read_file_as_df(filepath):
     return df
 
 
-# def extract_details(self):
-#     df = self.dataframe
-#     stats = self.preprocess_details
-#     cols = list(df.columns)
-#
-#     id_column = self._find_best_matching_column("id", cols)
-#     text_column = self._find_best_matching_column("text", cols)
-#     label_column = self._find_best_matching_column("label", cols)
-#
-#     special_columns = [id_column, text_column, label_column]
-#     special_columns = [c for c in special_columns if c is not None]
-#
-#     numeric_cols = []
-#     categorical_cols = []
-#     possible_id_cols = []
-#     possible_text_cols = []
-#
-#     for col in cols:
-#         column_type, id_like = get_df_column_type(df, col)
-#         if id_like:
-#             possible_id_cols.append(col)
-#         if column_type == "numeric":
-#             numeric_cols.append(col)
-#         elif column_type == "categorical":
-#             categorical_cols.append(col)
-#         elif column_type == "text":
-#             possible_text_cols.append(col)
-#
-#     possible_feature_cols = numeric_cols + categorical_cols
-#
-#     used_columns = set(possible_feature_cols + special_columns)
-#     unused_columns = list(set(cols) - used_columns)
-#
-#     retval = {
-#         "num_rows": len(df),
-#         "dupe_rows": stats["num_dupe_rows"],
-#         "cols_dropped": stats["cols_dropped"],
-#         "na_rows": stats["num_na_rows"],
-#         "filetype": self.filetype,
-#         "filename": self.filename,
-#         "id_col": id_column,
-#         "text_col": text_column,
-#         "label_col": label_column,
-#         "cols": cols,
-#         "possible_id_cols": possible_id_cols,
-#         "possible_feature_cols": possible_feature_cols,
-#         "possible_label_cols": categorical_cols,
-#         "possible_text_cols": possible_text_cols,
-#         "unused_cols": unused_columns,
-#     }
-#     return retval
-
-
 def is_null_value(val):
     return val is None or val == ""
 
@@ -169,31 +115,28 @@ def get_num_rows(filepath: str):
     return num_rows
 
 
-def diagnose_dataset(filepath: str, threshold: float = 0.2):
+def _find_best_matching_column(target_col: str, columns: List[str]) -> Optional[str]:
     """
-    Generates an initial diagnostic for the dataset before any pre-processing and type validation.
+    Find the column from `columns` that is the closest match to the `target_col`.
+    If no columns are likely, pick the first column of `columns` #TODO janky
 
-    The diagnostic consists of: (1) a list of columns with >=20% null values, (2) the list of row IDs with null values,
-    (3) the total number of rows in the dataset
-
-    Throws a KeyError if the `id_col` does not exist in the dataset.
-
-    :param filepath:
-    :param threshold:
+    :param target_col: some reserved column name, typically: 'id', 'label', or 'text'
+    :param columns: list of column names
     :return:
     """
+    poss = []
+    for c in columns:
+        if c.lower() == target_col:
+            return c
+        elif c.lower().endswith(f"_{target_col}"):
+            poss.append(c)
+        elif c.lower().startswith(f"{target_col}_"):
+            poss.append(c)
 
-    stream = read_file_as_stream(filepath)
-    num_rows = 0
-    col_to_null_count = defaultdict(int)
-    for row in stream:
-        num_rows += 1
-        for k, v in row.items():
-            if is_null_value(v):
-                col_to_null_count[k] += 1
-
-    null_cols = [col for col, count in col_to_null_count.items() if count / num_rows >= threshold]
-    return null_cols, num_rows
+    if len(poss) > 0:  # pick first possibility
+        return poss[0]
+    else:
+        return columns[0]
 
 
 def convert_schema_to_dtypes(schema):
@@ -288,10 +231,6 @@ def infer_type_and_category(values: Collection[any]):
     counts = {"string": 0, "integer": 0, "float": 0, "boolean": 0}
     ID_RATIO_THRESHOLD = 0.97  # lowerbound
     CATEGORICAL_RATIO_THRESHOLD = 0.20  # upperbound
-    STRING_RATIO_THRESHOLD = 0.95
-    INT_RATIO_THRESHOLD = 0.95
-    FLOAT_RATIO_THRESHOLD = 0.95
-    BOOL_RATIO_THRESHOLD = 0.95
 
     ratio_unique = len(set(values)) / len(values)
     for v in values:
@@ -301,12 +240,17 @@ def infer_type_and_category(values: Collection[any]):
             counts["float"] += 1
         elif isinstance(v, int):
             counts["integer"] += 1
+        elif isinstance(v, bool):
+            counts["boolean"] += 1
         else:
             raise ValueError(f"Value {v} has an unrecognized type: {type(v)}")
 
     ratios = {k: v / len(values) for k, v in counts.items()}
+    types = list(ratios.keys())
+    counts = list(ratios.values())
+    max_count_type = types[counts.index(max(counts))]
 
-    if ratios["string"] >= STRING_RATIO_THRESHOLD:
+    if max_count_type == "string":
         try:
             # check for datetime first
             val_sample = sample(list(values), 10)
@@ -329,16 +273,16 @@ def infer_type_and_category(values: Collection[any]):
         else:
             return "string", "text"
 
-    elif ratios["integer"] >= INT_RATIO_THRESHOLD:
+    elif max_count_type == "integer":
         if ratio_unique >= ID_RATIO_THRESHOLD:
             return "integer", "id"
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
             return "integer", "categorical"
         else:
             return "integer", "numeric"
-    elif ratios["float"] >= FLOAT_RATIO_THRESHOLD:
+    elif max_count_type == "float":
         return "float", "numeric"
-    elif ratios["boolean"] >= BOOL_RATIO_THRESHOLD:
+    elif max_count_type == "boolean":
         return "string", "categorical"
     else:
         return "string", "text"
@@ -346,26 +290,49 @@ def infer_type_and_category(values: Collection[any]):
 
 def propose_schema(
     filepath: str,
-    columns: Collection[str],
-    id_column: str,
-    modality: str,
-    name: str,
-    num_rows: int,
+    columns: Optional[Collection[str]] = None,
+    id_column: Optional[str] = None,
+    modality: Optional[str] = None,
+    name: Optional[str] = None,
+    num_rows: Optional[int] = None,
     sample_size: int = 1000,
 ) -> Dict[str, str]:
     """
     Generates a schema for a dataset based on a sample of up to 1000 of the dataset's rows.
+
+    The arguments are intended to be required for the command-line interface, but optional for Cleanlab Studio.
+
     :param filepath:
     :param columns: columns to generate a schema for
     :param id_column: ID column name
     :param name: name of dataset
     :param modality: text or tabular
     :param num_rows: number of rows in dataset
-    :param sample_size:
+    :param sample_size: default of 1000
     :return:
 
     """
     stream = read_file_as_stream(filepath)
+
+    # fill optional arguments if necessary
+    if columns is None:
+        columns = get_dataset_columns(filepath)
+
+    if num_rows is None:
+        num_rows = get_num_rows(filepath)
+
+    if name is None:
+        name = get_filename(filepath)
+
+    if modality is None:
+        if len(columns) > 5:
+            modality = "tabular"
+        else:
+            modality = "text"
+
+    if id_column is None:
+        pass
+
     dataset = []
     sample_proba = 1 if sample_size >= num_rows else sample_size / num_rows
     for row in stream:
@@ -379,7 +346,7 @@ def propose_schema(
         col_vals = list(df[col_name][~df[col_name].isna()])
         col_vals = [v for v in col_vals if v != ""]
 
-        if len(col_vals) == 0:  # all values in column are empty, give default string, text
+        if len(col_vals) == 0:  # all values in column are empty, give default string[text]
             retval["fields"][col_name] = {"type": "string", "category": "text"}
             continue
 
@@ -392,8 +359,11 @@ def propose_schema(
 
         retval["fields"][col_name] = field_spec
 
-    if name is None:
-        name = get_filename(filepath)
+    if id_column is None:
+        id_cols = [k for k, spec in retval["fields"].items() if spec["category"] == "id"]
+        if len(id_cols) == 0:
+            id_cols = columns
+        id_column = _find_best_matching_column("id", id_cols)
 
     retval["metadata"] = {"id_column": id_column, "modality": modality, "name": name}
     retval["version"] = SCHEMA_VERSION
@@ -417,6 +387,70 @@ def read_file_as_stream(filepath) -> Generator[OrderedDict, None, None]:
     if ext in [".csv", ".xls", ".xlsx"]:
         for r in pyexcel.iget_records(file_name=filepath):
             yield r
+
+
+def validate_row(
+    record,
+    schema,
+    columns: Optional[List[str]] = None,
+    existing_ids: Optional[Collection[str]] = None,
+):
+    fields = schema["fields"]
+    id_col = schema["metadataa"]["id_column"]
+
+    if columns is None:
+        columns = list(fields)
+    if existing_ids is None:
+        existing_ids = set()
+
+    row_id = record[id_col]
+
+    if row_id in existing_ids:
+        return  # TODO should duplicate IDs be silent?
+
+    if row_id == "":
+        raise ValueError("Missing ID column field")
+
+    row = {c: record[c] for c in columns}
+    for col_name, col_val in record.items():
+        col_type = fields[col_name]["type"]
+        col_category = fields[col_name]["category"]
+
+        if col_val == "":
+            continue
+
+        if col_category == "datetime":
+            try:
+                pd.to_datetime(col_val)
+            except (ValueError, TypeError):
+                raise TypeError(
+                    f"Unable to parse '{col_val}' with type '{type(col_val)}'. "
+                    "Datetime strings must be parsable by pandas.to_datetime()."
+                )
+        else:
+            if col_type == "string":
+                row[col_name] = str(col_type)  # type coercion
+            elif col_type == "integer":
+                if not isinstance(col_val, int):
+                    raise TypeError(
+                        f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
+                    )
+            elif col_type == "float":
+                if not (isinstance(col_val, int) or isinstance(col_val, float)):
+                    raise TypeError(
+                        f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
+                    )
+            elif col_type == "boolean":
+                if not isinstance(col_val, bool):
+                    if col_val.lower() in ["true", "t", "yes"]:
+                        row[col_name] = True
+                    elif col_val.lower() == ["false", "f", "no"]:
+                        row[col_name] = False
+                    else:
+                        raise TypeError(
+                            f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'"
+                        )
+    return row
 
 
 def upload_rows(
@@ -446,56 +480,9 @@ def upload_rows(
     row_size = None
     rows_per_payload = None
 
-    for entry in read_file_as_stream(filepath):
-        row_id = None
+    for record in read_file_as_stream(filepath):
         try:
-            row_id = entry[id_col]
-            if row_id in existing_ids:
-                continue
-            if row_id == "":
-                raise ValueError("Missing ID column field")
-
-            row = {c: entry[c] for c in columns}
-            for col_name, col_val in row.items():
-                col_type = fields[col_name]["type"]
-                col_category = fields[col_name]["category"]
-
-                if col_val == "":
-                    continue
-
-                if col_category == "datetime":
-                    try:
-                        pd.to_datetime(col_val)
-                    except (ValueError, TypeError):
-                        raise TypeError(
-                            f"Unable to parse '{col_val}' with type '{type(col_val)}'. "
-                            "Datetime strings must be parsable by pd.to_datetime."
-                        )
-                else:
-                    if col_type == "string":
-                        row[col_name] = str(col_type)  # type coercion
-                    elif col_type == "integer":
-                        if not isinstance(col_val, int):
-                            raise TypeError(
-                                f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
-                            )
-                    elif col_type == "float":
-                        if not (isinstance(col_val, int) or isinstance(col_val, float)):
-                            raise TypeError(
-                                f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
-                            )
-                    elif col_type == "boolean":
-                        if not isinstance(col_val, bool):
-                            if col_val.lower() == "true":
-                                row[col_name] = True
-                            elif col_val.lower() == "false":
-                                row[col_name] = False
-                            else:
-                                raise TypeError(
-                                    f"Expected 'bool' but got '{col_val}' with type"
-                                    f" '{type(col_val)}'"
-                                )
-
+            row = validate_row(record, schema, columns, existing_ids)
             if row_size is None:
                 row_size = getsizeof(row)
                 rows_per_payload = int(payload_size * 10**6 / row_size)
@@ -505,12 +492,12 @@ def upload_rows(
                 # if sufficiently large, POST to API TODO
                 click.secho("Uploading row chunk...", fg="blue")
                 rows = []
-
         except (KeyError, TypeError) as e:
+            row_id = record.get(id_col, None)
             if row_id:
-                click.secho(f"Dropping row ID ({row_id}): {str(e)}")
+                click.secho(f"Invalid row. ID: ({row_id}). {str(e)}")
             else:
-                click.secho(f"Dropping row with no ID column: {entry}")
+                click.secho(f"Invalid row with no ID column: {record}")
 
     click.secho("Uploading last row chunk...", fg="blue")
 
