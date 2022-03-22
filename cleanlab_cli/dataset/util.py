@@ -20,7 +20,7 @@ import pyexcel
 import os
 from collections import defaultdict, OrderedDict
 import pathlib
-from sqlalchemy import Integer, String, Boolean, DateTime, Float
+from sqlalchemy import Integer, String, Boolean, DateTime, Float, BigInteger
 import json
 from sys import getsizeof
 
@@ -29,7 +29,7 @@ SCHEMA_VERSION = "1.0"  # TODO use package version no.
 
 schema_mapper = {
     "string": String(),
-    "integer": Integer(),
+    "integer": BigInteger(),
     "float": Float(),
     "boolean": Boolean(),
     "datetime": DateTime(),
@@ -76,7 +76,7 @@ def read_file_as_df(filepath):
 
 
 def is_null_value(val):
-    return val is None or val == ""
+    return val is None or val == "" or pd.isna(val)
 
 
 def get_num_rows(filepath: str):
@@ -378,55 +378,61 @@ def validate_and_process_record(
         return  # TODO should duplicate IDs be silent? Can't distinguish between resumes and actual duplicates
 
     if row_id == "" or row_id is None:
-        error_log = f"\nMissing ID for record: {record}\n"
+        error_log = {
+            "id": None,
+            "log": f"\nMissing ID for record: {record}. Row has been dropped.\n",
+        }
         return None, error_log
 
     errors = []
 
     row = {c: record.get(c, None) for c in columns}
     for col_name, col_val in record.items():
+        if col_name not in fields:
+            continue
         col_type = fields[col_name]["type"]
         col_category = fields[col_name]["category"]
 
+        error = None
         if is_null_value(col_val):
             row[col_name] = None
-            continue
-
-        error = None
-        if col_category == "datetime":
-            try:
-                pd.to_datetime(col_val)
-            except (ValueError, TypeError):
-                error = (
-                    f"Unable to parse '{col_val}' with type '{type(col_val)}'. Datetime strings"
-                    " must be parsable by pandas.to_datetime()."
-                )
-
+            error = f"Missing value for field '{col_name}'"
         else:
-            if col_type == "string":
-                row[col_name] = str(col_type)  # type coercion
-            elif col_type == "integer":
-                if not isinstance(col_val, int):
-                    error = f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
-            elif col_type == "float":
-                if not (isinstance(col_val, int) or isinstance(col_val, float)):
-                    error = f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
-            elif col_type == "boolean":
-                if not isinstance(col_val, bool):
-                    if col_val.lower() in ["true", "t", "yes"]:
-                        row[col_name] = True
-                    elif col_val.lower() == ["false", "f", "no"]:
-                        row[col_name] = False
-                    else:
-                        error = f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'"
+            if col_category == "datetime":
+                try:
+                    pd.to_datetime(col_val)
+                except (ValueError, TypeError):
+                    error = (
+                        f"Unable to parse '{col_val}' with type '{type(col_val)}'. Datetime strings"
+                        " must be parsable by pandas.to_datetime()."
+                    )
+
+            else:
+                if col_type == "string":
+                    row[col_name] = str(col_type)  # type coercion
+                elif col_type == "integer":
+                    if not isinstance(col_val, int):
+                        error = f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
+                elif col_type == "float":
+                    if not (isinstance(col_val, int) or isinstance(col_val, float)):
+                        error = f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
+                elif col_type == "boolean":
+                    if not isinstance(col_val, bool):
+                        if col_val.lower() in ["true", "t", "yes"]:
+                            row[col_name] = True
+                        elif col_val.lower() == ["false", "f", "no"]:
+                            row[col_name] = False
+                        else:
+                            error = (
+                                f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'"
+                            )
 
         if error:
             row[col_name] = None
             errors.append(error)
 
     if len(errors) > 0:
-        error_log = "\n\n".join(errors)
-        error_log = f"\n--------------------------{row_id}--------------------------\n" + error_log
+        error_log = {"id": row_id, "log": errors}
     else:
         error_log = None
     return row, error_log
