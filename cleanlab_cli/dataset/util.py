@@ -372,15 +372,18 @@ def validate_and_process_record(
     if existing_ids is None:
         existing_ids = set()
 
-    row_id = record[id_col]
+    row_id = record.get(id_col, None)
 
     if row_id in existing_ids:
         return  # TODO should duplicate IDs be silent? Can't distinguish between resumes and actual duplicates
 
-    if row_id == "":
-        raise ValueError("Missing ID column field")
+    if row_id == "" or row_id is None:
+        error_log = f"\nMissing ID for record: {record}\n"
+        return None, error_log
 
-    row = {c: record[c] for c in columns}
+    errors = []
+
+    row = {c: record.get(c, None) for c in columns}
     for col_name, col_val in record.items():
         col_type = fields[col_name]["type"]
         col_category = fields[col_name]["category"]
@@ -389,27 +392,25 @@ def validate_and_process_record(
             row[col_name] = None
             continue
 
+        error = None
         if col_category == "datetime":
             try:
                 pd.to_datetime(col_val)
             except (ValueError, TypeError):
-                raise TypeError(
-                    f"Unable to parse '{col_val}' with type '{type(col_val)}'. "
-                    "Datetime strings must be parsable by pandas.to_datetime()."
+                error = (
+                    f"Unable to parse '{col_val}' with type '{type(col_val)}'. Datetime strings"
+                    " must be parsable by pandas.to_datetime()."
                 )
+
         else:
             if col_type == "string":
                 row[col_name] = str(col_type)  # type coercion
             elif col_type == "integer":
                 if not isinstance(col_val, int):
-                    raise TypeError(
-                        f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
-                    )
+                    error = f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
             elif col_type == "float":
                 if not (isinstance(col_val, int) or isinstance(col_val, float)):
-                    raise TypeError(
-                        f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
-                    )
+                    error = f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
             elif col_type == "boolean":
                 if not isinstance(col_val, bool):
                     if col_val.lower() in ["true", "t", "yes"]:
@@ -417,10 +418,18 @@ def validate_and_process_record(
                     elif col_val.lower() == ["false", "f", "no"]:
                         row[col_name] = False
                     else:
-                        raise TypeError(
-                            f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'"
-                        )
-    return row
+                        error = f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'"
+
+        if error:
+            row[col_name] = None
+            errors.append(error)
+
+    if len(errors) > 0:
+        error_log = "\n\n".join(errors)
+        error_log = f"\n--------------------------{row_id}--------------------------\n" + error_log
+    else:
+        error_log = None
+    return row, error_log
 
 
 def upload_rows(
@@ -451,23 +460,20 @@ def upload_rows(
     rows_per_payload = None
 
     for record in read_file_as_stream(filepath):
-        try:
-            row = validate_and_process_record(record, schema, columns, existing_ids)
-            if row_size is None:
-                row_size = getsizeof(row)
-                rows_per_payload = int(payload_size * 10**6 / row_size)
-            # check passed
+        row, error_log = validate_and_process_record(record, schema, columns, existing_ids)
+        if row_size is None:
+            row_size = getsizeof(row)
+            rows_per_payload = int(payload_size * 10**6 / row_size)
+
+        if error_log:
+            click.secho(error_log)
+
+        if row:
             rows.append(row)
             if len(rows) >= rows_per_payload:
                 # if sufficiently large, POST to API TODO
                 click.secho("Uploading row chunk...", fg="blue")
                 rows = []
-        except (KeyError, TypeError) as e:
-            row_id = record.get(id_col, None)
-            if row_id:
-                click.secho(f"Invalid row. ID: ({row_id}). {str(e)}")
-            else:
-                click.secho(f"Invalid row with no ID column: {record}")
 
     click.secho("Uploading last row chunk...", fg="blue")
 
