@@ -25,7 +25,7 @@ import json
 from sys import getsizeof
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.0"  # TODO use package version no.
 
 schema_mapper = {
     "string": String(),
@@ -41,34 +41,6 @@ TYPE_TO_CATEGORIES = {
     "float": {"datetime", "numeric"},
     "boolean": {"boolean"},
 }
-
-
-def preprocess_df(self):
-    """
-    Drop duplicate rows and columns with more than 20% of values missing,
-    """
-    df = self.dataframe
-    len1 = len(df)
-    df.drop_duplicates(inplace=True)
-    len2 = len(df)
-
-    cols_to_drop = []
-    for c in df.columns:
-        num_na = df[c].isna().sum()
-        if num_na / len2 >= 0.2:  # drop column if it has more than 20% NA values
-            cols_to_drop.append(c)
-
-    df.drop(columns=cols_to_drop, inplace=True)
-
-    df.dropna(inplace=True)
-    len3 = len(df)
-    num_dupe_rows = len1 - len2
-    num_na_rows = len2 - len3
-    return {
-        "num_dupe_rows": num_dupe_rows,
-        "num_na_rows": num_na_rows,
-        "cols_dropped": cols_to_drop,
-    }
 
 
 def get_file_extension(filename):
@@ -93,9 +65,9 @@ def read_file_as_df(filepath):
         df.index = df.index.astype("str")
         df["id"] = df.index
     elif ext in ".csv":
-        df = pd.read_csv(filepath)
+        df = pd.read_csv(filepath, keep_default_na=True)
     elif ext in [".xls", ".xlsx"]:
-        df = pd.read_excel(filepath)
+        df = pd.read_excel(filepath, keep_default_na=True)
     elif ext in [".parquet"]:
         df = pd.read_parquet(filepath)
     else:
@@ -413,7 +385,8 @@ def validate_and_process_record(
         col_type = fields[col_name]["type"]
         col_category = fields[col_name]["category"]
 
-        if col_val == "":
+        if is_null_value(col_val):
+            row[col_name] = None
             continue
 
         if col_category == "datetime":
