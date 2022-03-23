@@ -36,7 +36,7 @@ schema_mapper = {
     "datetime": DateTime(),
 }
 
-TYPE_TO_CATEGORIES = {
+DATA_TYPES_TO_FEATURE_TYPES = {
     "string": {"text", "categorical", "datetime", "id"},
     "integer": {"categorical", "datetime", "id", "numeric"},
     "float": {"datetime", "numeric"},
@@ -161,18 +161,18 @@ def validate_schema(schema, columns: Collection[str]):
     if not schema_columns.issubset(columns):
         raise ValueError(f"Dataset is missing schema columns: {schema_columns - columns}")
 
-    # Check that each field has a category that matches the base type
+    # Check that each field has a feature_type that matches the base type
     for spec in schema["fields"].values():
-        column_type = spec["type"]
-        column_category = spec.get("category", None)
+        column_type = spec["data_type"]
+        column_feature_type = spec.get("feature_type", None)
         if column_type not in schema_mapper:
             raise ValueError(f"Unrecognized column data type: {column_type}")
 
-        if column_category:
-            if column_category not in TYPE_TO_CATEGORIES[column_type]:
+        if column_feature_type:
+            if column_feature_type not in DATA_TYPES_TO_FEATURE_TYPES[column_type]:
                 raise ValueError(
-                    f"Invalid column category: '{column_category}'. Accepted categories for type"
-                    f" '{column_type}' are: {TYPE_TO_CATEGORIES[column_type]}"
+                    f"Invalid column feature type: '{column_feature_type}'. Accepted categories for"
+                    f" type '{column_type}' are: {DATA_TYPES_TO_FEATURE_TYPES[column_type]}"
                 )
 
     # Check that metadata is complete
@@ -181,12 +181,13 @@ def validate_schema(schema, columns: Collection[str]):
         if key not in metadata:
             raise KeyError(f"Metadata is missing the '{key}' key.")
 
-    # Check that specified ID column has the category 'id'
+    # Check that specified ID column has the feature_type 'id'
     id_col_name = metadata["id_column"]
-    id_col_spec_category = schema["fields"][id_col_name]["category"]
-    if id_col_spec_category != "id":
+    id_col_spec_feature_type = schema["fields"][id_col_name]["feature_type"]
+    if id_col_spec_feature_type != "id":
         raise ValueError(
-            f"The specified ID column '{id_col_name}' must have category 'id' in the schema fields."
+            f"The specified ID column '{id_col_name}' must have feature_type 'id' in the schema"
+            " fields."
         )
 
 
@@ -195,9 +196,9 @@ def multiple_separate_words_detected(values):
     return avg_num_words >= 3
 
 
-def infer_type_and_category(values: Collection[any]):
+def infer_types(values: Collection[any]):
     """
-    Infer the type and category of a collection of a values using simple heuristics.
+    Infer the data type and feature type of a collection of a values using simple heuristics.
 
     :param values: a Collection of data values
     """
@@ -317,20 +318,20 @@ def propose_schema(
         col_vals = [v for v in col_vals if v != ""]
 
         if len(col_vals) == 0:  # all values in column are empty, give default string[text]
-            retval["fields"][col_name] = {"type": "string", "category": "text"}
+            retval["fields"][col_name] = {"data_type": "string", "feature_type": "text"}
             continue
 
-        col_type, col_category = infer_type_and_category(col_vals)
+        col_data_type, col_feature_type = infer_types(col_vals)
 
-        field_spec = {"type": col_type, "category": col_category}
+        field_spec = {"data_type": col_data_type, "feature_type": col_feature_type}
 
-        if col_category is None:
-            del field_spec["category"]
+        if col_feature_type is None:
+            del field_spec["feature_type"]
 
         retval["fields"][col_name] = field_spec
 
     if id_column is None:
-        id_cols = [k for k, spec in retval["fields"].items() if spec["category"] == "id"]
+        id_cols = [k for k, spec in retval["fields"].items() if spec["feature_type"] == "id"]
         if len(id_cols) == 0:
             id_cols = columns
         id_column = _find_best_matching_column("id", id_cols)
@@ -397,15 +398,15 @@ def validate_and_process_record(
     for col_name, col_val in record.items():
         if col_name not in fields:
             continue
-        col_type = fields[col_name]["type"]
-        col_category = fields[col_name]["category"]
+        col_type = fields[col_name]["data_type"]
+        col_feature_type = fields[col_name]["feature_type"]
 
         error = None
         if is_null_value(col_val):
             row[col_name] = None
             error = f"{col_name}: value is missing", ValidationError.MISSING_VAL
         else:
-            if col_category == "datetime":
+            if col_feature_type == "datetime":
                 try:
                     pd.to_datetime(col_val)
                 except (ValueError, TypeError):
