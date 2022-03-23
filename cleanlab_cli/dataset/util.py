@@ -37,8 +37,8 @@ schema_mapper = {
 }
 
 DATA_TYPES_TO_FEATURE_TYPES = {
-    "string": {"text", "categorical", "datetime", "id"},
-    "integer": {"categorical", "datetime", "id", "continuous"},
+    "string": {"text", "categorical", "datetime", "identifier"},
+    "integer": {"categorical", "datetime", "identifier", "continuous"},
     "float": {"datetime", "continuous"},
     "boolean": {"boolean"},
 }
@@ -184,10 +184,10 @@ def validate_schema(schema, columns: Collection[str]):
     # Check that specified ID column has the feature_type 'id'
     id_col_name = metadata["id_column"]
     id_col_spec_feature_type = schema["fields"][id_col_name]["feature_type"]
-    if id_col_spec_feature_type != "id":
+    if id_col_spec_feature_type != "identifier":
         raise ValueError(
-            f"The specified ID column '{id_col_name}' must have feature_type 'id' in the schema"
-            " fields."
+            f"The specified ID column '{id_col_name}' must have feature type 'identifier' in the"
+            " schema fields."
         )
 
 
@@ -241,7 +241,7 @@ def infer_types(values: Collection[any]):
             if multiple_separate_words_detected(values):
                 return "string", "text"
             else:
-                return "string", "id"
+                return "string", "identifier"
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
             return "string", "categorical"
         else:
@@ -249,7 +249,7 @@ def infer_types(values: Collection[any]):
 
     elif max_count_type == "integer":
         if ratio_unique >= ID_RATIO_THRESHOLD:
-            return "integer", "id"
+            return "integer", "identifier"
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
             return "integer", "categorical"
         else:
@@ -331,10 +331,12 @@ def propose_schema(
         retval["fields"][col_name] = field_spec
 
     if id_column is None:
-        id_cols = [k for k, spec in retval["fields"].items() if spec["feature_type"] == "id"]
+        id_cols = [
+            k for k, spec in retval["fields"].items() if spec["feature_type"] == "identifier"
+        ]
         if len(id_cols) == 0:
             id_cols = columns
-        id_column = _find_best_matching_column("id", id_cols)
+        id_column = _find_best_matching_column("identifier", id_cols)
 
     retval["metadata"] = {"id_column": id_column, "modality": modality, "name": name}
     retval["version"] = SCHEMA_VERSION
