@@ -38,8 +38,8 @@ schema_mapper = {
 
 DATA_TYPES_TO_FEATURE_TYPES = {
     "string": {"text", "categorical", "datetime", "id"},
-    "integer": {"categorical", "datetime", "id", "numeric"},
-    "float": {"datetime", "numeric"},
+    "integer": {"categorical", "datetime", "id", "continuous"},
+    "float": {"datetime", "continuous"},
     "boolean": {"boolean"},
 }
 
@@ -253,9 +253,9 @@ def infer_types(values: Collection[any]):
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
             return "integer", "categorical"
         else:
-            return "integer", "numeric"
+            return "integer", "continuous"
     elif max_count_type == "float":
-        return "float", "numeric"
+        return "float", "continuous"
     elif max_count_type == "boolean":
         return "string", "categorical"
     else:
