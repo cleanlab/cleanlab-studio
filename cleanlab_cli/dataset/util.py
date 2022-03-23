@@ -23,6 +23,7 @@ import pathlib
 from sqlalchemy import Integer, String, Boolean, DateTime, Float, BigInteger
 import json
 from sys import getsizeof
+from enum import Enum
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 SCHEMA_VERSION = "1.0"  # TODO use package version no.
@@ -358,6 +359,12 @@ def read_file_as_stream(filepath) -> Generator[OrderedDict, None, None]:
             yield r
 
 
+class ValidationError(Enum):
+    MISSING_ID = 1
+    MISSING_VAL = 2
+    TYPE_MISMATCH = 3
+
+
 def validate_and_process_record(
     record,
     schema,
@@ -380,11 +387,11 @@ def validate_and_process_record(
     if row_id == "" or row_id is None:
         error_log = {
             "id": None,
-            "log": f"\nMissing ID for record: {record}. Row has been dropped.\n",
+            "log": {ValidationError.MISSING_ID.name: [f"Missing ID for record: {dict(record)}."]},
         }
         return None, error_log
 
-    errors = []
+    errors = defaultdict(list)
 
     row = {c: record.get(c, None) for c in columns}
     for col_name, col_val in record.items():
@@ -396,26 +403,35 @@ def validate_and_process_record(
         error = None
         if is_null_value(col_val):
             row[col_name] = None
-            error = f"Missing value for field '{col_name}'"
+            error = f"{col_name}: value is missing", ValidationError.MISSING_VAL
         else:
             if col_category == "datetime":
                 try:
                     pd.to_datetime(col_val)
                 except (ValueError, TypeError):
                     error = (
-                        f"Unable to parse '{col_val}' with type '{type(col_val)}'. Datetime strings"
-                        " must be parsable by pandas.to_datetime()."
+                        f"{col_name}: expected datetime but unable to parse '{col_val}' with type"
+                        f" '{type(col_val)}'. Datetime strings must be parsable by"
+                        " pandas.to_datetime().",
+                        ValidationError.TYPE_MISMATCH,
                     )
-
             else:
                 if col_type == "string":
                     row[col_name] = str(col_type)  # type coercion
                 elif col_type == "integer":
                     if not isinstance(col_val, int):
-                        error = f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
+                        error = (
+                            f"{col_name}: expected 'int' but got '{col_val}' with type"
+                            f" '{type(col_val)}'",
+                            ValidationError.TYPE_MISMATCH,
+                        )
                 elif col_type == "float":
                     if not (isinstance(col_val, int) or isinstance(col_val, float)):
-                        error = f"Expected 'int' but got '{col_val}' with type '{type(col_val)}'"
+                        error = (
+                            f"{col_name}: expected 'int' but got '{col_val}' with type"
+                            f" '{type(col_val)}'",
+                            ValidationError.TYPE_MISMATCH,
+                        )
                 elif col_type == "boolean":
                     if not isinstance(col_val, bool):
                         if col_val.lower() in ["true", "t", "yes"]:
@@ -424,17 +440,21 @@ def validate_and_process_record(
                             row[col_name] = False
                         else:
                             error = (
-                                f"Expected 'bool' but got '{col_val}' with type '{type(col_val)}'"
+                                f"{col_name}: expected 'bool' but got '{col_val}' with type"
+                                f" '{type(col_val)}'",
+                                ValidationError.TYPE_MISMATCH,
                             )
 
         if error:
             row[col_name] = None
-            errors.append(error)
+            msg, error_type = error
+            errors[error_type.name].append(msg)
 
     if len(errors) > 0:
         error_log = {"id": row_id, "log": errors}
     else:
         error_log = None
+
     return row, error_log
 
 
