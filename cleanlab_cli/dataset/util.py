@@ -38,10 +38,26 @@ schema_mapper = {
 
 DATA_TYPES_TO_FEATURE_TYPES = {
     "string": {"text", "categorical", "datetime", "identifier"},
-    "integer": {"categorical", "datetime", "identifier", "continuous"},
-    "float": {"datetime", "continuous"},
+    "integer": {"categorical", "datetime", "identifier", "numeric"},
+    "float": {"datetime", "numeric"},
     "boolean": {"boolean"},
 }
+
+PYTHON_TYPES_TO_READABLE_STRING = {str: "string", float: "float", int: "integer", bool: "boolean"}
+
+
+class ValidationWarning(Enum):
+    MISSING_ID = 1
+    MISSING_VAL = 2
+    TYPE_MISMATCH = 3
+    DUPLICATE_ID = 4
+
+
+def get_value_type(val):
+    for python_type, readable_string in PYTHON_TYPES_TO_READABLE_STRING.items():
+        if isinstance(val, python_type):
+            return readable_string
+    return "unrecognized"
 
 
 def get_file_extension(filename):
@@ -91,12 +107,13 @@ def get_num_rows(filepath: str):
 def _find_best_matching_column(target_col: str, columns: List[str]) -> Optional[str]:
     """
     Find the column from `columns` that is the closest match to the `target_col`.
-    If no columns are likely, pick the first column of `columns` #TODO janky
+    If no columns are likely, pick the first column of `columns`
 
     :param target_col: some reserved column name, typically: 'id', 'label', or 'text'
-    :param columns: list of column names
+    :param columns: non-empty list of column names
     :return:
     """
+    assert len(columns) > 0, "list of columns is empty"
     poss = []
     for c in columns:
         if c.lower() == target_col:
@@ -249,13 +266,13 @@ def infer_types(values: Collection[any]):
 
     elif max_count_type == "integer":
         if ratio_unique >= ID_RATIO_THRESHOLD:
-            return "integer", "identifier"
+            return "string", "identifier"  # identifiers are always strings
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
             return "integer", "categorical"
         else:
-            return "integer", "continuous"
+            return "integer", "numeric"
     elif max_count_type == "float":
-        return "float", "continuous"
+        return "float", "numeric"
     elif max_count_type == "boolean":
         return "string", "categorical"
     else:
@@ -362,39 +379,65 @@ def read_file_as_stream(filepath) -> Generator[OrderedDict, None, None]:
             yield r
 
 
-class ValidationError(Enum):
-    MISSING_ID = 1
-    MISSING_VAL = 2
-    TYPE_MISMATCH = 3
-
-
 def validate_and_process_record(
     record,
     schema,
+    seen_ids: Set[str],
     columns: Optional[List[str]] = None,
     existing_ids: Optional[Collection[str]] = None,
 ):
+    """
+    Validate the row against the provided schema; generate warnings where issues are found
+
+    If row ID exists in `existing_ids`, the row has already been uploaded, so we return (None, row ID, None)
+
+    If row ID exists in `seen_ids`, it is a duplicate row, so we return (None, row ID, warnings)
+
+    If row ID is missing, we return (None, None, warnings)
+
+    Otherwise, the only warnings will be for type mismatches and missing values, and we return
+    (processed row, row ID, warnings), where warnings is an empty dict if no issues are found.
+
+    :param record: a row in the dataset
+    :param schema: dataset schema
+    :param seen_ids: the set of row IDs that have been processed so far
+    :param columns:
+    :param existing_ids:
+    :return: tuple (processed row: dict[str, any], row ID: optional[str], warnings: dict[str])
+    """
     fields = schema["fields"]
     id_col = schema["metadata"]["id_column"]
 
     if columns is None:
         columns = list(fields)
+
     if existing_ids is None:
         existing_ids = set()
 
     row_id = record.get(id_col, None)
 
-    if row_id in existing_ids:
-        return  # TODO should duplicate IDs be silent? Can't distinguish between resumes and actual duplicates
-
     if row_id == "" or row_id is None:
-        error_log = {
-            "id": None,
-            "log": {ValidationError.MISSING_ID.name: [f"Missing ID for record: {dict(record)}."]},
-        }
-        return None, error_log
+        return (
+            None,
+            None,
+            {ValidationWarning.MISSING_ID.name: [f"Missing ID for record: {dict(record)}."]},
+        )
 
-    errors = defaultdict(list)
+    if row_id in existing_ids:
+        return None, row_id, None
+
+    if row_id in seen_ids:
+        return (
+            None,
+            row_id,
+            {
+                ValidationWarning.DUPLICATE_ID.name: [
+                    f"Duplicate ID found. ID '{row_id}' has already been encountered before."
+                ]
+            },
+        )
+
+    warnings = defaultdict(list)
 
     row = {c: record.get(c, None) for c in columns}
     for col_name, col_val in record.items():
@@ -403,62 +446,59 @@ def validate_and_process_record(
         col_type = fields[col_name]["data_type"]
         col_feature_type = fields[col_name]["feature_type"]
 
-        error = None
+        warning = None
         if is_null_value(col_val):
             row[col_name] = None
-            error = f"{col_name}: value is missing", ValidationError.MISSING_VAL
+            warning = f"{col_name}: value is missing", ValidationWarning.MISSING_VAL
         else:
             if col_feature_type == "datetime":
                 try:
                     pd.to_datetime(col_val)
                 except (ValueError, TypeError):
-                    error = (
-                        f"{col_name}: expected datetime but unable to parse '{col_val}' with type"
-                        f" '{type(col_val)}'. Datetime strings must be parsable by"
+                    warning = (
+                        f"{col_name}: expected datetime but unable to parse '{col_val}' with "
+                        f"{get_value_type(col_val)} type. "
+                        "Datetime strings must be parsable by"
                         " pandas.to_datetime().",
-                        ValidationError.TYPE_MISMATCH,
+                        ValidationWarning.TYPE_MISMATCH,
                     )
             else:
                 if col_type == "string":
-                    row[col_name] = str(col_type)  # type coercion
+                    row[col_name] = str(col_val)  # type coercion
                 elif col_type == "integer":
                     if not isinstance(col_val, int):
-                        error = (
-                            f"{col_name}: expected 'int' but got '{col_val}' with type"
-                            f" '{type(col_val)}'",
-                            ValidationError.TYPE_MISMATCH,
+                        warning = (
+                            f"{col_name}: expected 'int' but got '{col_val}' with"
+                            f" {get_value_type(col_val)} type",
+                            ValidationWarning.TYPE_MISMATCH,
                         )
                 elif col_type == "float":
                     if not (isinstance(col_val, int) or isinstance(col_val, float)):
-                        error = (
-                            f"{col_name}: expected 'int' but got '{col_val}' with type"
-                            f" '{type(col_val)}'",
-                            ValidationError.TYPE_MISMATCH,
+                        warning = (
+                            f"{col_name}: expected 'int' but got '{col_val}' with"
+                            f" {get_value_type(col_val)} type",
+                            ValidationWarning.TYPE_MISMATCH,
                         )
                 elif col_type == "boolean":
                     if not isinstance(col_val, bool):
-                        if col_val.lower() in ["true", "t", "yes"]:
+                        col_val_lower = str(col_val).lower()
+                        if col_val_lower in ["true", "t", "yes", "1"]:
                             row[col_name] = True
-                        elif col_val.lower() == ["false", "f", "no"]:
+                        elif col_val_lower in ["false", "f", "no", "0"]:
                             row[col_name] = False
                         else:
-                            error = (
-                                f"{col_name}: expected 'bool' but got '{col_val}' with type"
-                                f" '{type(col_val)}'",
-                                ValidationError.TYPE_MISMATCH,
+                            warning = (
+                                f"{col_name}: expected 'bool' but got '{col_val}' with"
+                                f" {get_value_type(col_val)} type",
+                                ValidationWarning.TYPE_MISMATCH,
                             )
 
-        if error:
-            row[col_name] = None
-            msg, error_type = error
-            errors[error_type.name].append(msg)
+        if warning:
+            row[col_name] = None  # replace bad value with NULL
+            msg, warn_type = warning
+            warnings[warn_type.name].append(msg)
 
-    if len(errors) > 0:
-        error_log = {"id": row_id, "log": errors}
-    else:
-        error_log = None
-
-    return row, error_log
+    return row, row_id, warnings
 
 
 def upload_rows(
@@ -475,36 +515,51 @@ def upload_rows(
     :param payload_size: size of each chunk of rows uploaded, in MB
     :return: None
     """
-    fields = schema["fields"]
     columns = list(schema["fields"].keys())
-
-    metadata = schema["metadata"]
-    id_col = metadata["id_column"]
-    modality = metadata["modality"]
-    name = metadata["name"]
     existing_ids = [] if existing_ids is None else set(existing_ids)
 
     rows = []
     row_size = None
     rows_per_payload = None
+    seen_ids = set()
 
     for record in read_file_as_stream(filepath):
-        row, error_log = validate_and_process_record(record, schema, columns, existing_ids)
+        row, row_id, warnings = validate_and_process_record(
+            record, schema, seen_ids, columns, existing_ids
+        )
+
+        if row_id is None:
+            click.secho(warnings[ValidationWarning.MISSING_ID.name][0])
+            continue
+
+        if row is None:  # could be duplicate or already uploaded
+            if len(warnings) > 0:
+                click.secho(warnings[ValidationWarning.DUPLICATE_ID.name][0])
+            continue
+
+        # row and row ID both present, i.e. row will be uploaded
+        seen_ids.add(row_id)
+
         if row_size is None:
             row_size = getsizeof(row)
             rows_per_payload = int(payload_size * 10**6 / row_size)
 
-        if error_log:
-            click.secho(error_log)
+        if warnings:
+            missing_val_warnings = warnings.get(ValidationWarning.MISSING_VAL.name, [])
+            for w in missing_val_warnings:
+                click.secho(w)
 
-        if row:
-            rows.append(row)
-            if len(rows) >= rows_per_payload:
-                # if sufficiently large, POST to API TODO
-                click.secho("Uploading row chunk...", fg="blue")
-                rows = []
+            type_mismatch_warnings = warnings.get(ValidationWarning.TYPE_MISMATCH.name, [])
+            for w in type_mismatch_warnings:
+                click.secho(w)
 
-    click.secho("Uploading last row chunk...", fg="blue")
+        rows.append(row)
+        if len(rows) >= rows_per_payload:
+            # if sufficiently large, POST to API TODO
+            click.secho("Uploading row chunk...", fg="blue")
+            rows = []
+
+    click.secho("Uploading final row chunk...", fg="blue")
 
     if len(rows) > 0:
         # TODO upload
