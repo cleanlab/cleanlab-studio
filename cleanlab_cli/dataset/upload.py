@@ -24,7 +24,7 @@ from cleanlab_cli.auth.auth import auth_config
     help="If uploading with a schema, specify the JSON schema filepath.",
 )
 @click.option(
-    "--id_col",
+    "--id_column",
     type=str,
     help="If uploading a new dataset without a schema, specify the ID column.",
 )
@@ -32,10 +32,7 @@ from cleanlab_cli.auth.auth import auth_config
     "--modality",
     "-m",
     type=str,
-    help=(
-        "If uploading a new dataset without a schema, specify data modality: text, tabular, or"
-        " image"
-    ),
+    help="If uploading a new dataset without a schema, specify data modality: text, tabular",
 )
 @click.option(
     "--name",
@@ -43,7 +40,7 @@ from cleanlab_cli.auth.auth import auth_config
     help="If uploading a new dataset without a schema, specify a dataset name.",
 )
 @auth_config
-def upload(config, filepath, id, schema, id_col, modality, name):
+def upload(config, filepath, id, schema, id_column, modality, name):
     # Authenticate
     click.echo(config.status())
     filetype = get_file_extension(filepath)
@@ -80,19 +77,19 @@ def upload(config, filepath, id, schema, id_col, modality, name):
             )
         )
 
-    if id_col is None:
+    if id_column is None:
         raise click.ClickException(
             style(
-                "You must specify an ID column (--id_col <ID column name>) for a new dataset"
+                "You must specify an ID column (--id_column <ID column name>) for a new dataset"
                 " upload.",
                 fg="red",
             )
         )
 
-    if id_col not in columns:
+    if id_column not in columns:
         raise ClickException(
             style(
-                f"Could not find specified ID column '{id_col}' in dataset columns: {columns}",
+                f"Could not find specified ID column '{id_column}' in dataset columns: {columns}",
                 fg="red",
             )
         )
@@ -100,7 +97,7 @@ def upload(config, filepath, id, schema, id_col, modality, name):
     num_rows = get_num_rows(filepath)
 
     ### Propose schema
-    proposed_schema = propose_schema(filepath, columns, id_col, modality, name, num_rows)
+    proposed_schema = propose_schema(filepath, columns, id_column, modality, name, num_rows)
     click.secho(
         f"No schema was provided. We propose the following schema based on your dataset:",
         fg="yellow",

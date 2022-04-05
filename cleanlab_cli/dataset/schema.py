@@ -25,7 +25,7 @@ def validate_schema_command(filepath, schema):
 @click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=True)
 @click.option("--output", "-o", type=click.Path(), help="Output filepath", default="schema.json")
 @click.option(
-    "--id_col",
+    "--id_column",
     type=str,
     prompt=True,
     help="If uploading a new dataset without a schema, specify the ID column.",
@@ -45,10 +45,10 @@ def validate_schema_command(filepath, schema):
     type=str,
     help="If uploading a new dataset without a schema, specify a dataset name.",
 )
-def generate_schema_command(filepath, output, id_col, modality, name):
+def generate_schema_command(filepath, output, id_column, modality, name):
     num_rows = get_num_rows(filepath)
     cols = get_dataset_columns(filepath)
-    schema = propose_schema(filepath, cols, id_col, modality, name, num_rows)
+    schema = propose_schema(filepath, cols, id_column, modality, name, num_rows)
     click.secho(f"Writing schema to {output}\n")
     dump_schema(output, schema)
     click.echo(json.dumps(schema, indent=2))

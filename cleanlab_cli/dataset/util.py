@@ -159,7 +159,8 @@ def validate_schema(schema, columns: Collection[str]):
     :return: raises a ValueError if any checks fail
     """
 
-    # Check that schema is complete with fields, metadata, and version
+    # Check for completeness and basic type correctness
+    ## Check that schema is complete with fields, metadata, and version
     for key in ["fields", "metadata", "version"]:
         if key not in schema:
             raise KeyError(f"Schema is missing '{key}' key.")
@@ -167,18 +168,24 @@ def validate_schema(schema, columns: Collection[str]):
     schema_columns = set(schema["fields"])
     columns = set(columns)
 
-    # Check that schema fields are strings
+    ## Check that metadata is complete
+    metadata = schema["metadata"]
+    for key in ["id_column", "modality", "name"]:
+        if key not in metadata:
+            raise KeyError(f"Metadata is missing the '{key}' key.")
+
+    ## Check that schema fields are strings
     for col in schema_columns:
         if not isinstance(col, str):
             raise ValueError(
                 f"All schema columns must be strings. Found invalid column name: {col}"
             )
 
-    # Check that the dataset has all columns specified in the schema
+    ## Check that the dataset has all columns specified in the schema
     if not schema_columns.issubset(columns):
         raise ValueError(f"Dataset is missing schema columns: {schema_columns - columns}")
 
-    # Check that each field has a feature_type that matches the base type
+    ## Check that each field has a feature_type that matches the base type
     for spec in schema["fields"].values():
         column_type = spec["data_type"]
         column_feature_type = spec.get("feature_type", None)
@@ -192,20 +199,40 @@ def validate_schema(schema, columns: Collection[str]):
                     f" type '{column_type}' are: {DATA_TYPES_TO_FEATURE_TYPES[column_type]}"
                 )
 
-    # Check that metadata is complete
-    metadata = schema["metadata"]
-    for key in ["id_column", "modality", "name"]:
-        if key not in metadata:
-            raise KeyError(f"Metadata is missing the '{key}' key.")
+    # Advanced validation checks: this should be aligned with ConfirmSchema's validate() function
+    ## Check that specified ID column has the feature_type 'identifier'
+    id_column_name = metadata["id_column"]
+    id_column_spec_feature_type = schema["fields"][id_column_name]["feature_type"]
+    if id_column_spec_feature_type != "identifier":
+        raise ValueError(f"ID column field {id_column_name} must have feature type: 'identifier'.")
 
-    # Check that specified ID column has the feature_type 'id'
-    id_col_name = metadata["id_column"]
-    id_col_spec_feature_type = schema["fields"][id_col_name]["feature_type"]
-    if id_col_spec_feature_type != "identifier":
+    ## Check that there exists at least one categorical column (to be used as label)
+    has_categorical = any(
+        feature_type == "categorical" for feature_type in schema["fields"].values()
+    )
+    if not has_categorical:
         raise ValueError(
-            f"The specified ID column '{id_col_name}' must have feature type 'identifier' in the"
-            " schema fields."
+            "Dataset does not seem to contain a label column. (None of the fields is categorical.)"
         )
+
+    ## If tabular modality, check that there are at least two variable (i.e. categorical, numeric, datetime) columns
+    modality = metadata["modality"]
+    variable_fields = {"categorical", "numeric", "datetime"}
+    if modality == "tabular":
+        num_variable_columns = sum(
+            int(feature_type in variable_fields) for feature_type in schema["fields"].values()
+        )
+        if num_variable_columns < 2:
+            raise ValueError(
+                "Dataset modality is tabular; there must be at least one categorical field and one"
+                " other variable field (i.e. categorical, numeric, or datetime)."
+            )
+
+    ## If text modality, check that at least one column has feature type 'text'
+    if modality == "text":
+        has_text = any(feature_type == "text" for feature_type in schema["fields"].values())
+        if not has_text:
+            raise ValueError("Dataset modality is text, but none of the fields is a text column.")
 
 
 def multiple_separate_words_detected(values):
@@ -328,6 +355,7 @@ def propose_schema(
             dataset.append(dict(row.items()))
     df = pd.DataFrame(dataset, columns=columns)
     retval = dict()
+    retval["metadata"] = {}
     retval["fields"] = {}
 
     for col_name in columns:
@@ -348,12 +376,12 @@ def propose_schema(
         retval["fields"][col_name] = field_spec
 
     if id_column is None:
-        id_cols = [
+        id_columns = [
             k for k, spec in retval["fields"].items() if spec["feature_type"] == "identifier"
         ]
-        if len(id_cols) == 0:
-            id_cols = columns
-        id_column = _find_best_matching_column("identifier", id_cols)
+        if len(id_columns) == 0:
+            id_columns = columns
+        id_column = _find_best_matching_column("identifier", id_columns)
 
     retval["metadata"] = {"id_column": id_column, "modality": modality, "name": name}
     retval["version"] = SCHEMA_VERSION
@@ -406,7 +434,7 @@ def validate_and_process_record(
     :return: tuple (processed row: dict[str, any], row ID: optional[str], warnings: dict[str])
     """
     fields = schema["fields"]
-    id_col = schema["metadata"]["id_column"]
+    id_column = schema["metadata"]["id_column"]
 
     if columns is None:
         columns = list(fields)
@@ -414,7 +442,7 @@ def validate_and_process_record(
     if existing_ids is None:
         existing_ids = set()
 
-    row_id = record.get(id_col, None)
+    row_id = record.get(id_column, None)
 
     if row_id == "" or row_id is None:
         return (
@@ -440,61 +468,60 @@ def validate_and_process_record(
     warnings = defaultdict(list)
 
     row = {c: record.get(c, None) for c in columns}
-    for col_name, col_val in record.items():
-        if col_name not in fields:
+    for column_name, column_value in record.items():
+        if column_name not in fields:
             continue
-        col_type = fields[col_name]["data_type"]
-        col_feature_type = fields[col_name]["feature_type"]
+        col_type = fields[column_name]["data_type"]
+        col_feature_type = fields[column_name]["feature_type"]
 
         warning = None
-        if is_null_value(col_val):
-            row[col_name] = None
-            warning = f"{col_name}: value is missing", ValidationWarning.MISSING_VAL
+        if is_null_value(column_value):
+            row[column_name] = None
+            warning = f"{column_name}: value is missing", ValidationWarning.MISSING_VAL
         else:
             if col_feature_type == "datetime":
                 try:
-                    pd.to_datetime(col_val)
+                    pd.to_datetime(column_value)
                 except (ValueError, TypeError):
                     warning = (
-                        f"{col_name}: expected datetime but unable to parse '{col_val}' with "
-                        f"{get_value_type(col_val)} type. "
-                        "Datetime strings must be parsable by"
-                        " pandas.to_datetime().",
+                        f"{column_name}: expected datetime but unable to parse '{column_value}'"
+                        f" with {get_value_type(column_value)} type. Datetime strings must be"
+                        " parsable by pandas.to_datetime().",
                         ValidationWarning.TYPE_MISMATCH,
                     )
             else:
                 if col_type == "string":
-                    row[col_name] = str(col_val)  # type coercion
+                    row[column_name] = str(column_value)  # type coercion
                 elif col_type == "integer":
-                    if not isinstance(col_val, int):
+                    if not isinstance(column_value, int):
                         warning = (
-                            f"{col_name}: expected 'int' but got '{col_val}' with"
-                            f" {get_value_type(col_val)} type",
+                            f"{column_name}: expected 'int' but got '{column_value}' with"
+                            f" {get_value_type(column_value)} type",
                             ValidationWarning.TYPE_MISMATCH,
                         )
                 elif col_type == "float":
-                    if not (isinstance(col_val, int) or isinstance(col_val, float)):
+                    if not (isinstance(column_value, int) or isinstance(column_value, float)):
                         warning = (
-                            f"{col_name}: expected 'int' but got '{col_val}' with"
-                            f" {get_value_type(col_val)} type",
+                            f"{column_name}: expected 'int' but got '{column_value}' with"
+                            f" {get_value_type(column_value)} type",
                             ValidationWarning.TYPE_MISMATCH,
                         )
                 elif col_type == "boolean":
-                    if not isinstance(col_val, bool):
-                        col_val_lower = str(col_val).lower()
+                    if not isinstance(column_value, bool):
+                        col_val_lower = str(column_value).lower()
                         if col_val_lower in ["true", "t", "yes", "1"]:
-                            row[col_name] = True
+                            row[column_name] = True
                         elif col_val_lower in ["false", "f", "no", "0"]:
-                            row[col_name] = False
+                            row[column_name] = False
                         else:
                             warning = (
-                                f"{col_name}: expected 'bool' but got '{col_val}' with"
-                                f" {get_value_type(col_val)} type",
+                                f"{column_name}: expected 'bool' but got '{column_value}' with"
+                                f" {get_value_type(column_value)} type",
                                 ValidationWarning.TYPE_MISMATCH,
                             )
 
         if warning:
-            row[col_name] = None  # replace bad value with NULL
+            row[column_name] = None  # replace bad value with NULL
             msg, warn_type = warning
             warnings[warn_type.name].append(msg)
 

@@ -20,7 +20,7 @@ def test_generate_schema():
         for ext in [".csv", ".xlsx"]:
             result = runner.invoke(
                 generate_schema_command,
-                ["-f", filename + ext, "--id_col", "tweet_id", "--modality", "text"],
+                ["-f", filename + ext, "--id_column", "tweet_id", "--modality", "text"],
             )
             try:
                 assert result.exit_code == 0
