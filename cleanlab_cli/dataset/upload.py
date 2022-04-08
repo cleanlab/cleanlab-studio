@@ -40,16 +40,16 @@ from cleanlab_cli.auth.auth import auth_config
     help="If uploading a new dataset without a schema, specify a dataset name.",
 )
 @auth_config
-def upload(config, filepath, id, schema, id_column, modality, name):
+def upload(config, filepath, dataset_id, schema, id_column, modality, name):
     # Authenticate
     click.echo(config.status())
     filetype = get_file_extension(filepath)
     columns = get_dataset_columns(filepath)
 
     # Check if resuming upload
-    if id is not None:
-        saved_schema = get_dataset_schema(id)
-        existing_ids = get_existing_ids(id)
+    if dataset_id is not None:
+        saved_schema = get_dataset_schema(dataset_id)
+        existing_ids = get_existing_ids(dataset_id)
         upload_rows(filepath, saved_schema, existing_ids)
         return
 
@@ -89,7 +89,7 @@ def upload(config, filepath, id, schema, id_column, modality, name):
     if id_column not in columns:
         raise ClickException(
             style(
-                f"Could not find specified ID column '{id_column}' in dataset columns: {columns}",
+                f"Could not find specified ID column '{id_column}' in dataset columns.",
                 fg="red",
             )
         )
