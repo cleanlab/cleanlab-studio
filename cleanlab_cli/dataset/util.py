@@ -24,6 +24,7 @@ from sqlalchemy import Integer, String, Boolean, DateTime, Float, BigInteger
 import json
 from sys import getsizeof
 from enum import Enum
+import requests
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 SCHEMA_VERSION = "1.0"  # TODO use package version no.
@@ -155,7 +156,7 @@ def validate_schema(schema, columns: Collection[str]):
     (3) all schema column types are recognized
 
     :param schema:
-    :param columns:
+    :param columns: full list of columns in dataset
     :return: raises a ValueError if any checks fail
     """
 
@@ -593,3 +594,29 @@ def upload_rows(
         pass
 
     click.secho("Upload completed.", fg="green")
+
+
+def construct_schema(fields, data_types, feature_types, id_column, modality, dataset_name):
+    retval = {
+        "fields": {},
+        "metadata": {"id_column": id_column, "modality": modality, "name": dataset_name},
+        "version": "1.0",  # TODO add package version
+    }
+    for field, data_type, feature_type in zip(fields, data_types, feature_types):
+        retval["fields"][field] = {"data_type": data_type, "feature_type": feature_type}
+    return retval
+
+
+def construct_sql_dtypes_from_schema(schema):
+    return {field: schema_mapper[spec["data_type"]] for field, spec in schema["fields"].items()}
+
+
+def group_feature_types(schema):
+    """
+    Given a schema, return a dict mapping each feature type to the list of columns with said feature type
+    """
+    feature_types_to_columns = defaultdict(list)
+    for field_name, spec in schema["fields"].items():
+        feature_type = spec["feature_type"]
+        feature_types_to_columns[feature_type].append(field_name)
+    return feature_types_to_columns
