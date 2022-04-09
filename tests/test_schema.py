@@ -3,8 +3,19 @@ from cleanlab_cli.dataset.schema import generate_schema_command, validate_schema
 from cleanlab_cli.dataset.util import read_file_as_df
 import os
 from os.path import dirname, abspath
+import logging
+import pytest
+
+logger = logging.getLogger(__name__)
 
 sample_csv = os.path.join(abspath(dirname(__file__)), "resources/datasets/sample.csv")
+
+
+def assert_success_else_error_output(test_name, result):
+    if result.exit_code != 0:
+        raise AssertionError(
+            f"{test_name} failed with exit code {result.exit_code} and output: {result.output}"
+        )
 
 
 def test_generate_schema():
@@ -22,24 +33,11 @@ def test_generate_schema():
                 generate_schema_command,
                 ["-f", filename + ext, "--id_column", "tweet_id", "--modality", "text"],
             )
-            try:
-                assert result.exit_code == 0
-            except AssertionError:
-                raise AssertionError(
-                    f"Generate schema for {ext} failed with exit code: {result.exit_code},"
-                    f" exception: {result.exception}"
-                )
-
+            assert_success_else_error_output("Schema generation", result)
             result = runner.invoke(
                 validate_schema_command, ["-f", filename + ext, "--schema", "schema.json"]
             )
-            try:
-                assert result.exit_code == 0
-            except AssertionError:
-                raise AssertionError(
-                    f"Validate schema for {ext} failed with exit code: {result.exit_code},"
-                    f" exception: {result.exception}"
-                )
+            assert_success_else_error_output("Schema validation", result)
 
 
 if __name__ == "__main__":
