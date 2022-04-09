@@ -1,5 +1,3 @@
-import click
-from click import style
 import os
 import json
 from cleanlab_cli.api_service import validate_api_key
@@ -19,6 +17,8 @@ class AuthConfig:
                 self.api_key = api_key
             except (FileNotFoundError, KeyError, ValueError):
                 abort("No valid API key found. Run 'cleanlab auth' before running this command.")
+        else:
+            return self.api_key
 
 
 auth_config = click.make_pass_decorator(AuthConfig, ensure=True)
@@ -52,17 +52,18 @@ def load_api_key():
     prompt=True,
     help="API key for CLI uploads. You can get this from https://app.cleanlab.ai/upload.",  # TODO revise url
 )
-def auth(api_key):
+def auth(key):
     cleanlab_dir = os.path.expanduser("~/.cleanlab/")
     if not os.path.exists(cleanlab_dir):
         os.mkdir(cleanlab_dir)
 
     # validate API key
-    valid_key = validate_api_key(api_key)
+    valid_key = validate_api_key(key)
     if not valid_key:
         abort("API key is invalid. Check https://app.cleanlab.ai/upload for your current API key.")
 
     # save API key
+    settings = dict()
     settings_filepath = os.path.join(cleanlab_dir, "settings.json")
     if os.path.exists(settings_filepath):
         try:
@@ -83,7 +84,7 @@ def auth(api_key):
                     f"or manually fix the settings file at {settings_filepath}"
                 )
     else:
-        settings = construct_settings(api_key)
+        settings = construct_settings(key)
 
     with open(settings_filepath, "w") as f:
         json.dump(settings, f)

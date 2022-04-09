@@ -18,7 +18,11 @@ from cleanlab_cli.dataset.util import (
     read_file_as_stream,
     get_filename,
 )
-from schema_types import schema_mapper, DATA_TYPES_TO_FEATURE_TYPES, SCHEMA_VERSION
+from cleanlab_cli.dataset.schema_types import (
+    schema_mapper,
+    DATA_TYPES_TO_FEATURE_TYPES,
+    SCHEMA_VERSION,
+)
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 

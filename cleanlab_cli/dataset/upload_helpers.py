@@ -16,7 +16,7 @@ from sys import getsizeof
 from enum import Enum
 from cleanlab_cli import api_service
 from cleanlab_cli.dataset.util import is_null_value, read_file_as_stream
-from schema_types import PYTHON_TYPES_TO_READABLE_STRING, schema_mapper
+from cleanlab_cli.dataset.schema_types import PYTHON_TYPES_TO_READABLE_STRING, schema_mapper
 
 
 class ValidationWarning(Enum):

@@ -1,5 +1,3 @@
-import click
-from click import ClickException, style
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
