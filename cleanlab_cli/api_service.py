@@ -7,9 +7,14 @@ import requests
 base_url = "localhost:8500/api/cli"
 
 
-def initialize_dataset(
-    api_key, fields, data_types, feature_types, id_column, modality, dataset_name
-):
+def initialize_dataset(api_key, schema):
+    fields = list(schema["fields"])
+    data_types = [field["data_type"] for field in schema["fields"]]
+    feature_types = [field["feature_type"] for field in schema["fields"]]
+    id_column = schema["metadata"]["id_column"]
+    modality = schema["metadata"]["modality"]
+    dataset_name = schema["metadata"]["name"]
+
     return requests.post(
         base_url + "/initialize",
         data={
@@ -40,5 +45,13 @@ def upload_rows(api_key, dataset_id, rows):
     )
 
 
+def get_completion_status(api_key, dataset_id):
+    return requests.get(base_url + "/complete", data={"api_key": api_key, "dataset_id": dataset_id})
+
+
 def complete_upload(api_key, dataset_id):
     return requests.put(base_url + "/complete", data={"api_key": api_key, "dataset_id": dataset_id})
+
+
+def validate_api_key(api_key):
+    return requests.get(base_url + "/validate", data={"api_key": api_key})

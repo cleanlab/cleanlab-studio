@@ -2,6 +2,7 @@ from cleanlab_cli.dataset.util import *
 import click
 from click import ClickException, style
 from cleanlab_cli.auth.auth import auth_config
+from cleanlab_cli import api_service
 
 
 @click.command()
@@ -41,19 +42,21 @@ from cleanlab_cli.auth.auth import auth_config
 )
 @auth_config
 def upload(config, filepath, dataset_id, schema, id_column, modality, name):
-    # Authenticate
-    click.echo(config.status())
-    filetype = get_file_extension(filepath)
+    api_key = config.get_api_key()
+    # filetype = get_file_extension(filepath)
     columns = get_dataset_columns(filepath)
 
-    # Check if resuming upload
+    # If resuming upload
     if dataset_id is not None:
-        saved_schema = get_dataset_schema(dataset_id)
-        existing_ids = get_existing_ids(dataset_id)
-        upload_rows(filepath, saved_schema, existing_ids)
+        complete = api_service.get_completion_status(api_key, dataset_id)
+        if complete:
+            raise ClickException(style("Dataset has already been uploaded fully.", fg="red"))
+        saved_schema = api_service.get_dataset_schema(api_key, dataset_id)
+        existing_ids = api_service.get_existing_ids(api_key, dataset_id)
+        upload_rows(api_key, dataset_id, filepath, saved_schema, existing_ids)
         return
 
-    # First upload
+    # This is the first upload
     ## Check if uploading with schema
     if schema is not None:
         click.secho("Validating provided schema...", fg="yellow")
@@ -63,9 +66,12 @@ def upload(config, filepath, dataset_id, schema, id_column, modality, name):
         except ValueError as e:
             raise ClickException(style(str(e), fg="red"))
         click.secho("Provided schema is valid!", fg="green")
+        click.secho("Initializing dataset...", fg="yellow")
+        res = api_service.initialize_dataset(api_key, schema)
+        dataset_id = res.data.dataset_id
+        click.secho(f"Dataset has been initialized with ID: {dataset_id}", fg="orange")
         click.secho("Uploading rows...", fg="yellow")
-        upload_rows(filepath, loaded_schema)
-        return
+        upload_rows(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
 
     ## No schema, propose and confirm a schema
     ### Check that all required arguments are present
@@ -113,10 +119,17 @@ def upload(config, filepath, dataset_id, schema, id_column, modality, name):
             fg="red",
         )
 
-    save_schema = click.prompt("Would you like to save the generated schema to 'schema.json'?")
+    save_schema = click.confirm(
+        "Would you like to save the generated schema to 'schema.json'?",
+    )
+
     if save_schema:
         dump_schema("schema.json", proposed_schema)
         click.secho("Saved schema to 'schema.json'.", fg="green")
 
     if proceed_upload:
-        upload_rows(filepath, proposed_schema)
+        res = api_service.initialize_dataset(api_key, schema)
+        dataset_id = res.data.dataset_id
+        upload_rows(
+            api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema
+        )

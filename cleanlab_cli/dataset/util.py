@@ -5,9 +5,7 @@ import click
 import pandas as pd
 from pandas import NaT
 from typing import (
-    Tuple,
     Optional,
-    Iterable,
     Dict,
     List,
     Collection,
@@ -20,11 +18,11 @@ import pyexcel
 import os
 from collections import defaultdict, OrderedDict
 import pathlib
-from sqlalchemy import Integer, String, Boolean, DateTime, Float, BigInteger
+from sqlalchemy import String, Boolean, DateTime, Float, BigInteger
 import json
 from sys import getsizeof
 from enum import Enum
-import requests
+from cleanlab_cli import api_service
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 SCHEMA_VERSION = "1.0"  # TODO use package version no.
@@ -530,6 +528,8 @@ def validate_and_process_record(
 
 
 def upload_rows(
+    api_key: str,
+    dataset_id: Optional[str],
     filepath: str,
     schema: Dict[str, Any],
     existing_ids: Optional[Collection[str]] = None,
@@ -537,6 +537,8 @@ def upload_rows(
 ):
     """
 
+    :param api_key: 32-character alphanumeric string
+    :param dataset_id: dataset ID
     :param filepath: path to dataset file
     :param schema: a validated schema
     :param existing_ids:
@@ -583,16 +585,16 @@ def upload_rows(
 
         rows.append(row)
         if len(rows) >= rows_per_payload:
-            # if sufficiently large, POST to API TODO
+            # if sufficiently large, POST to API
+            api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows)
             click.secho("Uploading row chunk...", fg="blue")
             rows = []
 
     click.secho("Uploading final row chunk...", fg="blue")
-
     if len(rows) > 0:
-        # TODO upload
-        pass
+        api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows)
 
+    api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
     click.secho("Upload completed.", fg="green")
 
 
