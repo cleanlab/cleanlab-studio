@@ -4,7 +4,7 @@ from click import ClickException, style
 from cleanlab_cli.auth.auth import auth_config
 from cleanlab_cli import api_service
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
-from cleanlab_cli.dataset.upload_helpers import upload
+from cleanlab_cli.dataset.upload_helpers import upload_rows
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
@@ -61,7 +61,7 @@ def upload(config, filepath, dataset_id, schema, id_column, modality, name):
             raise ClickException(style("Dataset has already been uploaded fully.", fg="red"))
         saved_schema = api_service.get_dataset_schema(api_key, dataset_id)
         existing_ids = api_service.get_existing_ids(api_key, dataset_id)
-        upload(api_key, dataset_id, filepath, saved_schema, existing_ids)
+        upload_rows(api_key, dataset_id, filepath, saved_schema, existing_ids)
         return
 
     # This is the first upload
@@ -79,7 +79,7 @@ def upload(config, filepath, dataset_id, schema, id_column, modality, name):
         dataset_id = res.data.dataset_id
         click.secho(f"Dataset has been initialized with ID: {dataset_id}", fg="orange")
         click.secho("Uploading rows...", fg="yellow")
-        upload(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
+        upload_rows(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
 
     ## No schema, propose and confirm a schema
     ### Check that all required arguments are present
@@ -138,4 +138,6 @@ def upload(config, filepath, dataset_id, schema, id_column, modality, name):
     if proceed_upload:
         res = api_service.initialize_dataset(api_key, schema)
         dataset_id = res.data.dataset_id
-        upload(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema)
+        upload_rows(
+            api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema
+        )

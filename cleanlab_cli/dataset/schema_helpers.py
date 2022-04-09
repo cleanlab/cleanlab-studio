@@ -1,3 +1,7 @@
+"""
+Helper functions for working with schemas
+"""
+
 import pandas as pd
 from pandas import NaT
 from typing import (

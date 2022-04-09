@@ -1,3 +1,6 @@
+"""
+Helper functions for processing and uploading dataset rows
+"""
 import click
 import pandas as pd
 from typing import (
@@ -9,7 +12,6 @@ from typing import (
     Any,
 )
 from collections import defaultdict
-from sqlalchemy import String, Boolean, DateTime, Float, BigInteger
 from sys import getsizeof
 from enum import Enum
 from cleanlab_cli import api_service
@@ -152,7 +154,7 @@ def validate_and_process_record(
     return row, row_id, warnings
 
 
-def upload(
+def upload_rows(
     api_key: str,
     dataset_id: Optional[str],
     filepath: str,

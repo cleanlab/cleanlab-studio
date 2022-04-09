@@ -1,5 +1,5 @@
 """
-Contains utility functions for interacting with files and schemas
+Contains utility functions for interacting with dataset files
 """
 import pandas as pd
 from typing import (
