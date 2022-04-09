@@ -1,6 +1,4 @@
-import click
 import json
-from click import ClickException, style
 from cleanlab_cli.auth.auth import auth_config
 from cleanlab_cli import api_service
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows

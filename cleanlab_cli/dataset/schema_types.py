@@ -1,5 +1,7 @@
 from sqlalchemy import String, Boolean, DateTime, Float, BigInteger
 
+from setup import VERSION_NO
+
 schema_mapper = {
     "string": String(),
     "integer": BigInteger(),
@@ -17,4 +19,4 @@ DATA_TYPES_TO_FEATURE_TYPES = {
 
 PYTHON_TYPES_TO_READABLE_STRING = {str: "string", float: "float", int: "integer", bool: "boolean"}
 
-SCHEMA_VERSION = "1.0"  # TODO use package version no.
+SCHEMA_VERSION = VERSION_NO

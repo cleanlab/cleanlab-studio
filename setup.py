@@ -1,8 +1,9 @@
 from setuptools import setup
 
+VERSION_NO = "0.1"
 setup(
     name="cleanlab-cli",
-    version="0.1",
+    version=VERSION_NO,
     py_modules=["main"],
     install_requires=[
         "Click",
@@ -12,6 +13,7 @@ setup(
         "pyexcel-xls",
         "pyexcel-xlsx",
         "sqlalchemy",
+        "requests",
     ],
     entry_points="""
         [console_scripts]
