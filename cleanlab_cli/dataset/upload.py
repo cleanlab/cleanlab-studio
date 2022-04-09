@@ -48,7 +48,8 @@ from cleanlab_cli.click_helpers import *
     help="If uploading a new dataset without a schema, specify a dataset name.",
 )
 @auth_config
-def upload(config, filepath, dataset_id, schema, id_column, modality, name):
+def upload(config, filepath, id, schema, id_column, modality, name):
+    dataset_id = id
     api_key = config.get_api_key()
     # filetype = get_file_extension(filepath)
     columns = get_dataset_columns(filepath)
