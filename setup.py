@@ -1,9 +1,9 @@
 from setuptools import setup
+from config import PACKAGE_VERSION
 
-VERSION_NO = "0.1"
 setup(
     name="cleanlab-cli",
-    version=VERSION_NO,
+    version=PACKAGE_VERSION,
     py_modules=["main"],
     install_requires=[
         "Click",
