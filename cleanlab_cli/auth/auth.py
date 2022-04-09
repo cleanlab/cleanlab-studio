@@ -3,6 +3,7 @@ from click import style
 import os
 import json
 from cleanlab_cli.api_service import validate_api_key
+from cleanlab_cli.click_helpers import *
 
 
 class AuthConfig:
@@ -17,9 +18,7 @@ class AuthConfig:
                     raise ValueError("Invalid API key.")
                 self.api_key = api_key
             except (FileNotFoundError, KeyError, ValueError):
-                click.secho(
-                    "No valid API key found. Run 'cleanlab auth' before running this command."
-                )
+                abort("No valid API key found. Run 'cleanlab auth' before running this command.")
 
 
 auth_config = click.make_pass_decorator(AuthConfig, ensure=True)
@@ -61,13 +60,7 @@ def auth(api_key):
     # validate API key
     valid_key = validate_api_key(api_key)
     if not valid_key:
-        raise click.ClickException(
-            style(
-                "API key is invalid. Check https://app.cleanlab.ai/upload for your current API"
-                " key.",  # TODO
-                fg="red",
-            )
-        )
+        abort("API key is invalid. Check https://app.cleanlab.ai/upload for your current API key.")
 
     # save API key
     settings_filepath = os.path.join(cleanlab_dir, "settings.json")
@@ -77,21 +70,14 @@ def auth(api_key):
                 settings = json.load(f)
                 settings["api_key"] = api_key
         except json.decoder.JSONDecodeError:
-            click.secho(
-                style(
-                    "CLI settings are corrupted and could not be read. ",
-                    fg="red",
-                )
-            )
-            overwrite = click.prompt(
+            error("CLI settings are corrupted and could not be read.")
+            overwrite = click.confirm(
                 "Would you like to create a new settings file with the provided API key?",
-                type=click.Choice(["y", "n"]),
-                show_choices=True,
             )
-            if overwrite == "y":
+            if overwrite:
                 settings = construct_settings(api_key)
-            elif overwrite == "n":
-                raise click.ClickException(
+            else:
+                abort(
                     "Settings file is corrupted, unable to authenticate. "
                     "Either re-run this command and allow a new settings file to be created, "
                     f"or manually fix the settings file at {settings_filepath}"
@@ -102,4 +88,4 @@ def auth(api_key):
     with open(settings_filepath, "w") as f:
         json.dump(settings, f)
 
-    click.secho(f"API key is valid. API key stored in {cleanlab_dir}.")
+    log(f"API key is valid. API key stored in {cleanlab_dir}.")

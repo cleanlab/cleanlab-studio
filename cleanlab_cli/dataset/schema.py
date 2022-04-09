@@ -8,6 +8,7 @@ from cleanlab_cli.dataset.schema_helpers import (
 )
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
 import json
+from cleanlab_cli.click_helpers import *
 
 
 @click.group()
@@ -24,8 +25,8 @@ def validate_schema_command(filepath, schema):
     try:
         validate_schema(loaded_schema, cols)
     except ValueError as e:
-        raise ClickException(style(str(e), fg="red"))
-    click.secho("Provided schema is valid!", fg="green")
+        abort(str(e))
+    success("Provided schema is valid!")
 
 
 @schema.command(name="generate")
@@ -56,7 +57,7 @@ def generate_schema_command(filepath, output, id_column, modality, name):
     num_rows = get_num_rows(filepath)
     cols = get_dataset_columns(filepath)
     schema = propose_schema(filepath, cols, id_column, modality, name, num_rows)
-    click.secho(f"Writing schema to {output}\n")
+    progress(f"Writing schema to {output}...\n")
     dump_schema(output, schema)
     click.echo(json.dumps(schema, indent=2))
-    click.secho("\nSaved.", fg="green")
+    success("\nSaved.")

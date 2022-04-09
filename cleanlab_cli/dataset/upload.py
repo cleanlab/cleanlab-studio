@@ -11,6 +11,7 @@ from cleanlab_cli.dataset.schema_helpers import (
     propose_schema,
     dump_schema,
 )
+from cleanlab_cli.click_helpers import *
 
 
 @click.command()
@@ -58,7 +59,7 @@ def upload(config, filepath, dataset_id, schema, id_column, modality, name):
     if dataset_id is not None:
         complete = api_service.get_completion_status(api_key, dataset_id)
         if complete:
-            raise ClickException(style("Dataset has already been uploaded fully.", fg="red"))
+            abort("Dataset has already been uploaded fully.")
         saved_schema = api_service.get_dataset_schema(api_key, dataset_id)
         existing_ids = api_service.get_existing_ids(api_key, dataset_id)
         upload_rows(api_key, dataset_id, filepath, saved_schema, existing_ids)
@@ -67,64 +68,49 @@ def upload(config, filepath, dataset_id, schema, id_column, modality, name):
     # This is the first upload
     ## Check if uploading with schema
     if schema is not None:
-        click.secho("Validating provided schema...", fg="yellow")
+        progress("Validating provided schema...")
         loaded_schema = load_schema(schema)
         try:
             validate_schema(loaded_schema, columns)
         except ValueError as e:
-            raise ClickException(style(str(e), fg="red"))
-        click.secho("Provided schema is valid!", fg="green")
-        click.secho("Initializing dataset...", fg="yellow")
+            abort(str(e))
+        success("Provided schema is valid!")
+        progress("Initializing dataset...")
         res = api_service.initialize_dataset(api_key, schema)
         dataset_id = res.data.dataset_id
-        click.secho(f"Dataset has been initialized with ID: {dataset_id}", fg="orange")
-        click.secho("Uploading rows...", fg="yellow")
+        info(
+            f"Dataset has been initialized with ID: {dataset_id}. Save this dataset ID for future"
+            " use."
+        )
+        progress("Uploading rows...")
         upload_rows(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
 
     ## No schema, propose and confirm a schema
     ### Check that all required arguments are present
     if modality is None:
-        raise click.ClickException(
-            style(
-                "You must specify a modality (--modality <MODALITY>) for a new dataset upload.",
-                fg="red",
-            )
-        )
+        abort("You must specify a modality (--modality <MODALITY>) for a new dataset upload.")
 
     if id_column is None:
-        raise click.ClickException(
-            style(
-                "You must specify an ID column (--id_column <ID column name>) for a new dataset"
-                " upload.",
-                fg="red",
-            )
+        abort(
+            "You must specify an ID column (--id_column <ID column name>) for a new dataset upload."
         )
 
     if id_column not in columns:
-        raise ClickException(
-            style(
-                f"Could not find specified ID column '{id_column}' in dataset columns.",
-                fg="red",
-            )
-        )
+        abort(f"Could not find specified ID column '{id_column}' in dataset columns.")
 
     num_rows = get_num_rows(filepath)
 
     ### Propose schema
     proposed_schema = propose_schema(filepath, columns, id_column, modality, name, num_rows)
-    click.secho(
-        f"No schema was provided. We propose the following schema based on your dataset:",
-        fg="yellow",
-    )
-    click.echo(json.dumps(proposed_schema, indent=2))
+    info(f"No schema was provided. We propose the following schema based on your dataset:")
+    log(json.dumps(proposed_schema, indent=2))
 
     proceed_upload = click.confirm("\n\nUse this schema?")
     if not proceed_upload:
-        click.secho(
+        warn(
             "Proposed schema rejected. Please submit your own schema using --schema. A starter"
             " schema can be generated for your dataset using 'cleanlab dataset schema -f"
             " <filepath>'\n\n",
-            fg="red",
         )
 
     save_schema = click.confirm(
@@ -133,7 +119,7 @@ def upload(config, filepath, dataset_id, schema, id_column, modality, name):
 
     if save_schema:
         dump_schema("schema.json", proposed_schema)
-        click.secho("Saved schema to 'schema.json'.", fg="green")
+        success("Saved schema to 'schema.json'.")
 
     if proceed_upload:
         res = api_service.initialize_dataset(api_key, schema)
