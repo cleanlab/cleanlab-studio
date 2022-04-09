@@ -1,64 +1,64 @@
 {
   "fields": {
     "tweet_id": {
-      "type": "integer",
-      "category": "id"
+      "data_type": "integer",
+      "feature_type": "identifier"
     },
     "airline_sentiment": {
-      "type": "string",
-      "category": "categorical"
+      "data_type": "string",
+      "feature_type": "categorical"
     },
     "airline_sentiment_confidence": {
-      "type": "float",
-      "category": "numeric"
+      "data_type": "float",
+      "feature_type": "numeric"
     },
     "negativereason": {
-      "type": "string",
-      "category": "categorical"
+      "data_type": "string",
+      "feature_type": "categorical"
     },
     "negativereason_confidence": {
-      "type": "float",
-      "category": "numeric"
+      "data_type": "float",
+      "feature_type": "numeric"
     },
     "airline": {
-      "type": "string",
-      "category": "categorical"
+      "data_type": "string",
+      "feature_type": "categorical"
     },
     "airline_sentiment_gold": {
-      "type": "string",
-      "category": "text"
+      "data_type": "string",
+      "feature_type": "text"
     },
     "name": {
-      "type": "string",
-      "category": "text"
+      "data_type": "string",
+      "feature_type": "text"
     },
     "negativereason_gold": {
-      "type": "string",
-      "category": "text"
+      "data_type": "string",
+      "feature_type": "text"
     },
     "retweet_count": {
-      "type": "integer",
-      "category": "categorical"
+      "data_type": "integer",
+      "feature_type": "categorical"
     },
     "text": {
-      "type": "string",
-      "category": "text"
+      "data_type": "string",
+      "feature_type": "text"
     },
     "tweet_coord": {
-      "type": "string",
-      "category": "text"
+      "data_type": "string",
+      "feature_type": "text"
     },
     "tweet_created": {
-      "type": "string",
-      "category": "datetime"
+      "data_type": "string",
+      "feature_type": "datetime"
     },
     "tweet_location": {
-      "type": "string",
-      "category": "text"
+      "data_type": "string",
+      "feature_type": "text"
     },
     "user_timezone": {
-      "type": "string",
-      "category": "categorical"
+      "data_type": "string",
+      "feature_type": "categorical"
     }
   },
   "metadata": {

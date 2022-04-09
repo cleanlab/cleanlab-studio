@@ -123,7 +123,7 @@ def validate_schema(schema, columns: Collection[str]):
 
     ## Check that there exists at least one categorical column (to be used as label)
     has_categorical = any(
-        feature_type == "categorical" for feature_type in schema["fields"].values()
+        spec["feature_type"] == "categorical" for spec in schema["fields"].values()
     )
     if not has_categorical:
         raise ValueError(
@@ -145,7 +145,7 @@ def validate_schema(schema, columns: Collection[str]):
 
     ## If text modality, check that at least one column has feature type 'text'
     if modality == "text":
-        has_text = any(feature_type == "text" for feature_type in schema["fields"].values())
+        has_text = any(spec["feature_type"] == "text" for spec in schema["fields"].values())
         if not has_text:
             raise ValueError("Dataset modality is text, but none of the fields is a text column.")
 
