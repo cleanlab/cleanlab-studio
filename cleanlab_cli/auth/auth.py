@@ -21,13 +21,6 @@ class AuthConfig:
                     "No valid API key found. Run 'cleanlab auth' before running this command."
                 )
 
-    # def status(self):
-    #     api_key = load_api_key()
-    #     if api_key is not None:
-    #         click.echo("Currently logged in!")
-    #     else:
-    #         click.echo("Not logged in.")
-
 
 auth_config = click.make_pass_decorator(AuthConfig, ensure=True)
 

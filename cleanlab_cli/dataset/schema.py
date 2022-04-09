@@ -1,6 +1,13 @@
-from cleanlab_cli.dataset.util import *
 import click
 from click import ClickException, style
+from cleanlab_cli.dataset.schema_helpers import (
+    load_schema,
+    validate_schema,
+    dump_schema,
+    propose_schema,
+)
+from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
+import json
 
 
 @click.group()
