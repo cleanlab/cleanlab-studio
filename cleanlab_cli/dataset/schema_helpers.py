@@ -119,7 +119,10 @@ def validate_schema(schema, columns: Collection[str]):
     id_column_name = metadata["id_column"]
     id_column_spec_feature_type = schema["fields"][id_column_name]["feature_type"]
     if id_column_spec_feature_type != "identifier":
-        raise ValueError(f"ID column field {id_column_name} must have feature type: 'identifier'.")
+        raise ValueError(
+            f"ID column field {id_column_name} must have feature type: 'identifier', but had"
+            f" feature type: '{id_column_spec_feature_type}'"
+        )
 
     ## Check that there exists at least one categorical column (to be used as label)
     has_categorical = any(

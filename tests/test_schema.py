@@ -9,6 +9,7 @@ import pytest
 logger = logging.getLogger(__name__)
 
 sample_csv = os.path.join(abspath(dirname(__file__)), "resources/datasets/sample.csv")
+sample_schema = os.path.join(abspath(dirname(__file__)), "resources/schemas/sample_schema.json")
 
 
 def assert_success_else_error_output(test_name, result):
@@ -35,7 +36,7 @@ def test_generate_schema():
             )
             assert_success_else_error_output("Schema generation", result)
             result = runner.invoke(
-                validate_schema_command, ["-f", filename + ext, "--schema", "schema.json"]
+                validate_schema_command, ["-f", filename + ext, "--schema", sample_schema]
             )
             assert_success_else_error_output("Schema validation", result)
 
