@@ -27,12 +27,21 @@ def test_generate_schema():
 
         df.to_csv(filename + ".csv")
         df.to_excel(filename + ".xlsx", index=False)
-        df.to_json(filename + ".json", orient="table", index=False)
+        # df.to_json(filename + ".json", orient="table", index=False)
 
         for ext in [".csv", ".xlsx"]:
             result = runner.invoke(
                 generate_schema_command,
-                ["-f", filename + ext, "--id_column", "tweet_id", "--modality", "text"],
+                [
+                    "-f",
+                    filename + ext,
+                    "--id_column",
+                    "tweet_id",
+                    "--modality",
+                    "text",
+                    "--output",
+                    "schema.json",
+                ],
             )
             assert_success_else_error_output("Schema generation", result)
             result = runner.invoke(

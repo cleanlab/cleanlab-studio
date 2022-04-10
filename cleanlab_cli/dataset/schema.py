@@ -29,7 +29,7 @@ def validate_schema_command(filepath, schema):
 
 @schema.command(name="generate")
 @click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=True)
-@click.option("--output", "-o", type=click.Path(), help="Output filepath", default="schema.json")
+@click.option("--output", "-o", type=click.Path(), help="Output filepath")
 @click.option(
     "--id_column",
     type=str,
@@ -55,7 +55,22 @@ def generate_schema_command(filepath, output, id_column, modality, name):
     num_rows = get_num_rows(filepath)
     cols = get_dataset_columns(filepath)
     schema = propose_schema(filepath, cols, id_column, modality, name, num_rows)
-    progress(f"Writing schema to {output}...\n")
-    dump_schema(output, schema)
     click.echo(json.dumps(schema, indent=2))
-    success("\nSaved.")
+    if output is None:
+        save = click.confirm("Would you like to save the generated schema?")
+        if save:
+            output = ""
+            while not output.endswith(".json"):
+                output = click.prompt(
+                    "Specify a filename for the schema (e.g. schema.json). Filename must end with"
+                    " .json"
+                )
+            if output == "":
+                output = "schema.json"
+
+    if output:
+        progress(f"Writing schema to {output}...")
+        dump_schema(output, schema)
+        success("Saved.")
+    else:
+        info("Schema was not saved.")
