@@ -17,8 +17,7 @@ class AuthConfig:
                 self.api_key = api_key
             except (FileNotFoundError, KeyError, ValueError):
                 abort("No valid API key found. Run 'cleanlab auth' before running this command.")
-        else:
-            return self.api_key
+        return self.api_key
 
 
 auth_config = click.make_pass_decorator(AuthConfig, ensure=True)
@@ -41,7 +40,7 @@ def get_cleanlab_settings():
 
 def load_api_key():
     settings = get_cleanlab_settings()
-    return settings.get["api_key"]
+    return settings.get("api_key")
 
 
 @click.command()
@@ -69,14 +68,14 @@ def auth(key):
         try:
             with open(settings_filepath, "r") as f:
                 settings = json.load(f)
-                settings["api_key"] = api_key
+                settings["api_key"] = key
         except json.decoder.JSONDecodeError:
             error("CLI settings are corrupted and could not be read.")
             overwrite = click.confirm(
                 "Would you like to create a new settings file with the provided API key?",
             )
             if overwrite:
-                settings = construct_settings(api_key)
+                settings = construct_settings(key)
             else:
                 abort(
                     "Settings file is corrupted, unable to authenticate. "
@@ -89,4 +88,4 @@ def auth(key):
     with open(settings_filepath, "w") as f:
         json.dump(settings, f)
 
-    log(f"API key is valid. API key stored in {cleanlab_dir}.")
+    success(f"API key is valid. API key stored in {cleanlab_dir}")

@@ -76,7 +76,7 @@ def upload(config, filepath, id, schema, id_column, modality, name):
         success("Provided schema is valid!")
         progress("Initializing dataset...")
         res = api_service.initialize_dataset(api_key, schema)
-        dataset_id = res.data.dataset_id
+        dataset_id = res.json().dataset_id
         info(
             f"Dataset has been initialized with ID: {dataset_id}. Save this dataset ID for future"
             " use."
@@ -121,8 +121,7 @@ def upload(config, filepath, id, schema, id_column, modality, name):
         success("Saved schema to 'schema.json'.")
 
     if proceed_upload:
-        res = api_service.initialize_dataset(api_key, schema)
-        dataset_id = res.data.dataset_id
+        dataset_id = api_service.initialize_dataset(api_key, proposed_schema)
         upload_rows(
             api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema
         )

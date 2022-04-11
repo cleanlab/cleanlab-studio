@@ -3,55 +3,75 @@ Methods for interacting with the command line server API
 1:1 mapping with command_line_api.py
 """
 import requests
+from cleanlab_cli.click_helpers import error, abort
+import json
 
-base_url = "localhost:8500/api/cli"
+base_url = "http://localhost:8500/api/cli"
+
+
+def handle_api_error(res: requests.Response):
+    if res.json().get("error", None) is not None:
+        abort(res.json()["error"])
 
 
 def initialize_dataset(api_key, schema):
     fields = list(schema["fields"])
-    data_types = [field["data_type"] for field in schema["fields"]]
-    feature_types = [field["feature_type"] for field in schema["fields"]]
+    data_types = [spec["data_type"] for spec in schema["fields"].values()]
+    feature_types = [spec["feature_type"] for spec in schema["fields"].values()]
     id_column = schema["metadata"]["id_column"]
     modality = schema["metadata"]["modality"]
     dataset_name = schema["metadata"]["name"]
 
-    return requests.post(
+    res = requests.post(
         base_url + "/initialize",
         data={
             "api_key": api_key,
-            "fields": fields,
-            "data_types": data_types,
-            "feature_types": feature_types,
+            "fields": json.dumps(fields),
+            "data_types": json.dumps(data_types),
+            "feature_types": json.dumps(feature_types),
             "id_column": id_column,
             "modality": modality,
             "dataset_name": dataset_name,
         },
     )
+    handle_api_error(res)
+    return res.json()["dataset_id"]
 
 
 def get_existing_ids(api_key, dataset_id):
-    return requests.get(
+    res = requests.get(
         base_url + "/existing_ids", data={"api_key": api_key, "dataset_id": dataset_id}
     )
+    handle_api_error(res)
+    return res.json()["existing_ids"]
 
 
 def get_dataset_schema(api_key, dataset_id):
-    return requests.get(base_url + "/schema", data={"api_key": api_key, "dataset_id": dataset_id})
+    res = requests.get(base_url + "/schema", data={"api_key": api_key, "dataset_id": dataset_id})
+    handle_api_error(res)
+    return res.json()["schema"]
 
 
 def upload_rows(api_key, dataset_id, rows):
-    return requests.post(
-        base_url + "/upload", data={"api_key": api_key, "dataset_id": dataset_id, "rows": rows}
+    res = requests.post(
+        base_url + "/upload",
+        data={"api_key": api_key, "dataset_id": dataset_id, "rows": json.dumps(rows)},
     )
+    handle_api_error(res)
 
 
 def get_completion_status(api_key, dataset_id):
-    return requests.get(base_url + "/complete", data={"api_key": api_key, "dataset_id": dataset_id})
+    res = requests.get(base_url + "/complete", data={"api_key": api_key, "dataset_id": dataset_id})
+    handle_api_error(res)
+    return res.json()["complete"]
 
 
 def complete_upload(api_key, dataset_id):
-    return requests.put(base_url + "/complete", data={"api_key": api_key, "dataset_id": dataset_id})
+    res = requests.put(base_url + "/complete", data={"api_key": api_key, "dataset_id": dataset_id})
+    handle_api_error(res)
 
 
 def validate_api_key(api_key):
-    return requests.get(base_url + "/validate", data={"api_key": api_key})
+    res = requests.get(base_url + "/validate", data={"api_key": api_key})
+    handle_api_error(res)
+    return res.json()["valid"]
