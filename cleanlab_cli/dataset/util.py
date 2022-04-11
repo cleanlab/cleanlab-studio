@@ -9,6 +9,7 @@ import pyexcel
 import os
 from collections import OrderedDict
 import pathlib
+import json
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
@@ -74,3 +75,8 @@ def read_file_as_stream(filepath) -> Generator[OrderedDict, None, None]:
     if ext in [".csv", ".xls", ".xlsx"]:
         for r in pyexcel.iget_records(file_name=filepath):
             yield r
+
+
+def dump_json(filepath, schema):
+    with open(filepath, "w") as f:
+        f.write(json.dumps(schema, indent=2))

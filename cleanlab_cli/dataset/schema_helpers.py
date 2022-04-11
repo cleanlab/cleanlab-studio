@@ -12,17 +12,20 @@ from typing import (
 )
 from random import sample, random
 import json
+import click
 from cleanlab_cli.dataset.util import (
     get_num_rows,
     get_dataset_columns,
     read_file_as_stream,
     get_filename,
+    dump_json,
 )
 from cleanlab_cli.dataset.schema_types import (
     schema_mapper,
     DATA_TYPES_TO_FEATURE_TYPES,
     SCHEMA_VERSION,
 )
+from cleanlab_cli.click_helpers import progress, success, info
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
@@ -55,11 +58,6 @@ def _find_best_matching_column(target_col: str, columns: List[str]) -> Optional[
 def load_schema(filepath):
     with open(filepath, "r") as f:
         return json.load(f)
-
-
-def dump_schema(filepath, schema):
-    with open(filepath, "w") as f:
-        f.write(json.dumps(schema, indent=2))
 
 
 def validate_schema(schema, columns: Collection[str]):
@@ -315,3 +313,36 @@ def construct_schema(fields, data_types, feature_types, id_column, modality, dat
     for field, data_type, feature_type in zip(fields, data_types, feature_types):
         retval["fields"][field] = {"data_type": data_type, "feature_type": feature_type}
     return retval
+
+
+def confirm_schema_save_location():
+    save = click.confirm("Would you like to save the generated schema?")
+    if save:
+        output = None
+        while output is None or (output != "" and not output.endswith(".json")):
+            click.echo(f"output is {output}")
+            output = click.prompt(
+                "Specify a filename for the schema. Filename must end with .json. Leave this blank"
+                " to use default",
+                default="schema.json",
+            )
+        return output
+    else:
+        return None
+
+
+def save_schema(schema, filename: Optional[str]):
+    """
+
+    :param schema:
+    :param filename: filename to save schema with
+    :return:
+    """
+    if filename == "":
+        filename = "schema.json"
+    if filename:
+        progress(f"Writing schema to {filename}...")
+        dump_json(filename, schema)
+        success("Saved.")
+    else:
+        info("Schema was not saved.")

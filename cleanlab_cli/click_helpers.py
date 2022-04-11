@@ -18,13 +18,6 @@ def abort(message):
     raise ClickException(style(message, fg="red"))
 
 
-def warn(message):
-    """
-    An issue was found
-    """
-    secho(style(message, fg="orange"))
-
-
 def error(message):
     secho(style(message, fg="red"))
 
@@ -33,13 +26,13 @@ def success(message):
     secho(style(message, fg="green"))
 
 
+def progress(message):
+    secho(style(message, fg="blue"))
+
+
 def info(message):
     secho(style(message, fg="yellow"))
 
 
 def log(message):
     echo(message)
-
-
-def progress(message):
-    secho(style(message, fg="blue"))

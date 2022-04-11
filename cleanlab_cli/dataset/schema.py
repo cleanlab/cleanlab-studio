@@ -1,8 +1,9 @@
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
-    dump_schema,
     propose_schema,
+    confirm_schema_save_location,
+    save_schema,
 )
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
 import json
@@ -57,20 +58,5 @@ def generate_schema_command(filepath, output, id_column, modality, name):
     schema = propose_schema(filepath, cols, id_column, modality, name, num_rows)
     click.echo(json.dumps(schema, indent=2))
     if output is None:
-        save = click.confirm("Would you like to save the generated schema?")
-        if save:
-            output = ""
-            while not output.endswith(".json"):
-                output = click.prompt(
-                    "Specify a filename for the schema (e.g. schema.json). Filename must end with"
-                    " .json"
-                )
-            if output == "":
-                output = "schema.json"
-
-    if output:
-        progress(f"Writing schema to {output}...")
-        dump_schema(output, schema)
-        success("Saved.")
-    else:
-        info("Schema was not saved.")
+        output = confirm_schema_save_location()
+        save_schema(schema, output)

@@ -11,12 +11,14 @@ from typing import (
     Set,
     Any,
 )
+import json
 from collections import defaultdict
 from sys import getsizeof
 from enum import Enum
 from cleanlab_cli import api_service
-from cleanlab_cli.dataset.util import is_null_value, read_file_as_stream
+from cleanlab_cli.dataset.util import is_null_value, read_file_as_stream, dump_json
 from cleanlab_cli.dataset.schema_types import PYTHON_TYPES_TO_READABLE_STRING, schema_mapper
+from cleanlab_cli.click_helpers import success, info, progress
 
 
 class ValidationWarning(Enum):
@@ -24,6 +26,20 @@ class ValidationWarning(Enum):
     MISSING_VAL = 2
     TYPE_MISMATCH = 3
     DUPLICATE_ID = 4
+
+
+def warning_to_readable_name(warning: str):
+    return {
+        "MISSING_ID": "Rows with missing IDs (rows are dropped)",
+        "MISSING_VAL": "Rows with missing values (values are replaced with null)",
+        "TYPE_MISMATCH": (
+            "Rows with values that do not match the schema (values with mismatched types replaced"
+            " with null)"
+        ),
+        "DUPLICATE_ID": (
+            "Rows with duplicate IDs (only the first row instance is kept, all others dropped)"
+        ),
+    }[warning]
 
 
 def get_value_type(val):
@@ -57,7 +73,7 @@ def validate_and_process_record(
     :param seen_ids: the set of row IDs that have been processed so far
     :param columns:
     :param existing_ids:
-    :return: tuple (processed row: dict[str, any], row ID: optional[str], warnings: dict[str])
+    :return: tuple (processed row: dict[str, any], row ID: optional[str], warnings: dict[warn_type: str, desc: str])
     """
     fields = schema["fields"]
     id_column = schema["metadata"]["id_column"]
@@ -180,19 +196,22 @@ def upload_rows(
     rows_per_payload = None
     seen_ids = set()
 
+    log = dict()
+    log[ValidationWarning.MISSING_ID.name] = []
+    # map from row ID to warnings
+    log[ValidationWarning.DUPLICATE_ID.name] = dict()
+    log[ValidationWarning.TYPE_MISMATCH.name] = dict()
+    log[ValidationWarning.MISSING_VAL.name] = dict()
+
     for record in read_file_as_stream(filepath):
         row, row_id, warnings = validate_and_process_record(
             record, schema, seen_ids, columns, existing_ids
         )
-
-        if row_id is None:
-            click.secho(warnings[ValidationWarning.MISSING_ID.name][0])
-            continue
-
-        if row is None:  # could be duplicate or already uploaded
-            if len(warnings) > 0:
-                click.secho(warnings[ValidationWarning.DUPLICATE_ID.name][0])
-            continue
+        for warn_type in warnings:
+            if warn_type == ValidationWarning.MISSING_ID.name:
+                log[warn_type] += warnings[warn_type]
+            else:
+                log[warn_type][str(row_id)] = warnings[warn_type]
 
         # row and row ID both present, i.e. row will be uploaded
         seen_ids.add(row_id)
@@ -200,15 +219,6 @@ def upload_rows(
         if row_size is None:
             row_size = getsizeof(row)
             rows_per_payload = int(payload_size * 10**6 / row_size)
-
-        if warnings:
-            missing_val_warnings = warnings.get(ValidationWarning.MISSING_VAL.name, [])
-            for w in missing_val_warnings:
-                click.secho(w)
-
-            type_mismatch_warnings = warnings.get(ValidationWarning.TYPE_MISMATCH.name, [])
-            for w in type_mismatch_warnings:
-                click.secho(w)
 
         rows.append(row)
         if len(rows) >= rows_per_payload:
@@ -222,6 +232,16 @@ def upload_rows(
         api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows)
 
     api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
+
+    total_warnings = sum([len(log[w.name]) for w in ValidationWarning])
+    if total_warnings == 0:
+        success("No issues were encountered when uploading your dataset.")
+    else:
+        info(f"{total_warnings} issues were encountered when uploading your dataset.")
+
+        save_loc = confirm_feedback_save_location()
+        save_feedback(log, save_loc)
+
     click.secho("Upload completed.", fg="green")
 
 
@@ -238,3 +258,30 @@ def group_feature_types(schema):
         feature_type = spec["feature_type"]
         feature_types_to_columns[feature_type].append(field_name)
     return feature_types_to_columns
+
+
+def confirm_feedback_save_location():
+    save = click.confirm("Would you like to save the upload issues for viewing?")
+    if save:
+        output = None
+        while output is None or (output != "" and not output.endswith(".json")):
+            output = click.prompt(
+                "Specify a filename for the upload feedback. Filename must end"
+                " with .json. Leave this blank to use default",
+                default="issues.json",
+            )
+        return output
+    else:
+        return None
+
+
+def save_feedback(feedback, filename):
+    if filename == "":
+        filename = "issues.json"
+    feedback = {warning_to_readable_name(k): v for k, v in feedback.items()}
+    if filename:
+        progress(f"Writing issues to {filename}...")
+        dump_json(filename, feedback)
+        success("Saved.")
+    else:
+        info("Information on upload issues was not saved.")

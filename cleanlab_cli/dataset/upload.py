@@ -7,7 +7,8 @@ from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
     propose_schema,
-    dump_schema,
+    confirm_schema_save_location,
+    save_schema,
 )
 from cleanlab_cli.click_helpers import *
 
@@ -77,10 +78,7 @@ def upload(config, filepath, id, schema, id_column, modality, name):
         progress("Initializing dataset...")
         res = api_service.initialize_dataset(api_key, schema)
         dataset_id = res.json().dataset_id
-        info(
-            f"Dataset has been initialized with ID: {dataset_id}. Save this dataset ID for future"
-            " use."
-        )
+        info(f"Dataset has been initialized with ID: {dataset_id}.")
         progress("Uploading rows...")
         upload_rows(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
 
@@ -106,19 +104,14 @@ def upload(config, filepath, id, schema, id_column, modality, name):
 
     proceed_upload = click.confirm("\n\nUse this schema?")
     if not proceed_upload:
-        warn(
+        info(
             "Proposed schema rejected. Please submit your own schema using --schema. A starter"
             " schema can be generated for your dataset using 'cleanlab dataset schema -f"
             " <filepath>'\n\n",
         )
 
-    save_schema = click.confirm(
-        "Would you like to save the generated schema to 'schema.json'?",
-    )
-
-    if save_schema:
-        dump_schema("schema.json", proposed_schema)
-        success("Saved schema to 'schema.json'.")
+    save_filename = confirm_schema_save_location()
+    save_schema(proposed_schema, save_filename)
 
     if proceed_upload:
         dataset_id = api_service.initialize_dataset(api_key, proposed_schema)
