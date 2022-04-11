@@ -1,5 +1,7 @@
 # cleanlab-cli
-Command line interface for all things Cleanlab
+Command line interface for all things Cleanlab Studio.
+
+Currently the main thing this supports is getting your data into CLeanlab Studio and downloading your results. In the future, this will also support computation.
 
 
 ### Schema
