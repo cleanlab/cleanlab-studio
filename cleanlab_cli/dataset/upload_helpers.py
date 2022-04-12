@@ -31,13 +31,12 @@ class ValidationWarning(Enum):
 def warning_to_readable_name(warning: str):
     return {
         "MISSING_ID": "Rows with missing IDs (rows are dropped)",
-        "MISSING_VAL": "Rows with missing values (values are replaced with null)",
+        "MISSING_VAL": "Rows with missing values (values replaced with null)",
         "TYPE_MISMATCH": (
-            "Rows with values that do not match the schema (values with mismatched types replaced"
-            " with null)"
+            "Rows with values that do not match the schema (values replaced with null)"
         ),
         "DUPLICATE_ID": (
-            "Rows with duplicate IDs (only the first row instance is kept, all others dropped)"
+            "Rows with duplicate IDs (only the first row instance is kept, all later rows dropped)"
         ),
     }[warning]
 
@@ -166,7 +165,6 @@ def validate_and_process_record(
             row[column_name] = None  # replace bad value with NULL
             msg, warn_type = warning
             warnings[warn_type.name].append(msg)
-
     return row, row_id, warnings
 
 
@@ -219,8 +217,8 @@ def upload_rows(
         if row_size is None:
             row_size = getsizeof(row)
             rows_per_payload = int(payload_size * 10**6 / row_size)
-
-        rows.append(row)
+        if row:
+            rows.append(row)
         if len(rows) >= rows_per_payload:
             # if sufficiently large, POST to API
             api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows)
@@ -242,7 +240,10 @@ def upload_rows(
         save_loc = confirm_feedback_save_location()
         save_feedback(log, save_loc)
 
-    click.secho("Upload completed.", fg="green")
+    click.secho(
+        "Upload completed. View your uploaded dataset at https://app.cleanlab.ai/datasets",
+        fg="green",
+    )
 
 
 def construct_sql_dtypes_from_schema(schema):
