@@ -39,35 +39,35 @@ def initialize_dataset(api_key, schema):
 
 
 def get_existing_ids(api_key, dataset_id):
-    res = requests.get(
-        base_url + "/existing_ids", data={"api_key": api_key, "dataset_id": dataset_id}
-    )
+    res = requests.get(base_url + f"/existing_ids/{dataset_id}", data={"api_key": api_key})
     handle_api_error(res)
     return res.json()["existing_ids"]
 
 
 def get_dataset_schema(api_key, dataset_id):
-    res = requests.get(base_url + "/schema", data={"api_key": api_key, "dataset_id": dataset_id})
+    res = requests.get(base_url + f"/schema/{dataset_id}", data={"api_key": api_key})
     handle_api_error(res)
     return res.json()["schema"]
 
 
 def upload_rows(api_key, dataset_id, rows):
     res = requests.post(
-        base_url + "/upload",
-        data={"api_key": api_key, "dataset_id": dataset_id, "rows": json.dumps(rows)},
+        base_url + f"/upload/{dataset_id}",
+        data={"api_key": api_key, "rows": json.dumps(rows)},
     )
+    with open("temp.json", "w") as f:
+        f.write(json.dumps(rows))
     handle_api_error(res)
 
 
 def get_completion_status(api_key, dataset_id):
-    res = requests.get(base_url + "/complete", data={"api_key": api_key, "dataset_id": dataset_id})
+    res = requests.get(base_url + f"/complete/{dataset_id}", data={"api_key": api_key})
     handle_api_error(res)
     return res.json()["complete"]
 
 
 def complete_upload(api_key, dataset_id):
-    res = requests.put(base_url + "/complete", data={"api_key": api_key, "dataset_id": dataset_id})
+    res = requests.patch(base_url + f"/complete/{dataset_id}", data={"api_key": api_key})
     handle_api_error(res)
 
 
