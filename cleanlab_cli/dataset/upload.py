@@ -40,7 +40,7 @@ from cleanlab_cli.click_helpers import *
 @click.option(
     "--modality",
     "-m",
-    type=str,
+    type=click.Choice(["text", "tabular"]),
     help="If uploading a new dataset without a schema, specify data modality: text, tabular",
 )
 @click.option(
@@ -59,7 +59,7 @@ def upload(config, filepath, id, schema, id_column, modality, name):
     if dataset_id is not None:
         complete = api_service.get_completion_status(api_key, dataset_id)
         if complete:
-            abort("Dataset has already been uploaded fully.")
+            abort("Dataset is already fully uploaded.")
         saved_schema = api_service.get_dataset_schema(api_key, dataset_id)
         existing_ids = api_service.get_existing_ids(api_key, dataset_id)
         upload_rows(api_key, dataset_id, filepath, saved_schema, existing_ids)
@@ -99,10 +99,10 @@ def upload(config, filepath, id, schema, id_column, modality, name):
 
     ### Propose schema
     proposed_schema = propose_schema(filepath, columns, id_column, modality, name, num_rows)
-    info(f"No schema was provided. We propose the following schema based on your dataset:")
     log(json.dumps(proposed_schema, indent=2))
+    info(f"No schema was provided. We propose the above schema based on your dataset.")
 
-    proceed_upload = click.confirm("\n\nUse this schema?")
+    proceed_upload = click.confirm("\nUse this schema?")
     if not proceed_upload:
         info(
             "Proposed schema rejected. Please submit your own schema using --schema. A starter"
@@ -115,6 +115,7 @@ def upload(config, filepath, id, schema, id_column, modality, name):
 
     if proceed_upload:
         dataset_id = api_service.initialize_dataset(api_key, proposed_schema)
+        info(f"Dataset initialized with ID: {dataset_id}")
         upload_rows(
             api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema
         )

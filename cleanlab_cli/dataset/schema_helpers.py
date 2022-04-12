@@ -145,10 +145,12 @@ def validate_schema(schema, columns: Collection[str]):
             )
 
     ## If text modality, check that at least one column has feature type 'text'
-    if modality == "text":
+    elif modality == "text":
         has_text = any(spec["feature_type"] == "text" for spec in schema["fields"].values())
         if not has_text:
             raise ValueError("Dataset modality is text, but none of the fields is a text column.")
+    else:
+        raise ValueError(f"Unsupported dataset modality: {modality}")
 
 
 def multiple_separate_words_detected(values):
@@ -320,7 +322,6 @@ def confirm_schema_save_location():
     if save:
         output = None
         while output is None or (output != "" and not output.endswith(".json")):
-            click.echo(f"output is {output}")
             output = click.prompt(
                 "Specify a filename for the schema. Filename must end with .json. Leave this blank"
                 " to use default",

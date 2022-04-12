@@ -1,3 +1,4 @@
+import click
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
@@ -7,7 +8,7 @@ from cleanlab_cli.dataset.schema_helpers import (
 )
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
 import json
-from cleanlab_cli.click_helpers import *
+from cleanlab_cli.click_helpers import abort, success
 
 
 @click.group()
@@ -41,11 +42,8 @@ def validate_schema_command(filepath, schema):
     "--modality",
     "-m",
     prompt=True,
-    type=str,
-    help=(
-        "If uploading a new dataset without a schema, specify data modality: text, tabular, or"
-        " image"
-    ),
+    type=click.Choice(["text", "tabular"]),
+    help="If uploading a new dataset without a schema, specify data modality: text, tabular",
 )
 @click.option(
     "--name",
@@ -55,8 +53,8 @@ def validate_schema_command(filepath, schema):
 def generate_schema_command(filepath, output, id_column, modality, name):
     num_rows = get_num_rows(filepath)
     cols = get_dataset_columns(filepath)
-    schema = propose_schema(filepath, cols, id_column, modality, name, num_rows)
+    proposed_schema = propose_schema(filepath, cols, id_column, modality, name, num_rows)
     click.echo(json.dumps(schema, indent=2))
     if output is None:
         output = confirm_schema_save_location()
-        save_schema(schema, output)
+        save_schema(proposed_schema, output)
