@@ -14,6 +14,7 @@ setup(
         "pyexcel-xlsx",
         "sqlalchemy",
         "requests",
+        "tqdm",
     ],
     entry_points="""
         [console_scripts]

@@ -15,8 +15,14 @@ import json
 from collections import defaultdict
 from sys import getsizeof
 from enum import Enum
+from tqdm import tqdm
 from cleanlab_cli import api_service
-from cleanlab_cli.dataset.util import is_null_value, read_file_as_stream, dump_json
+from cleanlab_cli.dataset.util import (
+    is_null_value,
+    read_file_as_stream,
+    dump_json,
+    count_records_in_dataset_file,
+)
 from cleanlab_cli.dataset.schema_types import PYTHON_TYPES_TO_READABLE_STRING, schema_mapper
 from cleanlab_cli.click_helpers import success, info, progress
 
@@ -52,8 +58,8 @@ def validate_and_process_record(
     record,
     schema,
     seen_ids: Set[str],
+    existing_ids: Set[str],
     columns: Optional[List[str]] = None,
-    existing_ids: Optional[Collection[str]] = None,
 ):
     """
     Validate the row against the provided schema; generate warnings where issues are found
@@ -80,9 +86,6 @@ def validate_and_process_record(
     if columns is None:
         columns = list(fields)
 
-    if existing_ids is None:
-        existing_ids = set()
-
     row_id = record.get(id_column, None)
 
     if row_id == "" or row_id is None:
@@ -92,6 +95,7 @@ def validate_and_process_record(
             {ValidationWarning.MISSING_ID.name: [f"Missing ID for record: {dict(record)}."]},
         )
 
+    row_id = str(row_id)
     if row_id in existing_ids:
         return None, row_id, None
 
@@ -174,7 +178,7 @@ def upload_rows(
     filepath: str,
     schema: Dict[str, Any],
     existing_ids: Optional[Collection[str]] = None,
-    payload_size: int = 10,
+    payload_size: float = 0.5,
 ):
     """
 
@@ -187,10 +191,8 @@ def upload_rows(
     :return: None
     """
     columns = list(schema["fields"].keys())
-    existing_ids = [] if existing_ids is None else set(existing_ids)
-
+    existing_ids = set() if existing_ids is None else set(existing_ids)
     rows = []
-    row_size = None
     rows_per_payload = None
     seen_ids = set()
 
@@ -201,31 +203,35 @@ def upload_rows(
     log[ValidationWarning.TYPE_MISMATCH.name] = dict()
     log[ValidationWarning.MISSING_VAL.name] = dict()
 
-    for record in read_file_as_stream(filepath):
+    num_records = count_records_in_dataset_file(filepath)
+    for record in tqdm(read_file_as_stream(filepath), total=num_records, initial=1):
         row, row_id, warnings = validate_and_process_record(
-            record, schema, seen_ids, columns, existing_ids
+            record, schema, seen_ids, existing_ids, columns
         )
-        for warn_type in warnings:
-            if warn_type == ValidationWarning.MISSING_ID.name:
-                log[warn_type] += warnings[warn_type]
-            else:
-                log[warn_type][str(row_id)] = warnings[warn_type]
+        if warnings:
+            for warn_type in warnings:
+                if warn_type == ValidationWarning.MISSING_ID.name:
+                    log[warn_type] += warnings[warn_type]
+                else:
+                    log[warn_type][row_id] = warnings[warn_type]
 
         # row and row ID both present, i.e. row will be uploaded
         seen_ids.add(row_id)
 
-        if row_size is None:
-            row_size = getsizeof(row)
-            rows_per_payload = int(payload_size * 10**6 / row_size)
         if row:
-            rows.append(row)
-        if len(rows) >= rows_per_payload:
-            # if sufficiently large, POST to API
-            api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows)
-            click.secho("Uploading row chunk...", fg="blue")
-            rows = []
+            # compute rows_per_payload if not available
+            if rows_per_payload is None:
+                row_size = getsizeof(row)
+                rows_per_payload = int(payload_size * 10**6 / row_size)
 
-    click.secho("Uploading final row chunk...", fg="blue")
+            rows.append(row)
+            if len(rows) >= rows_per_payload:
+                # if sufficiently large, POST to API
+                api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows)
+                # click.secho("Uploading row chunk...", fg="blue")
+                rows = []
+
+    # click.secho("Uploading final row chunk...", fg="blue")
     if len(rows) > 0:
         api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows)
 

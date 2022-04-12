@@ -77,6 +77,13 @@ def read_file_as_stream(filepath) -> Generator[OrderedDict, None, None]:
             yield r
 
 
+def count_records_in_dataset_file(filepath):
+    count = 0
+    for _ in read_file_as_stream(filepath):
+        count += 1
+    return count
+
+
 def dump_json(filepath, schema):
     with open(filepath, "w") as f:
         f.write(json.dumps(schema, indent=2))
