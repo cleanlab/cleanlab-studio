@@ -17,11 +17,14 @@ def schema():
 
 
 @schema.command(name="validate")
-@click.option("--filepath", "--f", type=click.Path(), help="Dataset filepath", required=True)
 @click.option("--schema", "--s", type=click.Path(), help="Schema filepath", required=True)
+@click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=False)
 def validate_schema_command(filepath, schema):
-    cols = get_dataset_columns(filepath)
     loaded_schema = load_schema(schema)
+    if filepath:
+        cols = get_dataset_columns(filepath)
+    else:
+        cols = list(loaded_schema["fields"])
     try:
         validate_schema(loaded_schema, cols)
     except ValueError as e:
@@ -30,8 +33,8 @@ def validate_schema_command(filepath, schema):
 
 
 @schema.command(name="generate")
-@click.option("--filepath", "--f", type=click.Path(), help="Dataset filepath", required=True)
-@click.option("--output", "--o", type=click.Path(), help="Output filepath")
+@click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=True)
+@click.option("--output", "-o", type=click.Path(), help="Output filepath")
 @click.option(
     "--id_column",
     type=str,

@@ -16,7 +16,7 @@ from cleanlab_cli.click_helpers import *
 @click.command()
 @click.option(
     "--filepath",
-    "--f",
+    "-f",
     type=click.Path(),
     prompt=True,
     help="Dataset filepath",
@@ -39,12 +39,13 @@ from cleanlab_cli.click_helpers import *
 )
 @click.option(
     "--modality",
-    "--m",
+    "-m",
     type=click.Choice(["text", "tabular"]),
     help="If uploading a new dataset without a schema, specify data modality: text, tabular",
 )
 @click.option(
     "--name",
+    "-n",
     type=str,
     help="If uploading a new dataset without a schema, specify a dataset name.",
 )
