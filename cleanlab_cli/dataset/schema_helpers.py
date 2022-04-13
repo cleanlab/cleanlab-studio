@@ -25,7 +25,7 @@ from cleanlab_cli.dataset.schema_types import (
     DATA_TYPES_TO_FEATURE_TYPES,
     SCHEMA_VERSION,
 )
-from cleanlab_cli.click_helpers import progress, success, info
+from cleanlab_cli.click_helpers import progress, success, info, abort
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
@@ -300,6 +300,9 @@ def propose_schema(
         if len(id_columns) == 0:
             id_columns = columns
         id_column = _find_best_matching_column("identifier", id_columns)
+    else:
+        if id_column not in columns:
+            abort(f"ID column '{id_column}' does not exist in the dataset.")
 
     retval["metadata"] = {"id_column": id_column, "modality": modality, "name": name}
     retval["version"] = SCHEMA_VERSION
