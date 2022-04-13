@@ -18,11 +18,11 @@ def schema():
 
 @schema.command(name="validate")
 @click.option("--schema", "-s", type=click.Path(), help="Schema filepath", required=True)
-@click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=False)
-def validate_schema_command(filepath, schema):
+@click.option("--dataset", "-d", type=click.Path(), help="Dataset filepath", required=False)
+def validate_schema_command(schema, dataset):
     loaded_schema = load_schema(schema)
-    if filepath:
-        cols = get_dataset_columns(filepath)
+    if dataset:
+        cols = get_dataset_columns(dataset)
     else:
         cols = list(loaded_schema["fields"])
     try:
