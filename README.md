@@ -1,12 +1,12 @@
 # cleanlab-cli
 Command line interface for all things Cleanlab Studio.
 
-This currently supports uploading your data into Cleanlab Studio.
+This currently supports generating dataset schema and uploading your dataset into Cleanlab Studio.
 In the future, this will also support downloading the results and other computations.
 
 ## Workflow
 Uploading datasets to Cleanlab Studio is a two-step process.
-1. We generate a <a href="#schema">schema</a> describing the dataset and its <a href="#data_types_and_feature_types">data and feature types</a>, which is verified by the user.
+1. We generate a <a href="#schema">schema</a> describing the dataset and its <a href="#data-types-and-feature-types">data and feature types</a>, which is verified by the user.
 2. Based on this schema, the dataset is parsed and uploaded to Cleanlab Studio.
 
 ### Generate dataset schema
@@ -15,7 +15,7 @@ To generate a dataset schema:
 
 `cleanlab dataset schema generate -f [dataset filepath]`
 
-To validate an existing schema, i.e. check that it is complete, well-formatted, and has <a href="#data_types_and_feature_types">data types with sensible feature types</a>:
+To validate an existing schema, i.e. check that it is complete, well-formatted, and has <a href="#data-types-and-feature-types">data types with sensible feature types</a>:
 
 `cleanlab dataset schema validate -s [schema filepath]`
 
@@ -36,7 +36,7 @@ To **resume uploading** a dataset whose upload was interrupted:
 `cleanlab dataset upload -f [dataset filepath] --id [dataset ID]`
 
 A dataset ID is generated and printed to the terminal the first time the dataset is uploaded.
-It can also be accessed from https://app.cleanlab.ai/datasets and selecting 'Resume' for the relevant dataset.
+It can also be accessed by visiting https://app.cleanlab.ai/datasets and selecting 'Resume' for the relevant dataset.
 
 ## Commands
 **`cleanlab auth` authenticates you when uploading datasets to Cleanlab Studio**
@@ -49,7 +49,7 @@ Specify your target dataset with `--filepath [dataset filepath]`.
 You will be prompted to save the generated schema JSON and to specify a save location.
 This can be specified using `--output [output filepath]`.
 
-**`cleanlab dataset schema validate` validates a schema file**
+**`cleanlab dataset schema validate` validates a schema JSON file**
 
 Specify your target schema with `--schema [schema filepath]`.
 This checks that a schema is complete, well-formatted, and has <a href="#data_types_and_feature_types">data types with sensible feature types</a>.
@@ -61,15 +61,16 @@ i.e. all previously mentioned checks and the additional check that all fields in
 
 Specify your target dataset with `--filepath [dataset filepath]`.
 You will be prompted for further details about the dataset's modality and ID column.
-These may also be supplied to the command with `--modality [modality]`, `--id_column [name of ID column]`,
-and you may specify a custom dataset name with`--name [custom dataset name]`.
+These may be supplied to the command with `--modality [modality]`, `--id_column [name of ID column]`,
+and you may also specify a custom dataset name with`--name [custom dataset name]`.
 
 
 ## Schema
 
 To specify the column types in your dataset, create a JSON file named `schema.json`.
+We recommend using `cleanlab dataset schema generate` to generate an initial schema and editing from there.
 
-The format of your JSON file should look like this:
+Your schema file should be formatted as follows:
 ```
 {
   "metadata": {
@@ -107,7 +108,7 @@ The format of your JSON file should look like this:
       "feature_type": "datetime"
     },
   },
-  "version": 1.0
+  "version": "0.1"
 }
 ```
 This is the schema of a hypothetical dataset `Tweets.csv` that contains tweets, where the column `tweet_id` contains a unique identifier for each record.
@@ -135,12 +136,12 @@ such as whether it is:
 Some feature types can only correspond to specific data types.
 The list of possible feature types for each data type is shown below
 
-| Data type  | Feature type                              |
-|:-----------|:------------------------------------------|
-| string     | text, categorical, datetime, identifier   |
-| integer    | categorical, datetime, identifier, numeri |
- | float      | datetime, numeric                         |
-| boolean    | boolean                                   |
+| Data type  | Feature type                               |
+|:-----------|:-------------------------------------------|
+| string     | text, categorical, datetime, identifier    |
+| integer    | categorical, datetime, identifier, numeric |
+ | float      | datetime, numeric                          |
+| boolean    | boolean                                    |
 
 The `datetime` type should be used for datetime strings, e.g. "2015-02-24 11:35:52 -0800", and Unix timestamps (which will be integers or floats).
 Datetime values must be parsable by [pandas.to_datetime()](https://pandas.pydata.org/docs/reference/api/pandas.to_datetime.html).
