@@ -46,7 +46,7 @@ def load_api_key():
 @click.command()
 @click.option(
     "--key",
-    "-k",
+    "--k",
     type=str,
     prompt=True,
     help="API key for CLI uploads. You can get this from https://app.cleanlab.ai/upload.",  # TODO revise url

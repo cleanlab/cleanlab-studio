@@ -4,7 +4,6 @@ from cleanlab_cli.dataset.util import read_file_as_df
 import os
 from os.path import dirname, abspath
 import logging
-import pytest
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ def test_generate_schema():
             result = runner.invoke(
                 generate_schema_command,
                 [
-                    "-f",
+                    "--f",
                     filename + ext,
                     "--id_column",
                     "tweet_id",
@@ -45,7 +44,7 @@ def test_generate_schema():
             )
             assert_success_else_error_output("Schema generation", result)
             result = runner.invoke(
-                validate_schema_command, ["-f", filename + ext, "--schema", sample_schema]
+                validate_schema_command, ["--f", filename + ext, "--schema", sample_schema]
             )
             assert_success_else_error_output("Schema validation", result)
 

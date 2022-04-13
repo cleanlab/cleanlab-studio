@@ -178,7 +178,7 @@ def upload_rows(
     filepath: str,
     schema: Dict[str, Any],
     existing_ids: Optional[Collection[str]] = None,
-    payload_size: float = 0.5,
+    payload_size: float = 10,
 ):
     """
 

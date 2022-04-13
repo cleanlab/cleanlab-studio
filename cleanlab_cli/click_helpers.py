@@ -27,11 +27,11 @@ def success(message):
 
 
 def progress(message):
-    secho(style(message, fg="blue"))
+    secho(style(message, fg="yellow"))
 
 
 def info(message):
-    secho(style(message, fg="yellow"))
+    secho(style(message, fg="blue"))
 
 
 def log(message):

@@ -8,7 +8,7 @@ from cleanlab_cli.dataset.schema_helpers import (
 )
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
 import json
-from cleanlab_cli.click_helpers import abort, success
+from cleanlab_cli.click_helpers import abort, success, info
 
 
 @click.group()
@@ -17,8 +17,8 @@ def schema():
 
 
 @schema.command(name="validate")
-@click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=True)
-@click.option("--schema", "-s", type=click.Path(), help="Schema filepath", required=True)
+@click.option("--filepath", "--f", type=click.Path(), help="Dataset filepath", required=True)
+@click.option("--schema", "--s", type=click.Path(), help="Schema filepath", required=True)
 def validate_schema_command(filepath, schema):
     cols = get_dataset_columns(filepath)
     loaded_schema = load_schema(schema)
@@ -30,8 +30,8 @@ def validate_schema_command(filepath, schema):
 
 
 @schema.command(name="generate")
-@click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=True)
-@click.option("--output", "-o", type=click.Path(), help="Output filepath")
+@click.option("--filepath", "--f", type=click.Path(), help="Dataset filepath", required=True)
+@click.option("--output", "--o", type=click.Path(), help="Output filepath")
 @click.option(
     "--id_column",
     type=str,
@@ -40,7 +40,7 @@ def validate_schema_command(filepath, schema):
 )
 @click.option(
     "--modality",
-    "-m",
+    "--m",
     prompt=True,
     type=click.Choice(["text", "tabular"]),
     help="If uploading a new dataset without a schema, specify data modality: text, tabular",
@@ -54,7 +54,7 @@ def generate_schema_command(filepath, output, id_column, modality, name):
     num_rows = get_num_rows(filepath)
     cols = get_dataset_columns(filepath)
     proposed_schema = propose_schema(filepath, cols, id_column, modality, name, num_rows)
-    click.echo(json.dumps(schema, indent=2))
+    click.echo(json.dumps(proposed_schema, indent=2))
     if output is None:
         output = confirm_schema_save_location()
         save_schema(proposed_schema, output)
