@@ -17,7 +17,7 @@ def schema():
 
 
 @schema.command(name="validate")
-@click.option("--schema", "--s", type=click.Path(), help="Schema filepath", required=True)
+@click.option("--schema", "-s", type=click.Path(), help="Schema filepath", required=True)
 @click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=False)
 def validate_schema_command(filepath, schema):
     loaded_schema = load_schema(schema)
