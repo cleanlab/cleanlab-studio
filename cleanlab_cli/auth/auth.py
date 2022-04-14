@@ -43,7 +43,7 @@ def load_api_key():
     return settings.get("api_key")
 
 
-@click.command()
+@click.command(help="authentication for Cleanlab Studio")
 @click.option(
     "--key",
     "--k",

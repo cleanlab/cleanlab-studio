@@ -13,7 +13,7 @@ from cleanlab_cli.dataset.schema_helpers import (
 from cleanlab_cli.click_helpers import *
 
 
-@click.command()
+@click.command(help="upload your dataset to Cleanlab Studio")
 @click.option(
     "--filepath",
     "-f",
@@ -49,8 +49,11 @@ from cleanlab_cli.click_helpers import *
     type=str,
     help="If uploading a new dataset without a schema, specify a dataset name.",
 )
+@click.option(
+    "--output", "-o", type=click.Path(), help="Output filepath for issues encountered during upload"
+)
 @auth_config
-def upload(config, filepath, id, schema, id_column, modality, name):
+def upload(config, filepath, id, schema, id_column, modality, name, output):
     dataset_id = id
     api_key = config.get_api_key()
     # filetype = get_file_extension(filepath)
@@ -111,8 +114,11 @@ def upload(config, filepath, id, schema, id_column, modality, name):
             " <filepath>'\n\n",
         )
 
-    save_filename = confirm_schema_save_location()
-    save_schema(proposed_schema, save_filename)
+    if output:
+        save_schema(proposed_schema, output)
+    else:
+        save_filename = confirm_schema_save_location()
+        save_schema(proposed_schema, save_filename)
 
     if proceed_upload:
         dataset_id = api_service.initialize_dataset(api_key, proposed_schema)

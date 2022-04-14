@@ -11,12 +11,12 @@ import json
 from cleanlab_cli.click_helpers import abort, success, info
 
 
-@click.group()
+@click.group(help="generate & validate dataset schema")
 def schema():
     pass
 
 
-@schema.command(name="validate")
+@schema.command(name="validate", help="validate an existing schema")
 @click.option("--schema", "-s", type=click.Path(), help="Schema filepath", required=True)
 @click.option("--dataset", "-d", type=click.Path(), help="Dataset filepath", required=False)
 def validate_schema_command(schema, dataset):
@@ -32,7 +32,7 @@ def validate_schema_command(schema, dataset):
     success("Provided schema is valid!")
 
 
-@schema.command(name="generate")
+@schema.command(name="generate", help="generate a schema based on your dataset")
 @click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=True)
 @click.option("--output", "-o", type=click.Path(), help="Output filepath")
 @click.option(
