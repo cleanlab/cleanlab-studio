@@ -29,6 +29,7 @@ from cleanlab_cli.click_helpers import *
 )
 @click.option(
     "--schema",
+    "-s",
     type=click.Path(),
     help="If uploading with a schema, specify the JSON schema filepath.",
 )
@@ -80,11 +81,10 @@ def upload(config, filepath, id, schema, id_column, modality, name, output):
             abort(str(e))
         success("Provided schema is valid!")
         progress("Initializing dataset...")
-        res = api_service.initialize_dataset(api_key, schema)
-        dataset_id = res.json().dataset_id
-        info(f"Dataset has been initialized with ID: {dataset_id}.")
-        progress("Uploading rows...")
+        dataset_id = api_service.initialize_dataset(api_key, loaded_schema)
+        info(f"Dataset initialized with ID: {dataset_id}")
         upload_rows(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
+        return
 
     ## No schema, propose and confirm a schema
     ### Check that all required arguments are present
