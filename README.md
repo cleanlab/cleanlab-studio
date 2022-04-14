@@ -39,31 +39,38 @@ A dataset ID is generated and printed to the terminal the first time the dataset
 It can also be accessed by visiting https://app.cleanlab.ai/datasets and selecting 'Resume' for the relevant dataset.
 
 ## Commands
-**`cleanlab auth` authenticates you when uploading datasets to Cleanlab Studio**
+**`cleanlab auth` authenticates you**
 
+Authenticates you when uploading datasets to Cleanlab Studio.
 Pass in your API key using `--key [API key]`. Your API key can be accessed at [https://app.cleanlab.ai/upload](https://app.cleanlab.ai/upload).
 
-**`cleanlab dataset schema generate` generates schemas based on your dataset**
+**`cleanlab dataset schema generate` generates dataset schemas**
 
+Generates a schema based on your dataset.
 Specify your target dataset with `--filepath [dataset filepath]`.
 You will be prompted to save the generated schema JSON and to specify a save location.
 This can be specified using `--output [output filepath]`.
 
 **`cleanlab dataset schema validate` validates a schema JSON file**
 
+Validates a schema JSON file, checking that a schema is complete, well-formatted, and has <a href="#data_types_and_feature_types">data types with sensible feature types</a>.
 Specify your target schema with `--schema [schema filepath]`.
-This checks that a schema is complete, well-formatted, and has <a href="#data_types_and_feature_types">data types with sensible feature types</a>.
 
 You may also validate an existing schema with respect to a dataset (`-d [dataset filepath]`),
 i.e. all previously mentioned checks and the additional check that all fields in the schema are present in the dataset.
 
-**`cleanlab dataset upload` uploads your dataset to Cleanlab Studio**
+**`cleanlab dataset upload` uploads your dataset**
 
+Uploads your dataset to Cleanlab Studio.
 Specify your target dataset with `--filepath [dataset filepath]`.
 You will be prompted for further details about the dataset's modality and ID column.
 These may be supplied to the command with `--modality [modality]`, `--id_column [name of ID column]`,
 and you may also specify a custom dataset name with`--name [custom dataset name]`.
 
+
+After uploading your dataset, you will be prompted to save the list of dataset issues (if any) encountered during the upload process.
+These issues include missing IDs, duplicate IDs, missing values, and values whose types do not match the schema.
+You may specify the save location with `--output [output filepath]`.
 
 ## Schema
 
