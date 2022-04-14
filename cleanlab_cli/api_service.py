@@ -10,8 +10,11 @@ base_url = "http://localhost:8500/api/cli"
 
 
 def handle_api_error(res: requests.Response):
+    res_json = res.json()
+    if "code" in res_json and "description" in res_json:  # AuthError format
+        abort(res_json["description"])
     if res.json().get("error", None) is not None:
-        abort(res.json()["error"])
+        abort(res_json["error"])
 
 
 def initialize_dataset(api_key, schema):
