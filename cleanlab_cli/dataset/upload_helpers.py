@@ -94,7 +94,7 @@ def validate_and_process_record(
             {ValidationWarning.MISSING_ID.name: [f"Missing ID for record: {dict(record)}."]},
         )
 
-    row_id = str(row_id)
+    # row_id = str(row_id)
     if row_id in existing_ids:
         return None, row_id, None
 
@@ -173,7 +173,7 @@ def upload_rows(
     filepath: str,
     schema: Dict[str, Any],
     existing_ids: Optional[Collection[str]] = None,
-    payload_size: float = 10,
+    payload_size: float = 2,
 ):
     """
 
