@@ -10,8 +10,9 @@ import os
 from collections import OrderedDict
 import pathlib
 import json
+import ijson
 
-ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
+ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx", ".json"]
 
 
 def get_file_extension(filename):
@@ -75,6 +76,12 @@ def read_file_as_stream(filepath) -> Generator[OrderedDict, None, None]:
     if ext in [".csv", ".xls", ".xlsx"]:
         for r in pyexcel.iget_records(file_name=filepath):
             yield r
+    elif ext == ".json":
+        with open(filepath, "r") as f:
+            for r in ijson.items(f, "rows.item"):
+                yield r
+    else:
+        raise ValueError(f"Unsupported file type: {ext}")
 
 
 def count_records_in_dataset_file(filepath):

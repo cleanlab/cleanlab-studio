@@ -15,6 +15,7 @@ setup(
         "sqlalchemy",
         "requests",
         "tqdm",
+        "ijson",
     ],
     entry_points="""
         [console_scripts]

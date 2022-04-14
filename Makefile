@@ -7,6 +7,9 @@ auth:
 upload_csv:
 	cleanlab dataset upload -f ./tests/resources/datasets/sample.csv -m text --id_column tweet_id
 
+upload_json:
+	cleanlab dataset upload -f ./tests/resources/datasets/sample.json -m text --id_column tweet_id
+
 resume_csv:
 	cleanlab dataset upload -f ./tests/resources/datasets/sample.csv --id [dataset_id]
 
