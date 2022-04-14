@@ -1,3 +1,4 @@
+from decimal import Decimal
 from sqlalchemy import String, Boolean, DateTime, Float, BigInteger
 from config import PACKAGE_VERSION
 
@@ -16,6 +17,12 @@ DATA_TYPES_TO_FEATURE_TYPES = {
     "boolean": {"boolean"},
 }
 
-PYTHON_TYPES_TO_READABLE_STRING = {str: "string", float: "float", int: "integer", bool: "boolean"}
+PYTHON_TYPES_TO_READABLE_STRING = {
+    str: "string",
+    float: "float",
+    int: "integer",
+    bool: "boolean",
+    Decimal: "float",
+}
 
 SCHEMA_VERSION = PACKAGE_VERSION

@@ -3,6 +3,7 @@ Helper functions for processing and uploading dataset rows
 """
 import click
 import pandas as pd
+from decimal import Decimal
 from typing import (
     Optional,
     Dict,
@@ -140,12 +141,15 @@ def validate_and_process_record(
                             ValidationWarning.TYPE_MISMATCH,
                         )
                 elif col_type == "float":
-                    if not (isinstance(column_value, int) or isinstance(column_value, float)):
-                        warning = (
-                            f"{column_name}: expected 'int' but got '{column_value}' with"
-                            f" {get_value_type(column_value)} type",
-                            ValidationWarning.TYPE_MISMATCH,
-                        )
+                    if isinstance(column_value, Decimal):
+                        row[column_name] = float(column_value)
+                    else:
+                        if not (isinstance(column_value, int) or isinstance(column_value, float)):
+                            warning = (
+                                f"{column_name}: expected 'float' but got '{column_value}' with"
+                                f" {get_value_type(column_value)} type",
+                                ValidationWarning.TYPE_MISMATCH,
+                            )
                 elif col_type == "boolean":
                     if not isinstance(column_value, bool):
                         col_val_lower = str(column_value).lower()

@@ -1,6 +1,7 @@
 """
 Helper functions for working with schemas
 """
+import decimal
 
 import pandas as pd
 from pandas import NaT
@@ -13,6 +14,7 @@ from typing import (
 from random import sample, random
 import json
 import click
+from decimal import Decimal
 from cleanlab_cli.dataset.util import (
     get_num_rows,
     get_dataset_columns,
@@ -172,7 +174,7 @@ def infer_types(values: Collection[any]):
     for v in values:
         if isinstance(v, str):
             counts["string"] += 1
-        elif isinstance(v, float):
+        elif isinstance(v, float) or isinstance(v, Decimal):
             counts["float"] += 1
         elif isinstance(v, int):
             counts["integer"] += 1
@@ -191,11 +193,12 @@ def infer_types(values: Collection[any]):
             # check for datetime first
             val_sample = sample(list(values), 10)
             for s in val_sample:
+                print(s)
                 res = pd.to_datetime(s)
                 if res is NaT:
                     raise ValueError
             return "string", "datetime"
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, OverflowError):
             pass
         # is string type
         if ratio_unique >= ID_RATIO_THRESHOLD:
