@@ -159,7 +159,6 @@ The current Cleanlab schema version is `0.1`.
 
 
 ## For developers
-1. (Optional) Set up and activate your virtual environment
-2. When in active development, run `pip install --editable .` from the home directory.
+1. To install the package locally, clone this repo and run `pip install --editable .` from the home directory.
 Changes to the code are reflected automatically in the CLI.
 3. `Makefile` contains sample commands for quick installation and testing, though you will have to specify filepaths and API keys manually.
