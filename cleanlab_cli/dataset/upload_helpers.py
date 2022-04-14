@@ -11,7 +11,6 @@ from typing import (
     Set,
     Any,
 )
-import json
 from collections import defaultdict
 from sys import getsizeof
 from enum import Enum
@@ -103,11 +102,7 @@ def validate_and_process_record(
         return (
             None,
             row_id,
-            {
-                ValidationWarning.DUPLICATE_ID.name: [
-                    f"Duplicate ID found. ID '{row_id}' has already been encountered before."
-                ]
-            },
+            {ValidationWarning.DUPLICATE_ID.name: [f"Duplicate ID found: {dict(record)}"]},
         )
 
     warnings = defaultdict(list)
@@ -239,9 +234,13 @@ def upload_rows(
 
     total_warnings = sum([len(log[w.name]) for w in ValidationWarning])
     if total_warnings == 0:
-        success("No issues were encountered when uploading your dataset.")
+        success("No issues were encountered when uploading your dataset. Nice!")
     else:
         info(f"{total_warnings} issues were encountered when uploading your dataset.")
+        for w in ValidationWarning:
+            warning_count = len(log[w.name])
+            if warning_count > 0:
+                info(f"{warning_to_readable_name(w.name)}: {warning_count}")
 
         save_loc = confirm_feedback_save_location()
         save_feedback(log, save_loc)
