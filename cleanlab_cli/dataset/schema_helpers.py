@@ -118,7 +118,7 @@ def validate_schema(schema, columns: Collection[str]):
     id_column_spec_feature_type = schema["fields"][id_column_name]["feature_type"]
     if id_column_spec_feature_type != "identifier":
         raise ValueError(
-            f"ID column field {id_column_name} must have feature type: 'identifier', but had"
+            f"ID column field {id_column_name} must have feature type: 'identifier', but has"
             f" feature type: '{id_column_spec_feature_type}'"
         )
 

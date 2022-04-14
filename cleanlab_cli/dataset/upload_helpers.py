@@ -240,7 +240,7 @@ def upload_rows(
         for w in ValidationWarning:
             warning_count = len(log[w.name])
             if warning_count > 0:
-                info(f"{warning_to_readable_name(w.name)}: {warning_count}")
+                click.echo(f"{warning_to_readable_name(w.name)}: {warning_count}")
 
         save_loc = confirm_feedback_save_location()
         save_feedback(log, save_loc)
@@ -267,7 +267,7 @@ def group_feature_types(schema):
 
 
 def confirm_feedback_save_location():
-    save = click.confirm("Would you like to save the upload issues for viewing?")
+    save = click.confirm("\nWould you like to save the upload issues for viewing?")
     if save:
         output = None
         while output is None or (output != "" and not output.endswith(".json")):
@@ -288,6 +288,6 @@ def save_feedback(feedback, filename):
     if filename:
         progress(f"Writing issues to {filename}...")
         dump_json(filename, feedback)
-        success("Saved.")
+        success("Saved.\n")
     else:
-        info("Information on upload issues was not saved.")
+        click.echo("Information on upload issues was not saved.")
