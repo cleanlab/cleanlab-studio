@@ -1,12 +1,12 @@
 # cleanlab-cli
 Command line interface for all things Cleanlab Studio.
 
-This currently supports generating dataset schema and uploading your dataset into Cleanlab Studio.
+This currently supports generating <a href="#schema">dataset schema</a> and uploading your <a href="#dataset-format">dataset</a> into Cleanlab Studio.
 In the future, this will also support downloading the results and other computations.
 
 ## Workflow
 Uploading datasets to Cleanlab Studio is a two-step process.
-1. We generate a <a href="#schema">schema</a> describing the dataset and its <a href="#data-types-and-feature-types">data and feature types</a>, which is verified by the user.
+1. We generate a schema describing the dataset and its <a href="#data-types-and-feature-types">data and feature types</a>, which is verified by the user.
 2. Based on this schema, the dataset is parsed and uploaded to Cleanlab Studio.
 
 ### Generate dataset schema
@@ -71,6 +71,86 @@ and you may also specify a custom dataset name with`--name [custom dataset name]
 After uploading your dataset, you will be prompted to save the list of dataset issues (if any) encountered during the upload process.
 These issues include missing IDs, duplicate IDs, missing values, and values whose types do not match the schema.
 You may specify the save location with `--output [output filepath]`.
+
+## Dataset format
+
+Cleanlab currently only supports text and tabular dataset modalities.
+(If your dataset contains both text and tabular data, treat it as tabular.)
+The accepted dataset file types are: `.csv`, `.json`, and `.xls/.xlsx`.
+
+
+Below are some examples of how to format your dataset depending on modality and file type.
+Every dataset must have an ID column (i.e. a column containing identifiers that uniquely identify each row) and a label column (for the prediction task).
+You are free to name the columns in your dataset in any way you want.
+
+<details>
+<summary>Tabular</summary>
+
+<details>
+<summary>.csv, .xls, .xlsx</summary>
+
+| flower_id | width | length | color | species |
+|:----------|:------|--------|-------|---------|
+| flower_01 | 4     | 3      | red   | rose    |
+| flower_02 | 7     | 2      | white | lily    |
+</details>
+<details>
+<summary>.json</summary>
+
+```json
+{
+  "rows": [
+    {
+      "flower_id": "flower_01",
+      "width": 4,
+      "length": 3,
+      "color": "red",
+      "species": "rose"
+    },
+    {
+      "flower_id": "flower_02",
+      "width": 7,
+      "length": 2,
+      "color": "white",
+      "species": "lily"
+    }
+  ]
+}
+```
+</details>
+</details>
+<details>
+<summary>Text</summary>
+<details>
+<summary>.csv, .xls, .xlsx</summary>
+
+| review_id | review | sentiment |
+|:----------|:-------|-----------|
+| review_1  | The sales rep was fantastic!     | positive  |
+| review_2  | He was a bit wishy-washy.     | negative  |
+</details>
+
+<details>
+<summary>.json</summary>
+
+```json
+{
+  "rows": [
+    {
+      "review_id": "review_1",
+      "review": "The sales rep was fantastic!",
+      "label": "positive"
+    },
+    {
+      "review_id": "review_2",
+      "review": "He was a bit wishy-washy.",
+      "label": "negative"
+    }
+  ]
+}
+```
+</details>
+</details>
 
 ## Schema
 
