@@ -193,7 +193,6 @@ def infer_types(values: Collection[any]):
             # check for datetime first
             val_sample = sample(list(values), 10)
             for s in val_sample:
-                print(s)
                 res = pd.to_datetime(s)
                 if res is NaT:
                     raise ValueError
