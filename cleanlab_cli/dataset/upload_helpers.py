@@ -96,7 +96,7 @@ def validate_and_process_record(
         )
 
     # row_id = str(row_id)
-    if row_id in existing_ids:
+    if str(row_id) in existing_ids:
         return None, row_id, None
 
     if row_id in seen_ids:
@@ -190,7 +190,7 @@ def upload_rows(
     :return: None
     """
     columns = list(schema["fields"].keys())
-    existing_ids = set() if existing_ids is None else set(existing_ids)
+    existing_ids = set() if existing_ids is None else set([str(x) for x in existing_ids])
     rows = []
     rows_per_payload = None
     seen_ids = set()
