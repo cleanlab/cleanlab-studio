@@ -323,7 +323,7 @@ def construct_schema(fields, data_types, feature_types, id_column, modality, dat
 
 
 def confirm_schema_save_location():
-    save = click.confirm("Would you like to save the generated schema?")
+    save = click.confirm("Would you like to save the generated schema?", default=None)
     if save:
         output = None
         while output is None or (output != "" and not output.endswith(".json")):

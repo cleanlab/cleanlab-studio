@@ -271,7 +271,7 @@ def group_feature_types(schema):
 
 
 def confirm_feedback_save_location():
-    save = click.confirm("\nWould you like to save the upload issues for viewing?")
+    save = click.confirm("\nWould you like to save the upload issues for viewing?", default=None)
     if save:
         output = None
         while output is None or (output != "" and not output.endswith(".json")):

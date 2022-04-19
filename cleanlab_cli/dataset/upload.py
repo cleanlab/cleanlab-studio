@@ -18,7 +18,6 @@ from cleanlab_cli.click_helpers import *
     "--filepath",
     "-f",
     type=click.Path(),
-    prompt=True,
     help="Dataset filepath",
     required=True,
 )
@@ -106,7 +105,7 @@ def upload(config, filepath, id, schema, id_column, modality, name, output):
     log(json.dumps(proposed_schema, indent=2))
     info(f"No schema was provided. We propose the above schema based on your dataset.")
 
-    proceed_upload = click.confirm("\nUse this schema?")
+    proceed_upload = click.confirm("\nUse this schema?", default=None)
     if not proceed_upload:
         info(
             "Proposed schema rejected. Please submit your own schema using --schema.\n",

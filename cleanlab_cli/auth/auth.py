@@ -73,6 +73,7 @@ def auth(key):
             error("CLI settings are corrupted and could not be read.")
             overwrite = click.confirm(
                 "Would you like to create a new settings file with the provided API key?",
+                default=None,
             )
             if overwrite:
                 settings = construct_settings(key)
