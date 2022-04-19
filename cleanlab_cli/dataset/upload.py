@@ -109,9 +109,7 @@ def upload(config, filepath, id, schema, id_column, modality, name, output):
     proceed_upload = click.confirm("\nUse this schema?")
     if not proceed_upload:
         info(
-            "Proposed schema rejected. Please submit your own schema using --schema. A starter"
-            " schema can be generated for your dataset using 'cleanlab dataset schema -f"
-            " <filepath>'\n\n",
+            "Proposed schema rejected. Please submit your own schema using --schema.\n",
         )
 
     if output:
