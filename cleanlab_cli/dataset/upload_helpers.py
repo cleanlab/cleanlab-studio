@@ -238,9 +238,9 @@ def upload_rows(
 
     total_warnings = sum([len(log[w.name]) for w in ValidationWarning])
     if total_warnings == 0:
-        success("No issues were encountered when uploading your dataset. Nice!")
+        success("\nNo issues were encountered when uploading your dataset. Nice!")
     else:
-        info(f"{total_warnings} issues were encountered when uploading your dataset.")
+        info(f"\n{total_warnings} issues were encountered when uploading your dataset.")
         for w in ValidationWarning:
             warning_count = len(log[w.name])
             if warning_count > 0:
