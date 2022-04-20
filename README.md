@@ -85,9 +85,9 @@ You are free to name the columns in your dataset in any way you want.
 
 <details>
 <summary>Tabular</summary>
-
+<br />
 <details>
-<summary>.csv, .xls, .xlsx</summary>
+<summary>.csv, .xls/.xlsx</summary>
 
 | flower_id | width | length | color | species |
 |:----------|:------|--------|-------|---------|
@@ -119,10 +119,12 @@ You are free to name the columns in your dataset in any way you want.
 ```
 </details>
 </details>
+
 <details>
 <summary>Text</summary>
+<br />
 <details>
-<summary>.csv, .xls, .xlsx</summary>
+<summary>.csv, .xls/.xlsx</summary>
 
 | review_id | review | sentiment |
 |:----------|:-------|-----------|
