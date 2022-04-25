@@ -8,7 +8,9 @@ def create_settings_dict(api_key):
 
 
 def get_cleanlab_settings():
-    cleanlab_dir = os.path.expanduser("~/.cleanlab/")
+    XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", None)
+    CONFIG_HOME = XDG_CONFIG_HOME if XDG_CONFIG_HOME else os.environ.get("HOME")
+    cleanlab_dir = os.path.expanduser(os.path.join(CONFIG_HOME, ".cleanlab"))
     settings_filepath = os.path.join(cleanlab_dir, "settings.json")
     if not os.path.exists(settings_filepath):
         raise FileNotFoundError
