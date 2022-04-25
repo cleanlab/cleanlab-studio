@@ -1,6 +1,6 @@
 import click
 from cleanlab_cli.dataset.commands import dataset
-from cleanlab_cli.auth.auth import auth, auth_config
+from cleanlab_cli.login.login import login, auth_config
 
 
 @click.group()
@@ -9,5 +9,5 @@ def cli(config):
     pass
 
 
-cli.add_command(auth)
+cli.add_command(login)
 cli.add_command(dataset)

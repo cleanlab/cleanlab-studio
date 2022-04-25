@@ -34,7 +34,7 @@ def test_generate_schema():
                 [
                     "-f",
                     filename + ext,
-                    "--id_column",
+                    "--id-column",
                     "tweet_id",
                     "--modality",
                     "text",

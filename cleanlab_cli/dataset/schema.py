@@ -36,7 +36,7 @@ def validate_schema_command(schema, dataset):
 @click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath", required=True)
 @click.option("--output", "-o", type=click.Path(), help="Output filepath")
 @click.option(
-    "--id_column",
+    "--id-column",
     type=str,
     prompt=True,
     help="If uploading a new dataset without a schema, specify the ID column.",

@@ -1,5 +1,5 @@
 import json
-from cleanlab_cli.auth.auth import auth_config
+from cleanlab_cli.login.login import auth_config
 from cleanlab_cli import api_service
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
 from cleanlab_cli.dataset.upload_helpers import upload_rows
@@ -33,7 +33,7 @@ from cleanlab_cli.click_helpers import *
     help="If uploading with a schema, specify the JSON schema filepath.",
 )
 @click.option(
-    "--id_column",
+    "--id-column",
     type=str,
     help="If uploading a new dataset without a schema, specify the ID column.",
 )
@@ -92,7 +92,7 @@ def upload(config, filepath, id, schema, id_column, modality, name, output):
 
     if id_column is None:
         abort(
-            "You must specify an ID column (--id_column <ID column name>) for a new dataset upload."
+            "You must specify an ID column (--id-column <ID column name>) for a new dataset upload."
         )
 
     if id_column not in columns:

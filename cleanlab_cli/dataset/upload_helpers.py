@@ -203,7 +203,9 @@ def upload_rows(
     log[ValidationWarning.MISSING_VAL.name] = dict()
 
     num_records = count_records_in_dataset_file(filepath)
-    for record in tqdm(read_file_as_stream(filepath), total=num_records, initial=1):
+    for record in tqdm(
+        read_file_as_stream(filepath), total=num_records, initial=1, leave=True, unit=None
+    ):
         row, row_id, warnings = validate_and_process_record(
             record, schema, seen_ids, existing_ids, columns
         )
@@ -294,4 +296,4 @@ def save_feedback(feedback, filename):
         dump_json(filename, feedback)
         success("Saved.\n")
     else:
-        click.echo("Information on upload issues was not saved.")
+        click.echo("Upload issues were not saved.")
