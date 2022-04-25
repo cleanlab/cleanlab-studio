@@ -3,6 +3,7 @@ import json
 from cleanlab_cli.api_service import validate_api_key
 from cleanlab_cli.click_helpers import *
 from cleanlab_cli.login import login_helpers as helpers
+from cleanlab_cli.login.login_helpers import API_KEY_, VERSION_
 
 
 @click.command(help="authentication for Cleanlab Studio")
@@ -14,7 +15,7 @@ from cleanlab_cli.login import login_helpers as helpers
     help="API key for CLI uploads. You can get this from https://app.cleanlab.ai/upload.",
 )
 def login(key):
-    cleanlab_dir = os.path.expanduser("~/.cleanlab/")
+    cleanlab_dir = helpers.get_cleanlab_dir()
     if not os.path.exists(cleanlab_dir):
         os.mkdir(cleanlab_dir)
 
@@ -25,12 +26,14 @@ def login(key):
 
     # save API key
     settings = dict()
-    settings_filepath = os.path.join(cleanlab_dir, "settings.json")
+    settings_filepath = helpers.get_settings_filepath()
+
     if os.path.exists(settings_filepath):
         try:
             with open(settings_filepath, "r") as f:
                 settings = json.load(f)
-                settings["api_key"] = key
+                settings[API_KEY_] = key
+                # TODO should anything be done if version does not match?
         except json.decoder.JSONDecodeError:
             error("CLI settings are corrupted and could not be read.")
             overwrite = click.confirm(
@@ -48,7 +51,5 @@ def login(key):
     else:
         settings = helpers.create_settings_dict(key)
 
-    with open(settings_filepath, "w") as f:
-        json.dump(settings, f)
-
+    helpers.save_cleanlab_settings(settings_filepath, settings)
     success(f"API key is valid. API key stored in {cleanlab_dir}")
