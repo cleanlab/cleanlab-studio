@@ -19,8 +19,21 @@ def get_cleanlab_settings():
         settings = json.load(f)
 
     if settings[PACKAGE_VERSION] != PACKAGE_VERSION:
-        # TODO
-        pass
+        # lsv = latest_semantic_version, ssv = settings_semantic_version
+        lsv = [int(x) for x in PACKAGE_VERSION.split(".")]
+        ssv = [int(x) for x in settings[PACKAGE_VERSION].split(".")]
+        if lsv[0] != ssv[0]:
+            raise ValueError(
+                "Major semantic version in settings does not match latest package version."
+                " Settings file must be migrated or re-generated."
+            )
+        elif lsv[1] != ssv[1]:
+            raise ValueError(
+                "Minor semantic version in settings does not match latest package version. Settings"
+                " file must be re-generated."
+            )
+        else:
+            pass
 
     return settings
 
