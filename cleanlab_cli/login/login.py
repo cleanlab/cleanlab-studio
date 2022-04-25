@@ -1,5 +1,6 @@
 import os
 import json
+from config import PACKAGE_VERSION
 from cleanlab_cli.api_service import validate_api_key
 from cleanlab_cli.click_helpers import *
 
@@ -23,8 +24,8 @@ class AuthConfig:
 auth_config = click.make_pass_decorator(AuthConfig, ensure=True)
 
 
-def construct_settings(api_key):
-    return {"api_key": api_key}
+def create_settings_dict(api_key):
+    return {"api_key": api_key, "version": PACKAGE_VERSION}
 
 
 def get_cleanlab_settings():
@@ -76,7 +77,7 @@ def login(key):
                 default=None,
             )
             if overwrite:
-                settings = construct_settings(key)
+                settings = create_settings_dict(key)
             else:
                 abort(
                     "Settings file is corrupted, unable to login. "
@@ -84,7 +85,7 @@ def login(key):
                     f"or manually fix the settings file at {settings_filepath}"
                 )
     else:
-        settings = construct_settings(key)
+        settings = create_settings_dict(key)
 
     with open(settings_filepath, "w") as f:
         json.dump(settings, f)
