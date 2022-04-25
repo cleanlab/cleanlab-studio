@@ -204,7 +204,7 @@ def upload_rows(
 
     num_records = count_records_in_dataset_file(filepath)
     for record in tqdm(
-        read_file_as_stream(filepath), total=num_records, initial=1, leave=True, unit=None
+        read_file_as_stream(filepath), total=num_records, initial=1, leave=True, unit=" rows"
     ):
         row, row_id, warnings = validate_and_process_record(
             record, schema, seen_ids, existing_ids, columns
