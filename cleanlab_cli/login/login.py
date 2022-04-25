@@ -1,8 +1,8 @@
 import os
 import json
-from config import PACKAGE_VERSION
 from cleanlab_cli.api_service import validate_api_key
 from cleanlab_cli.click_helpers import *
+from cleanlab_cli.login import login_helpers as helpers
 
 
 class AuthConfig:
@@ -12,7 +12,7 @@ class AuthConfig:
     def get_api_key(self):
         if self.api_key is None:
             try:
-                api_key = load_api_key()
+                api_key = helpers.load_api_key()
                 if api_key is None or not validate_api_key(api_key):
                     raise ValueError("Invalid API key.")
                 self.api_key = api_key
@@ -22,26 +22,6 @@ class AuthConfig:
 
 
 auth_config = click.make_pass_decorator(AuthConfig, ensure=True)
-
-
-def create_settings_dict(api_key):
-    return {"api_key": api_key, "version": PACKAGE_VERSION}
-
-
-def get_cleanlab_settings():
-    cleanlab_dir = os.path.expanduser("~/.cleanlab/")
-    settings_filepath = os.path.join(cleanlab_dir, "settings.json")
-    if not os.path.exists(settings_filepath):
-        raise FileNotFoundError
-
-    with open(settings_filepath, "r") as f:
-        settings = json.load(f)
-    return settings
-
-
-def load_api_key():
-    settings = get_cleanlab_settings()
-    return settings.get("api_key")
 
 
 @click.command(help="authentication for Cleanlab Studio")
@@ -77,7 +57,7 @@ def login(key):
                 default=None,
             )
             if overwrite:
-                settings = create_settings_dict(key)
+                settings = helpers.create_settings_dict(key)
             else:
                 abort(
                     "Settings file is corrupted, unable to login. "
@@ -85,7 +65,7 @@ def login(key):
                     f"or manually fix the settings file at {settings_filepath}"
                 )
     else:
-        settings = create_settings_dict(key)
+        settings = helpers.create_settings_dict(key)
 
     with open(settings_filepath, "w") as f:
         json.dump(settings, f)
