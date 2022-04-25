@@ -237,10 +237,3 @@ Datetime values must be parsable by [pandas.to_datetime()](https://pandas.pydata
 
 `version` indicates the current Cleanlab CLI package version at time of schema creation.
 The current Cleanlab schema version is `0.1`.
-
-
-
-## For developers
-1. To install the package locally, clone this repo and run `pip install --editable .` from the home directory.
-Changes to the code are reflected automatically in the CLI.
-3. `Makefile` contains sample commands for quick installation and testing, though you will have to specify filepaths and API keys manually.
