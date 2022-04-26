@@ -5,25 +5,23 @@ from config import PACKAGE_VERSION
 
 
 class CleanlabSettings:
-    def __init__(self, version: str, api_key: Optional[str], prev_command: Dict):
+    def __init__(self, version: str, api_key: Optional[str]):
         self.version = version
         self.api_key = api_key
-        self.prev_command = prev_command
 
     @staticmethod
     def init_base():
-        return CleanlabSettings(version=PACKAGE_VERSION, api_key=None, prev_command=dict())
+        return CleanlabSettings(version=PACKAGE_VERSION, api_key=None)
 
     @staticmethod
     def from_dict(d):
         return CleanlabSettings(
             version=d.get("version", None),
             api_key=d.get("api_key", None),
-            prev_command=d.get("prev_command", None),
         )
 
     def to_dict(self):
-        return dict(version=self.version, api_key=self.api_key, prev_command=self.prev_command)
+        return dict(version=self.version, api_key=self.api_key)
 
     @staticmethod
     def get_cleanlab_dir():
