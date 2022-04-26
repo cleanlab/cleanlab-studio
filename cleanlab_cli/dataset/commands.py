@@ -1,12 +1,10 @@
 import click
-from cleanlab_cli.decorators import auth_config
 from cleanlab_cli.dataset.schema import schema
 from cleanlab_cli.dataset.upload import upload
 
 
 @click.group(help="upload datasets, generate & validate dataset schema")
-@auth_config
-def dataset(config):
+def dataset():
     pass
 
 
