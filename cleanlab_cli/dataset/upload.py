@@ -1,5 +1,5 @@
 import json
-from cleanlab_cli.decorators.auth_config import auth_config
+from cleanlab_cli.decorators import auth_config
 from cleanlab_cli import api_service
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
 from cleanlab_cli.dataset.upload_helpers import upload_rows

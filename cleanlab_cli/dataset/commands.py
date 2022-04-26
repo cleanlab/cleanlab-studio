@@ -1,5 +1,5 @@
 import click
-from cleanlab_cli.decorators.auth_config import auth_config
+from cleanlab_cli.decorators import auth_config
 from cleanlab_cli.dataset.schema import schema
 from cleanlab_cli.dataset.upload import upload
 
