@@ -1,5 +1,5 @@
 import json
-from cleanlab_cli.decorators import auth_config, prev_command
+from cleanlab_cli.decorators import auth_config, previous_state
 from cleanlab_cli import api_service
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
 from cleanlab_cli.dataset.upload_helpers import upload_rows
@@ -52,19 +52,18 @@ from cleanlab_cli.click_helpers import *
 @click.option(
     "--output", "-o", type=click.Path(), help="Output filepath for issues encountered during upload"
 )
-@prev_command
+@previous_state
 @auth_config
-def upload(config, previous_command, filepath, id, schema, id_column, modality, name, output):
+def upload(config, prev_state, filepath, id, schema, id_column, modality, name, output):
     curr_command_dict = dict(
         filepath=filepath, id=id, schema=schema, id_column=id_column, name=name, output=output
     )
-    if previous_command.same_command(curr_command_dict):
+    if prev_state.same_command(curr_command_dict):
+
         print("you've run this command before!")
         return
     else:
-        print("stored command")
-        previous_command.set_command(curr_command_dict)
-        print(f"stored command is now {previous_command.get_command()}")
+        prev_state.update_state("command", curr_command_dict)
 
     dataset_id = id
     api_key = config.get_api_key()
