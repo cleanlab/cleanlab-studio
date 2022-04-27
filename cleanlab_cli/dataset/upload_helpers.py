@@ -288,12 +288,12 @@ def group_feature_types(schema):
 
 
 def confirm_feedback_save_location():
-    save = click.confirm("\nWould you like to save the upload issues for viewing?", default=None)
+    save = click.confirm("\nWould you like to save the issues for viewing?", default=None)
     if save:
         output = None
         while output is None:
             output = click.prompt(
-                "Specify a filename for the upload feedback. Leave this blank to use default",
+                "Specify a filename for the dataset issues. Leave this blank to use default",
                 default="issues.json",
             )
         return output
@@ -310,4 +310,4 @@ def save_feedback(feedback, filename):
         dump_json(filename, feedback)
         success("Saved.\n")
     else:
-        click.echo("Upload issues were not saved.")
+        info("Dataset type issues were not saved.")

@@ -89,9 +89,9 @@ def check_dataset_command(prev_state, filepath, schema, output):
 
     total_warnings = sum([len(log[k]) for k in log])
     if total_warnings == 0:
-        success("\nNo type issues were encountered when checking your dataset. Nice!")
+        success("\nNo type issues were found when checking your dataset. Nice!")
     else:
-        info(f"\n{total_warnings} type issues were encountered when checking your dataset.")
+        info(f"\nFound {total_warnings} type issues when checking your dataset.")
         upload_helpers.echo_log_warnings(log)
 
         if output:
