@@ -13,6 +13,31 @@ from cleanlab_cli.dataset.schema_helpers import (
 from cleanlab_cli.click_helpers import *
 
 
+def resume_upload(api_key, dataset_id, filepath):
+    complete = api_service.get_completion_status(api_key, dataset_id)
+    if complete:
+        abort("Dataset is already fully uploaded.")
+    saved_schema = api_service.get_dataset_schema(api_key, dataset_id)
+    existing_ids = api_service.get_existing_ids(api_key, dataset_id)
+    upload_rows(api_key, dataset_id, filepath, saved_schema, existing_ids)
+    return
+
+
+def upload_with_schema(api_key, schema, columns, filepath):
+    progress("Validating provided schema...")
+    loaded_schema = load_schema(schema)
+    try:
+        validate_schema(loaded_schema, columns)
+    except ValueError as e:
+        abort(str(e))
+    success("Provided schema is valid!")
+    progress("Initializing dataset...")
+    dataset_id = api_service.initialize_dataset(api_key, loaded_schema)
+    info(f"Dataset initialized with ID: {dataset_id}")
+    upload_rows(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
+    return
+
+
 @click.command(help="upload your dataset to Cleanlab Studio")
 @click.option(
     "--filepath",
@@ -59,11 +84,28 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
         filepath=filepath, id=id, schema=schema, id_column=id_column, name=name, output=output
     )
     if prev_state.same_command(curr_command_dict):
-
-        print("you've run this command before!")
-        return
+        prev_dataset_id = prev_state.dataset_id
+        if prev_dataset_id is None:
+            if prev_state.complete:
+                proceed = click.confirm(
+                    "You previously uploaded a dataset from this filepath with the same"
+                    " command arguments. Running this command will generate a new dataset. Do you"
+                    " wish to proceed?",
+                    default=None,
+                )
+            else:
+                proceed = click.confirm(
+                    "You previously partially uploaded a dataset from this filepath with the"
+                    " same command arguments. To resume your upload, run 'cleanlab dataset upload"
+                    " --resume'. Otherwise, running this command will generate a new dataset. Do"
+                    " you wish to proceed?",
+                    default=None,
+                )
+            if not proceed:
+                info("Exiting.")
+            return
     else:
-        prev_state.update_state("command", curr_command_dict)
+        prev_state.new_state(dict(command=curr_command_dict))
 
     dataset_id = id
     api_key = config.get_api_key()
@@ -72,29 +114,12 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
 
     # If resuming upload
     if dataset_id is not None:
-        complete = api_service.get_completion_status(api_key, dataset_id)
-        if complete:
-            abort("Dataset is already fully uploaded.")
-        saved_schema = api_service.get_dataset_schema(api_key, dataset_id)
-        existing_ids = api_service.get_existing_ids(api_key, dataset_id)
-        upload_rows(api_key, dataset_id, filepath, saved_schema, existing_ids)
-        return
+        resume_upload(api_key, dataset_id, filepath)
 
     # This is the first upload
     ## Check if uploading with schema
     if schema is not None:
-        progress("Validating provided schema...")
-        loaded_schema = load_schema(schema)
-        try:
-            validate_schema(loaded_schema, columns)
-        except ValueError as e:
-            abort(str(e))
-        success("Provided schema is valid!")
-        progress("Initializing dataset...")
-        dataset_id = api_service.initialize_dataset(api_key, loaded_schema)
-        info(f"Dataset initialized with ID: {dataset_id}")
-        upload_rows(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
-        return
+        upload_with_schema(api_key, schema, columns, filepath)
 
     ## No schema, propose and confirm a schema
     ### Check that all required arguments are present
@@ -131,6 +156,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
     if proceed_upload:
         dataset_id = api_service.initialize_dataset(api_key, proposed_schema)
         info(f"Dataset initialized with ID: {dataset_id}")
+        prev_state.update_state(dict(dataset_id=dataset_id, complete=False))
         upload_rows(
             api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema
         )

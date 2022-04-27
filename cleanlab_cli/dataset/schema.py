@@ -22,8 +22,8 @@ def schema():
 @click.option("--dataset", "-d", type=click.Path(), help="Dataset filepath", required=False)
 @previous_state
 def validate_schema_command(prev_state, schema, dataset):
-    prev_state.update_state(
-        "command", dict(command="validate_schema", schema=schema, dataset=dataset)
+    prev_state.new_state(
+        dict(command=dict(command="validate_schema", schema=schema, dataset=dataset))
     )
     loaded_schema = load_schema(schema)
     if dataset:
@@ -60,16 +60,17 @@ def validate_schema_command(prev_state, schema, dataset):
 )
 @previous_state
 def generate_schema_command(prev_state, filepath, output, id_column, modality, name):
-    prev_state.update_state(
-        "command",
+    prev_state.new_state(
         dict(
-            command="generate schema",
-            filepath=filepath,
-            output=output,
-            id_column=id_column,
-            modality=modality,
-            name=name,
-        ),
+            command=dict(
+                command="generate schema",
+                filepath=filepath,
+                output=output,
+                id_column=id_column,
+                modality=modality,
+                name=name,
+            ),
+        )
     )
     num_rows = get_num_rows(filepath)
     cols = get_dataset_columns(filepath)

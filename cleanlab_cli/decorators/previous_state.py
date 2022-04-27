@@ -19,9 +19,14 @@ class PreviousState:
         with open(self.get_filepath(), "w") as f:
             json.dump(self.state, f)
 
-    def update_state(self, key, value):
+    def new_state(self, updates: Dict[str, any]):
+        self.state = dict()
+        self.state.update(updates)
+        self.save_state()
+
+    def update_state(self, updates: Dict[str, any]):
         """Updates and saves state"""
-        self.state[key] = value
+        self.state.update(updates)
         self.save_state()
 
     def get_state(self):
@@ -43,6 +48,9 @@ class PreviousState:
         prev_command = state["command"]
         same = all(prev_command.get(k, None) == command.get(k, None) for k in command)
         return same
+
+    def __getattr__(self, item):
+        return self.state.get(item, None)
 
 
 previous_state = click.make_pass_decorator(PreviousState, ensure=True)
