@@ -18,7 +18,7 @@ def assert_success_else_error_output(test_name, result):
         )
 
 
-def test_generate_schema():
+def test_schema():
     df = read_file_as_df(sample_csv)
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -50,4 +50,4 @@ def test_generate_schema():
 
 
 if __name__ == "__main__":
-    test_generate_schema()
+    test_schema()
