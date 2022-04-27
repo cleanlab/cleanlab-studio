@@ -94,11 +94,9 @@ def check_dataset_command(prev_state, filepath, schema, output):
         info(f"\nFound {total_warnings} type issues when checking your dataset.")
         upload_helpers.echo_log_warnings(log)
 
-        if output:
-            upload_helpers.save_feedback(log, output)
-        else:
-            save_loc = upload_helpers.confirm_feedback_save_location()
-            upload_helpers.save_feedback(log, save_loc)
+        if output is None:
+            output = upload_helpers.confirm_feedback_save_location()
+        upload_helpers.save_feedback(log, output)
 
     click.secho("Check completed.", fg="green")
 
@@ -154,4 +152,4 @@ def generate_schema_command(prev_state, filepath, output, id_column, modality, n
     click.echo(json.dumps(proposed_schema, indent=2))
     if output is None:
         output = confirm_schema_save_location()
-        save_schema(proposed_schema, output)
+    save_schema(proposed_schema, output)
