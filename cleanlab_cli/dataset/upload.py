@@ -10,6 +10,7 @@ from cleanlab_cli.dataset.schema_helpers import (
     propose_schema,
     confirm_schema_save_location,
     save_schema,
+    _find_best_matching_column,
 )
 from cleanlab_cli.click_helpers import *
 
@@ -160,8 +161,19 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
             modality = click.prompt("Specify your dataset modality (text, tabular)")
 
     if id_column is None:
+        id_column_guess = _find_best_matching_column("identifier", columns)
         while id_column not in columns:
-            id_column = click.prompt("Specify the name of the ID column in your dataset")
+            if id_column_guess:
+                id_column = click.prompt(
+                    "Specify the name of the ID column in your dataset. Leave this blank to use our"
+                    " guess",
+                    default=id_column_guess,
+                )
+                if id_column == "":
+                    id_column = id_column_guess
+                    break
+            else:
+                id_column = click.prompt("Specify the name of the ID column in your dataset.")
 
     prev_state.update_state(dict(modality=modality, id_column=id_column))
     num_rows = get_num_rows(filepath)
