@@ -171,6 +171,33 @@ def validate_and_process_record(
     return row, row_id, warnings
 
 
+def create_feedback_log():
+    log = dict()
+    log[ValidationWarning.MISSING_ID.name] = []
+    # map from row ID to warnings
+    log[ValidationWarning.DUPLICATE_ID.name] = dict()
+    log[ValidationWarning.TYPE_MISMATCH.name] = dict()
+    log[ValidationWarning.MISSING_VAL.name] = dict()
+    return log
+
+
+def update_log_with_warnings(log, row_id, warnings):
+    if warnings:
+        for warn_type in warnings:
+            if warn_type == ValidationWarning.MISSING_ID.name:
+                log[warn_type] += warnings[warn_type]
+            else:
+                log[warn_type][row_id] = warnings[warn_type]
+    return log
+
+
+def echo_log_warnings(log):
+    for w in ValidationWarning:
+        warning_count = len(log[w.name])
+        if warning_count > 0:
+            click.echo(f"{warning_to_readable_name(w.name)}: {warning_count}")
+
+
 def upload_rows(
     api_key: str,
     dataset_id: Optional[str],
@@ -195,12 +222,7 @@ def upload_rows(
     rows_per_payload = None
     seen_ids = set()
 
-    log = dict()
-    log[ValidationWarning.MISSING_ID.name] = []
-    # map from row ID to warnings
-    log[ValidationWarning.DUPLICATE_ID.name] = dict()
-    log[ValidationWarning.TYPE_MISMATCH.name] = dict()
-    log[ValidationWarning.MISSING_VAL.name] = dict()
+    log = create_feedback_log()
 
     num_records = count_records_in_dataset_file(filepath)
     for record in tqdm(
@@ -209,12 +231,8 @@ def upload_rows(
         row, row_id, warnings = validate_and_process_record(
             record, schema, seen_ids, existing_ids, columns
         )
-        if warnings:
-            for warn_type in warnings:
-                if warn_type == ValidationWarning.MISSING_ID.name:
-                    log[warn_type] += warnings[warn_type]
-                else:
-                    log[warn_type][row_id] = warnings[warn_type]
+
+        update_log_with_warnings(log, row_id, warnings)
 
         # row and row ID both present, i.e. row will be uploaded
         seen_ids.add(row_id)
@@ -243,10 +261,7 @@ def upload_rows(
         success("\nNo issues were encountered when uploading your dataset. Nice!")
     else:
         info(f"\n{total_warnings} issues were encountered when uploading your dataset.")
-        for w in ValidationWarning:
-            warning_count = len(log[w.name])
-            if warning_count > 0:
-                click.echo(f"{warning_to_readable_name(w.name)}: {warning_count}")
+        echo_log_warnings(log)
 
         save_loc = confirm_feedback_save_location()
         save_feedback(log, save_loc)
@@ -276,10 +291,9 @@ def confirm_feedback_save_location():
     save = click.confirm("\nWould you like to save the upload issues for viewing?", default=None)
     if save:
         output = None
-        while output is None or (output != "" and not output.endswith(".json")):
+        while output is None:
             output = click.prompt(
-                "Specify a filename for the upload feedback. Filename must end"
-                " with .json. Leave this blank to use default",
+                "Specify a filename for the upload feedback. Leave this blank to use default",
                 default="issues.json",
             )
         return output

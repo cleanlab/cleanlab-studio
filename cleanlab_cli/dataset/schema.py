@@ -1,4 +1,5 @@
 import click
+import os
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
@@ -7,16 +8,24 @@ from cleanlab_cli.dataset.schema_helpers import (
     save_schema,
     _find_best_matching_column,
 )
-from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
+from cleanlab_cli.dataset import upload_helpers
+from cleanlab_cli.dataset.util import (
+    get_dataset_columns,
+    get_num_rows,
+    count_records_in_dataset_file,
+    read_file_as_stream,
+)
 from cleanlab_cli.decorators import previous_state
 import json
 from cleanlab_cli.click_helpers import (
     abort,
-    success,
     info,
+    success,
+    error,
     prompt_for_filepath,
     prompt_with_optional_default,
 )
+from tqdm import tqdm
 
 
 @click.group(help="generate and validate dataset schema, or check your dataset against a schema")
@@ -26,17 +35,17 @@ def schema():
 
 @schema.command(name="validate", help="validate an existing schema")
 @click.option("--schema", "-s", type=click.Path(), help="Schema filepath")
-@click.option("--dataset", "-d", type=click.Path(), help="Dataset filepath", required=False)
+@click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath")
 @previous_state
-def validate_schema_command(prev_state, schema, dataset):
+def validate_schema_command(prev_state, schema, filepath):
     if schema is None:
         schema = prompt_for_filepath("Specify your schema filepath")
     prev_state.new_state(
-        dict(command=dict(command="validate_schema", schema=schema, dataset=dataset))
+        dict(command=dict(command="validate schema", schema=schema, filepath=filepath))
     )
     loaded_schema = load_schema(schema)
-    if dataset:
-        cols = get_dataset_columns(dataset)
+    if filepath:
+        cols = get_dataset_columns(filepath)
     else:
         cols = list(loaded_schema["fields"])
     try:
@@ -44,6 +53,54 @@ def validate_schema_command(prev_state, schema, dataset):
     except ValueError as e:
         abort(str(e))
     success("Provided schema is valid!")
+
+
+@schema.command(name="check", help="check your dataset for type issues based on your schema")
+@click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath")
+@click.option("--schema", "-s", type=click.Path(), help="Schema filepath")
+@click.option("--output", "-o", type=click.Path(), help="Output filepath for type issues found")
+@previous_state
+def check_dataset_command(prev_state, filepath, schema, output):
+    if filepath is None:
+        filepath = prompt_for_filepath("Specify your dataset filepath")
+
+    if schema is None:
+        schema = prompt_for_filepath("Specify your schema filepath")
+
+    prev_state.new_state(
+        dict(command=dict(command="check dataset", schema=schema, filepath=filepath))
+    )
+
+    loaded_schema = load_schema(schema)
+    log = upload_helpers.create_feedback_log()
+    num_records = count_records_in_dataset_file(filepath)
+    seen_ids = set()
+    existing_ids = set()
+
+    for record in tqdm(
+        read_file_as_stream(filepath), total=num_records, initial=1, leave=True, unit=" rows"
+    ):
+        row, row_id, warnings = upload_helpers.validate_and_process_record(
+            record, loaded_schema, seen_ids, existing_ids
+        )
+        upload_helpers.update_log_with_warnings(log, row_id, warnings)
+        # row and row ID both present, i.e. row will be uploaded
+        seen_ids.add(row_id)
+
+    total_warnings = sum([len(log[k]) for k in log])
+    if total_warnings == 0:
+        success("\nNo type issues were encountered when checking your dataset. Nice!")
+    else:
+        info(f"\n{total_warnings} type issues were encountered when checking your dataset.")
+        upload_helpers.echo_log_warnings(log)
+
+        if output:
+            upload_helpers.save_feedback(log, output)
+        else:
+            save_loc = upload_helpers.confirm_feedback_save_location()
+            upload_helpers.save_feedback(log, save_loc)
+
+    click.secho("Check completed.", fg="green")
 
 
 @schema.command(name="generate", help="generate a schema based on your dataset")

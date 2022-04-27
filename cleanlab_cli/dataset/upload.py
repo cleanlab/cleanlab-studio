@@ -177,10 +177,8 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
             "Proposed schema rejected. Please submit your own schema using --schema.\n",
         )
 
-    if output:
-        save_schema(proposed_schema, output)
-    else:
-        save_filename = confirm_schema_save_location()
+    save_filename = confirm_schema_save_location()
+    if save_filename:
         save_schema(proposed_schema, save_filename)
 
     if proceed_upload:
