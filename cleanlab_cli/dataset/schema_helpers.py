@@ -301,7 +301,7 @@ def propose_schema(
         ]
         if len(id_columns) == 0:
             id_columns = columns
-        id_column = _find_best_matching_column("identifier", id_columns)
+        id_column = _find_best_matching_column("id", id_columns)
     else:
         if id_column not in columns:
             abort(f"ID column '{id_column}' does not exist in the dataset.")

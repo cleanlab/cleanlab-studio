@@ -135,11 +135,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
         dataset_id = id
 
     if filepath is None:
-        prompt_filepath_msg = "Specify your dataset filepath"
-        filepath = click.prompt(prompt_filepath_msg)
-        while not os.path.exists(filepath):
-            error(f"No file exists at: {filepath}")
-            filepath = click.prompt(prompt_filepath_msg)
+        filepath = prompt_for_filepath("Specify your dataset filepath")
 
     prev_state.update_state(dict(filepath=filepath))
     columns = get_dataset_columns(filepath)
@@ -161,19 +157,11 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
             modality = click.prompt("Specify your dataset modality (text, tabular)")
 
     if id_column is None:
-        id_column_guess = _find_best_matching_column("identifier", columns)
+        id_column_guess = _find_best_matching_column("id", columns)
         while id_column not in columns:
-            if id_column_guess:
-                id_column = click.prompt(
-                    "Specify the name of the ID column in your dataset. Leave this blank to use our"
-                    " guess",
-                    default=id_column_guess,
-                )
-                if id_column == "":
-                    id_column = id_column_guess
-                    break
-            else:
-                id_column = click.prompt("Specify the name of the ID column in your dataset.")
+            id_column = prompt_with_optional_default(
+                "Specify the name of the ID column in your dataset.", default=id_column_guess
+            )
 
     prev_state.update_state(dict(modality=modality, id_column=id_column))
     num_rows = get_num_rows(filepath)
