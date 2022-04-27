@@ -4,6 +4,7 @@ from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
     propose_schema,
+    confirm_save_schema,
     confirm_schema_save_location,
     save_schema,
     _find_best_matching_column,
@@ -24,6 +25,7 @@ from cleanlab_cli.click_helpers import (
     error,
     prompt_for_filepath,
     prompt_with_optional_default,
+    confirm_open_file,
 )
 from tqdm import tqdm
 
@@ -151,5 +153,11 @@ def generate_schema_command(prev_state, filepath, output, id_column, modality, n
     proposed_schema = propose_schema(filepath, cols, id_column, modality, name, num_rows)
     click.echo(json.dumps(proposed_schema, indent=2))
     if output is None:
-        output = confirm_schema_save_location()
+        save = confirm_save_schema()
+        if save:
+            output = confirm_schema_save_location()
+        else:
+            info("Schema was not saved.")
+            return
     save_schema(proposed_schema, output)
+    confirm_open_file(message="Would you like to open your saved schema?", filepath=output)

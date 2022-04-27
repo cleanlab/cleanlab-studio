@@ -27,7 +27,7 @@ from cleanlab_cli.dataset.schema_types import (
     DATA_TYPES_TO_FEATURE_TYPES,
     SCHEMA_VERSION,
 )
-from cleanlab_cli.click_helpers import progress, success, info, abort
+from cleanlab_cli.click_helpers import progress, success, info, abort, prompt_for_save_filepath
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
@@ -322,19 +322,16 @@ def construct_schema(fields, data_types, feature_types, id_column, modality, dat
     return retval
 
 
-def confirm_schema_save_location():
+def confirm_save_schema():
     save = click.confirm("Would you like to save the generated schema?", default=None)
-    if save:
-        output = None
-        while output is None or (output != "" and not output.endswith(".json")):
-            output = click.prompt(
-                "Specify a filename for the schema. Filename must end with .json. Leave this blank"
-                " to use default",
-                default="schema.json",
-            )
-        return output
-    else:
-        return None
+    return save
+
+
+def confirm_schema_save_location():
+    output = prompt_for_save_filepath(
+        "Specify a filename for the schema. Leave this blank to use default", default="schema.json"
+    )
+    return output
 
 
 def save_schema(schema, filename: Optional[str]):
