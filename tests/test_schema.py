@@ -1,5 +1,9 @@
 from click.testing import CliRunner
-from cleanlab_cli.dataset.schema import generate_schema_command, validate_schema_command
+from cleanlab_cli.dataset.schema import (
+    validate_schema_command,
+    generate_schema_command,
+    check_dataset_command,
+)
 from cleanlab_cli.dataset.util import read_file_as_df
 import os
 from os.path import dirname, abspath
@@ -18,7 +22,7 @@ def assert_success_else_error_output(test_name, result):
         )
 
 
-def test_schema():
+def test_generate_and_validate():
     df = read_file_as_df(sample_csv)
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -44,10 +48,37 @@ def test_schema():
             )
             assert_success_else_error_output("Schema generation", result)
             result = runner.invoke(
-                validate_schema_command, ["--schema", sample_schema, "--dataset", filename + ext]
+                validate_schema_command,
+                ["--schema", sample_schema, "--filepath", filename + ext],
             )
             assert_success_else_error_output("Schema validation", result)
 
 
+def test_check_dataset():
+    df = read_file_as_df(sample_csv)
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        filename = "sample"
+        df.to_csv(filename + ".csv")
+        df.to_excel(filename + ".xlsx", index=False)
+
+        for ext in [".csv", ".xlsx"]:
+            result = runner.invoke(
+                check_dataset_command,
+                [
+                    "-f",
+                    filename + ext,
+                    "-s",
+                    sample_schema,
+                    "-o",
+                    "text",
+                    "--output",
+                    "issues.json",
+                ],
+            )
+            assert_success_else_error_output("Dataset check", result)
+
+
 if __name__ == "__main__":
-    test_schema()
+    test_generate_and_validate()
+    test_check_dataset()
