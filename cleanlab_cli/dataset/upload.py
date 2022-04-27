@@ -77,13 +77,28 @@ def upload_with_schema(api_key, schema, columns, filepath):
 @click.option(
     "--output", "-o", type=click.Path(), help="Output filepath for issues encountered during upload"
 )
+@click.option(
+    "--resume", "-r", is_flag=True, help="Resume the previous upload if it did not finish"
+)
 @previous_state
 @auth_config
-def upload(config, prev_state, filepath, id, schema, id_column, modality, name, output):
+def upload(config, prev_state, filepath, id, schema, id_column, modality, name, output, resume):
+    api_key = config.get_api_key()
+
+    if resume:
+        if prev_state.command != "dataset upload":
+            abort("Previous command was not a dataset upload, so there is nothing to resume.")
+
     curr_command_dict = dict(
-        filepath=filepath, id=id, schema=schema, id_column=id_column, name=name, output=output
+        command="dataset upload",
+        filepath=filepath,
+        id=id,
+        schema=schema,
+        id_column=id_column,
+        name=name,
+        output=output,
     )
-    if prev_state.same_command(curr_command_dict):
+    if prev_state.same_command(curr_command_dict) and not resume:
         prev_dataset_id = prev_state.dataset_id
         if prev_dataset_id is None:
             if prev_state.complete:
@@ -107,9 +122,17 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
     else:
         prev_state.new_state(dict(command=curr_command_dict))
 
-    dataset_id = id
-    api_key = config.get_api_key()
-    # filetype = get_file_extension(filepath)
+    if resume:
+        filepath = prev_state.filepath
+        dataset_id = prev_state.dataset_id
+        if dataset_id is None:
+            abort(
+                "There was no dataset initialized with the previous upload command, so there is"
+                " nothing to resume. Run this command without the --resume flag."
+            )
+    else:
+        dataset_id = id
+        # filetype = get_file_extension(filepath)
     columns = get_dataset_columns(filepath)
 
     # If resuming upload
