@@ -1,4 +1,5 @@
 import json
+import os
 from cleanlab_cli.decorators import auth_config, previous_state
 from cleanlab_cli import api_service
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
@@ -44,7 +45,6 @@ def upload_with_schema(api_key, schema, columns, filepath):
     "-f",
     type=click.Path(),
     help="Dataset filepath",
-    required=True,
 )
 @click.option(
     "--id",
@@ -100,7 +100,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
     )
     if prev_state.same_command(curr_command_dict) and not resume:
         prev_dataset_id = prev_state.dataset_id
-        if prev_dataset_id is None:
+        if prev_dataset_id:
             if prev_state.complete:
                 proceed = click.confirm(
                     "You previously uploaded a dataset from this filepath with the same"
@@ -132,7 +132,14 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
             )
     else:
         dataset_id = id
-        # filetype = get_file_extension(filepath)
+
+    if filepath is None:
+        prompt_filepath_msg = "Specify your dataset filepath"
+        filepath = click.prompt(prompt_filepath_msg)
+        while not os.path.exists(filepath):
+            error(f"No file exists at: {filepath}")
+            filepath = click.prompt(prompt_filepath_msg)
+
     columns = get_dataset_columns(filepath)
 
     # If resuming upload
@@ -146,16 +153,14 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
 
     ## No schema, propose and confirm a schema
     ### Check that all required arguments are present
+
     if modality is None:
-        abort("You must specify a modality (--modality <MODALITY>) for a new dataset upload.")
+        while modality not in ["text", "tabular"]:
+            modality = click.prompt("Specify your dataset modality (text, tabular)")
 
     if id_column is None:
-        abort(
-            "You must specify an ID column (--id-column <ID column name>) for a new dataset upload."
-        )
-
-    if id_column not in columns:
-        abort(f"Could not find specified ID column '{id_column}' in dataset columns.")
+        while id_column not in columns:
+            id_column = click.prompt("Specify the name of the ID column in your dataset")
 
     num_rows = get_num_rows(filepath)
 
