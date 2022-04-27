@@ -93,5 +93,6 @@ def test_check_dataset():
 
 
 if __name__ == "__main__":
-    test_generate_and_validate()
+    test_generate()
+    test_validate()
     test_check_dataset()
