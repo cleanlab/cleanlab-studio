@@ -7,6 +7,9 @@ login:
 upload_csv:
 	cleanlab dataset upload -f ./tests/resources/datasets/sample.csv -m text --id-column tweet_id
 
+check_csv:
+	cleanlab dataset schema check -f ./tests/resources/datasets/sample.csv -s schema.json
+
 upload_large:
 	cleanlab dataset upload -f ./tests/resources/datasets/Tweets.csv -m text --id-column tweet_id
 
