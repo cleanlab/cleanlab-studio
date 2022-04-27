@@ -22,7 +22,7 @@ def assert_success_else_error_output(test_name, result):
         )
 
 
-def test_generate_and_validate():
+def test_generate():
     df = read_file_as_df(sample_csv)
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -47,6 +47,19 @@ def test_generate_and_validate():
                 ],
             )
             assert_success_else_error_output("Schema generation", result)
+
+
+def test_validate():
+    df = read_file_as_df(sample_csv)
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        filename = "sample"
+
+        df.to_csv(filename + ".csv")
+        df.to_excel(filename + ".xlsx", index=False)
+        # df.to_json(filename + ".json", orient="table", index=False)
+
+        for ext in [".csv", ".xlsx"]:
             result = runner.invoke(
                 validate_schema_command,
                 ["--schema", sample_schema, "--filepath", filename + ext],
