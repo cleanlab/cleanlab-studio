@@ -140,6 +140,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
             error(f"No file exists at: {filepath}")
             filepath = click.prompt(prompt_filepath_msg)
 
+    prev_state.update_state(dict(filepath=filepath))
     columns = get_dataset_columns(filepath)
 
     # If resuming upload
@@ -162,6 +163,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
         while id_column not in columns:
             id_column = click.prompt("Specify the name of the ID column in your dataset")
 
+    prev_state.update_state(dict(modality=modality, id_column=id_column))
     num_rows = get_num_rows(filepath)
 
     ### Propose schema
