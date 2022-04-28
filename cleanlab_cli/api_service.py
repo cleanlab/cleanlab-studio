@@ -6,7 +6,7 @@ import requests
 from cleanlab_cli.click_helpers import error, abort
 import json
 
-base_url = "http://localhost:8500/api/cli"
+base_url = "http://localhost:8500/api/cli/v1"
 
 
 def handle_api_error(res: requests.Response):
@@ -26,7 +26,7 @@ def initialize_dataset(api_key, schema):
     dataset_name = schema["metadata"]["name"]
 
     res = requests.post(
-        base_url + "/initialize",
+        base_url + "/dataset",
         data={
             "api_key": api_key,
             "fields": json.dumps(fields),
@@ -42,20 +42,20 @@ def initialize_dataset(api_key, schema):
 
 
 def get_existing_ids(api_key, dataset_id):
-    res = requests.get(base_url + f"/existing_ids/{dataset_id}", data={"api_key": api_key})
+    res = requests.get(base_url + f"/dataset/{dataset_id}/ids", data={"api_key": api_key})
     handle_api_error(res)
     return res.json()["existing_ids"]
 
 
 def get_dataset_schema(api_key, dataset_id):
-    res = requests.get(base_url + f"/schema/{dataset_id}", data={"api_key": api_key})
+    res = requests.get(base_url + f"/dataset/{dataset_id}/schema", data={"api_key": api_key})
     handle_api_error(res)
     return res.json()["schema"]
 
 
 def upload_rows(api_key, dataset_id, rows):
     res = requests.post(
-        base_url + f"/upload/{dataset_id}",
+        base_url + f"/dataset/{dataset_id}",
         data={"api_key": api_key, "rows": json.dumps(rows)},
     )
     with open("temp.json", "w") as f:
@@ -64,13 +64,13 @@ def upload_rows(api_key, dataset_id, rows):
 
 
 def get_completion_status(api_key, dataset_id):
-    res = requests.get(base_url + f"/complete/{dataset_id}", data={"api_key": api_key})
+    res = requests.get(base_url + f"/dataset/{dataset_id}/complete", data={"api_key": api_key})
     handle_api_error(res)
     return res.json()["complete"]
 
 
 def complete_upload(api_key, dataset_id):
-    res = requests.patch(base_url + f"/complete/{dataset_id}", data={"api_key": api_key})
+    res = requests.patch(base_url + f"/dataset/{dataset_id}/complete", data={"api_key": api_key})
     handle_api_error(res)
 
 
