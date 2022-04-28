@@ -3,8 +3,9 @@ Methods for interacting with the command line server API
 1:1 mapping with command_line_api.py
 """
 import requests
-from cleanlab_cli.click_helpers import error, abort
+from cleanlab_cli.click_helpers import abort
 import json
+from config import PACKAGE_VERSION
 
 base_url = "http://localhost:8500/api/cli/v1"
 
@@ -42,13 +43,13 @@ def initialize_dataset(api_key, schema):
 
 
 def get_existing_ids(api_key, dataset_id):
-    res = requests.get(base_url + f"/dataset/{dataset_id}/ids", data={"api_key": api_key})
+    res = requests.get(base_url + f"/dataset/{dataset_id}/ids", data=dict(api_key=api_key))
     handle_api_error(res)
     return res.json()["existing_ids"]
 
 
 def get_dataset_schema(api_key, dataset_id):
-    res = requests.get(base_url + f"/dataset/{dataset_id}/schema", data={"api_key": api_key})
+    res = requests.get(base_url + f"/dataset/{dataset_id}/schema", data=dict(api_key=api_key))
     handle_api_error(res)
     return res.json()["schema"]
 
@@ -56,7 +57,7 @@ def get_dataset_schema(api_key, dataset_id):
 def upload_rows(api_key, dataset_id, rows):
     res = requests.post(
         base_url + f"/dataset/{dataset_id}",
-        data={"api_key": api_key, "rows": json.dumps(rows)},
+        data=dict(api_key=api_key, rows=json.dumps(rows)),
     )
     with open("temp.json", "w") as f:
         f.write(json.dumps(rows))
@@ -64,17 +65,23 @@ def upload_rows(api_key, dataset_id, rows):
 
 
 def get_completion_status(api_key, dataset_id):
-    res = requests.get(base_url + f"/dataset/{dataset_id}/complete", data={"api_key": api_key})
+    res = requests.get(base_url + f"/dataset/{dataset_id}/complete", data=dict(api_key=api_key))
     handle_api_error(res)
     return res.json()["complete"]
 
 
 def complete_upload(api_key, dataset_id):
-    res = requests.patch(base_url + f"/dataset/{dataset_id}/complete", data={"api_key": api_key})
+    res = requests.patch(base_url + f"/dataset/{dataset_id}/complete", data=dict(api_key=api_key))
     handle_api_error(res)
 
 
 def validate_api_key(api_key):
-    res = requests.get(base_url + "/validate", data={"api_key": api_key})
+    res = requests.get(base_url + "/validate", data=dict(api_key=api_key))
+    handle_api_error(res)
+    return res.json()["valid"]
+
+
+def check_client_version():
+    res = requests.post(base_url + "/check_client_version", data=dict(version=PACKAGE_VERSION))
     handle_api_error(res)
     return res.json()["valid"]
