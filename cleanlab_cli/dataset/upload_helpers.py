@@ -260,7 +260,8 @@ def upload_rows(
     api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
 
     total_warnings = sum([len(log[w.name]) for w in ValidationWarning])
-    if total_warnings == 0:
+    issues_found = total_warnings > 0
+    if not issues_found:
         success("\nNo issues were encountered when uploading your dataset. Nice!")
     else:
         info(f"\n{total_warnings} issues were encountered when uploading your dataset.")
@@ -279,7 +280,9 @@ def upload_rows(
         # if we have an output after the above prompt (or originally provided)
         if output:
             save_feedback(log, output)
-
+            click_helpers.confirm_open_file(
+                "Would you like to open your issues file for viewing?", filepath=output
+            )
     click.secho(
         "Upload completed. View your uploaded dataset at https://app.cleanlab.ai/datasets",
         fg="green",

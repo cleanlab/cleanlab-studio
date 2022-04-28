@@ -45,6 +45,7 @@ def test_generate():
                     "--output",
                     "schema.json",
                 ],
+                input="n",
             )
             assert_success_else_error_output("Schema generation", result)
 
@@ -88,6 +89,7 @@ def test_check_dataset():
                     "--output",
                     "issues.json",
                 ],
+                input="n",
             )
             assert_success_else_error_output("Dataset check", result)
 

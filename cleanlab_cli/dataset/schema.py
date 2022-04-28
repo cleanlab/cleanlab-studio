@@ -102,9 +102,11 @@ def check_dataset_command(prev_state, filepath, schema, output):
                 prompt_default="issues.json",
                 no_save_message="Dataset type issues were not saved.",
             )
-            if output is None:
-                return
-        upload_helpers.save_feedback(log, output)
+        if output:
+            upload_helpers.save_feedback(log, output)
+            click_helpers.confirm_open_file(
+                "Would you like to open your issues file for viewing?", filepath=output
+            )
 
     click.secho("Check completed.", fg="green")
 
@@ -170,5 +172,5 @@ def generate_schema_command(prev_state, filepath, output, id_column, modality, n
             return
     save_schema(proposed_schema, output)
     click_helpers.confirm_open_file(
-        message="Would you like to open your saved schema?", filepath=output
+        message="Would you like to open your schema file?", filepath=output
     )
