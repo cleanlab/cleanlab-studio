@@ -9,7 +9,14 @@ FILENAME = "state.json"
 
 class PreviousState:
     def __init__(self):
-        self.state = dict()
+        self.state = dict(command=None, args=dict())
+        self.load_state()
+
+    def load_state(self):
+        fp = self.get_filepath()
+        if os.path.exists(fp):
+            with open(fp, "r") as f:
+                self.state = json.load(f)
 
     @staticmethod
     def get_filepath():
@@ -19,38 +26,29 @@ class PreviousState:
         with open(self.get_filepath(), "w") as f:
             json.dump(self.state, f)
 
-    def new_state(self, updates: Dict[str, any]):
+    def init_state(self, updates: Dict[str, any]):
         self.state = dict()
         self.state.update(updates)
         self.save_state()
 
-    def update_state(self, updates: Dict[str, any]):
-        """Updates and saves state"""
-        self.state.update(updates)
+    def update_args(self, args_dict):
+        self.state["args"].update(args_dict)
         self.save_state()
 
     def get_state(self):
-        if len(self.state) == 0:
-            fp = self.get_filepath()
-            if os.path.exists(fp):
-                with open(fp, "r") as f:
-                    self.state = json.load(f)
-                    return self.state
-            else:
-                return {}
-        else:
-            return self.state
+        return self.state
 
-    def same_command(self, command: Dict):
-        state = self.get_state()
-        if "command" not in state:
-            return False
-        prev_command = state["command"]
-        same = all(prev_command.get(k, None) == command.get(k, None) for k in command)
-        return same
+    def same_command(self, command_name, args):
+        if self.get("command") == command_name:
+            same = all(self.get_arg(k) == args.get(k, None) for k in args)
+            return same
+        return False
 
-    def __getattr__(self, item):
+    def get(self, item):
         return self.state.get(item, None)
+
+    def get_arg(self, item):
+        return self.state["args"].get(item, None)
 
 
 previous_state = click.make_pass_decorator(PreviousState, ensure=True)

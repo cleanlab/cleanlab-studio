@@ -15,7 +15,7 @@ from cleanlab_cli.decorators import previous_state
 )
 @previous_state
 def login(prev_state, key):
-    prev_state.new_state(dict(command=dict(command="login", key=key)))
+    prev_state.init_state(dict(command="login", args=dict(key=key)))
     CleanlabSettings.init_cleanlab_dir()
 
     # validate API key

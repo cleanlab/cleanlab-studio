@@ -38,9 +38,7 @@ def schema():
 def validate_schema_command(prev_state, schema, filepath):
     if schema is None:
         schema = click_helpers.prompt_for_filepath("Specify your schema filepath")
-    prev_state.new_state(
-        dict(command=dict(command="validate schema", schema=schema, filepath=filepath))
-    )
+    prev_state.init_state(dict(command="validate schema", schema=schema, filepath=filepath))
     loaded_schema = load_schema(schema)
     if filepath:
         cols = get_dataset_columns(filepath)
@@ -65,8 +63,8 @@ def check_dataset_command(prev_state, filepath, schema, output):
     if schema is None:
         schema = click_helpers.prompt_for_filepath("Specify your schema filepath")
 
-    prev_state.new_state(
-        dict(command=dict(command="check dataset", schema=schema, filepath=filepath))
+    prev_state.init_state(
+        dict(command="check dataset", args=dict(schema=schema, filepath=filepath))
     )
 
     loaded_schema = load_schema(schema)
@@ -144,17 +142,17 @@ def generate_schema_command(prev_state, filepath, output, id_column, modality, n
             "Specify the name of the ID column in your dataset.", default=id_column_guess
         )
 
-    prev_state.new_state(
+    prev_state.init_state(
         dict(
-            command=dict(
-                command="generate schema",
+            command="generate schema",
+            args=dict(
                 filepath=filepath,
                 output=output,
                 id_column=id_column,
                 modality=modality,
                 name=name,
             ),
-        )
+        ),
     )
     num_rows = get_num_rows(filepath)
     cols = get_dataset_columns(filepath)

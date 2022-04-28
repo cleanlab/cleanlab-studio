@@ -88,11 +88,10 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
     api_key = config.get_api_key()
 
     if resume:
-        if prev_state.command != "dataset upload":
+        if prev_state.get("command") != "dataset upload":
             abort("Previous command was not a dataset upload, so there is nothing to resume.")
 
-    curr_command_dict = dict(
-        command="dataset upload",
+    args = dict(
         filepath=filepath,
         id=id,
         schema=schema,
@@ -100,10 +99,11 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
         name=name,
         output=output,
     )
-    if prev_state.same_command(curr_command_dict) and not resume:
-        prev_dataset_id = prev_state.dataset_id
-        if prev_dataset_id:
-            if prev_state.complete:
+    if prev_state.same_command("dataset upload", args) and not resume:
+        prev_dataset_id = prev_state.get_arg("dataset_id")
+        if prev_dataset_id:  # having a dataset id means it was initialized
+            completed = api_service.get_completion_status(api_key, prev_dataset_id)
+            if completed:
                 proceed = click.confirm(
                     "You previously uploaded a dataset from this filepath with the same"
                     " command arguments. Running this command will generate a new dataset. Do you"
@@ -120,25 +120,25 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
                 )
             if not proceed:
                 info("Exiting.")
-            return
-    else:
-        prev_state.new_state(dict(command=curr_command_dict))
-
+                return
     if resume:
-        filepath = prev_state.filepath
-        dataset_id = prev_state.dataset_id
+        filepath = prev_state.get_arg("filepath")
+        dataset_id = prev_state.get_arg("dataset_id")
         if dataset_id is None:
             abort(
                 "There was no dataset initialized with the previous upload command, so there is"
                 " nothing to resume. Run this command without the --resume flag."
             )
+        args.update(dict(filepath=filepath, dataset_id=dataset_id))
     else:
         dataset_id = id
+
+    prev_state.init_state(dict(command="dataset upload", args=args))
 
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
-    prev_state.update_state(dict(filepath=filepath))
+    prev_state.update_args(dict(filepath=filepath))
     columns = get_dataset_columns(filepath)
 
     # If resuming upload
@@ -164,7 +164,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
                 "Specify the name of the ID column in your dataset.", default=id_column_guess
             )
 
-    prev_state.update_state(dict(modality=modality, id_column=id_column))
+    prev_state.update_args(dict(modality=modality, id_column=id_column))
     num_rows = get_num_rows(filepath)
 
     ### Propose schema
@@ -191,7 +191,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
     if proceed_upload:
         dataset_id = api_service.initialize_dataset(api_key, proposed_schema)
         info(f"Dataset initialized with ID: {dataset_id}")
-        prev_state.update_state(dict(dataset_id=dataset_id, complete=False))
+        prev_state.update_args(dict(dataset_id=dataset_id))
         upload_rows(
             api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema
         )
