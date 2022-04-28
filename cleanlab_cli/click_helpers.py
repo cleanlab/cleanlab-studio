@@ -52,17 +52,6 @@ def prompt_for_save_filepath(prompt_message, default=None):
     return filepath
 
 
-def prompt_with_optional_default(prompt_message, default=None):
-    if default:
-        retval = click.prompt(
-            f"{prompt_message} Leave this blank to use default",
-            default=default,
-        )
-    else:
-        retval = click.prompt(prompt_message)
-    return retval
-
-
 def confirm_open_file(message, filepath):
     edit = click.confirm(message, default=None)
     if edit:
@@ -71,3 +60,20 @@ def confirm_open_file(message, filepath):
             click.edit(filename=filepath, editor="atom")
         except click.UsageError:
             click.edit(filename=filepath)
+
+
+def confirm_save_data(message, default=None):
+    save = click.confirm(message, default=default)
+    return save
+
+
+def confirm_save_prompt_filepath(
+    save_message, save_default, prompt_message, prompt_default, no_save_message
+):
+    save = confirm_save_data(save_message, default=save_default)
+    if save:
+        output = prompt_for_save_filepath(prompt_message, default=prompt_default)
+    else:
+        info(no_save_message)
+        return
+    return output

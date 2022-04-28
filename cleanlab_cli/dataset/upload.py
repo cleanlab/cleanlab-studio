@@ -1,5 +1,6 @@
 import json
 import os
+import click
 from cleanlab_cli.decorators import auth_config, previous_state
 from cleanlab_cli import api_service
 from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
@@ -8,11 +9,11 @@ from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
     propose_schema,
-    confirm_schema_save_location,
     save_schema,
     _find_best_matching_column,
 )
-from cleanlab_cli.click_helpers import *
+from cleanlab_cli import click_helpers
+from cleanlab_cli.click_helpers import progress, success, abort, error, info, log
 
 
 def resume_upload(api_key, dataset_id, filepath):
@@ -135,7 +136,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
         dataset_id = id
 
     if filepath is None:
-        filepath = prompt_for_filepath("Specify your dataset filepath")
+        filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
     prev_state.update_state(dict(filepath=filepath))
     columns = get_dataset_columns(filepath)
@@ -159,7 +160,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
     if id_column is None:
         id_column_guess = _find_best_matching_column("id", columns)
         while id_column not in columns:
-            id_column = prompt_with_optional_default(
+            id_column = click.prompt(
                 "Specify the name of the ID column in your dataset.", default=id_column_guess
             )
 
@@ -177,9 +178,15 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
             "Proposed schema rejected. Please submit your own schema using --schema.\n",
         )
 
-    save_filename = confirm_schema_save_location()
-    if save_filename:
-        save_schema(proposed_schema, save_filename)
+    save_filepath = click_helpers.confirm_save_prompt_filepath(
+        save_message="Would you like to save the generated schema?",
+        save_default=None,
+        prompt_message="Specify a filename for the schema. Leave this blank to use default",
+        prompt_default="schema.json",
+        no_save_message="Schema was not saved.",
+    )
+    if save_filepath:
+        save_schema(proposed_schema, save_filepath)
 
     if proceed_upload:
         dataset_id = api_service.initialize_dataset(api_key, proposed_schema)

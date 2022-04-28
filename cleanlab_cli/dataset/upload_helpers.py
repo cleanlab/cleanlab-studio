@@ -24,6 +24,7 @@ from cleanlab_cli.dataset.util import (
     count_records_in_dataset_file,
 )
 from cleanlab_cli.dataset.schema_types import PYTHON_TYPES_TO_READABLE_STRING, schema_mapper
+from cleanlab_cli import click_helpers
 from cleanlab_cli.click_helpers import success, info, progress
 
 
@@ -204,6 +205,7 @@ def upload_rows(
     filepath: str,
     schema: Dict[str, Any],
     existing_ids: Optional[Collection[str]] = None,
+    output: Optional[str] = None,
     payload_size: float = 2,
 ):
     """
@@ -212,7 +214,8 @@ def upload_rows(
     :param dataset_id: dataset ID
     :param filepath: path to dataset file
     :param schema: a validated schema
-    :param existing_ids:
+    :param existing_ids: set of row IDs that were already uploaded
+    :param output: filepath to store upload issues in
     :param payload_size: size of each chunk of rows uploaded, in MB
     :return: None
     """
@@ -263,8 +266,19 @@ def upload_rows(
         info(f"\n{total_warnings} issues were encountered when uploading your dataset.")
         echo_log_warnings(log)
 
-        save_loc = confirm_feedback_save_location()
-        save_feedback(log, save_loc)
+        if not output:
+            output = click_helpers.confirm_save_prompt_filepath(
+                save_message="Would you like to save the issues for viewing?",
+                save_default=None,
+                prompt_message=(
+                    "Specify a filename for the dataset issues. Leave this blank to use default"
+                ),
+                prompt_default="issues.json",
+                no_save_message="Dataset type issues were not saved.",
+            )
+        # if we have an output after the above prompt (or originally provided)
+        if output:
+            save_feedback(log, output)
 
     click.secho(
         "Upload completed. View your uploaded dataset at https://app.cleanlab.ai/datasets",
@@ -287,27 +301,10 @@ def group_feature_types(schema):
     return feature_types_to_columns
 
 
-def confirm_feedback_save_location():
-    save = click.confirm("\nWould you like to save the issues for viewing?", default=None)
-    if save:
-        output = None
-        while output is None:
-            output = click.prompt(
-                "Specify a filename for the dataset issues. Leave this blank to use default",
-                default="issues.json",
-            )
-        return output
-    else:
-        return None
-
-
 def save_feedback(feedback, filename):
-    if filename == "":
-        filename = "issues.json"
+    if not filename:
+        raise ValueError("No filepath provided for saving feedback")
     feedback = {warning_to_readable_name(k): v for k, v in feedback.items()}
-    if filename:
-        progress(f"Writing issues to {filename}...")
-        dump_json(filename, feedback)
-        success("Saved.\n")
-    else:
-        info("Dataset type issues were not saved.")
+    progress(f"Writing issues to {filename}...")
+    dump_json(filename, feedback)
+    success("Saved.\n")

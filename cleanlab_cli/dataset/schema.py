@@ -4,8 +4,6 @@ from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
     propose_schema,
-    confirm_save_schema,
-    confirm_schema_save_location,
     save_schema,
     _find_best_matching_column,
 )
@@ -23,10 +21,8 @@ from cleanlab_cli.click_helpers import (
     info,
     success,
     error,
-    prompt_for_filepath,
-    prompt_with_optional_default,
-    confirm_open_file,
 )
+from cleanlab_cli import click_helpers
 from tqdm import tqdm
 
 
@@ -41,7 +37,7 @@ def schema():
 @previous_state
 def validate_schema_command(prev_state, schema, filepath):
     if schema is None:
-        schema = prompt_for_filepath("Specify your schema filepath")
+        schema = click_helpers.prompt_for_filepath("Specify your schema filepath")
     prev_state.new_state(
         dict(command=dict(command="validate schema", schema=schema, filepath=filepath))
     )
@@ -64,10 +60,10 @@ def validate_schema_command(prev_state, schema, filepath):
 @previous_state
 def check_dataset_command(prev_state, filepath, schema, output):
     if filepath is None:
-        filepath = prompt_for_filepath("Specify your dataset filepath")
+        filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
     if schema is None:
-        schema = prompt_for_filepath("Specify your schema filepath")
+        schema = click_helpers.prompt_for_filepath("Specify your schema filepath")
 
     prev_state.new_state(
         dict(command=dict(command="check dataset", schema=schema, filepath=filepath))
@@ -96,8 +92,18 @@ def check_dataset_command(prev_state, filepath, schema, output):
         info(f"\nFound {total_warnings} type issues when checking your dataset.")
         upload_helpers.echo_log_warnings(log)
 
-        if output is None:
-            output = upload_helpers.confirm_feedback_save_location()
+        if not output:
+            output = click_helpers.confirm_save_prompt_filepath(
+                save_message="Would you like to save the issues for viewing?",
+                save_default=None,
+                prompt_message=(
+                    "Specify a filename for the dataset issues. Leave this blank to use default"
+                ),
+                prompt_default="issues.json",
+                no_save_message="Dataset type issues were not saved.",
+            )
+            if output is None:
+                return
         upload_helpers.save_feedback(log, output)
 
     click.secho("Check completed.", fg="green")
@@ -127,12 +133,12 @@ def check_dataset_command(prev_state, filepath, schema, output):
 @previous_state
 def generate_schema_command(prev_state, filepath, output, id_column, modality, name):
     if filepath is None:
-        filepath = prompt_for_filepath("Specify your dataset filepath")
+        filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
     columns = get_dataset_columns(filepath)
     id_column_guess = _find_best_matching_column("id", columns)
     while id_column not in columns:
-        id_column = prompt_with_optional_default(
+        id_column = click.prompt(
             "Specify the name of the ID column in your dataset.", default=id_column_guess
         )
 
@@ -152,12 +158,17 @@ def generate_schema_command(prev_state, filepath, output, id_column, modality, n
     cols = get_dataset_columns(filepath)
     proposed_schema = propose_schema(filepath, cols, id_column, modality, name, num_rows)
     click.echo(json.dumps(proposed_schema, indent=2))
-    if output is None:
-        save = confirm_save_schema()
-        if save:
-            output = confirm_schema_save_location()
-        else:
-            info("Schema was not saved.")
+    if not output:
+        output = click_helpers.confirm_save_prompt_filepath(
+            save_message="Would you like to save the generated schema?",
+            save_default=None,
+            prompt_message="Specify a filename for the schema. Leave this blank to use default",
+            prompt_default="schema.json",
+            no_save_message="Schema was not saved.",
+        )
+        if output is None:
             return
     save_schema(proposed_schema, output)
-    confirm_open_file(message="Would you like to open your saved schema?", filepath=output)
+    click_helpers.confirm_open_file(
+        message="Would you like to open your saved schema?", filepath=output
+    )
