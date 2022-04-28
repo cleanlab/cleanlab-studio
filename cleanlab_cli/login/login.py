@@ -14,8 +14,8 @@ from cleanlab_cli.decorators import previous_state
     help="API key for CLI uploads. You can get this from https://app.cleanlab.ai/upload.",
 )
 @previous_state
-def login(key):
-    previous_state.new_state(dict(command=dict(command="login", key=key)))
+def login(prev_state, key):
+    prev_state.new_state(dict(command=dict(command="login", key=key)))
     CleanlabSettings.init_cleanlab_dir()
 
     # validate API key
