@@ -54,12 +54,14 @@ def prompt_for_save_filepath(prompt_message, default=None):
 
 def confirm_open_file(message, filepath):
     edit = click.confirm(message, default=None)
+    recommended_editors = ["atom", "subl", "code"]
     if edit:
-        try:
-            # TODO expand list of recommended editors
-            click.edit(filename=filepath, editor="atom")
-        except click.UsageError:
-            click.edit(filename=filepath)
+        for editor in recommended_editors:
+            try:
+                click.edit(filename=filepath, editor=editor)
+            except click.UsageError:
+                pass
+        click.edit(filename=filepath)
 
 
 def confirm_save_data(message, default=None):
