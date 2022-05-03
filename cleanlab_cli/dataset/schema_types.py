@@ -1,6 +1,6 @@
 from decimal import Decimal
 from sqlalchemy import String, Boolean, DateTime, Float, BigInteger
-from config import PACKAGE_VERSION
+from config import __version__
 
 schema_mapper = {
     "string": String(),
@@ -25,4 +25,4 @@ PYTHON_TYPES_TO_READABLE_STRING = {
     Decimal: "float",
 }
 
-SCHEMA_VERSION = PACKAGE_VERSION
+SCHEMA_VERSION = __version__

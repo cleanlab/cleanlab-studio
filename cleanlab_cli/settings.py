@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Dict, Optional
-from config import PACKAGE_VERSION
+from config import __version__
 
 
 class CleanlabSettings:
@@ -11,7 +11,7 @@ class CleanlabSettings:
 
     @staticmethod
     def init_base():
-        return CleanlabSettings(version=PACKAGE_VERSION, api_key=None)
+        return CleanlabSettings(version=__version__, api_key=None)
 
     @staticmethod
     def from_dict(d):
@@ -65,13 +65,13 @@ class CleanlabSettings:
         return settings
 
     def update_version(self):
-        self.version = PACKAGE_VERSION
+        self.version = __version__
         self.save()
 
     def validate_version(self):
         # list of sem vers for which a migration needs to be run
         MIGRATION_VERSIONS = []
-        VALID_VERSIONS = [PACKAGE_VERSION]
+        VALID_VERSIONS = [__version__]
         if self.version not in VALID_VERSIONS:
             if self.version in MIGRATION_VERSIONS:
                 raise ValueError("Settings file must be migrated or re-generated.")

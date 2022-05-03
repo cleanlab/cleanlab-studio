@@ -5,7 +5,7 @@ Methods for interacting with the command line server API
 import requests
 from cleanlab_cli.click_helpers import abort
 import json
-from config import PACKAGE_VERSION
+from config import __version__
 
 base_url = "http://localhost:8500/api/cli/v1"
 
@@ -82,6 +82,6 @@ def validate_api_key(api_key):
 
 
 def check_client_version():
-    res = requests.post(base_url + "/check_client_version", data=dict(version=PACKAGE_VERSION))
+    res = requests.post(base_url + "/check_client_version", data=dict(version=__version__))
     handle_api_error(res)
     return res.json()["valid"]
