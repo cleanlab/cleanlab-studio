@@ -23,7 +23,7 @@ from cleanlab_cli.dataset.util import (
     dump_json,
     count_records_in_dataset_file,
 )
-from cleanlab_cli.dataset.schema_types import PYTHON_TYPES_TO_READABLE_STRING, schema_mapper
+from cleanlab_cli.dataset.schema_types import PYTHON_TYPES_TO_READABLE_STRING
 from cleanlab_cli import click_helpers
 from cleanlab_cli.click_helpers import success, info, progress
 
@@ -287,10 +287,6 @@ def upload_rows(
         "Upload completed. View your uploaded dataset at https://app.cleanlab.ai/datasets",
         fg="green",
     )
-
-
-def construct_sql_dtypes_from_schema(schema):
-    return {field: schema_mapper[spec["data_type"]] for field, spec in schema["fields"].items()}
 
 
 def group_feature_types(schema):
