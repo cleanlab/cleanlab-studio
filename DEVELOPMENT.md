@@ -27,3 +27,11 @@ To run the formatter manually:
 ```
 black .
 ```
+
+
+## Uploading to PyPI
+1. python setup.py check -m -s
+2. rm -rf dist build
+3. python setup.py sdist bdist_wheel
+4. twine check dist/*
+5. python -m twine upload dist/*
