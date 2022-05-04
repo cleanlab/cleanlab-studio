@@ -197,7 +197,7 @@ Your schema file should be formatted as follows:
       "feature_type": "datetime"
     },
   },
-  "version": "0.1"
+  "version": "0.1.0"
 }
 ```
 This is the schema of a hypothetical dataset `Tweets.csv` that contains tweets, where the column `tweet_id` contains a unique identifier for each record.
@@ -236,4 +236,4 @@ The `datetime` type should be used for datetime strings, e.g. "2015-02-24 11:35:
 Datetime values must be parsable by [pandas.to_datetime()](https://pandas.pydata.org/docs/reference/api/pandas.to_datetime.html).
 
 `version` indicates the current Cleanlab CLI package version at time of schema creation.
-The current Cleanlab schema version is `0.1`.
+The current Cleanlab schema version is `0.1.0`.
