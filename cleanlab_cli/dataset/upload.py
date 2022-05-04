@@ -37,6 +37,7 @@ def upload_with_schema(api_key, schema, columns, filepath):
     progress("Initializing dataset...")
     dataset_id = api_service.initialize_dataset(api_key, loaded_schema)
     info(f"Dataset initialized with ID: {dataset_id}")
+    info("If this upload is interrupted, you may resume it using: cleanlab dataset upload --resume")
     upload_rows(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
     return
 
