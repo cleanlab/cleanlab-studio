@@ -23,7 +23,6 @@ from cleanlab_cli.dataset.util import (
     dump_json,
 )
 from cleanlab_cli.dataset.schema_types import (
-    schema_mapper,
     DATA_TYPES_TO_FEATURE_TYPES,
     SCHEMA_VERSION,
 )
@@ -100,11 +99,13 @@ def validate_schema(schema, columns: Collection[str]):
     if not schema_columns.issubset(columns):
         raise ValueError(f"Dataset is missing schema columns: {schema_columns - columns}")
 
+    recognized_column_types = {"string", "integer", "float", "boolean", "datetime"}
+
     ## Check that each field has a feature_type that matches the base type
     for spec in schema["fields"].values():
         column_type = spec["data_type"]
         column_feature_type = spec.get("feature_type", None)
-        if column_type not in schema_mapper:
+        if column_type not in recognized_column_types:
             raise ValueError(f"Unrecognized column data type: {column_type}")
 
         if column_feature_type:
