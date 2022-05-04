@@ -20,6 +20,7 @@ setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -29,11 +30,11 @@ setup(
     keywords="cleanlab",
     packages=["cleanlab_cli"],
     py_modules=["main"],
-    python_requires=">=3.7",
+    python_requires=">=3.6",
     install_requires=[
         "Click>=8.0.4",
         "colorama>=0.4.4",
-        "pandas>=1.4.1",
+        "pandas>=1.0.0",
         "pyexcel>=0.7.0",
         "pyexcel-xls>=0.7.0",
         "pyexcel-xlsx>=0.6.0",
