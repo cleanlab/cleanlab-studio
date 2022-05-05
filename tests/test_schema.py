@@ -4,7 +4,7 @@ from cleanlab_cli.dataset.schema import (
     generate_schema_command,
     check_dataset_command,
 )
-from cleanlab_cli.dataset.util import read_file_as_df
+from cleanlab_cli.util import read_file_as_df
 import os
 from os.path import dirname, abspath
 import logging

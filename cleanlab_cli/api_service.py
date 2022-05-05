@@ -59,9 +59,13 @@ def upload_rows(api_key, dataset_id, rows):
         base_url + f"/dataset/{dataset_id}",
         data=dict(api_key=api_key, rows=json.dumps(rows)),
     )
-    with open("temp.json", "w") as f:
-        f.write(json.dumps(rows))
     handle_api_error(res)
+
+
+def download_cleaned_labels(api_key, experiment_id):
+    res = requests.get(base_url + f"/experiment/{experiment_id}", data=dict(api_key=api_key))
+    handle_api_error(res)
+    return res.json()["rows"]
 
 
 def get_completion_status(api_key, dataset_id):

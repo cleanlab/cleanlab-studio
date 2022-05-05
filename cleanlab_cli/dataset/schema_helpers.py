@@ -1,7 +1,6 @@
 """
 Helper functions for working with schemas
 """
-import decimal
 
 import pandas as pd
 from pandas import NaT
@@ -13,9 +12,8 @@ from typing import (
 )
 from random import sample, random
 import json
-import click
 from decimal import Decimal
-from cleanlab_cli.dataset.util import (
+from cleanlab_cli.util import (
     get_num_rows,
     get_dataset_columns,
     read_file_as_stream,
@@ -26,7 +24,7 @@ from cleanlab_cli.dataset.schema_types import (
     DATA_TYPES_TO_FEATURE_TYPES,
     SCHEMA_VERSION,
 )
-from cleanlab_cli.click_helpers import progress, success, info, abort, prompt_for_save_filepath
+from cleanlab_cli.click_helpers import progress, success, info, abort
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 

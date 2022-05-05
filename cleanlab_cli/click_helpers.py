@@ -47,11 +47,6 @@ def prompt_for_filepath(prompt_message, default=None):
     return filepath
 
 
-def prompt_for_save_filepath(prompt_message, default=None):
-    filepath = click.prompt(prompt_message, default=default)
-    return filepath
-
-
 def confirm_open_file(message, filepath):
     edit = click.confirm(message, default=None)
     recommended_editors = ["atom", "subl", "code"]

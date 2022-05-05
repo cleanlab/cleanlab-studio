@@ -1,9 +1,8 @@
 import json
-import os
 import click
 from cleanlab_cli.decorators import auth_config, previous_state
 from cleanlab_cli import api_service
-from cleanlab_cli.dataset.util import get_dataset_columns, get_num_rows
+from cleanlab_cli.util import get_dataset_columns, get_num_rows
 from cleanlab_cli.dataset.upload_helpers import upload_rows
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
@@ -13,7 +12,7 @@ from cleanlab_cli.dataset.schema_helpers import (
     _find_best_matching_column,
 )
 from cleanlab_cli import click_helpers
-from cleanlab_cli.click_helpers import progress, success, abort, error, info, log
+from cleanlab_cli.click_helpers import progress, success, abort, info, log
 
 
 def resume_upload(api_key, dataset_id, filepath):

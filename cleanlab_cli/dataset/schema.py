@@ -1,5 +1,4 @@
 import click
-import os
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
@@ -8,7 +7,7 @@ from cleanlab_cli.dataset.schema_helpers import (
     _find_best_matching_column,
 )
 from cleanlab_cli.dataset import upload_helpers
-from cleanlab_cli.dataset.util import (
+from cleanlab_cli.util import (
     get_dataset_columns,
     get_num_rows,
     count_records_in_dataset_file,
@@ -20,7 +19,6 @@ from cleanlab_cli.click_helpers import (
     abort,
     info,
     success,
-    error,
 )
 from cleanlab_cli import click_helpers
 from tqdm import tqdm

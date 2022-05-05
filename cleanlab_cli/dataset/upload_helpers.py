@@ -17,7 +17,7 @@ from sys import getsizeof
 from enum import Enum
 from tqdm import tqdm
 from cleanlab_cli import api_service
-from cleanlab_cli.dataset.util import (
+from cleanlab_cli.util import (
     is_null_value,
     read_file_as_stream,
     dump_json,
