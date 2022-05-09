@@ -94,3 +94,14 @@ def count_records_in_dataset_file(filepath):
 def dump_json(filepath, schema):
     with open(filepath, "w") as f:
         f.write(json.dumps(schema, indent=2))
+
+
+def add_fields_to_dataset(dataset_filepath, id_to_fields_to_values, output_filepath):
+    for r in dataset_filepath:
+        pass
+
+    # write as csv
+
+    # write as json
+
+    # write as xls/xlsx
