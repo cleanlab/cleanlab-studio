@@ -1,12 +1,14 @@
 import os
-import pandas as pd
+
 import click
+import pandas as pd
+
 from cleanlab_cli import api_service
 from cleanlab_cli import click_helpers
-from cleanlab_cli.click_helpers import log, info, success
-from cleanlab_cli.settings import CleanlabSettings
-from cleanlab_cli.decorators import previous_state, auth_config
 from cleanlab_cli import util
+from cleanlab_cli.click_helpers import log
+from cleanlab_cli.decorators import previous_state, auth_config
+from cleanlab_cli.settings import CleanlabSettings
 
 
 @click.command(help="export cleaned dataset labels")
@@ -44,7 +46,8 @@ def download(config, prev_state, id, combine, filepath, output):
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
 
-    rows = api_service.download_cleaned_labels(api_key, experiment_id=id)
+    rows, id_column = api_service.download_cleaned_labels(api_key, experiment_id=id)
+
     clean_df = pd.DataFrame(rows)
 
     if combine:
@@ -62,6 +65,7 @@ def download(config, prev_state, id, combine, filepath, output):
                 default=f"cleaned_{filename}",
             )
 
+        util.combine_fields_with_dataset(filepath, id_column, output)
     else:
         while output is None or util.get_file_extension(output) != ".csv":
             output = click.prompt(

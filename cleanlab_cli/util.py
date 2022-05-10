@@ -1,16 +1,17 @@
 """
 Contains utility functions for interacting with dataset files
 """
-import pandas as pd
+import json
+import os
+import pathlib
+from collections import OrderedDict
 from typing import (
     Generator,
 )
-import pyexcel
-import os
-from collections import OrderedDict
-import pathlib
-import json
+
 import ijson
+import pandas as pd
+import pyexcel
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx", ".json"]
 
@@ -96,12 +97,36 @@ def dump_json(filepath, schema):
         f.write(json.dumps(schema, indent=2))
 
 
-def add_fields_to_dataset(dataset_filepath, id_to_fields_to_values, output_filepath):
-    for r in dataset_filepath:
+def append_rows(rows, file_handler, filename, extension):
+    if extension == ".csv":
+        df = pd.DataFrame(rows)
+        df.to_csv(filename, mode="a")
+    elif extension == ".json":
+        pass
+    elif extension in [".xls", ".xlsx"]:
         pass
 
-    # write as csv
 
-    # write as json
+def combine_fields_with_dataset(
+    dataset_filepath, id_column, id_to_fields_to_values, output_filepath, num_rows_per_chunk=10000
+):
+    chunk = []
+    output_extension = get_file_extension(output_filepath)
 
-    # write as xls/xlsx
+    if output_extension == ".csv":
+        output_file_handler = None
+    else:
+        output_file_handler = open(output_filepath, "w")
+
+    for r in read_file_as_stream(dataset_filepath):
+        row_id = r.get(id_column)
+        if row_id:
+            r.update(id_to_fields_to_values[row_id])
+        chunk.append(r)
+
+        if len(chunk) >= num_rows_per_chunk:
+            append_rows(chunk, output_file_handler, output_filepath, output_extension)
+            chunk = []
+
+    if chunk:
+        append_rows(chunk, output_file_handler, output_filepath, output_extension)

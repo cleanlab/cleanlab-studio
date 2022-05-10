@@ -2,12 +2,19 @@
 Methods for interacting with the command line server API
 1:1 mapping with command_line_api.py
 """
-import requests
-from cleanlab_cli.click_helpers import abort
 import json
+from collections import OrderedDict
+from typing import Tuple, List
+
+import requests
+
+from cleanlab_cli.click_helpers import abort
 from config import __version__
 
-base_url = "http://localhost:8500/api/cli/v1"
+base_url = "http://localhost:8500/api/cli/v1"  # FOR TESTING
+
+
+# base_url = "https://api.cleanlab.ai/api/cli/v1"
 
 
 def handle_api_error(res: requests.Response):
@@ -62,10 +69,17 @@ def upload_rows(api_key, dataset_id, rows):
     handle_api_error(res)
 
 
-def download_cleaned_labels(api_key, experiment_id):
-    res = requests.get(base_url + f"/experiment/{experiment_id}", data=dict(api_key=api_key))
+def download_cleaned_labels(api_key, experiment_id) -> Tuple[List[OrderedDict], str]:
+    """
+
+    :param api_key:
+    :param experiment_id:
+    :return: return (rows, id_column)
+    """
+    res = requests.get(base_url + f"/experiment/labels/{experiment_id}", data=dict(api_key=api_key))
     handle_api_error(res)
-    return res.json()["rows"]
+    retval = res.json()
+    return retval["rows"], retval["id_column"]
 
 
 def get_completion_status(api_key, dataset_id):
