@@ -1,6 +1,8 @@
-from setuptools import setup
-from config import __version__
 from os import path
+
+from setuptools import setup
+
+from config import __version__
 
 here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
@@ -52,6 +54,7 @@ setup(
         "requests>=2.27.1",
         "tqdm>=4.64.0",
         "ijson>=3.1.4",
+        "jsonstreams>=0.6.0",
     ],
     entry_points="""
         [console_scripts]

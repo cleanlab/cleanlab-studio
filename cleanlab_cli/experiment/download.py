@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 
 import click
 import pandas as pd
@@ -46,9 +47,10 @@ def download(config, prev_state, id, combine, filepath, output):
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
 
-    rows, id_column = api_service.download_cleaned_labels(api_key, experiment_id=id)
+    ids, clean_labels, id_column = api_service.download_clean_labels(api_key, experiment_id=id)
 
-    clean_df = pd.DataFrame(rows)
+    d = {id_column: ids, "clean_label": clean_labels}
+    clean_df = pd.DataFrame(d)
 
     if combine:
         if filepath is None:
@@ -65,7 +67,11 @@ def download(config, prev_state, id, combine, filepath, output):
                 default=f"cleaned_{filename}",
             )
 
-        util.combine_fields_with_dataset(filepath, id_column, output)
+        ids_to_fields_to_values = defaultdict(dict)
+        for id, clean_label in zip(ids, clean_labels):
+            ids_to_fields_to_values[id]["clean_label"] = clean_label
+
+        util.combine_fields_with_dataset(filepath, id_column, ids_to_fields_to_values, output)
     else:
         while output is None or util.get_file_extension(output) != ".csv":
             output = click.prompt(

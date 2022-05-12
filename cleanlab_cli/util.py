@@ -10,6 +10,7 @@ from typing import (
 )
 
 import ijson
+import jsonstreams
 import pandas as pd
 import pyexcel
 
@@ -97,36 +98,58 @@ def dump_json(filepath, schema):
         f.write(json.dumps(schema, indent=2))
 
 
-def append_rows(rows, file_handler, filename, extension):
+def append_rows(rows, filename):
+    df = pd.DataFrame(rows)
+    extension = get_file_extension(filename)
     if extension == ".csv":
-        df = pd.DataFrame(rows)
-        df.to_csv(filename, mode="a")
-    elif extension == ".json":
-        pass
+        if not os.path.exists(filename):
+            df.to_csv(filename, mode="w", index=False)
+        else:
+            df.to_csv(filename, mode="a", index=False, header=False)
+    # elif extension == ".json":
+    #     with json.
     elif extension in [".xls", ".xlsx"]:
-        pass
+        if not os.path.exists(filename):
+            with pd.ExcelWriter(filename) as writer:
+                df.to_excel(writer, index=False)
+        else:
+            with pd.ExcelWriter(filename) as writer:
+                df.to_excel(writer, mode="a", index=False, header=False)
+
+
+def get_dataset_chunks(filepath, id_column, ids_to_fields_to_values, num_rows_per_chunk):
+    chunk = []
+    for r in read_file_as_stream(filepath):
+        row_id = r.get(id_column)
+        if row_id:
+            r.update(ids_to_fields_to_values[row_id])
+        chunk.append(r)
+
+        if len(chunk) >= num_rows_per_chunk:
+            yield chunk
+            chunk = []
+    if chunk:
+        yield chunk
 
 
 def combine_fields_with_dataset(
-    dataset_filepath, id_column, id_to_fields_to_values, output_filepath, num_rows_per_chunk=10000
+    dataset_filepath, id_column, ids_to_fields_to_values, output_filepath, num_rows_per_chunk=10000
 ):
     chunk = []
     output_extension = get_file_extension(output_filepath)
 
-    if output_extension == ".csv":
-        output_file_handler = None
+    get_chunks = lambda: get_dataset_chunks(
+        dataset_filepath, id_column, ids_to_fields_to_values, num_rows_per_chunk
+    )
+    if output_extension == ".json":
+        with jsonstreams.Stream(
+            jsonstreams.Type.OBJECT, filename=output_filepath, indent=True, pretty=True
+        ) as s:
+            with s.subarray("rows") as rows:
+                for chunk in get_chunks():
+                    for row in chunk:
+                        rows.write(row)
+    elif output_extension in [".csv", ".xls", ".xlsx"]:
+        append_rows(chunk, output_filepath)
     else:
-        output_file_handler = open(output_filepath, "w")
-
-    for r in read_file_as_stream(dataset_filepath):
-        row_id = r.get(id_column)
-        if row_id:
-            r.update(id_to_fields_to_values[row_id])
-        chunk.append(r)
-
-        if len(chunk) >= num_rows_per_chunk:
-            append_rows(chunk, output_file_handler, output_filepath, output_extension)
-            chunk = []
-
-    if chunk:
-        append_rows(chunk, output_file_handler, output_filepath, output_extension)
+        raise ValueError(f"Invalid file type: {output_extension}.")
