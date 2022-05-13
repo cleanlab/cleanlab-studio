@@ -38,7 +38,7 @@ schema_excel:
 	cleanlab dataset schema generate -f ./tests/resources/datasets/sample.xlsx --id-column tweet_id --modality text --name sample
 
 schema_validate:
-	cleanlab dataset schema validate --schema schema.json -d ./tests/resources/datasets/sample.csv
+	cleanlab dataset schema validate --schema schema.json -f ./tests/resources/datasets/sample.csv
 
 schema_upload:
 	cleanlab dataset upload -f ./tests/resources/datasets/sample.csv --schema schema.json
