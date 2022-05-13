@@ -131,3 +131,7 @@ dmypy.json
 .idea
 *.ipynb
 schema.json
+*.csv
+*.xls
+*.xlsx
+*.json
