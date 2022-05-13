@@ -2,17 +2,24 @@
 Helper functions for working with schemas
 """
 
-import pandas as pd
-from pandas import NaT
+import json
+from decimal import Decimal
+from random import sample, random
 from typing import (
     Optional,
     Dict,
     List,
     Collection,
 )
-from random import sample, random
-import json
-from decimal import Decimal
+
+import pandas as pd
+from pandas import NaT
+
+from cleanlab_cli.click_helpers import progress, success, info, abort
+from cleanlab_cli.dataset.schema_types import (
+    DATA_TYPES_TO_FEATURE_TYPES,
+    SCHEMA_VERSION,
+)
 from cleanlab_cli.util import (
     get_num_rows,
     get_dataset_columns,
@@ -20,11 +27,6 @@ from cleanlab_cli.util import (
     get_filename,
     dump_json,
 )
-from cleanlab_cli.dataset.schema_types import (
-    DATA_TYPES_TO_FEATURE_TYPES,
-    SCHEMA_VERSION,
-)
-from cleanlab_cli.click_helpers import progress, success, info, abort
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
@@ -137,7 +139,7 @@ def validate_schema(schema, columns: Collection[str]):
     variable_fields = {"categorical", "numeric", "datetime"}
     if modality == "tabular":
         num_variable_columns = sum(
-            int(feature_type in variable_fields) for feature_type in schema["fields"].values()
+            int(spec["feature_type"] in variable_fields) for spec in schema["fields"].values()
         )
         if num_variable_columns < 2:
             raise ValueError(
