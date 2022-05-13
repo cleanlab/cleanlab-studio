@@ -51,7 +51,7 @@ To download clean labels (i.e. labels that have been fixed through the Cleanlab 
 
 To download clean labels and combine them with your local dataset:
 
-`cleanlab experiment download --combine --id [experiment ID} -f [dataset filepath]`
+`cleanlab experiment download --combine --id [experiment ID] -f [dataset filepath]`
 
 ## Commands
 

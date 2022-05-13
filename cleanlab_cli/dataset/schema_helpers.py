@@ -31,23 +31,23 @@ from cleanlab_cli.util import (
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
 
-def _find_best_matching_column(target_col: str, columns: List[str]) -> Optional[str]:
+def _find_best_matching_column(target_column: str, columns: List[str]) -> Optional[str]:
     """
     Find the column from `columns` that is the closest match to the `target_col`.
     If no columns are likely, pick the first column of `columns`
 
-    :param target_col: some reserved column name, typically: 'id', 'label', or 'text'
+    :param target_column: some reserved column name, typically: 'id', 'label', or 'text'
     :param columns: non-empty list of column names
     :return:
     """
     assert len(columns) > 0, "list of columns is empty"
     poss = []
     for c in columns:
-        if c.lower() == target_col:
+        if c.lower() == target_column:
             return c
-        elif c.lower().endswith(f"_{target_col}"):
+        elif c.lower().endswith(f"_{target_column}"):
             poss.append(c)
-        elif c.lower().startswith(f"{target_col}_"):
+        elif c.lower().startswith(f"{target_column}_"):
             poss.append(c)
 
     if len(poss) > 0:  # pick first possibility
