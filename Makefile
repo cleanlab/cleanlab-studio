@@ -2,10 +2,16 @@ editable:
 	pip install --editable .
 
 login:
-	cleanlab login --key 741361c80b114518b4ff4a23045e2c18
+	cleanlab login --key [api_key]
 
 upload_csv:
 	cleanlab dataset upload -f ./tests/resources/datasets/sample.csv -m text --id-column tweet_id
+
+download_combine:
+	cleanlab experiment download --combine -f ./tests/resources/datasets/sample.csv --id [experiment_id]
+
+download_csv:
+	cleanlab experiment download --id [experiment_id]
 
 check_csv:
 	cleanlab dataset schema check -f ./tests/resources/datasets/sample.csv -s schema.json
@@ -14,7 +20,7 @@ upload_large:
 	cleanlab dataset upload -f ./tests/resources/datasets/Tweets.csv -m text --id-column tweet_id
 
 resume_large:
-	cleanlab dataset upload -f ./tests/resources/datasets/Tweets.csv --id fef88b5c46824c628b80130194a9fc45
+	cleanlab dataset upload -f ./tests/resources/datasets/Tweets.csv --id [dataset_id]
 
 upload_json:
 	cleanlab dataset upload -f ./tests/resources/datasets/sample.json -m text --id-column tweet_id
