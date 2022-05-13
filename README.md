@@ -101,9 +101,10 @@ Cleanlab currently only supports text and tabular dataset modalities.
 (If your dataset contains both text and tabular data, treat it as tabular.)
 The accepted dataset file types are: `.csv`, `.json`, and `.xls/.xlsx`.
 
-Below are some examples of how to format your dataset depending on modality and file type. Every dataset must have an **
-ID column** (i.e. a column containing identifiers that uniquely identify each row) and a **label column** (for the
-prediction task).
+Below are some examples of how to format your dataset depending on modality and file type.
+
+Every dataset must have an **ID column** (i.e. a column containing identifiers that uniquely identify each row) and a **
+label column** (for the prediction task).
 
 Apart from the reserved column name: `clean_label`, You are free to name the columns in your dataset in any way you
 want.
