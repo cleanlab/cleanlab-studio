@@ -3,8 +3,6 @@ Methods for interacting with the command line server API
 1:1 mapping with command_line_api.py
 """
 import json
-from collections import OrderedDict
-from typing import Tuple, List
 
 import requests
 
@@ -34,7 +32,7 @@ def initialize_dataset(api_key, schema):
     dataset_name = schema["metadata"]["name"]
 
     res = requests.post(
-        base_url + "/dataset",
+        base_url + "/datasets",
         data={
             "api_key": api_key,
             "fields": json.dumps(fields),
@@ -50,47 +48,56 @@ def initialize_dataset(api_key, schema):
 
 
 def get_existing_ids(api_key, dataset_id):
-    res = requests.get(base_url + f"/dataset/{dataset_id}/ids", data=dict(api_key=api_key))
+    res = requests.get(base_url + f"/datasets/{dataset_id}/ids", data=dict(api_key=api_key))
     handle_api_error(res)
     return res.json()["existing_ids"]
 
 
 def get_dataset_schema(api_key, dataset_id):
-    res = requests.get(base_url + f"/dataset/{dataset_id}/schema", data=dict(api_key=api_key))
+    res = requests.get(base_url + f"/datasets/{dataset_id}/schema", data=dict(api_key=api_key))
     handle_api_error(res)
     return res.json()["schema"]
 
 
 def upload_rows(api_key, dataset_id, rows):
     res = requests.post(
-        base_url + f"/dataset/{dataset_id}",
+        base_url + f"/datasets/{dataset_id}",
         data=dict(api_key=api_key, rows=json.dumps(rows)),
     )
     handle_api_error(res)
 
 
-def download_cleaned_labels(api_key, experiment_id) -> Tuple[List[OrderedDict], str]:
+def download_clean_labels(api_key, experiment_id):
     """
 
     :param api_key:
     :param experiment_id:
     :return: return (rows, id_column)
     """
-    res = requests.get(base_url + f"/experiment/labels/{experiment_id}", data=dict(api_key=api_key))
+    res = requests.get(
+        base_url + f"/experiments/{experiment_id}/clean_label", data=dict(api_key=api_key)
+    )
     handle_api_error(res)
-    retval = res.json()
-    return retval["rows"], retval["id_column"]
+    return res.json()["rows"]
 
 
 def get_completion_status(api_key, dataset_id):
-    res = requests.get(base_url + f"/dataset/{dataset_id}/complete", data=dict(api_key=api_key))
+    res = requests.get(base_url + f"/datasets/{dataset_id}/complete", data=dict(api_key=api_key))
     handle_api_error(res)
     return res.json()["complete"]
 
 
 def complete_upload(api_key, dataset_id):
-    res = requests.patch(base_url + f"/dataset/{dataset_id}/complete", data=dict(api_key=api_key))
+    res = requests.patch(base_url + f"/datasets/{dataset_id}/complete", data=dict(api_key=api_key))
     handle_api_error(res)
+
+
+def get_id_column(api_key, experiment_id):
+    res = requests.get(
+        base_url + f"/experiments/{experiment_id}/id_column", data=dict(api_key=api_key)
+    )
+    handle_api_error(res)
+    return res.json()["id_column"]
 
 
 def validate_api_key(api_key):

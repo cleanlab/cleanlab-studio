@@ -24,8 +24,8 @@ from cleanlab_cli.settings import CleanlabSettings
     "-c",
     is_flag=True,
     help=(
-        "Add clean dataset labels with original dataset as a new column 'Cleanlab_labels'."
-        " --filepath must be provided."
+        "Add cleaned labels from existing experiment to original dataset as a new column"
+        " 'clean_label'. --filepath must be provided."
     ),
 )
 @click.option(
@@ -36,7 +36,7 @@ from cleanlab_cli.settings import CleanlabSettings
 )
 @click.option(
     "--output",
-    "-f",
+    "-o",
     type=click.Path(),
     help="Output for cleaned labels or dataset combined with cleaned labels (if --combine is set).",
 )
@@ -47,12 +47,11 @@ def download(config, prev_state, id, combine, filepath, output):
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
 
-    ids, clean_labels, id_column = api_service.download_clean_labels(api_key, experiment_id=id)
-
-    d = {id_column: ids, "clean_label": clean_labels}
-    clean_df = pd.DataFrame(d)
+    rows = api_service.download_clean_labels(api_key, experiment_id=id)
+    clean_df = pd.DataFrame(rows, columns=["id", "clean_label"])
 
     if combine:
+        id_column = api_service.get_id_column(api_key, experiment_id=id)
         if filepath is None:
             filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
         else:
@@ -61,17 +60,23 @@ def download(config, prev_state, id, combine, filepath, output):
                 filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
         filename = util.get_filename(filepath)
-        if output is None:
+        while output is None:
             output = click.prompt(
                 "Specify your output filepath. Leave blank to use default",
                 default=f"cleaned_{filename}",
             )
+            if os.path.exists(output):
+                click_helpers.error(
+                    "A file already exists at this filepath, use a different filepath."
+                )
+                output = None
 
         ids_to_fields_to_values = defaultdict(dict)
-        for id, clean_label in zip(ids, clean_labels):
+        for id, clean_label in zip(clean_df["id"], clean_df["clean_label"]):
             ids_to_fields_to_values[id]["clean_label"] = clean_label
 
         util.combine_fields_with_dataset(filepath, id_column, ids_to_fields_to_values, output)
+        click_helpers.success(f"Saved to {output}")
     else:
         while output is None or util.get_file_extension(output) != ".csv":
             output = click.prompt(
@@ -79,3 +84,4 @@ def download(config, prev_state, id, combine, filepath, output):
                 default=f"clean_labels.csv",
             )
         clean_df.to_csv(output, index=False)
+        click_helpers.success(f"Saved to {output}")

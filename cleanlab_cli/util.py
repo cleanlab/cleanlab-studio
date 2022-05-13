@@ -103,31 +103,33 @@ def append_rows(rows, filename):
     extension = get_file_extension(filename)
     if extension == ".csv":
         if not os.path.exists(filename):
-            df.to_csv(filename, mode="w", index=False)
+            df.to_csv(filename, mode="w", index=False, header=True)
         else:
             df.to_csv(filename, mode="a", index=False, header=False)
-    # elif extension == ".json":
-    #     with json.
     elif extension in [".xls", ".xlsx"]:
         if not os.path.exists(filename):
             with pd.ExcelWriter(filename) as writer:
-                df.to_excel(writer, index=False)
+                df.to_excel(writer, index=False, header=True)
         else:
             with pd.ExcelWriter(filename) as writer:
                 df.to_excel(writer, mode="a", index=False, header=False)
+    else:
+        raise ValueError(f"Unsupported file extension: {extension}")
 
 
 def get_dataset_chunks(filepath, id_column, ids_to_fields_to_values, num_rows_per_chunk):
     chunk = []
     for r in read_file_as_stream(filepath):
-        row_id = r.get(id_column)
+        row_id = str(r.get(id_column))
         if row_id:
-            r.update(ids_to_fields_to_values[row_id])
+            updates = ids_to_fields_to_values[row_id]
+            r.update(updates)
         chunk.append(r)
 
         if len(chunk) >= num_rows_per_chunk:
             yield chunk
             chunk = []
+
     if chunk:
         yield chunk
 
@@ -135,12 +137,11 @@ def get_dataset_chunks(filepath, id_column, ids_to_fields_to_values, num_rows_pe
 def combine_fields_with_dataset(
     dataset_filepath, id_column, ids_to_fields_to_values, output_filepath, num_rows_per_chunk=10000
 ):
-    chunk = []
     output_extension = get_file_extension(output_filepath)
-
     get_chunks = lambda: get_dataset_chunks(
         dataset_filepath, id_column, ids_to_fields_to_values, num_rows_per_chunk
     )
+
     if output_extension == ".json":
         with jsonstreams.Stream(
             jsonstreams.Type.OBJECT, filename=output_filepath, indent=True, pretty=True
@@ -150,6 +151,7 @@ def combine_fields_with_dataset(
                     for row in chunk:
                         rows.write(row)
     elif output_extension in [".csv", ".xls", ".xlsx"]:
-        append_rows(chunk, output_filepath)
+        for chunk in get_chunks():
+            append_rows(chunk, output_filepath)
     else:
         raise ValueError(f"Invalid file type: {output_extension}.")
