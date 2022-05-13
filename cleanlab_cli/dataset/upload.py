@@ -1,9 +1,10 @@
 import json
+
 import click
-from cleanlab_cli.decorators import auth_config, previous_state
+
 from cleanlab_cli import api_service
-from cleanlab_cli.util import get_dataset_columns, get_num_rows
-from cleanlab_cli.dataset.upload_helpers import upload_rows
+from cleanlab_cli import click_helpers
+from cleanlab_cli.click_helpers import progress, success, abort, info, log
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
@@ -11,8 +12,9 @@ from cleanlab_cli.dataset.schema_helpers import (
     save_schema,
     _find_best_matching_column,
 )
-from cleanlab_cli import click_helpers
-from cleanlab_cli.click_helpers import progress, success, abort, info, log
+from cleanlab_cli.dataset.upload_helpers import upload_rows
+from cleanlab_cli.decorators import auth_config, previous_state
+from cleanlab_cli.util import get_dataset_columns, get_num_rows
 
 
 def resume_upload(api_key, dataset_id, filepath):
@@ -144,11 +146,13 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
     # If resuming upload
     if dataset_id is not None:
         resume_upload(api_key, dataset_id, filepath)
+        return
 
     # This is the first upload
     ## Check if uploading with schema
     if schema is not None:
         upload_with_schema(api_key, schema, columns, filepath)
+        return
 
     ## No schema, propose and confirm a schema
     ### Check that all required arguments are present
