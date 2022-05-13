@@ -1,5 +1,6 @@
 from decimal import Decimal
-from config import __version__
+
+from cleanlab_cli.version import __version__
 
 DATA_TYPES_TO_FEATURE_TYPES = {
     "string": {"text", "categorical", "datetime", "identifier"},

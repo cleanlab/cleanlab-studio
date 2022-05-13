@@ -7,7 +7,7 @@ import json
 import requests
 
 from cleanlab_cli.click_helpers import abort
-from config import __version__
+from cleanlab_cli.version import __version__
 
 base_url = "http://localhost:8500/api/cli/v1"  # FOR TESTING
 

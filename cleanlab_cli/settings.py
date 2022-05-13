@@ -1,7 +1,8 @@
 import json
 import os
-from typing import Dict, Optional
-from config import __version__
+from typing import Optional
+
+from cleanlab_cli.version import __version__
 
 
 class CleanlabSettings:

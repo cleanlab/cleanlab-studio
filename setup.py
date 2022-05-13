@@ -2,11 +2,14 @@ from os import path
 
 from setuptools import setup
 
-from config import __version__
+from cleanlab_cli.version import __version__
 
 here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
+
+# Get version number and store it in __version__
+exec(open("cleanlab_cli/version.py").read())
 
 setup(
     name="cleanlab-cli",
