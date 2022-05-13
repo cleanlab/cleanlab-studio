@@ -9,10 +9,7 @@ import requests
 from cleanlab_cli.click_helpers import abort
 from cleanlab_cli.version import __version__
 
-base_url = "http://localhost:8500/api/cli/v1"  # FOR TESTING
-
-
-# base_url = "https://api.cleanlab.ai/api/cli/v1"
+base_url = "https://api.cleanlab.ai/api/cli/v1"
 
 
 def handle_api_error(res: requests.Response):
