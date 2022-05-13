@@ -53,3 +53,14 @@ This last step may fail if test versions of some required packages are not avail
 To upload to PyPi:
 
 1. twine upload dist/*
+
+## Updating version numbers
+
+The package version number is used in several parts of the CLI to validate the client. Every time the version number is
+incremented, these parts of the codebase need to be updated:
+
+1. `cleanlab_cli/version.py`
+2. `README.md`
+3. `VALID_VERSIONS` in `cleanlab_cli/settings.py`
+4. `cleanlab_cli/tests/resources/schemas/sample_schema.json`
+5. `check_client_version` in Cleanlab Studio's `cli_api.py`
