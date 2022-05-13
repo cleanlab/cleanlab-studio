@@ -15,7 +15,7 @@ setup(
     name="cleanlab-cli",
     version=__version__,
     license="MIT",
-    author="Cleanlab, Inc.",
+    author="Cleanlab Inc.",
     author_email="team@cleanlab.ai",
     description="Command line interface for all things Cleanlab Studio",
     long_description=long_description,
