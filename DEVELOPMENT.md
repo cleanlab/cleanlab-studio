@@ -39,16 +39,17 @@ References:
 - https://twine.readthedocs.io/en/stable/
 
 1. python3 -m pip install --upgrade build
-2. python3 -m build
-3. python3 -m pip install --upgrade twine
+2. python3 -m pip install --upgrade twine
+3. rm -rf dist (if present)
+4. python3 -m build
 
 To upload to TestPyPi:
 
-4. twine upload -r testpypi dist/*
-5. pip install -i https://test.pypi.org/simple/ cleanlab-cli
+1. twine upload -r testpypi dist/*
+2. pip install -i https://test.pypi.org/simple/ cleanlab-cli
 
 This last step may fail if test versions of some required packages are not available.
 
 To upload to PyPi:
 
-6. twine upload dist/*
+1. twine upload dist/*
