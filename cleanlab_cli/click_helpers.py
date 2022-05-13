@@ -52,12 +52,16 @@ def confirm_open_file(message, filepath):
     edit = click.confirm(message, default=None)
     recommended_editors = ["atom", "subl", "code"]
     if edit:
+        opened = False
         for editor in recommended_editors:
             try:
                 click.edit(filename=filepath, editor=editor)
-            except click.UsageError:
+                opened = True
+                break
+            except Exception:
                 pass
-        click.edit(filename=filepath)
+        if not opened:
+            click.edit(filename=filepath)
 
 
 def confirm_save_data(message, default=None):
