@@ -1,8 +1,6 @@
 from os import path
 
-from setuptools import setup
-
-from cleanlab_cli.version import __version__
+from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
@@ -44,7 +42,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     keywords="cleanlab",
-    packages=["cleanlab_cli"],
+    packages=find_packages(exclude=[]),
     py_modules=["main"],
     python_requires=">=3.6",
     install_requires=[

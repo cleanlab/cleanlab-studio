@@ -2,7 +2,7 @@ import json
 import os
 from typing import Optional
 
-from cleanlab_cli.version import __version__
+from cleanlab_cli import __version__
 
 
 class CleanlabSettings:

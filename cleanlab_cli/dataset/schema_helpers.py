@@ -20,6 +20,7 @@ from cleanlab_cli.dataset.schema_types import (
     DATA_TYPES_TO_FEATURE_TYPES,
     SCHEMA_VERSION,
 )
+from cleanlab_cli import __version__
 from cleanlab_cli.util import (
     get_num_rows,
     get_dataset_columns,
@@ -316,7 +317,7 @@ def construct_schema(fields, data_types, feature_types, id_column, modality, dat
     retval = {
         "fields": {},
         "metadata": {"id_column": id_column, "modality": modality, "name": dataset_name},
-        "version": "1.0",  # TODO add package version
+        "version": __version__,
     }
     for field, data_type, feature_type in zip(fields, data_types, feature_types):
         retval["fields"][field] = {"data_type": data_type, "feature_type": feature_type}

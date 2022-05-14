@@ -7,7 +7,7 @@ import json
 import requests
 
 from cleanlab_cli.click_helpers import abort
-from cleanlab_cli.version import __version__
+from cleanlab_cli import __version__
 
 base_url = "https://api.cleanlab.ai/api/cli/v1"
 
