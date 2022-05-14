@@ -2,7 +2,7 @@ import json
 import os
 from typing import Optional
 
-from cleanlab_cli import __version__
+from cleanlab_cli import __version__, VALID_VERSIONS
 
 
 class CleanlabSettings:
@@ -72,7 +72,6 @@ class CleanlabSettings:
     def validate_version(self):
         # list of sem vers for which a migration needs to be run
         MIGRATION_VERSIONS = []
-        VALID_VERSIONS = ["0.1.0", "0.1.1", "0.1.2"]
         if self.version not in VALID_VERSIONS:
             if self.version in MIGRATION_VERSIONS:
                 raise ValueError("Settings file must be migrated or re-generated.")

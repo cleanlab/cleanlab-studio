@@ -74,7 +74,7 @@ def confirm_save_prompt_filepath(
 ):
     save = confirm_save_data(save_message, default=save_default)
     if save:
-        output = prompt_for_filepath(prompt_message, default=prompt_default)
+        output = click.prompt(prompt_message, default=prompt_default)
     else:
         info(no_save_message)
         return
