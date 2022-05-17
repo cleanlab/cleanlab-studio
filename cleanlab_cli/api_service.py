@@ -6,16 +6,21 @@ import json
 
 import requests
 
-from cleanlab_cli.click_helpers import abort
+from cleanlab_cli.click_helpers import abort, warn
 from cleanlab_cli import __version__
 
-base_url = "https://api.cleanlab.ai/api/cli/v1"
+# base_url = "https://api.cleanlab.ai/api/cli/v1"
+base_url = "http://localhost:8500/api/cli/v1"
 
 
 def handle_api_error(res: requests.Response):
     res_json = res.json()
-    if "code" in res_json and "description" in res_json:  # AuthError format
-        abort(res_json["description"])
+    # print(f"res_json: {res_json}")
+    if "code" in res_json and "description" in res_json:  # AuthError or UserQuotaError format
+        if res_json["code"] == "user_soft_quota_exceeded":
+            warn(res_json["description"])
+        else:
+            abort(res_json["description"])
     if res.json().get("error", None) is not None:
         abort(res_json["error"])
 
