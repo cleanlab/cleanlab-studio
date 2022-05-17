@@ -51,11 +51,11 @@ To download clean labels (i.e. labels that have been fixed through the Cleanlab 
 
 To download clean labels and combine them with your local dataset:
 
-`cleanlab experiment download --combine --id [experiment ID] -f [dataset filepath]`
+`cleanlab experiment download --id [experiment ID] -f [dataset filepath]`
 
 ## Commands
 
-**`cleanlab auth` authenticates you**
+**`cleanlab login` authenticates you**
 
 Authenticates you when uploading datasets to Cleanlab Studio. Pass in your API key using `--key [API key]`. Your API key
 can be accessed at [https://app.cleanlab.ai/upload](https://app.cleanlab.ai/upload).

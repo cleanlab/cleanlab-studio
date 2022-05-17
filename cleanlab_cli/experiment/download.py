@@ -20,25 +20,16 @@ from cleanlab_cli.settings import CleanlabSettings
     help="experiment ID",
 )
 @click.option(
-    "--combine",
-    "-c",
-    is_flag=True,
-    help=(
-        "Add cleaned labels from existing experiment to original dataset as a new column"
-        " 'clean_label'. --filepath must be provided."
-    ),
-)
-@click.option(
     "--filepath",
     "-f",
     type=click.Path(),
-    help="Set only if using the --combine flag. Filepath to original dataset.",
+    help="Set a filepath to original dataset.",
 )
 @click.option(
     "--output",
     "-o",
     type=click.Path(),
-    help="Output for cleaned labels or dataset combined with cleaned labels (if --combine is set).",
+    help="Output for cleaned labels or dataset combined with cleaned labels.",
 )
 @previous_state
 @auth_config
@@ -50,14 +41,11 @@ def download(config, prev_state, id, combine, filepath, output):
     rows = api_service.download_clean_labels(api_key, experiment_id=id)
     clean_df = pd.DataFrame(rows, columns=["id", "clean_label"])
 
-    if combine:
+    if filepath:
         id_column = api_service.get_id_column(api_key, experiment_id=id)
-        if filepath is None:
+        if not os.path.exists(filepath):
+            log(f"Specified file {filepath} could not be found.")
             filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
-        else:
-            if not os.path.exists(filepath):
-                log(f"Specified file {filepath} could not be found.")
-                filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
         filename = util.get_filename(filepath)
         while output is None:
