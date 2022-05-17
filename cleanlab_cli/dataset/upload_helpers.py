@@ -206,7 +206,7 @@ def upload_rows(
     schema: Dict[str, Any],
     existing_ids: Optional[Collection[str]] = None,
     output: Optional[str] = None,
-    payload_size: float = 2,
+    payload_size: float = 10,
 ):
     """
 

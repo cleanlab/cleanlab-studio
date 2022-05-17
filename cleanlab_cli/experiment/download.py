@@ -33,7 +33,7 @@ from cleanlab_cli.settings import CleanlabSettings
 )
 @previous_state
 @auth_config
-def download(config, prev_state, id, combine, filepath, output):
+def download(config, prev_state, id, filepath, output):
     prev_state.init_state(dict(command="download labels", args=dict(id=id)))
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
