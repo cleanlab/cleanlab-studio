@@ -36,6 +36,10 @@ def info(message):
     secho(style(message, fg="blue"))
 
 
+def warn(message):
+    secho(style(message, fg="bright_magenta"))
+
+
 def log(message):
     echo(message)
 
