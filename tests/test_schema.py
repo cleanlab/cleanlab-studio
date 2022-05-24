@@ -6,8 +6,10 @@ from cleanlab_cli.dataset.schema import (
 )
 from cleanlab_cli.util import read_file_as_df
 import os
+import sys
 from os.path import dirname, abspath
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,9 @@ sample_schema = os.path.join(abspath(dirname(__file__)), "resources/schemas/samp
 
 def assert_success_else_error_output(test_name, result):
     if result.exit_code != 0:
+        if hasattr(result, "exception"):
+            traceback.print_tb(result.exception.__traceback__)
+            print(result.exception, file=sys.stderr)
         raise AssertionError(
             f"{test_name} failed with exit code {result.exit_code} and output: {result.output}"
         )
