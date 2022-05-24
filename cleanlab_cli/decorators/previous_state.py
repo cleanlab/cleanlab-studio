@@ -23,6 +23,7 @@ class PreviousState:
         return os.path.join(CleanlabSettings.get_cleanlab_dir(), FILENAME)
 
     def save_state(self):
+        os.makedirs(os.path.dirname(self.get_filepath()), exist_ok=True)
         with open(self.get_filepath(), "w") as f:
             json.dump(self.state, f)
 
