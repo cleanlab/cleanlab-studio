@@ -26,9 +26,9 @@ class CleanlabSettings:
 
     @staticmethod
     def get_cleanlab_dir():
-        XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", None)
-        CONFIG_HOME = XDG_CONFIG_HOME if XDG_CONFIG_HOME else os.environ.get("HOME")
-        cleanlab_dir = os.path.expanduser(os.path.join(CONFIG_HOME, ".cleanlab"))
+        XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME")
+        CONFIG_HOME = XDG_CONFIG_HOME if XDG_CONFIG_HOME else "~/.config"
+        cleanlab_dir = os.path.expanduser(os.path.join(CONFIG_HOME, "cleanlab"))
         return cleanlab_dir
 
     @staticmethod
