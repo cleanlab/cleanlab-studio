@@ -32,6 +32,10 @@ def get_filename(filepath):
     return os.path.split(filepath)[-1]
 
 
+def get_file_size(filepath):
+    return os.path.getsize(filepath)
+
+
 def read_file_as_df(filepath):
     ext = get_file_extension(filepath)
     if ext == ".json":

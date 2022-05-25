@@ -12,11 +12,12 @@ from cleanlab_cli import __version__
 base_url = "https://api.cleanlab.ai/api/cli/v1"
 
 
-def handle_api_error(res: requests.Response):
+def handle_api_error(res: requests.Response, show_warning=False):
     res_json = res.json()
     if "code" in res_json and "description" in res_json:  # AuthError or UserQuotaError format
         if res_json["code"] == "user_soft_quota_exceeded":
-            warn(res_json["description"])
+            if show_warning:
+                warn(res_json["description"])
         else:
             abort(res_json["description"])
     if res.json().get("error", None) is not None:
@@ -110,3 +111,11 @@ def check_client_version():
     res = requests.post(base_url + "/check_client_version", data=dict(version=__version__))
     handle_api_error(res)
     return res.json()["valid"]
+
+
+def check_dataset_limit(file_size, api_key, show_warning=False):
+    res = requests.post(
+        base_url + "/check_dataset_limit", data=dict(api_key=api_key, file_size=file_size)
+    )
+    handle_api_error(res, show_warning=show_warning)
+    return res.json()

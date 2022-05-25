@@ -22,6 +22,7 @@ from cleanlab_cli.util import (
     read_file_as_stream,
     dump_json,
     count_records_in_dataset_file,
+    get_file_size,
 )
 from cleanlab_cli.dataset.schema_types import PYTHON_TYPES_TO_READABLE_STRING
 from cleanlab_cli import click_helpers
@@ -227,6 +228,9 @@ def upload_rows(
 
     log = create_feedback_log()
 
+    file_size = get_file_size(filepath)
+    api_service.check_dataset_limit(file_size, api_key=api_key, show_warning=False)
+
     num_records = count_records_in_dataset_file(filepath)
     for record in tqdm(
         read_file_as_stream(filepath), total=num_records, initial=1, leave=True, unit=" rows"
@@ -258,6 +262,9 @@ def upload_rows(
         api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows)
 
     api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
+
+    # Check against soft quota, warn if applicable
+    api_service.check_dataset_limit(file_size=0, api_key=api_key, show_warning=True)
 
     total_warnings = sum([len(log[w.name]) for w in ValidationWarning])
     issues_found = total_warnings > 0
