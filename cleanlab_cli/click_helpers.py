@@ -37,7 +37,7 @@ def info(message):
 
 
 def warn(message):
-    secho(style(message, fg="bright_magenta"))
+    secho(style(message, fg="magenta"))
 
 
 def log(message):
