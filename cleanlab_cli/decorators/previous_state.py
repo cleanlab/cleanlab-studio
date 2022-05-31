@@ -1,5 +1,5 @@
 import click
-from typing import Dict
+from typing import Any, Dict
 import json
 import os
 from cleanlab_cli.settings import CleanlabSettings
@@ -27,7 +27,7 @@ class PreviousState:
         with open(self.get_filepath(), "w") as f:
             json.dump(self.state, f)
 
-    def init_state(self, updates: Dict[str, any]):
+    def init_state(self, updates: Dict[str, Any]):
         self.state = dict()
         self.state.update(updates)
         self.save_state()

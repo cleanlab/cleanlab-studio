@@ -34,3 +34,15 @@ jobs:
     - name: Run tests
       run: |
         pytest --verbose
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - run: |
+          python -m pip install --upgrade pip
+          pip install . # install deps
+          pip install mypy
+          mypy --install-types --non-interactive cleanlab_cli
+      - run: mypy cleanlab_cli
