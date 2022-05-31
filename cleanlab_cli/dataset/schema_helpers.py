@@ -6,6 +6,7 @@ import json
 from decimal import Decimal
 from random import sample, random
 from typing import (
+    Any,
     Optional,
     Dict,
     List,
@@ -162,7 +163,7 @@ def multiple_separate_words_detected(values):
     return avg_num_words >= 3
 
 
-def infer_types(values: Collection[any]):
+def infer_types(values: Collection[Any]):
     """
     Infer the data type and feature type of a collection of a values using simple heuristics.
 
@@ -185,10 +186,8 @@ def infer_types(values: Collection[any]):
         else:
             raise ValueError(f"Value {v} has an unrecognized type: {type(v)}")
 
-    ratios = {k: v / len(values) for k, v in counts.items()}
-    types = list(ratios.keys())
-    counts = list(ratios.values())
-    max_count_type = types[counts.index(max(counts))]
+    ratios: Dict[str, float] = {k: v / len(values) for k, v in counts.items()}
+    max_count_type = max(ratios.items(), key=lambda kv: kv[1])[0]
 
     if max_count_type == "string":
         try:
@@ -276,7 +275,7 @@ def propose_schema(
         if random() <= sample_proba:
             dataset.append(dict(row.items()))
     df = pd.DataFrame(dataset, columns=columns)
-    retval = dict()
+    retval: Dict[str, Any] = dict()
     retval["metadata"] = {}
     retval["fields"] = {}
 
@@ -302,7 +301,7 @@ def propose_schema(
             k for k, spec in retval["fields"].items() if spec["feature_type"] == "identifier"
         ]
         if len(id_columns) == 0:
-            id_columns = columns
+            id_columns = list(columns)
         id_column = _find_best_matching_column("id", id_columns)
     else:
         if id_column not in columns:

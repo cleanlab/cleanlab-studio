@@ -223,7 +223,7 @@ def upload_rows(
     existing_ids = set() if existing_ids is None else set([str(x) for x in existing_ids])
     rows = []
     rows_per_payload = None
-    seen_ids = set()
+    seen_ids: Set[str] = set()
 
     log = create_feedback_log()
 

@@ -6,6 +6,7 @@ import os
 import pathlib
 from collections import OrderedDict
 from typing import (
+    List,
     Generator,
 )
 
@@ -61,10 +62,11 @@ def get_num_rows(filepath: str):
     return num_rows
 
 
-def get_dataset_columns(filepath):
+def get_dataset_columns(filepath) -> List[str]:
     stream = read_file_as_stream(filepath)
     for r in stream:
         return list(r.keys())
+    raise ValueError("File has no headers")
 
 
 def read_file_as_stream(filepath) -> Generator[OrderedDict, None, None]:
