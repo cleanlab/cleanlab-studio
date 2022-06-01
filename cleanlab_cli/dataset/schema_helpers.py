@@ -23,12 +23,11 @@ from cleanlab_cli.dataset.schema_types import (
 )
 from cleanlab_cli import __version__
 from cleanlab_cli.util import (
-    get_num_rows,
-    get_dataset_columns,
-    read_file_as_stream,
+    init_dataset_from_filepath,
     get_filename,
     dump_json,
 )
+import time
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
@@ -251,14 +250,14 @@ def propose_schema(
     :return:
 
     """
-    stream = read_file_as_stream(filepath)
+    dataset = init_dataset_from_filepath(filepath)
 
     # fill optional arguments if necessary
     if columns is None:
-        columns = get_dataset_columns(filepath)
+        columns = dataset.get_columns()
 
     if num_rows is None:
-        num_rows = get_num_rows(filepath)
+        num_rows = dataset.num_rows
 
     if name is None:
         name = get_filename(filepath)
@@ -269,32 +268,43 @@ def propose_schema(
         else:
             modality = "text"
 
-    dataset = []
+    # dataset = []
+    rows = []
     sample_proba = 1 if sample_size >= num_rows else sample_size / num_rows
-    for row in stream:
+    idx = 0
+    times = []
+    for row in dataset.read_streaming_records():
+        if idx == 0:
+            start = time.time()
         if random() <= sample_proba:
-            dataset.append(dict(row.items()))
-    df = pd.DataFrame(dataset, columns=columns)
+            rows.append(dict(row.items()))
+        idx += 1
+        if idx == 1000:
+            times.append(time.time() - start)
+            idx = 0
+    print(times)
+
+    df = pd.DataFrame(rows, columns=columns)
     retval: Dict[str, Any] = dict()
     retval["metadata"] = {}
     retval["fields"] = {}
 
-    for col_name in columns:
-        col_vals = list(df[col_name][~df[col_name].isna()])
-        col_vals = [v for v in col_vals if v != ""]
+    for column_name in columns:
+        column_values = list(df[column_name][~df[column_name].isna()])
+        column_values = [v for v in column_values if v != ""]
 
-        if len(col_vals) == 0:  # all values in column are empty, give default string[text]
-            retval["fields"][col_name] = {"data_type": "string", "feature_type": "text"}
+        if len(column_values) == 0:  # all values in column are empty, give default string[text]
+            retval["fields"][column_name] = {"data_type": "string", "feature_type": "text"}
             continue
 
-        col_data_type, col_feature_type = infer_types(col_vals)
+        col_data_type, col_feature_type = infer_types(column_values)
 
         field_spec = {"data_type": col_data_type, "feature_type": col_feature_type}
 
         if col_feature_type is None:
             del field_spec["feature_type"]
 
-        retval["fields"][col_name] = field_spec
+        retval["fields"][column_name] = field_spec
 
     if id_column is None:
         id_columns = [

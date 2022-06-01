@@ -19,9 +19,8 @@ from tqdm import tqdm
 from cleanlab_cli import api_service
 from cleanlab_cli.util import (
     is_null_value,
-    read_file_as_stream,
     dump_json,
-    count_records_in_dataset_file,
+    init_dataset_from_filepath,
     get_file_size,
 )
 from cleanlab_cli.dataset.schema_types import PYTHON_TYPES_TO_READABLE_STRING
@@ -231,9 +230,10 @@ def upload_rows(
     file_size = get_file_size(filepath)
     api_service.check_dataset_limit(file_size, api_key=api_key, show_warning=False)
 
-    num_records = count_records_in_dataset_file(filepath)
+    dataset = init_dataset_from_filepath(filepath)
+    num_records = dataset.num_rows
     for record in tqdm(
-        read_file_as_stream(filepath), total=num_records, initial=1, leave=True, unit=" rows"
+        dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"
     ):
         row, row_id, warnings = validate_and_process_record(
             record, schema, seen_ids, existing_ids, columns

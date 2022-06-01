@@ -7,21 +7,13 @@ from cleanlab_cli.dataset.schema_helpers import (
     _find_best_matching_column,
 )
 from cleanlab_cli.dataset import upload_helpers
-from cleanlab_cli.util import (
-    get_dataset_columns,
-    get_num_rows,
-    count_records_in_dataset_file,
-    read_file_as_stream,
-)
+from cleanlab_cli.util import init_dataset_from_filepath
 from cleanlab_cli.decorators import previous_state
 import json
-from cleanlab_cli.click_helpers import (
-    abort,
-    info,
-    success,
-)
+from cleanlab_cli.click_helpers import abort, info, success
 from cleanlab_cli import click_helpers
 from tqdm import tqdm
+import time
 
 
 @click.group(help="generate and validate dataset schema, or check your dataset against a schema")
@@ -38,8 +30,9 @@ def validate_schema_command(prev_state, schema, filepath):
         schema = click_helpers.prompt_for_filepath("Specify your schema filepath")
     prev_state.init_state(dict(command="validate schema", schema=schema, filepath=filepath))
     loaded_schema = load_schema(schema)
+    dataset = init_dataset_from_filepath(filepath)
     if filepath:
-        cols = get_dataset_columns(filepath)
+        cols = dataset.get_columns()
     else:
         cols = list(loaded_schema["fields"])
     try:
@@ -65,14 +58,15 @@ def check_dataset_command(prev_state, filepath, schema, output):
         dict(command="check dataset", args=dict(schema=schema, filepath=filepath))
     )
 
+    dataset = init_dataset_from_filepath(filepath)
     loaded_schema = load_schema(schema)
     log = upload_helpers.create_feedback_log()
-    num_records = count_records_in_dataset_file(filepath)
+    num_records = dataset.num_rows
     seen_ids = set()
     existing_ids = set()
 
     for record in tqdm(
-        read_file_as_stream(filepath), total=num_records, initial=1, leave=True, unit=" rows"
+        dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"
     ):
         row, row_id, warnings = upload_helpers.validate_and_process_record(
             record, loaded_schema, seen_ids, existing_ids
@@ -130,10 +124,13 @@ def check_dataset_command(prev_state, filepath, schema, output):
 )
 @previous_state
 def generate_schema_command(prev_state, filepath, output, id_column, modality, name):
+    start = time.time()
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
-    columns = get_dataset_columns(filepath)
+    dataset = init_dataset_from_filepath(filepath)
+    columns = dataset.get_columns()
+    print(f"got dataset columns {time.time() - start}")
     id_column_guess = _find_best_matching_column("id", columns)
     while id_column not in columns:
         id_column = click.prompt(
@@ -152,10 +149,12 @@ def generate_schema_command(prev_state, filepath, output, id_column, modality, n
             ),
         ),
     )
-    num_rows = get_num_rows(filepath)
-    cols = get_dataset_columns(filepath)
-    proposed_schema = propose_schema(filepath, cols, id_column, modality, name, num_rows)
+
+    num_rows = dataset.num_rows
+    print(f"got num rows {time.time() - start}")
+    proposed_schema = propose_schema(filepath, columns, id_column, modality, name, num_rows)
     click.echo(json.dumps(proposed_schema, indent=2))
+    print(f"schema generation took {time.time() - start} seconds.")
     if not output:
         output = click_helpers.confirm_save_prompt_filepath(
             save_message="Would you like to save the generated schema?",

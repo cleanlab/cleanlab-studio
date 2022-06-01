@@ -14,7 +14,7 @@ from cleanlab_cli.dataset.schema_helpers import (
 )
 from cleanlab_cli.dataset.upload_helpers import upload_rows
 from cleanlab_cli.decorators import auth_config, previous_state
-from cleanlab_cli.util import get_dataset_columns, get_num_rows
+from cleanlab_cli.util import init_dataset_from_filepath
 
 
 def resume_upload(api_key, dataset_id, filepath):
@@ -144,7 +144,8 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
     prev_state.update_args(dict(filepath=filepath))
-    columns = get_dataset_columns(filepath)
+    dataset = init_dataset_from_filepath(filepath)
+    columns = dataset.get_columns()
 
     # If resuming upload
     if dataset_id is not None:
@@ -172,7 +173,8 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
             )
 
     prev_state.update_args(dict(modality=modality, id_column=id_column))
-    num_rows = get_num_rows(filepath)
+
+    num_rows = dataset.num_rows
 
     ### Propose schema
     proposed_schema = propose_schema(filepath, columns, id_column, modality, name, num_rows)

@@ -4,7 +4,7 @@ from cleanlab_cli.dataset.schema import (
     generate_schema_command,
     check_dataset_command,
 )
-from cleanlab_cli.util import read_file_as_df
+from cleanlab_cli.util import init_dataset_from_filepath
 import os
 import sys
 from os.path import dirname, abspath
@@ -28,7 +28,8 @@ def assert_success_else_error_output(test_name, result):
 
 
 def test_generate():
-    df = read_file_as_df(sample_csv)
+    dataset = init_dataset_from_filepath(sample_csv)
+    df = dataset.read_file_as_dataframe()
     runner = CliRunner()
     with runner.isolated_filesystem():
         filename = "sample"
@@ -56,7 +57,8 @@ def test_generate():
 
 
 def test_validate():
-    df = read_file_as_df(sample_csv)
+    dataset = init_dataset_from_filepath(sample_csv)
+    df = dataset.read_file_as_dataframe()
     runner = CliRunner()
     with runner.isolated_filesystem():
         filename = "sample"
@@ -74,7 +76,8 @@ def test_validate():
 
 
 def test_check_dataset():
-    df = read_file_as_df(sample_csv)
+    dataset = init_dataset_from_filepath(sample_csv)
+    df = dataset.read_file_as_dataframe()
     runner = CliRunner()
     with runner.isolated_filesystem():
         filename = "sample"

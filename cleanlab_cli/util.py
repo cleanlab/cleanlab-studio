@@ -1,6 +1,7 @@
 """
 Contains utility functions for interacting with dataset files
 """
+import csv
 import json
 import os
 import pathlib
@@ -14,6 +15,8 @@ import ijson
 import jsonstreams
 import pandas as pd
 import pyexcel
+
+from cleanlab_cli.classes import CsvDataset, JsonDataset, ExcelDataset
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx", ".json"]
 
@@ -58,45 +61,14 @@ def is_null_value(val):
     return val is None or val == "" or pd.isna(val)
 
 
-def get_num_rows(filepath: str):
-    stream = read_file_as_stream(filepath)
-    num_rows = 0
-    for _ in stream:
-        num_rows += 1
-    return num_rows
-
-
-def get_dataset_columns(filepath) -> List[str]:
-    stream = read_file_as_stream(filepath)
-    for r in stream:
-        return list(r.keys())
-    raise ValueError("File has no headers")
-
-
-def read_file_as_stream(filepath) -> Generator[OrderedDict, None, None]:
-    """
-    Opens a file and reads it as a stream (aka row-by-row) to limit memory usage
-    :param filepath: path to target file
-    :return: a generator that yields dataset rows, with each row being an OrderedDict
-    """
+def init_dataset_from_filepath(filepath):
     ext = get_file_extension(filepath)
-
-    if ext in [".csv", ".xls", ".xlsx"]:
-        for r in pyexcel.iget_records(file_name=filepath):
-            yield r
+    if ext == ".csv":
+        return CsvDataset(filepath)
+    elif ext in [".xls", ".xlsx"]:
+        return ExcelDataset(filepath)
     elif ext == ".json":
-        with open(filepath, "r") as f:
-            for r in ijson.items(f, "rows.item"):
-                yield r
-    else:
-        raise ValueError(f"Unsupported file type: {ext}")
-
-
-def count_records_in_dataset_file(filepath):
-    count = 0
-    for _ in read_file_as_stream(filepath):
-        count += 1
-    return count
+        return JsonDataset(filepath)
 
 
 def dump_json(filepath, schema):
@@ -124,8 +96,9 @@ def append_rows(rows, filename):
 
 
 def get_dataset_chunks(filepath, id_column, ids_to_fields_to_values, num_rows_per_chunk):
+    dataset = init_dataset_from_filepath(filepath)
     chunk = []
-    for r in read_file_as_stream(filepath):
+    for r in dataset.read_streaming_records():
         row_id = str(r.get(id_column))
         if row_id:
             updates = ids_to_fields_to_values[row_id]
@@ -141,7 +114,11 @@ def get_dataset_chunks(filepath, id_column, ids_to_fields_to_values, num_rows_pe
 
 
 def combine_fields_with_dataset(
-    dataset_filepath, id_column, ids_to_fields_to_values, output_filepath, num_rows_per_chunk=10000
+    dataset_filepath,
+    id_column,
+    ids_to_fields_to_values,
+    output_filepath,
+    num_rows_per_chunk=10000,
 ):
     output_extension = get_file_extension(output_filepath)
     get_chunks = lambda: get_dataset_chunks(
