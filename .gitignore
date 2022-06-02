@@ -135,3 +135,4 @@ schema.json
 *.xls
 *.xlsx
 *.json
+!output.json
