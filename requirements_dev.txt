@@ -1,3 +1,5 @@
 black
 pre-commit
 twine
+pytest
+pytest-benchmark
