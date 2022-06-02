@@ -124,7 +124,6 @@ def check_dataset_command(prev_state, filepath, schema, output):
 )
 @previous_state
 def generate_schema_command(prev_state, filepath, output, id_column, modality, name):
-    start = time.time()
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
