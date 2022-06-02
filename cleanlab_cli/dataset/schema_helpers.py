@@ -271,18 +271,9 @@ def propose_schema(
     # dataset = []
     rows = []
     sample_proba = 1 if sample_size >= num_rows else sample_size / num_rows
-    idx = 0
-    times = []
     for row in dataset.read_streaming_records():
-        if idx == 0:
-            start = time.time()
         if random() <= sample_proba:
             rows.append(dict(row.items()))
-        idx += 1
-        if idx == 1000:
-            times.append(time.time() - start)
-            idx = 0
-    print(times)
 
     df = pd.DataFrame(rows, columns=columns)
     retval: Dict[str, Any] = dict()

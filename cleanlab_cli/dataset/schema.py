@@ -130,7 +130,6 @@ def generate_schema_command(prev_state, filepath, output, id_column, modality, n
 
     dataset = init_dataset_from_filepath(filepath)
     columns = dataset.get_columns()
-    print(f"got dataset columns {time.time() - start}")
     id_column_guess = _find_best_matching_column("id", columns)
     while id_column not in columns:
         id_column = click.prompt(
@@ -151,10 +150,8 @@ def generate_schema_command(prev_state, filepath, output, id_column, modality, n
     )
 
     num_rows = dataset.num_rows
-    print(f"got num rows {time.time() - start}")
     proposed_schema = propose_schema(filepath, columns, id_column, modality, name, num_rows)
     click.echo(json.dumps(proposed_schema, indent=2))
-    print(f"schema generation took {time.time() - start} seconds.")
     if not output:
         output = click_helpers.confirm_save_prompt_filepath(
             save_message="Would you like to save the generated schema?",
