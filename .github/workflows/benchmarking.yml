@@ -1,0 +1,17 @@
+name: Benchmarking
+
+on: [ push, pull_request ]
+
+jobs:
+  test:
+    name: Performance regression check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'pytest'
+          output-file-path: output.json
+          fail-on-alert: true
