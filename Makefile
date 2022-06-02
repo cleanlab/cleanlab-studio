@@ -42,3 +42,6 @@ schema_validate:
 
 schema_upload:
 	cleanlab dataset upload -f ./tests/resources/datasets/sample.csv --schema schema.json
+
+benchmarks:
+	pytest bench.py --benchmark-json output.json --benchmark-min-rounds=1
