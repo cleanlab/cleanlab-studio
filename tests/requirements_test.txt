@@ -1,4 +1,2 @@
-openpyxl
-pyexcel-xlsx
-pyexcel-xls
 pytest
+pytest-benchmark
