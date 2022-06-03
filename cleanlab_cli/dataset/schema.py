@@ -148,8 +148,7 @@ def generate_schema_command(prev_state, filepath, output, id_column, modality, n
         ),
     )
 
-    num_rows = dataset.num_rows
-    proposed_schema = propose_schema(filepath, columns, id_column, modality, name, num_rows)
+    proposed_schema = propose_schema(filepath, columns, id_column, modality, name)
     click.echo(json.dumps(proposed_schema, indent=2))
     if not output:
         output = click_helpers.confirm_save_prompt_filepath(

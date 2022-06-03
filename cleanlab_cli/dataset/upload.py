@@ -174,10 +174,8 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
 
     prev_state.update_args(dict(modality=modality, id_column=id_column))
 
-    num_rows = dataset.num_rows
-
     ### Propose schema
-    proposed_schema = propose_schema(filepath, columns, id_column, modality, name, num_rows)
+    proposed_schema = propose_schema(filepath, columns, id_column, modality, name)
     log(json.dumps(proposed_schema, indent=2))
     info(f"No schema was provided. We propose the above schema based on your dataset.")
 
