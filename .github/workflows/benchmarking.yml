@@ -22,3 +22,9 @@ jobs:
           tool: 'pytest'
           output-file-path: output.json
           fail-on-alert: true
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-on-alert: true
+          # Mention @rhysd in the commit comment
+          alert-comment-cc-users: '@calebchiam'
