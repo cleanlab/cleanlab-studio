@@ -5,7 +5,7 @@ import pytest
 from cleanlab_cli.util import get_filename
 import os
 
-FILESIZES = ["1M", "10M", "100M", "1G"]
+FILESIZES = ["1M", "10M", "100M"]  # , "1G"]
 FORMATS = ["csv"]  # , "json", "xls", "xlsx"]
 
 DATASETS = {
@@ -13,7 +13,7 @@ DATASETS = {
         "1M": "https://s.anish.io/cleanlab/datasets/Tweets-1M.csv",
         "10M": "https://s.anish.io/cleanlab/datasets/Tweets-10M.csv",
         "100M": "https://s.anish.io/cleanlab/datasets/Tweets-100M.csv",
-        "1G": "https://s.anish.io/cleanlab/datasets/Tweets-1G.csv",
+        # "1G": "https://s.anish.io/cleanlab/datasets/Tweets-1G.csv",
     }
 }
 
