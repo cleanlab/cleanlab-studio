@@ -4,7 +4,7 @@ Helper functions for working with schemas
 
 import json
 from decimal import Decimal
-from random import sample, random
+import random
 from typing import (
     Any,
     Optional,
@@ -191,7 +191,7 @@ def infer_types(values: Collection[Any]):
     if max_count_type == "string":
         try:
             # check for datetime first
-            val_sample = sample(list(values), 10)
+            val_sample = random.sample(list(values), 10)
             for s in val_sample:
                 res = pd.to_datetime(s)
                 if res is NaT:
@@ -232,11 +232,10 @@ def propose_schema(
     id_column: Optional[str] = None,
     modality: Optional[str] = None,
     name: Optional[str] = None,
-    num_rows: Optional[int] = None,
-    sample_size: int = 1000,
+    sample_size: int = 10000,
 ) -> Dict[str, str]:
     """
-    Generates a schema for a dataset based on a sample of up to 1000 of the dataset's rows.
+    Generates a schema for a dataset based on a sample of the dataset's rows.
 
     The arguments are intended to be required for the command-line interface, but optional for Cleanlab Studio.
 
@@ -256,9 +255,6 @@ def propose_schema(
     if columns is None:
         columns = dataset.get_columns()
 
-    if num_rows is None:
-        num_rows = dataset.num_rows
-
     if name is None:
         name = get_filename(filepath)
 
@@ -270,10 +266,12 @@ def propose_schema(
 
     # dataset = []
     rows = []
-    sample_proba = 1 if sample_size >= num_rows else sample_size / num_rows
-    for row in dataset.read_streaming_records():
-        if random() <= sample_proba:
+    for idx, row in enumerate(dataset.read_streaming_records()):
+        if idx < sample_size:
             rows.append(dict(row.items()))
+        else:
+            if random.random() < (sample_size + 1) / (idx + 1):
+                rows[random.randint(0, sample_size - 1)] = dict(row.items())
 
     df = pd.DataFrame(rows, columns=columns)
     retval: Dict[str, Any] = dict()
