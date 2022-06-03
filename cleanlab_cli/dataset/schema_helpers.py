@@ -232,7 +232,7 @@ def propose_schema(
     id_column: Optional[str] = None,
     modality: Optional[str] = None,
     name: Optional[str] = None,
-    sample_size: int = 1e4,
+    sample_size: int = 10000,
 ) -> Dict[str, str]:
     """
     Generates a schema for a dataset based on a sample of the dataset's rows.
