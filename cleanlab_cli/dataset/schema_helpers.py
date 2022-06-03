@@ -250,7 +250,6 @@ def propose_schema(
     :return:
 
     """
-    time.sleep(10)
     dataset = init_dataset_from_filepath(filepath)
 
     # fill optional arguments if necessary
