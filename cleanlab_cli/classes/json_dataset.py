@@ -6,12 +6,12 @@ from .dataset import Dataset
 
 class JsonDataset(Dataset):
     def read_streaming_records(self):
-        with open(self.filepath, "r") as f:
+        with open(self.filepath, "rb") as f:
             for r in ijson.items(f, "rows.item"):
                 yield r
 
     def read_streaming_values(self):
-        with open(self.filepath, "r") as f:
+        with open(self.filepath, "rb") as f:
             for r in ijson.items(f, "rows.item"):
                 yield r.values()
 
