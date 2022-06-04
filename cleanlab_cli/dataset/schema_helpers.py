@@ -302,14 +302,15 @@ def propose_schema(
 
     # dataset = []
     rows = []
-    for idx, row in enumerate(dataset.read_streaming_records()):
+    for idx, row in enumerate(dataset.read_streaming_values()):
         if idx >= max_rows_checked:
             break
         if idx < sample_size:
-            rows.append(dict(row.items()))
+            rows.append(row)
         else:
-            if random.random() < (sample_size + 1) / (idx + 1):
-                rows[random.randint(0, sample_size - 1)] = dict(row.items())
+            random_idx = random.randint(0, idx)
+            if random_idx < sample_size:
+                rows[random_idx] = rows
 
     df = pd.DataFrame(rows, columns=columns)
     retval: Dict[str, Any] = dict()
