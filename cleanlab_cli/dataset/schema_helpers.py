@@ -162,6 +162,40 @@ def multiple_separate_words_detected(values):
     return avg_num_words >= 3
 
 
+def _values_are_datetime(values):
+    try:
+        # check for datetime first
+        val_sample = random.sample(list(values), 20)
+        for s in val_sample:
+            res = pd.to_datetime(s)
+            if res is NaT:
+                raise ValueError
+    except Exception:
+        return False
+    return True
+
+
+def _values_are_integers(values):
+    try:
+        val_sample = random.sample(list(values), 20)
+        for s in val_sample:
+            if str(int(s)) != s:
+                return False
+    except Exception:
+        return False
+    return True
+
+
+def _values_are_floats(values):
+    try:
+        val_sample = random.sample(list(values), 20)
+        for s in val_sample:
+            float(s)
+    except Exception:
+        return False
+    return True
+
+
 def infer_types(values: Collection[Any]):
     """
     Infer the data type and feature type of a collection of a values using simple heuristics.
@@ -174,6 +208,8 @@ def infer_types(values: Collection[Any]):
 
     ratio_unique = len(set(values)) / len(values)
     for v in values:
+        if v == "":
+            continue
         if isinstance(v, str):
             counts["string"] += 1
         elif isinstance(v, float) or isinstance(v, Decimal):
@@ -188,17 +224,16 @@ def infer_types(values: Collection[Any]):
     ratios: Dict[str, float] = {k: v / len(values) for k, v in counts.items()}
     max_count_type = max(ratios.items(), key=lambda kv: kv[1])[0]
 
+    # preliminary check: ints/floats may be loaded as strings
+    if max_count_type:
+        if _values_are_integers(values):
+            max_count_type = "integer"
+        elif _values_are_floats(values):
+            max_count_type = "float"
+
     if max_count_type == "string":
-        try:
-            # check for datetime first
-            val_sample = random.sample(list(values), 10)
-            for s in val_sample:
-                res = pd.to_datetime(s)
-                if res is NaT:
-                    raise ValueError
+        if _values_are_datetime(values):
             return "string", "datetime"
-        except (ValueError, TypeError, OverflowError):
-            pass
         # is string type
         if ratio_unique >= ID_RATIO_THRESHOLD:
             # almost all unique values, i.e. either ID, text
