@@ -1,3 +1,6 @@
+## View performance benchmarks
+https://cleanlab.github.io/cleanlab-cli/dev/bench/
+
 ## Development
 
 1. To install the package locally for development, clone this repo and run `pip install --editable .` from the home
