@@ -233,6 +233,7 @@ def propose_schema(
     modality: Optional[str] = None,
     name: Optional[str] = None,
     sample_size: int = 10000,
+    max_rows_checked: int = 200000,
 ) -> Dict[str, str]:
     """
     Generates a schema for a dataset based on a sample of the dataset's rows.
@@ -244,8 +245,8 @@ def propose_schema(
     :param id_column: ID column name
     :param name: name of dataset
     :param modality: text or tabular
-    :param num_rows: number of rows in dataset
     :param sample_size: default of 1000
+    :param max_rows_checked: max rows to sample from
     :return:
 
     """
@@ -267,6 +268,8 @@ def propose_schema(
     # dataset = []
     rows = []
     for idx, row in enumerate(dataset.read_streaming_records()):
+        if idx >= max_rows_checked:
+            break
         if idx < sample_size:
             rows.append(dict(row.items()))
         else:
