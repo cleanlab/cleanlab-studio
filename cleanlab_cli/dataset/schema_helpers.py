@@ -310,9 +310,8 @@ def propose_schema(
         else:
             random_idx = random.randint(0, idx)
             if random_idx < sample_size:
-                rows[random_idx] = rows
-
-    df = pd.DataFrame(rows, columns=columns)
+                rows[random_idx] = row
+    df = pd.DataFrame(data=rows, columns=columns)
     retval: Dict[str, Any] = dict()
     retval["metadata"] = {}
     retval["fields"] = {}
