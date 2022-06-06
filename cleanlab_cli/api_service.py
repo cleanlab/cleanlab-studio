@@ -12,6 +12,9 @@ from cleanlab_cli import __version__
 base_url = "https://api.cleanlab.ai/api/cli/v1"
 
 
+# base_url = "http://localhost:8500/api/cli/v1"
+
+
 def handle_api_error(res: requests.Response, show_warning=False):
     res_json = res.json()
     if "code" in res_json and "description" in res_json:  # AuthError or UserQuotaError format
