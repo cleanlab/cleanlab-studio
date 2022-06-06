@@ -1,12 +1,11 @@
 from cleanlab_cli.dataset.schema_helpers import propose_schema, validate_schema
-import timeit
 import requests
 import pytest
 from cleanlab_cli.util import get_filename
 import os
 
 FILESIZES = ["1M", "10M", "100M", "1G"]  # , "1G"]
-FORMATS = ["csv"]  # , "json", "xls", "xlsx"]
+FORMATS = ["csv", "json"]
 
 DATASETS = {
     "csv": {
@@ -14,7 +13,13 @@ DATASETS = {
         "10M": "https://s.anish.io/cleanlab/datasets/Tweets-10M.csv",
         "100M": "https://s.anish.io/cleanlab/datasets/Tweets-100M.csv",
         "1G": "https://s.anish.io/cleanlab/datasets/Tweets-1G.csv",
-    }
+    },
+    "json": {
+        "1M": "https://s.anish.io/cleanlab/datasets/Tweets-1M.json",
+        "10M": "https://s.anish.io/cleanlab/datasets/Tweets-10M.json",
+        "100M": "https://s.anish.io/cleanlab/datasets/Tweets-100M.json",
+        "1G": "https://s.anish.io/cleanlab/datasets/Tweets-1G.json",
+    },
 }
 
 
@@ -39,10 +44,3 @@ def test_generate_schema(benchmark, format, filesize):
     else:
         filepath = dataset_url_or_filepath
     benchmark(lambda: propose_schema(filepath, id_column="tweet_id", modality="text"))
-
-
-#
-# def generate_schema_and_validate(filepath, id_column, modality):
-#     return time_function(
-#         "Propose schema", propose_schema, filepath=filepath, id_column=id_column, modality=modality
-#     )
