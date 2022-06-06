@@ -17,7 +17,7 @@ from cleanlab_cli.settings import CleanlabSettings
     "--id",
     type=str,
     prompt=True,
-    help="experiment ID",
+    help="cleanset ID",
 )
 @click.option(
     "--filepath",
@@ -38,7 +38,7 @@ def download(config, prev_state, id, filepath, output):
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
 
-    rows = api_service.download_clean_labels(api_key, experiment_id=id)
+    rows = api_service.download_clean_labels(api_key, cleanset_id=id)
     clean_df = pd.DataFrame(rows, columns=["id", "clean_label"])
 
     if filepath:

@@ -27,11 +27,10 @@ def download_dataset(dataset_url):
     filename = get_filename(dataset_url)
     if os.path.exists(filename):
         return
-    if dataset_url.endswith(".csv"):
-        req = requests.get(dataset_url)
-        url_content = req.content
-        with open(filename, "wb") as f:
-            f.write(url_content)
+    req = requests.get(dataset_url)
+    url_content = req.content
+    with open(filename, "wb") as f:
+        f.write(url_content)
 
 
 @pytest.mark.parametrize("format", FORMATS)

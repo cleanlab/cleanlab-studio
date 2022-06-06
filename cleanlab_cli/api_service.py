@@ -71,15 +71,15 @@ def upload_rows(api_key, dataset_id, rows):
     handle_api_error(res)
 
 
-def download_clean_labels(api_key, experiment_id):
+def download_clean_labels(api_key, cleanset_id):
     """
 
     :param api_key:
-    :param experiment_id:
+    :param cleanset_id:
     :return: return (rows, id_column)
     """
     res = requests.get(
-        base_url + f"/experiments/{experiment_id}/clean_label", data=dict(api_key=api_key)
+        base_url + f"/experiments/{cleanset_id}/clean_label", data=dict(api_key=api_key)
     )
     handle_api_error(res)
     return res.json()["rows"]
