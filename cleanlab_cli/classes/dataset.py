@@ -9,8 +9,7 @@ class Dataset:
         self.filepath = filepath
         self._num_rows: Optional[int] = None
 
-    @property
-    def num_rows(self) -> int:
+    def __len__(self):
         if self._num_rows is None:
             self._num_rows = self.count_rows()
         return self._num_rows

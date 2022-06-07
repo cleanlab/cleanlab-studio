@@ -61,7 +61,7 @@ def check_dataset_command(prev_state, filepath, schema, output):
     dataset = init_dataset_from_filepath(filepath)
     loaded_schema = load_schema(schema)
     log = upload_helpers.create_feedback_log()
-    num_records = dataset.num_rows
+    num_records = len(dataset)
     seen_ids = set()
     existing_ids = set()
 

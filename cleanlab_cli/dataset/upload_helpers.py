@@ -231,7 +231,7 @@ def upload_rows(
     api_service.check_dataset_limit(file_size, api_key=api_key, show_warning=False)
 
     dataset = init_dataset_from_filepath(filepath)
-    num_records = dataset.num_rows
+    num_records = len(dataset)
     for record in tqdm(
         dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"
     ):
