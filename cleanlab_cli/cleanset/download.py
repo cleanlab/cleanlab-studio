@@ -7,7 +7,7 @@ import pandas as pd
 from cleanlab_cli import api_service
 from cleanlab_cli import click_helpers
 from cleanlab_cli import util
-from cleanlab_cli.click_helpers import log
+from cleanlab_cli.click_helpers import log, progress
 from cleanlab_cli.decorators import previous_state, auth_config
 from cleanlab_cli.settings import CleanlabSettings
 
@@ -37,12 +37,12 @@ def download(config, prev_state, id, filepath, output):
     prev_state.init_state(dict(command="download labels", args=dict(id=id)))
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
-
+    progress("Downloading cleanlab columns...")
     rows = api_service.download_clean_labels(api_key, cleanset_id=id)
     clean_df = pd.DataFrame(rows, columns=["id", "clean_label"])
 
     if filepath:
-        id_column = api_service.get_id_column(api_key, experiment_id=id)
+        id_column = api_service.get_id_column(api_key, cleanset_id=id)
         if not os.path.exists(filepath):
             log(f"Specified file {filepath} could not be found.")
             filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")

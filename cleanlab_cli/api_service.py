@@ -79,7 +79,7 @@ def download_clean_labels(api_key, cleanset_id):
     :return: return (rows, id_column)
     """
     res = requests.get(
-        base_url + f"/experiments/{cleanset_id}/clean_label", data=dict(api_key=api_key)
+        base_url + f"/cleansets/{cleanset_id}/clean_label", data=dict(api_key=api_key)
     )
     handle_api_error(res)
     return res.json()["rows"]
@@ -96,10 +96,8 @@ def complete_upload(api_key, dataset_id):
     handle_api_error(res)
 
 
-def get_id_column(api_key, experiment_id):
-    res = requests.get(
-        base_url + f"/experiments/{experiment_id}/id_column", data=dict(api_key=api_key)
-    )
+def get_id_column(api_key, cleanset_id):
+    res = requests.get(base_url + f"/cleansets/{cleanset_id}/id_column", data=dict(api_key=api_key))
     handle_api_error(res)
     return res.json()["id_column"]
 
