@@ -12,7 +12,7 @@ from cleanlab_cli.decorators import previous_state, auth_config
 from cleanlab_cli.settings import CleanlabSettings
 
 
-@click.command(help="export cleaned dataset labels")
+@click.command(help="download Cleanlab columns")
 @click.option(
     "--id",
     type=str,
@@ -23,23 +23,39 @@ from cleanlab_cli.settings import CleanlabSettings
     "--filepath",
     "-f",
     type=click.Path(),
-    help="Set a filepath to original dataset.",
+    help=(
+        "To combine Cleanlab columns with existing dataset, set this as the filepath to the"
+        " original dataset"
+    ),
 )
 @click.option(
     "--output",
     "-o",
     type=click.Path(),
-    help="Output for cleaned labels or dataset combined with cleaned labels.",
+    help="Output filepath",
+)
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    help=(
+        "Set this flag to download all Cleanlab columns (suggested label, clean label, label"
+        " quality, issue). Exclude this flag to download only the clean label column."
+    ),
 )
 @previous_state
 @auth_config
-def download(config, prev_state, id, filepath, output):
+def download(config, prev_state, id, filepath, output, all):
     prev_state.init_state(dict(command="download labels", args=dict(id=id)))
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
-    progress("Downloading cleanlab columns...")
-    rows = api_service.download_clean_labels(api_key, cleanset_id=id)
-    clean_df = pd.DataFrame(rows, columns=["id", "clean_label"])
+    progress("Downloading Cleanlab columns...")
+    rows = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all)
+
+    if all:
+        clean_df_columns = ["id", "issue", "label_quality", "suggested_label", "clean_label"]
+    else:
+        clean_df_columns = ["id", "clean_label"]
 
     if filepath:
         id_column = api_service.get_id_column(api_key, cleanset_id=id)
@@ -59,9 +75,12 @@ def download(config, prev_state, id, filepath, output):
                 )
                 output = None
 
+        clean_df = pd.DataFrame(rows, columns=clean_df_columns).set_index("id")
+
         ids_to_fields_to_values = defaultdict(dict)
-        for id, clean_label in zip(clean_df["id"], clean_df["clean_label"]):
-            ids_to_fields_to_values[id]["clean_label"] = clean_label
+        for row_id, row in clean_df.iterrows():
+            fields_to_values = dict(row)
+            ids_to_fields_to_values[row_id] = fields_to_values
 
         util.combine_fields_with_dataset(filepath, id_column, ids_to_fields_to_values, output)
         click_helpers.success(f"Saved to {output}")
@@ -71,5 +90,6 @@ def download(config, prev_state, id, filepath, output):
                 "Specify your output filepath (must be .csv). Leave blank to use default",
                 default=f"clean_labels.csv",
             )
+        clean_df = pd.DataFrame(rows, columns=clean_df_columns)
         clean_df.to_csv(output, index=False)
         click_helpers.success(f"Saved to {output}")
