@@ -63,10 +63,10 @@ def get_dataset_schema(api_key, dataset_id):
     return res.json()["schema"]
 
 
-def upload_rows(api_key, dataset_id, rows):
+def upload_rows(api_key, dataset_id, rows, columns):
     res = requests.post(
         base_url + f"/datasets/{dataset_id}",
-        data=dict(api_key=api_key, rows=json.dumps(rows)),
+        data=dict(api_key=api_key, rows=json.dumps(rows), columns=json.dumps(columns)),
     )
     handle_api_error(res)
 
