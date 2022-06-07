@@ -247,19 +247,21 @@ def upload_rows(
         if row:
             # compute rows_per_payload if not available
             if rows_per_payload is None:
-                row_size = getsizeof(row)
+                row_size = getsizeof(row.values())
                 rows_per_payload = int(payload_size * 10**6 / row_size)
 
-            rows.append(row)
+            rows.append(list(row.values()))
             if len(rows) >= rows_per_payload:
                 # if sufficiently large, POST to API
-                api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows)
+                api_service.upload_rows(
+                    api_key=api_key, dataset_id=dataset_id, rows=rows, columns=columns
+                )
                 # click.secho("Uploading row chunk...", fg="blue")
                 rows = []
 
     # click.secho("Uploading final row chunk...", fg="blue")
     if len(rows) > 0:
-        api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows)
+        api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows, columns=columns)
 
     api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
 
