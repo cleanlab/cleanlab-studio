@@ -47,11 +47,11 @@ visiting https://app.cleanlab.ai/datasets and selecting 'Resume' for the relevan
 
 To download clean labels (i.e. labels that have been fixed through the Cleanlab Studio interface):
 
-`cleanlab experiment download --id [experiment ID]`
+`cleanlab cleanset download --id [cleanset ID]`
 
 To download clean labels and combine them with your local dataset:
 
-`cleanlab experiment download --id [experiment ID] -f [dataset filepath]`
+`cleanlab cleanset download --id [cleanset ID] -f [dataset filepath]`
 
 ## Commands
 
@@ -86,14 +86,16 @@ After uploading your dataset, you will be prompted to save the list of dataset i
 upload process. These issues include missing IDs, duplicate IDs, missing values, and values whose types do not match the
 schema. You may specify the save location with `--output [output filepath]`.
 
-**`cleanlab experiment download` downloads clean labels from your experiment**
+**`cleanlab cleanset download` downloads Cleanlab columns from your cleanset**
 
-Experiments are initialized through the Cleanlab Studio interface. In an experiment, users can inspect their dataset and
-verify their labels. Clean labels are the labels after this set of manual fixes have been supplied.
+Cleansets are initialized through the Cleanlab Studio interface. In a cleanset, users can inspect their dataset and
+verify their labels. Clean labels are the labels after this set of manual fixes have been applied.
 
 This command downloads the clean labels and saves them locally as a .csv, .xls/.xlsx, or .json, with columns `id`
-and `clean_label`. Include the `--combine` flag and a `--filepath [dataset filepath]` to add the clean labels as a new
-column `clean_label`, which will be outputted to `--output [output filepath]`.
+and `clean_label`. Include the `--filepath [dataset filepath]` to combine the clean labels with the original dataset as
+a new column `clean_label`, which will be outputted to `--output [output filepath]`. Include the `--all` flag to
+include **all** Cleanlab columns, i.e. issue, label quality, suggested label, clean label, instead of only the clean
+label column.
 
 ## Dataset format
 

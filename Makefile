@@ -5,13 +5,13 @@ login:
 	cleanlab login --key [api_key]
 
 upload_csv:
-	cleanlab dataset upload -f ./tests/resources/datasets/sample.csv -m text --id-column tweet_id
+	cleanlab dataset upload -f ./Tweets-10M.csv -m text --id-column tweet_id
 
 download_combine:
-	cleanlab experiment download --combine -f ./tests/resources/datasets/sample.csv --id [experiment_id]
+	cleanlab cleanset download --combine -f ./tests/resources/datasets/sample.csv --id [cleanset_id]
 
 download_csv:
-	cleanlab experiment download --id [experiment_id]
+	cleanlab cleanset download --id [cleanset_id]
 
 check_csv:
 	cleanlab dataset schema check -f ./tests/resources/datasets/sample.csv -s schema.json
