@@ -1,6 +1,10 @@
 """
 Helper functions for processing and uploading dataset rows
 """
+import asyncio
+from audioop import mul
+import multiprocessing
+import aiohttp
 import click
 import pandas as pd
 from decimal import Decimal
@@ -15,6 +19,7 @@ from typing import (
 from collections import defaultdict
 from sys import getsizeof
 from enum import Enum
+from pyparsing import col
 from tqdm import tqdm
 from cleanlab_cli import api_service
 from cleanlab_cli.util import (
@@ -199,6 +204,81 @@ def echo_log_warnings(log):
             click.echo(f"{warning_to_readable_name(w.name)}: {warning_count}")
 
 
+def validate_dataset(
+    dataset_filepath: str,
+    columns: List[str],
+    schema: Dict[str, Any],
+    log: dict,
+    upload_queue: multiprocessing.Queue,
+    existing_ids: Optional[Collection[str]] = None,
+):
+    """Iterates through dataset and validates rows. Places validated rows in upload queue.
+
+    :param dataset_filepath: file path to load dataset from
+    :param columns: list of column identifiers for dataset
+    :param schema: a validated schema
+    :param log: log dict to add warnings to
+    :param upload_queue: queue to place validated rows in for upload
+    :param existing_ids: set of row IDs that were already uploaded, defaults to None
+    """
+    existing_ids = set() if existing_ids is None else set([str(x) for x in existing_ids])
+    seen_ids: Set[str] = set()
+
+    dataset = init_dataset_from_filepath(dataset_filepath)
+    num_records = len(dataset)
+
+    for record in tqdm(
+        dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"
+    ):
+        row, row_id, warnings = validate_and_process_record(
+            record, schema, seen_ids, existing_ids, columns
+        )
+
+        update_log_with_warnings(log, row_id, warnings)
+
+        # row and row ID both present, i.e. row will be uploaded
+        seen_ids.add(row_id)
+
+        if row:
+            upload_queue.put(row, block=True)
+
+    upload_queue.put(None, block=True)
+
+
+async def upload_dataset(
+    api_key: str, dataset_id: Optional[str], columns: List[str], upload_queue: multiprocessing.Queue, rows_per_payload: int
+):
+    """Gets rows from upload queue and uploads to API.
+
+    :param api_key: 32-character alphanumeric string
+    :param dataset_id: dataset ID
+    :param columns: list of column identifiers for dataset
+    :param upload_queue: queue to get validated rows from
+    :param rows_per_payload: number of rows to upload per payload/chunk
+    """
+    async with aiohttp.ClientSession() as session:
+        payload = []
+        upload_tasks = []
+        while (row := upload_queue.get()) is not None:
+            payload.append(row)
+
+            if len(payload) >= rows_per_payload:
+                upload_tasks.append(api_service.upload_rows_async(
+                    session=session, api_key=api_key, dataset_id=dataset_id, rows=payload, columns=columns
+                ))
+
+                payload = []
+
+        # upload remaining rows
+        if len(payload) > 0:
+            upload_tasks.append(api_service.upload_rows_async(
+                session=session, api_key=api_key, dataset_id=dataset_id, rows=payload, columns=columns
+            ))
+
+        await asyncio.gather(*upload_tasks)
+        await asyncio.sleep(1)
+
+
 def upload_rows(
     api_key: str,
     dataset_id: Optional[str],
@@ -220,48 +300,39 @@ def upload_rows(
     :return: None
     """
     columns = list(schema["fields"].keys())
-    existing_ids = set() if existing_ids is None else set([str(x) for x in existing_ids])
-    rows = []
-    rows_per_payload = None
-    seen_ids: Set[str] = set()
 
     log = create_feedback_log()
 
     file_size = get_file_size(filepath)
     api_service.check_dataset_limit(file_size, api_key=api_key, show_warning=False)
 
-    dataset = init_dataset_from_filepath(filepath)
-    num_records = len(dataset)
-    for record in tqdm(
-        dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"
-    ):
-        row, row_id, warnings = validate_and_process_record(
-            record, schema, seen_ids, existing_ids, columns
-        )
+    # NOTE: makes simplifying assumption that first row size is representative of all row sizes
+    row_size = getsizeof(next(init_dataset_from_filepath(filepath).read_streaming_records()))
+    rows_per_payload = int(payload_size * 1000 / row_size)
+    upload_queue = multiprocessing.Queue(maxsize=2 * rows_per_payload)
 
-        update_log_with_warnings(log, row_id, warnings)
+    # create validation process
+    validation_process = multiprocessing.Process(
+        target=validate_dataset, kwargs={
+            "dataset_filepath": filepath,
+            "columns": columns,
+            "schema": schema,
+            "log": log,
+            "upload_queue": upload_queue,
+            "existing_ids": existing_ids,
+        }
+    )
 
-        # row and row ID both present, i.e. row will be uploaded
-        seen_ids.add(row_id)
-
-        if row:
-            # compute rows_per_payload if not available
-            if rows_per_payload is None:
-                row_size = getsizeof(row.values())
-                rows_per_payload = int(payload_size * 10**6 / row_size)
-
-            rows.append(list(row.values()))
-            if len(rows) >= rows_per_payload:
-                # if sufficiently large, POST to API
-                api_service.upload_rows(
-                    api_key=api_key, dataset_id=dataset_id, rows=rows, columns=columns
-                )
-                # click.secho("Uploading row chunk...", fg="blue")
-                rows = []
-
-    # click.secho("Uploading final row chunk...", fg="blue")
-    if len(rows) > 0:
-        api_service.upload_rows(api_key=api_key, dataset_id=dataset_id, rows=rows, columns=columns)
+    # start and join processes
+    validation_process.start()
+    asyncio.run(upload_dataset(
+        api_key=api_key,
+        dataset_id=dataset_id,
+        columns=columns, 
+        upload_queue=upload_queue,
+        rows_per_payload=rows_per_payload,
+    ))
+    validation_process.join()
 
     api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
 

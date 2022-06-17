@@ -46,6 +46,7 @@ setup(
     py_modules=["main"],
     python_requires=">=3.6",
     install_requires=[
+        "aiohttp>=3.8.1",
         "Click>=8.0.4",
         "colorama>=0.4.4",
         "pandas>=1.0.0",
