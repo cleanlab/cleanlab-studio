@@ -259,6 +259,8 @@ async def upload_dataset(
     async with aiohttp.ClientSession() as session:
         payload = []
         upload_tasks = []
+        first_upload = True
+
         while (row := upload_queue.get()) is not None:
             payload.append(row)
 
@@ -269,6 +271,12 @@ async def upload_dataset(
 
                 payload = []
 
+                # avoid race condition when creating table
+                if first_upload:
+                    await upload_tasks[0]
+                    upload_tasks = []
+                    first_upload = False
+
         # upload remaining rows
         if len(payload) > 0:
             upload_tasks.append(api_service.upload_rows_async(
@@ -276,7 +284,6 @@ async def upload_dataset(
             ))
 
         await asyncio.gather(*upload_tasks)
-        await asyncio.sleep(1)
 
 
 def upload_rows(
