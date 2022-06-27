@@ -81,7 +81,7 @@ async def upload_rows_async(session, api_key, dataset_id, rows, columns):
     data = dict(api_key=api_key, rows=json.dumps(rows), columns=json.dumps(columns))
 
     async with session.post(url=url, data=data) as res:
-        handle_api_error_from_json(await res.json())
+        handle_api_error_from_json(json.loads(await res.read()))
 
 
 def download_cleanlab_columns(api_key, cleanset_id, all=False):
