@@ -293,7 +293,7 @@ def upload_rows(
                 "Would you like to open your issues file for viewing?", filepath=output
             )
     click.secho(
-        "Upload completed. View your uploaded dataset at https://app.cleanlab.ai/datasets",
+        "Upload completed. View your uploaded dataset at https://app.cleanlab.ai",
         fg="green",
     )
 
