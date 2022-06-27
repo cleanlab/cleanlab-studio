@@ -240,7 +240,7 @@ def validate_dataset(
         seen_ids.add(row_id)
 
         if row:
-            upload_queue.put(row, block=True)
+            upload_queue.put(list(row.values()), block=True)
 
     upload_queue.put(None, block=True)
 
