@@ -2,10 +2,10 @@
 Helper functions for processing and uploading dataset rows
 """
 import asyncio
-from audioop import mul
 import multiprocessing
 import aiohttp
 import click
+import json
 import pandas as pd
 from decimal import Decimal
 from typing import (
@@ -256,6 +256,8 @@ async def upload_dataset(
     :param upload_queue: queue to get validated rows from
     :param rows_per_payload: number of rows to upload per payload/chunk
     """
+    columns_json: str = json.dumps(columns)
+
     async with aiohttp.ClientSession() as session:
         payload = []
         upload_tasks = []
@@ -266,7 +268,7 @@ async def upload_dataset(
 
             if len(payload) >= rows_per_payload:
                 upload_tasks.append(api_service.upload_rows_async(
-                    session=session, api_key=api_key, dataset_id=dataset_id, rows=payload, columns=columns
+                    session=session, api_key=api_key, dataset_id=dataset_id, rows=payload, columns_json=columns_json
                 ))
 
                 payload = []
@@ -280,7 +282,7 @@ async def upload_dataset(
         # upload remaining rows
         if len(payload) > 0:
             upload_tasks.append(api_service.upload_rows_async(
-                session=session, api_key=api_key, dataset_id=dataset_id, rows=payload, columns=columns
+                session=session, api_key=api_key, dataset_id=dataset_id, rows=payload, columns_json=columns_json
             ))
 
         await asyncio.gather(*upload_tasks)

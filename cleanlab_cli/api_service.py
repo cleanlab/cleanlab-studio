@@ -76,9 +76,9 @@ def upload_rows(api_key, dataset_id, rows, columns):
     handle_api_error(res)
 
 
-async def upload_rows_async(session, api_key, dataset_id, rows, columns):
+async def upload_rows_async(session, api_key, dataset_id, rows, columns_json):
     url = base_url + f"/datasets/{dataset_id}"
-    data = dict(api_key=api_key, rows=json.dumps(rows), columns=json.dumps(columns))
+    data = dict(api_key=api_key, rows=json.dumps(rows), columns=columns_json)
 
     async with session.post(url=url, data=data) as res:
         handle_api_error_from_json(json.loads(await res.read()))
