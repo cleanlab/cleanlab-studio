@@ -205,7 +205,7 @@ def echo_log_warnings(log):
             click.echo(f"{warning_to_readable_name(w.name)}: {warning_count}")
 
 
-def validate_dataset(
+def validate_rows(
     dataset_filepath: str,
     columns: List[str],
     schema: Dict[str, Any],
@@ -246,7 +246,7 @@ def validate_dataset(
     upload_queue.put(None, block=True)
 
 
-async def upload_dataset(
+async def upload_rows(
     api_key: str,
     dataset_id: Optional[str],
     columns: List[str],
@@ -305,7 +305,7 @@ async def upload_dataset(
         await asyncio.gather(*upload_tasks)
 
 
-def upload_rows(
+def upload_dataset(
     api_key: str,
     dataset_id: Optional[str],
     filepath: str,
@@ -339,7 +339,7 @@ def upload_rows(
 
     # create validation process
     validation_thread = threading.Thread(
-        target=validate_dataset,
+        target=validate_rows,
         kwargs={
             "dataset_filepath": filepath,
             "columns": columns,
@@ -353,7 +353,7 @@ def upload_rows(
     # start and join processes
     validation_thread.start()
     asyncio.run(
-        upload_dataset(
+        upload_rows(
             api_key=api_key,
             dataset_id=dataset_id,
             columns=columns,
