@@ -268,7 +268,8 @@ async def upload_rows(
         upload_tasks = []
         first_upload = True
 
-        while (row := upload_queue.get()) is not None:
+        row = upload_queue.get()
+        while row is not None:
             payload.append(row)
 
             if len(payload) >= rows_per_payload:
@@ -289,6 +290,8 @@ async def upload_rows(
                     await upload_tasks[0]
                     upload_tasks = []
                     first_upload = False
+
+            row = upload_queue.get()
 
         # upload remaining rows
         if len(payload) > 0:
