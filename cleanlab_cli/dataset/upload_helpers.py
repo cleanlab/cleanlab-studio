@@ -2,7 +2,8 @@
 Helper functions for processing and uploading dataset rows
 """
 import asyncio
-import multiprocessing
+import threading
+import queue
 import aiohttp
 import click
 import json
@@ -209,7 +210,7 @@ def validate_dataset(
     columns: List[str],
     schema: Dict[str, Any],
     log: dict,
-    upload_queue: multiprocessing.Queue,
+    upload_queue: queue.Queue,
     existing_ids: Optional[Collection[str]] = None,
 ):
     """Iterates through dataset and validates rows. Places validated rows in upload queue.
@@ -246,7 +247,7 @@ def validate_dataset(
 
 
 async def upload_dataset(
-    api_key: str, dataset_id: Optional[str], columns: List[str], upload_queue: multiprocessing.Queue, rows_per_payload: int
+    api_key: str, dataset_id: Optional[str], columns: List[str], upload_queue: queue.Queue, rows_per_payload: int
 ):
     """Gets rows from upload queue and uploads to API.
 
@@ -318,10 +319,10 @@ def upload_rows(
     # NOTE: makes simplifying assumption that first row size is representative of all row sizes
     row_size = getsizeof(next(init_dataset_from_filepath(filepath).read_streaming_records()))
     rows_per_payload = int(payload_size * 1e6 / row_size)
-    upload_queue = multiprocessing.Queue(maxsize=2 * rows_per_payload)
+    upload_queue = queue.Queue(maxsize=2 * rows_per_payload)
 
     # create validation process
-    validation_process = multiprocessing.Process(
+    validation_thread = threading.Thread(
         target=validate_dataset, kwargs={
             "dataset_filepath": filepath,
             "columns": columns,
@@ -333,7 +334,7 @@ def upload_rows(
     )
 
     # start and join processes
-    validation_process.start()
+    validation_thread.start()
     asyncio.run(upload_dataset(
         api_key=api_key,
         dataset_id=dataset_id,
@@ -341,7 +342,7 @@ def upload_rows(
         upload_queue=upload_queue,
         rows_per_payload=rows_per_payload,
     ))
-    validation_process.join()
+    validation_thread.join()
 
     api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
 
