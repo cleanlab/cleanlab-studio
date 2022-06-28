@@ -21,7 +21,7 @@ def handle_api_error(res: requests.Response, show_warning=False):
     handle_api_error_from_json(res.json(), show_warning)
 
 
-def handle_api_error_from_json(res_json: Dict, show_warning: bool =False):
+def handle_api_error_from_json(res_json: Dict, show_warning: bool = False):
     if "code" in res_json and "description" in res_json:  # AuthError or UserQuotaError format
         if res_json["code"] == "user_soft_quota_exceeded":
             if show_warning:
@@ -78,11 +78,11 @@ def upload_rows(api_key, dataset_id, rows, columns):
 
 async def upload_rows_async(session, api_key, dataset_id, rows, columns_json):
     url = base_url + f"/datasets/{dataset_id}"
-    data = gzip.compress(json.dumps(dict(
-        api_key=api_key,
-        rows=json.dumps(rows),
-        columns=columns_json
-    )).encode("utf-8"))
+    data = gzip.compress(
+        json.dumps(dict(api_key=api_key, rows=json.dumps(rows), columns=columns_json)).encode(
+            "utf-8"
+        )
+    )
     headers = {
         "Content-Type": "application/json",
         "Content-Encoding": "gzip",

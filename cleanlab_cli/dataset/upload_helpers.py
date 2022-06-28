@@ -247,7 +247,11 @@ def validate_dataset(
 
 
 async def upload_dataset(
-    api_key: str, dataset_id: Optional[str], columns: List[str], upload_queue: queue.Queue, rows_per_payload: int
+    api_key: str,
+    dataset_id: Optional[str],
+    columns: List[str],
+    upload_queue: queue.Queue,
+    rows_per_payload: int,
 ):
     """Gets rows from upload queue and uploads to API.
 
@@ -268,9 +272,15 @@ async def upload_dataset(
             payload.append(row)
 
             if len(payload) >= rows_per_payload:
-                upload_tasks.append(api_service.upload_rows_async(
-                    session=session, api_key=api_key, dataset_id=dataset_id, rows=payload, columns_json=columns_json
-                ))
+                upload_tasks.append(
+                    api_service.upload_rows_async(
+                        session=session,
+                        api_key=api_key,
+                        dataset_id=dataset_id,
+                        rows=payload,
+                        columns_json=columns_json,
+                    )
+                )
 
                 payload = []
 
@@ -282,9 +292,15 @@ async def upload_dataset(
 
         # upload remaining rows
         if len(payload) > 0:
-            upload_tasks.append(api_service.upload_rows_async(
-                session=session, api_key=api_key, dataset_id=dataset_id, rows=payload, columns_json=columns_json
-            ))
+            upload_tasks.append(
+                api_service.upload_rows_async(
+                    session=session,
+                    api_key=api_key,
+                    dataset_id=dataset_id,
+                    rows=payload,
+                    columns_json=columns_json,
+                )
+            )
 
         await asyncio.gather(*upload_tasks)
 
@@ -323,25 +339,28 @@ def upload_rows(
 
     # create validation process
     validation_thread = threading.Thread(
-        target=validate_dataset, kwargs={
+        target=validate_dataset,
+        kwargs={
             "dataset_filepath": filepath,
             "columns": columns,
             "schema": schema,
             "log": log,
             "upload_queue": upload_queue,
             "existing_ids": existing_ids,
-        }
+        },
     )
 
     # start and join processes
     validation_thread.start()
-    asyncio.run(upload_dataset(
-        api_key=api_key,
-        dataset_id=dataset_id,
-        columns=columns, 
-        upload_queue=upload_queue,
-        rows_per_payload=rows_per_payload,
-    ))
+    asyncio.run(
+        upload_dataset(
+            api_key=api_key,
+            dataset_id=dataset_id,
+            columns=columns,
+            upload_queue=upload_queue,
+            rows_per_payload=rows_per_payload,
+        )
+    )
     validation_thread.join()
 
     api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
