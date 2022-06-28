@@ -2,10 +2,10 @@
 Methods for interacting with the command line server API
 1:1 mapping with command_line_api.py
 """
+import gzip
 import json
 from typing import Dict
 
-import aiohttp
 import requests
 
 from cleanlab_cli.click_helpers import abort, warn
@@ -78,10 +78,19 @@ def upload_rows(api_key, dataset_id, rows, columns):
 
 async def upload_rows_async(session, api_key, dataset_id, rows, columns_json):
     url = base_url + f"/datasets/{dataset_id}"
-    data = dict(api_key=api_key, rows=json.dumps(rows), columns=columns_json)
+    data = gzip.compress(json.dumps(dict(
+        api_key=api_key,
+        rows=json.dumps(rows),
+        columns=columns_json
+    )).encode("utf-8"))
+    headers = {
+        "Content-Type": "application/json",
+        "Content-Encoding": "gzip",
+    }
 
-    async with session.post(url=url, data=data) as res:
-        handle_api_error_from_json(json.loads(await res.read()))
+    async with session.post(url=url, data=data, headers=headers) as res:
+        res_text = await res.read()
+        handle_api_error_from_json(json.loads(res_text))
 
 
 def download_cleanlab_columns(api_key, cleanset_id, all=False):
