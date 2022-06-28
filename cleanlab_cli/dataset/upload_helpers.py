@@ -317,7 +317,7 @@ def upload_rows(
 
     # NOTE: makes simplifying assumption that first row size is representative of all row sizes
     row_size = getsizeof(next(init_dataset_from_filepath(filepath).read_streaming_records()))
-    rows_per_payload = int(payload_size * 1000 / row_size)
+    rows_per_payload = int(payload_size * 1e6 / row_size)
     upload_queue = multiprocessing.Queue(maxsize=2 * rows_per_payload)
 
     # create validation process
