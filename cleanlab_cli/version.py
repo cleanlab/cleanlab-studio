@@ -1,2 +1,7 @@
 __version__ = "0.1.3"
-VALID_VERSIONS = ["0.1.0", "0.1.1", "0.1.2", "0.1.3"]
+
+SCHEMA_VERSION = "0.1.0"
+MIN_SCHEMA_VERSION = "0.1.0"
+
+SETTINGS_VERSION = "0.1.0"
+MIN_SETTINGS_VERSION = "0.1.0"
