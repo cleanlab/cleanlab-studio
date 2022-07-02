@@ -60,16 +60,16 @@ To upload to PyPi:
 
 ## Versioning
 
-For users, there is only one version number to keep track of: the CLI package version.
+For *users*, there is only one version number to keep track of: the CLI package version.
 
-For developers, there are four version numbers to keep track of:
+For *developers*, there are four version numbers to keep track of:
 
 1. The CLI package version
 2. Cleanlab Studio CLI API version (currently v0)
 3. The schema version number
 4. The CLI settings version number
 
-The latest version numbers for (1), (2), (4)
+The latest version numbers for (1), (2), and (4)
 are [stored in version.py](https://github.com/cleanlab/cleanlab-cli/blob/main/cleanlab_cli/version.py).
 
 ### Minimum supported versions
@@ -109,7 +109,7 @@ interfaces with the settings or schema.
 
 ----
 
-Whenever the CLI API is updated, update the minimum supported CLI version when there is a change in the API, which
+Whenever the **CLI API is updated**, update the minimum supported CLI version when there is a change in the API, which
 changes the interface between API and CLI in a way that breaks compatibility. Every endpoint in the CLI API is used by
 the CLI in some way, so any change must be followed by the question:
 Does this change in the API break the oldest supported versions of the CLI?
