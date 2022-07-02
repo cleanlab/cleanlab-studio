@@ -17,13 +17,11 @@ import pandas as pd
 from pandas import NaT
 import semver
 
-from cleanlab_cli import MIN_SCHEMA_VERSION
+from cleanlab_cli import MIN_SCHEMA_VERSION, SCHEMA_VERSION
 from cleanlab_cli.click_helpers import progress, success, info, abort
 from cleanlab_cli.dataset.schema_types import (
     DATA_TYPES_TO_FEATURE_TYPES,
-    SCHEMA_VERSION,
 )
-from cleanlab_cli import __version__
 from cleanlab_cli.util import (
     init_dataset_from_filepath,
     get_filename,
@@ -363,7 +361,7 @@ def construct_schema(fields, data_types, feature_types, id_column, modality, dat
     retval = {
         "fields": {},
         "metadata": {"id_column": id_column, "modality": modality, "name": dataset_name},
-        "version": __version__,
+        "version": SCHEMA_VERSION,
     }
     for field, data_type, feature_type in zip(fields, data_types, feature_types):
         retval["fields"][field] = {"data_type": data_type, "feature_type": feature_type}

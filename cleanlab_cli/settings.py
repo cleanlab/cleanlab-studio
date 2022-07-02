@@ -3,7 +3,7 @@ import os
 from typing import Optional
 import semver
 
-from cleanlab_cli import __version__, MIN_SETTINGS_VERSION
+from cleanlab_cli import SETTINGS_VERSION, MIN_SETTINGS_VERSION
 
 
 class CleanlabSettings:
@@ -13,7 +13,7 @@ class CleanlabSettings:
 
     @staticmethod
     def init_base():
-        return CleanlabSettings(version=__version__, api_key=None)
+        return CleanlabSettings(version=SETTINGS_VERSION, api_key=None)
 
     @staticmethod
     def from_dict(d):
@@ -67,7 +67,7 @@ class CleanlabSettings:
         return settings
 
     def update_version(self):
-        self.version = __version__
+        self.version = SETTINGS_VERSION
         self.save()
 
     def validate_version(self):

@@ -1,7 +1,5 @@
 from decimal import Decimal
 
-from cleanlab_cli.version import __version__
-
 DATA_TYPES_TO_FEATURE_TYPES = {
     "string": {"text", "categorical", "datetime", "identifier"},
     "integer": {"categorical", "datetime", "identifier", "numeric"},
@@ -16,5 +14,3 @@ PYTHON_TYPES_TO_READABLE_STRING = {
     bool: "boolean",
     Decimal: "float",
 }
-
-SCHEMA_VERSION = __version__

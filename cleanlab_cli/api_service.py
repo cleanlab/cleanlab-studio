@@ -11,10 +11,10 @@ import requests
 from cleanlab_cli.click_helpers import abort, warn
 from cleanlab_cli import __version__
 
-base_url = "https://api.cleanlab.ai/api/cli/v1"
+base_url = "https://api.cleanlab.ai/api/cli/v0"
 
 
-# base_url = "http://localhost:8500/api/cli/v1"
+# base_url = "http://localhost:8500/api/cli/v0"
 
 
 def handle_api_error(res: requests.Response, show_warning=False):
