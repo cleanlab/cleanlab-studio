@@ -272,5 +272,5 @@ The `datetime` type should be used for datetime strings, e.g. "2015-02-24 11:35:
 will be integers or floats). Datetime values must be parsable
 by [pandas.to_datetime()](https://pandas.pydata.org/docs/reference/api/pandas.to_datetime.html).
 
-`version` indicates the current Cleanlab CLI package version at time of schema creation. The current Cleanlab schema
-version is `0.1.3`.
+`version` indicates the version of the Cleanlab CLI package version used to generate the schema. The current Cleanlab
+schema version is `0.1.5`.
