@@ -1,8 +1,9 @@
 import json
 import os
 from typing import Optional
+import semver
 
-from cleanlab_cli import __version__, VALID_VERSIONS
+from cleanlab_cli import __version__, MIN_SETTINGS_VERSION
 
 
 class CleanlabSettings:
@@ -70,15 +71,9 @@ class CleanlabSettings:
         self.save()
 
     def validate_version(self):
-        # list of sem vers for which a migration needs to be run
-        MIGRATION_VERSIONS = []
-        if self.version not in VALID_VERSIONS:
-            if self.version in MIGRATION_VERSIONS:
-                raise ValueError("Settings file must be migrated or re-generated.")
-            else:
-                raise ValueError(
-                    "Unrecognized Cleanlab settings version. Settings file must be re-generated."
-                )
+        if semver.compare(MIN_SETTINGS_VERSION, self.version) == 1:
+            # TODO add proper settings migrations
+            raise ValueError("Settings file must be migrated or re-generated.")
 
     def save(self):
         with open(CleanlabSettings.get_settings_filepath(), "w") as f:

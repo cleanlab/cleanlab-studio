@@ -15,7 +15,9 @@ from typing import (
 
 import pandas as pd
 from pandas import NaT
+import semver
 
+from cleanlab_cli import MIN_SCHEMA_VERSION
 from cleanlab_cli.click_helpers import progress, success, info, abort
 from cleanlab_cli.dataset.schema_types import (
     DATA_TYPES_TO_FEATURE_TYPES,
@@ -79,6 +81,14 @@ def validate_schema(schema, columns: Collection[str]):
     for key in ["fields", "metadata", "version"]:
         if key not in schema:
             raise KeyError(f"Schema is missing '{key}' key.")
+
+    # check schema version validity
+    schema_version = schema["version"]
+    if semver.compare(MIN_SCHEMA_VERSION, schema_version) == 1:  # min schema > schema_version
+        raise ValueError(
+            "This schema version is incompatible with this version of the CLI. "
+            "A new schema should be generated using 'cleanlab dataset schema generate'"
+        )
 
     schema_columns = set(schema["fields"])
     columns = set(columns)
