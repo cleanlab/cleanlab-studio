@@ -20,7 +20,6 @@ from typing import (
 from collections import defaultdict
 from sys import getsizeof
 from enum import Enum
-from pyparsing import col
 from tqdm import tqdm
 from cleanlab_cli import api_service
 from cleanlab_cli.util import (
