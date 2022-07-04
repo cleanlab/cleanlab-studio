@@ -91,6 +91,14 @@ Similarly, each version of the **Cleanlab Studio CLI API** supports some:
 The CLI, upon initializing, pings the CLI API with its version number to check if it is compatible. If the CLI
 version < `MIN_CLI_VERSION`, then the user is prompted to upgrade their `cleanlab-cli` package.
 
+Each **version of the CLI** also supports some:
+
+- `MAX_SCHEMA_VERSION`: Maximum schema version number
+- `MAX_SETTINGS_VERSION`: Maximum CLI settings version number
+
+These are the maximum versions for the schema / settings that the CLI is able to handle. Every time the schema /
+settings version is incremented, the `MAX_SCHEMA_VERSION` / `MAX_SETTINGS_VERSION` should be updated as well.
+
 ### When to increment the minimum supported versions
 
 For each **release of the CLI**, update the minimum supported versions whenever there is a change in how the CLI
