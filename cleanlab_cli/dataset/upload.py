@@ -27,7 +27,7 @@ def resume_upload(api_key, dataset_id, filepath):
     return
 
 
-def upload_with_schema(api_key, schema, columns, filepath):
+def upload_with_schema(api_key, schema, columns, filepath, prev_state):
     progress("Validating provided schema...")
     loaded_schema = load_schema(schema)
     try:
@@ -37,6 +37,7 @@ def upload_with_schema(api_key, schema, columns, filepath):
     success("Provided schema is valid!")
     progress("Initializing dataset...")
     dataset_id = api_service.initialize_dataset(api_key, loaded_schema)
+    prev_state.update_args(dict(dataset_id=dataset_id))
     info(f"Dataset initialized with ID: {dataset_id}")
     info(
         "If this upload is interrupted, you may resume it using: cleanlab dataset upload -f"
@@ -98,7 +99,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
 
     args = dict(
         filepath=filepath,
-        id=id,
+        dataset_id=id,
         schema=schema,
         id_column=id_column,
         name=name,
@@ -126,6 +127,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
             if not proceed:
                 info("Exiting.")
                 return
+
     if resume:
         filepath = prev_state.get_arg("filepath")
         dataset_id = prev_state.get_arg("dataset_id")
@@ -155,7 +157,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
     # This is the first upload
     ## Check if uploading with schema
     if schema is not None:
-        upload_with_schema(api_key, schema, columns, filepath)
+        upload_with_schema(api_key, schema, columns, filepath, prev_state)
         return
 
     ## No schema, propose and confirm a schema
