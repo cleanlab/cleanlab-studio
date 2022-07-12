@@ -273,12 +273,14 @@ async def upload_rows(
 
             if len(payload) >= rows_per_payload:
                 upload_tasks.append(
-                    api_service.upload_rows_async(
-                        session=session,
-                        api_key=api_key,
-                        dataset_id=dataset_id,
-                        rows=payload,
-                        columns_json=columns_json,
+                    asyncio.create_task(
+                        api_service.upload_rows_async(
+                            session=session,
+                            api_key=api_key,
+                            dataset_id=dataset_id,
+                            rows=payload,
+                            columns_json=columns_json,
+                        )
                     )
                 )
 
@@ -291,6 +293,7 @@ async def upload_rows(
                     first_upload = False
 
             row = upload_queue.get()
+            await asyncio.sleep(0.0001)
 
         # upload remaining rows
         if len(payload) > 0:
