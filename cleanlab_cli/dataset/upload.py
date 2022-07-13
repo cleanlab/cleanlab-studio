@@ -105,7 +105,8 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
         name=name,
         output=output,
     )
-    if prev_state.same_command("dataset upload", args) and not resume:
+    # if dataset upload and not resuming (i.e. not using -r and no --id provided)
+    if prev_state.same_command("dataset upload", args) and not resume and not id:
         prev_dataset_id = prev_state.get_arg("dataset_id")
         if prev_dataset_id:  # having a dataset id means it was initialized
             completed = api_service.get_completion_status(api_key, prev_dataset_id)
