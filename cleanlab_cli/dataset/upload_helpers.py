@@ -283,7 +283,6 @@ async def upload_rows(
                         )
                     )
                 )
-
                 payload = []
 
                 # avoid race condition when creating table
@@ -293,7 +292,8 @@ async def upload_rows(
                     first_upload = False
 
             row = upload_queue.get()
-            await asyncio.sleep(0.0001)
+            # yield control
+            await asyncio.sleep(0)
 
         # upload remaining rows
         if len(payload) > 0:
