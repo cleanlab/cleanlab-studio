@@ -2,8 +2,6 @@
 Helper functions for processing and uploading dataset rows
 """
 import asyncio
-import threading
-import queue
 from collections import deque
 import aiohttp
 import click
@@ -221,6 +219,7 @@ async def validate_rows(
     :param schema: a validated schema
     :param log: log dict to add warnings to
     :param upload_queue: queue to place validated rows in for upload
+    :param rows_per_payload: max number of rows in each payload
     :param existing_ids: set of row IDs that were already uploaded, defaults to None
     """
     existing_ids: Set[str] = set() if existing_ids is None else set([str(x) for x in existing_ids])
@@ -331,7 +330,7 @@ async def upload_dataset(
     row_size = getsizeof(next(init_dataset_from_filepath(filepath).read_streaming_records()))
     rows_per_payload = int(payload_size * 1e6 / row_size)
 
-    upload_queue = deque()
+    upload_queue: deque = deque()
 
     producer = asyncio.create_task(
         validate_rows(
