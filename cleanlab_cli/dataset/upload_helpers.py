@@ -4,6 +4,7 @@ Helper functions for processing and uploading dataset rows
 import asyncio
 import threading
 import queue
+from collections import deque
 import aiohttp
 import click
 import json
@@ -204,12 +205,13 @@ def echo_log_warnings(log):
             click.echo(f"{warning_to_readable_name(w.name)}: {warning_count}")
 
 
-def validate_rows(
+async def validate_rows(
     dataset_filepath: str,
     columns: List[str],
     schema: Dict[str, Any],
     log: dict,
-    upload_queue: queue.Queue,
+    upload_queue: deque,
+    rows_per_payload: int,
     existing_ids: Optional[Collection[str]] = None,
 ):
     """Iterates through dataset and validates rows. Places validated rows in upload queue.
@@ -221,7 +223,7 @@ def validate_rows(
     :param upload_queue: queue to place validated rows in for upload
     :param existing_ids: set of row IDs that were already uploaded, defaults to None
     """
-    existing_ids = set() if existing_ids is None else set([str(x) for x in existing_ids])
+    existing_ids: Set[str] = set() if existing_ids is None else set([str(x) for x in existing_ids])
     seen_ids: Set[str] = set()
 
     dataset = init_dataset_from_filepath(dataset_filepath)
@@ -230,27 +232,27 @@ def validate_rows(
     for record in tqdm(
         dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"
     ):
+        while len(upload_queue) >= rows_per_payload:
+            await asyncio.sleep(0)
         row, row_id, warnings = validate_and_process_record(
             record, schema, seen_ids, existing_ids, columns
         )
-
         update_log_with_warnings(log, row_id, warnings)
-
         # row and row ID both present, i.e. row will be uploaded
         seen_ids.add(row_id)
 
         if row:
-            upload_queue.put(list(row.values()), block=True)
+            upload_queue.append(list(row.values()))
 
-    upload_queue.put(None, block=True)
+    await asyncio.sleep(0)
+    # print(f"Put everything on queue {time.time() - start}")
 
 
 async def upload_rows(
     api_key: str,
     dataset_id: Optional[str],
     columns: List[str],
-    upload_queue: queue.Queue,
-    rows_per_payload: int,
+    upload_queue: deque,
 ):
     """Gets rows from upload queue and uploads to API.
 
@@ -258,59 +260,48 @@ async def upload_rows(
     :param dataset_id: dataset ID
     :param columns: list of column identifiers for dataset
     :param upload_queue: queue to get validated rows from
-    :param rows_per_payload: number of rows to upload per payload/chunk
     """
     columns_json: str = json.dumps(columns)
 
     async with aiohttp.ClientSession() as session:
-        payload = []
         upload_tasks = []
         first_upload = True
+        import time
 
-        row = upload_queue.get()
-        while row is not None:
-            payload.append(row)
-
-            if len(payload) >= rows_per_payload:
-                upload_tasks.append(
-                    asyncio.create_task(
-                        api_service.upload_rows_async(
-                            session=session,
-                            api_key=api_key,
-                            dataset_id=dataset_id,
-                            rows=payload,
-                            columns_json=columns_json,
-                        )
+        # checkpoint = time.time()
+        while len(upload_queue) > 0:
+            x = time.time()
+            # print(
+            #     f"time since last checkpoint {x - checkpoint}, "
+            #     f"queue length: {len(upload_queue)}, "
+            #     f"num_upload_tasks: {len(upload_tasks)}"
+            # )
+            checkpoint = x
+            payload = [upload_queue.popleft() for _ in range(len(upload_queue))]
+            upload_tasks.append(
+                asyncio.create_task(
+                    api_service.upload_rows_async(
+                        session=session,
+                        api_key=api_key,
+                        dataset_id=dataset_id,
+                        rows=payload,
+                        columns_json=columns_json,
                     )
                 )
-                payload = []
+            )
 
-                # avoid race condition when creating table
-                if first_upload:
-                    await upload_tasks[0]
-                    upload_tasks = []
-                    first_upload = False
+            # avoid race condition when creating table
+            if first_upload:
+                await upload_tasks[0]
+                first_upload = False
 
-            row = upload_queue.get()
             # yield control
             await asyncio.sleep(0)
-
-        # upload remaining rows
-        if len(payload) > 0:
-            upload_tasks.append(
-                api_service.upload_rows_async(
-                    session=session,
-                    api_key=api_key,
-                    dataset_id=dataset_id,
-                    rows=payload,
-                    columns_json=columns_json,
-                )
-            )
 
         await asyncio.gather(*upload_tasks)
 
 
-def upload_dataset(
+async def upload_dataset(
     api_key: str,
     dataset_id: Optional[str],
     filepath: str,
@@ -331,50 +322,50 @@ def upload_dataset(
     :return: None
     """
     columns = list(schema["fields"].keys())
-
     log = create_feedback_log()
-
     file_size = get_file_size(filepath)
     api_service.check_dataset_limit(file_size, api_key=api_key, show_warning=False)
 
     # NOTE: makes simplifying assumption that first row size is representative of all row sizes
+
     row_size = getsizeof(next(init_dataset_from_filepath(filepath).read_streaming_records()))
     rows_per_payload = int(payload_size * 1e6 / row_size)
-    upload_queue: queue.Queue = queue.Queue(maxsize=2 * rows_per_payload)
 
-    # create validation process
-    validation_thread = threading.Thread(
-        target=validate_rows,
-        kwargs={
-            "dataset_filepath": filepath,
-            "columns": columns,
-            "schema": schema,
-            "log": log,
-            "upload_queue": upload_queue,
-            "existing_ids": existing_ids,
-        },
+    upload_queue = deque()
+
+    producer = asyncio.create_task(
+        validate_rows(
+            dataset_filepath=filepath,
+            columns=columns,
+            schema=schema,
+            log=log,
+            upload_queue=upload_queue,
+            rows_per_payload=rows_per_payload,
+            existing_ids=existing_ids,
+        )
     )
-
-    # start and join processes
-    validation_thread.start()
-    asyncio.run(
+    consumer = asyncio.create_task(
         upload_rows(
             api_key=api_key,
             dataset_id=dataset_id,
             columns=columns,
             upload_queue=upload_queue,
-            rows_per_payload=rows_per_payload,
         )
     )
-    validation_thread.join()
+    await asyncio.gather(producer, consumer)
+
+    # print(f"Finished validation and upload: {time.time() - start}")
 
     api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
+
+    # print(f"Completed upload: {time.time() - start}")
 
     # Check against soft quota, warn if applicable
     api_service.check_dataset_limit(file_size=0, api_key=api_key, show_warning=True)
 
     total_warnings = sum([len(log[w.name]) for w in ValidationWarning])
     issues_found = total_warnings > 0
+
     if not issues_found:
         success("\nNo issues were encountered when uploading your dataset. Nice!")
     else:

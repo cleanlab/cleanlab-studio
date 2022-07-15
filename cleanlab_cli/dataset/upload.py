@@ -1,7 +1,7 @@
 import json
 
 import click
-
+import asyncio
 from cleanlab_cli import api_service
 from cleanlab_cli import click_helpers
 from cleanlab_cli.click_helpers import progress, success, abort, info, log
@@ -17,17 +17,17 @@ from cleanlab_cli.decorators import auth_config, previous_state
 from cleanlab_cli.util import init_dataset_from_filepath
 
 
-def resume_upload(api_key, dataset_id, filepath):
+async def resume_upload(api_key, dataset_id, filepath):
     complete = api_service.get_completion_status(api_key, dataset_id)
     if complete:
         abort("Dataset is already fully uploaded.")
     saved_schema = api_service.get_dataset_schema(api_key, dataset_id)
     existing_ids = api_service.get_existing_ids(api_key, dataset_id)
-    upload_dataset(api_key, dataset_id, filepath, saved_schema, existing_ids)
+    await upload_dataset(api_key, dataset_id, filepath, saved_schema, existing_ids)
     return
 
 
-def upload_with_schema(api_key, schema, columns, filepath, prev_state):
+async def upload_with_schema(api_key, schema, columns, filepath, prev_state):
     progress("Validating provided schema...")
     loaded_schema = load_schema(schema)
     try:
@@ -43,7 +43,9 @@ def upload_with_schema(api_key, schema, columns, filepath, prev_state):
         "If this upload is interrupted, you may resume it using: cleanlab dataset upload -f"
         f" {filepath} --id {dataset_id}"
     )
-    upload_dataset(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
+    await upload_dataset(
+        api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema
+    )
     return
 
 
@@ -158,7 +160,7 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
     # This is the first upload
     ## Check if uploading with schema
     if schema is not None:
-        upload_with_schema(api_key, schema, columns, filepath, prev_state)
+        asyncio.run(upload_with_schema(api_key, schema, columns, filepath, prev_state))
         return
 
     ## No schema, propose and confirm a schema
@@ -202,6 +204,8 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
         dataset_id = api_service.initialize_dataset(api_key, proposed_schema)
         info(f"Dataset initialized with ID: {dataset_id}")
         prev_state.update_args(dict(dataset_id=dataset_id))
-        upload_dataset(
-            api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema
+        asyncio.run(
+            upload_dataset(
+                api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema
+            )
         )
