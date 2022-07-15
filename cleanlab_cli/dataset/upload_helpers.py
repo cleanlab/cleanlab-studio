@@ -222,7 +222,7 @@ async def validate_rows(
     :param rows_per_payload: max number of rows in each payload
     :param existing_ids: set of row IDs that were already uploaded, defaults to None
     """
-    existing_ids: Set[str] = set() if existing_ids is None else set([str(x) for x in existing_ids])
+    existing_ids_: Set[str] = set() if existing_ids is None else set([str(x) for x in existing_ids])
     seen_ids: Set[str] = set()
 
     dataset = init_dataset_from_filepath(dataset_filepath)
@@ -234,7 +234,7 @@ async def validate_rows(
         while len(upload_queue) >= rows_per_payload:
             await asyncio.sleep(0)
         row, row_id, warnings = validate_and_process_record(
-            record, schema, seen_ids, existing_ids, columns
+            record, schema, seen_ids, existing_ids_, columns
         )
         update_log_with_warnings(log, row_id, warnings)
         # row and row ID both present, i.e. row will be uploaded
