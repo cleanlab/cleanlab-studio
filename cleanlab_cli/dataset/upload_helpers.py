@@ -265,17 +265,16 @@ async def upload_rows(
     async with aiohttp.ClientSession() as session:
         upload_tasks = []
         first_upload = True
-        import time
-
+        # import time
         # checkpoint = time.time()
         while len(upload_queue) > 0:
-            x = time.time()
+            # x = time.time()
             # print(
             #     f"time since last checkpoint {x - checkpoint}, "
             #     f"queue length: {len(upload_queue)}, "
             #     f"num_upload_tasks: {len(upload_tasks)}"
             # )
-            checkpoint = x
+            # checkpoint = x
             payload = [upload_queue.popleft() for _ in range(len(upload_queue))]
             upload_tasks.append(
                 asyncio.create_task(
