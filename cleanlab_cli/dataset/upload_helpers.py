@@ -128,12 +128,12 @@ def validate_and_process_record(
         else:
             if col_feature_type == "datetime":
                 try:
-                    pd.to_datetime(column_value)
+                    pd.Timestamp(column_value)
                 except (ValueError, TypeError):
                     warning = (
                         f"{column_name}: expected datetime but unable to parse '{column_value}'"
                         f" with {get_value_type(column_value)} type. Datetime strings must be"
-                        " parsable by pandas.to_datetime().",
+                        " parsable by pandas.Timestamp().",
                         ValidationWarning.TYPE_MISMATCH,
                     )
             else:
