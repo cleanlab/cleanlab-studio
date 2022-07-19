@@ -4,6 +4,7 @@ Methods for interacting with the command line server API
 """
 import gzip
 import json
+import os
 from typing import Dict
 
 import requests
@@ -11,10 +12,8 @@ import requests
 from cleanlab_cli.click_helpers import abort, warn
 from cleanlab_cli import __version__
 
-base_url = "https://api.cleanlab.ai/api/cli/v0"
 
-
-# base_url = "http://localhost:8500/api/cli/v0"
+base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
 
 
 def handle_api_error(res: requests.Response, show_warning=False):
