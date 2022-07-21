@@ -141,11 +141,14 @@ def validate_and_process_record(
                     row[column_name] = str(column_value)  # type coercion
                 elif col_type == "integer":
                     if not isinstance(column_value, int):
-                        warning = (
-                            f"{column_name}: expected 'int' but got '{column_value}' with"
-                            f" {get_value_type(column_value)} type",
-                            ValidationWarning.TYPE_MISMATCH,
-                        )
+                        if isinstance(column_value, str) and column_value.isdigit():
+                            row[column_name] = int(column_value)
+                        else:
+                            warning = (
+                                f"{column_name}: expected 'int' but got '{column_value}' with"
+                                f" {get_value_type(column_value)} type",
+                                ValidationWarning.TYPE_MISMATCH,
+                            )
                 elif col_type == "float":
                     if isinstance(column_value, Decimal):
                         row[column_name] = float(column_value)
