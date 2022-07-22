@@ -273,4 +273,4 @@ will be integers or floats). Datetime values must be parsable
 by [pandas.to_datetime()](https://pandas.pydata.org/docs/reference/api/pandas.to_datetime.html).
 
 `version` indicates the version of the Cleanlab CLI package version used to generate the schema. The current Cleanlab
-schema version is `0.1.8`.
+schema version is `0.1.9`.
