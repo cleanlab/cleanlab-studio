@@ -107,6 +107,8 @@ def validate_schema(schema, columns: Collection[str]):
             raise ValueError(
                 f"All schema columns must be strings. Found invalid column name: {col}"
             )
+        if col == "":
+            raise ValueError("Schema columns cannot be empty strings.")
 
     ## Check that the dataset has all columns specified in the schema
     if not schema_columns.issubset(columns):
@@ -285,7 +287,7 @@ def propose_schema(
     """
     Generates a schema for a dataset based on a sample of the dataset's rows.
 
-    The arguments are intended to be required for the command-line interface, but optional for Cleanlab Studio.
+    Dataset columns with no name will not be included in the schema.
 
     :param filepath:
     :param columns: columns to generate a schema for
@@ -297,6 +299,7 @@ def propose_schema(
     :return:
 
     """
+    # The arguments are intended to be required for the command-line interface, but are optional for Cleanlab Studio.
     dataset = init_dataset_from_filepath(filepath)
 
     # fill optional arguments if necessary
@@ -329,6 +332,8 @@ def propose_schema(
     retval["fields"] = {}
 
     for column_name in columns:
+        if column_name == "":
+            continue
         column_values = list(df[column_name][~df[column_name].isna()])
         column_values = [v for v in column_values if v != ""]
 
