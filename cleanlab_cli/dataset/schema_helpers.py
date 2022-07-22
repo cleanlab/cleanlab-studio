@@ -287,6 +287,8 @@ def propose_schema(
     """
     Generates a schema for a dataset based on a sample of the dataset's rows.
 
+    Dataset columns with no name will not be included in the schema.
+
     :param filepath:
     :param columns: columns to generate a schema for
     :param id_column: ID column name
