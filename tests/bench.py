@@ -9,16 +9,16 @@ FORMATS = ["csv", "json"]
 
 DATASETS = {
     "csv": {
-        "1M": "https://s.anish.io/cleanlab/datasets/Tweets-1M.csv",
-        "10M": "https://s.anish.io/cleanlab/datasets/Tweets-10M.csv",
-        "100M": "https://s.anish.io/cleanlab/datasets/Tweets-100M.csv",
-        "1G": "https://s.anish.io/cleanlab/datasets/Tweets-1G.csv",
+        "1M": "https://x.anish.io/cleanlab/datasets/Tweets-1M.csv",
+        "10M": "https://x.anish.io/cleanlab/datasets/Tweets-10M.csv",
+        "100M": "https://x.anish.io/cleanlab/datasets/Tweets-100M.csv",
+        "1G": "https://x.anish.io/cleanlab/datasets/Tweets-1G.csv",
     },
     "json": {
-        "1M": "https://s.anish.io/cleanlab/datasets/Tweets-1M.json",
-        "10M": "https://s.anish.io/cleanlab/datasets/Tweets-10M.json",
-        "100M": "https://s.anish.io/cleanlab/datasets/Tweets-100M.json",
-        "1G": "https://s.anish.io/cleanlab/datasets/Tweets-1G.json",
+        "1M": "https://x.anish.io/cleanlab/datasets/Tweets-1M.json",
+        "10M": "https://x.anish.io/cleanlab/datasets/Tweets-10M.json",
+        "100M": "https://x.anish.io/cleanlab/datasets/Tweets-100M.json",
+        "1G": "https://x.anish.io/cleanlab/datasets/Tweets-1G.json",
     },
 }
 
