@@ -115,6 +115,7 @@ def validate_and_process_record(
     warnings = defaultdict(list)
 
     row = {c: record.get(c, None) for c in columns}
+
     for column_name, column_value in record.items():
         if column_name not in fields:
             continue
@@ -154,11 +155,19 @@ def validate_and_process_record(
                         row[column_name] = float(column_value)
                     else:
                         if not (isinstance(column_value, int) or isinstance(column_value, float)):
-                            warning = (
-                                f"{column_name}: expected 'float' but got '{column_value}' with"
-                                f" {get_value_type(column_value)} type",
-                                ValidationWarning.TYPE_MISMATCH,
-                            )
+                            coerced = False
+                            if isinstance(column_value, str):
+                                try:
+                                    row[column_name] = float(column_value)
+                                    coerced = True
+                                except Exception:
+                                    pass
+                            if not coerced:
+                                warning = (
+                                    f"{column_name}: expected 'float' but got '{column_value}' with"
+                                    f" {get_value_type(column_value)} type",
+                                    ValidationWarning.TYPE_MISMATCH,
+                                )
                 elif col_type == "boolean":
                     if not isinstance(column_value, bool):
                         col_val_lower = str(column_value).lower()
