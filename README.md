@@ -1,9 +1,23 @@
-# cleanlab-cli
+# cleanlab-cli [![Build Status](https://github.com/cleanlab/cleanlab-cli/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-cli/actions?query=workflow%3ACI) [![PyPI](https://img.shields.io/pypi/v/cleanlab-cli.svg)][PyPI]
 
 Command line interface for all things Cleanlab Studio.
 
 This currently supports generating <a href="#schema">dataset schema</a>, uploading <a href="#dataset-format">
 datasets</a> into Cleanlab Studio, and downloading clean labels from Cleanlab Studio.
+
+## Installation
+
+You can install the Cleanlab Studio CLI [from PyPI][PyPI] with:
+
+```bash
+pip install cleanlab-cli
+```
+
+If you already have the CLI installed and wish to upgrade to the latest version, run:
+
+```bash
+pip install --upgrade cleanlab-cli
+```
 
 ## Workflow
 
@@ -274,3 +288,5 @@ by [pandas.to_datetime()](https://pandas.pydata.org/docs/reference/api/pandas.to
 
 `version` indicates the version of the Cleanlab CLI package version used to generate the schema. The current Cleanlab
 schema version is `0.1.10`.
+
+[PyPI]: https://pypi.org/project/cleanlab-cli/
