@@ -8,6 +8,7 @@ import aiohttp
 import click
 import json
 import pandas as pd
+import re
 from decimal import Decimal
 from typing import (
     Optional,
@@ -28,7 +29,10 @@ from cleanlab_cli.util import (
     init_dataset_from_filepath,
     get_file_size,
 )
-from cleanlab_cli.dataset.schema_types import PYTHON_TYPES_TO_READABLE_STRING
+from cleanlab_cli.dataset.schema_types import (
+    PYTHON_TYPES_TO_READABLE_STRING,
+    DATA_TYPES_TO_PYTHON_TYPES,
+)
 from cleanlab_cli import click_helpers
 from cleanlab_cli.click_helpers import success, info, progress
 
@@ -58,6 +62,10 @@ def get_value_type(val):
         if isinstance(val, python_type):
             return readable_string
     return "unrecognized"
+
+
+def convert_to_python_type(val, data_type):
+    return DATA_TYPES_TO_PYTHON_TYPES[data_type](val)
 
 
 def validate_and_process_record(
@@ -129,7 +137,8 @@ def validate_and_process_record(
         else:
             if col_feature_type == "datetime":
                 try:
-                    pd.Timestamp(column_value)
+                    timestamp_value = convert_to_python_type(column_value, col_type)
+                    pd.Timestamp(timestamp_value)
                 except (ValueError, TypeError):
                     warning = (
                         f"{column_name}: expected datetime but unable to parse '{column_value}'"
@@ -158,7 +167,8 @@ def validate_and_process_record(
                             coerced = False
                             if isinstance(column_value, str):
                                 try:
-                                    row[column_name] = float(column_value)
+                                    float_value = extract_float_value(column_value)
+                                    row[column_name] = float(float_value)
                                     coerced = True
                                 except Exception:
                                     pass
@@ -433,3 +443,10 @@ def save_feedback(feedback, filename):
     progress(f"Writing issues to {filename}...")
     dump_json(filename, feedback)
     success("Saved.\n")
+
+
+def extract_float_value(column_value):
+    float_regex_pattern = "[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?"
+    regex = re.compile(float_regex_pattern, re.VERBOSE)
+    float_value = re.search(regex, column_value)
+    return float_value.group(0) if float_value else ""

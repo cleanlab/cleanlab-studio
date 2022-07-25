@@ -14,3 +14,10 @@ PYTHON_TYPES_TO_READABLE_STRING = {
     bool: "boolean",
     Decimal: "float",
 }
+
+DATA_TYPES_TO_PYTHON_TYPES = {
+    "string": str,
+    "float": float,
+    "integer": int,
+    "boolean": bool,
+}
