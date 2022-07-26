@@ -446,6 +446,12 @@ def save_feedback(feedback, filename):
 
 
 def extract_float_value(column_value):
+    """
+    Floating point: Decimal number containing a decimal point, optionally preceded by a + or - sign
+    and optionally followed by the e or E character and a decimal number.
+
+    Reference: https://docs.python.org/3/library/re.html#simulating-scanf
+    """
     float_regex_pattern = r"[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"
     float_value = re.search(float_regex_pattern, column_value)
     return float_value.group(0) if float_value else ""
