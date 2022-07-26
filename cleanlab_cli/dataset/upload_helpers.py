@@ -446,7 +446,6 @@ def save_feedback(feedback, filename):
 
 
 def extract_float_value(column_value):
-    float_regex_pattern = "[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?"
-    regex = re.compile(float_regex_pattern, re.VERBOSE)
-    float_value = re.search(regex, column_value)
+    float_regex_pattern = r"[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"
+    float_value = re.search(float_regex_pattern, column_value)
     return float_value.group(0) if float_value else ""
