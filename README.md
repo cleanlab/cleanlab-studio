@@ -33,6 +33,9 @@ To generate a dataset schema:
 
 `cleanlab dataset schema generate -f [dataset filepath]`
 
+* For `Id column: `, please enter the string name of of the column in your dataset that contains the id of each row.
+* For `Modality (text, tabular): `, please enter `text` to only find label errors based on a single column of text, otherwise enter `tabular` to find data and label issues based on any subset of the column features.
+
 To validate an existing schema, i.e. check that it is complete, well-formatted, and
 has <a href="#data-types-and-feature-types">data types with sensible feature types</a>:
 
