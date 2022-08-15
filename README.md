@@ -27,25 +27,10 @@ Uploading datasets to Cleanlab Studio is a two-step process.
    types</a>, which is verified by the user.
 2. Based on this schema, the dataset is parsed and uploaded to Cleanlab Studio.
 
-### Generate dataset schema
-
-To generate a dataset schema:
-
-`cleanlab dataset schema generate -f [dataset filepath]`
-
-* For `Id column: `, please enter the string name of of the column in your dataset that contains the id of each row.
-* For `Modality (text, tabular): `, please enter `text` to only find label errors based on a single column of text, otherwise enter `tabular` to find data and label issues based on any subset of the column features.
-
-To validate an existing schema, i.e. check that it is complete, well-formatted, and
-has <a href="#data-types-and-feature-types">data types with sensible feature types</a>:
-
-`cleanlab dataset schema validate -s [schema filepath]`
-
-You may then wish to inspect the generated schema to check that the fields and metadata are correct.
 
 ### Upload a dataset
 
-To upload a dataset without a schema (i.e. Cleanlab will suggest one for you):
+To upload a dataset without first [generating a schema](https://github.com/cleanlab/cleanlab-cli/#generate-dataset-schema) (i.e. Cleanlab will suggest one for you):
 
 `cleanlab dataset upload -f [dataset filepath]`
 
@@ -59,6 +44,23 @@ To **resume uploading** a dataset whose upload was interrupted:
 
 A dataset ID is generated and printed to the terminal the first time the dataset is uploaded. It can also be accessed by
 visiting https://app.cleanlab.ai/datasets and selecting 'Resume' for the relevant dataset.
+
+#### Generate dataset schema
+
+To generate a dataset schema (prior to uploading your dataset):
+
+`cleanlab dataset schema generate -f [dataset filepath]`
+
+* For `Id column: `, please enter the string name of of the column in your dataset that contains the id of each row.
+* For `Modality (text, tabular): `, please enter `text` to only find label errors based on a single column of text, otherwise enter `tabular` to find data and label issues based on any subset of the column features.
+
+To validate an existing schema, i.e. check that it is complete, well-formatted, and
+has <a href="#data-types-and-feature-types">data types with sensible feature types</a>:
+
+`cleanlab dataset schema validate -s [schema filepath]`
+
+You may then wish to inspect the generated schema to check that the fields and metadata are correct.
+
 
 ### Download clean labels
 
