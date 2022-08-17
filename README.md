@@ -34,6 +34,11 @@ To upload a dataset without first [generating a schema](https://github.com/clean
 
 `cleanlab dataset upload -f [dataset filepath]`
 
+You will be asked to `"Specify your dataset modality (text, tabular):"`.
+ * Enter `text` to only find label errors based on a single column of text in your dataset.
+ * Enter `tabular` to find data and label issues based on any subset of the column features.
+
+
 To upload a dataset with a schema:
 
 `cleanlab dataset upload -f [dataset filepath] -s [schema filepath]`
