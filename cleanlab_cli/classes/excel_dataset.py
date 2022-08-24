@@ -21,4 +21,4 @@ class ExcelDataset(Dataset):
 
     def get_columns(self) -> List[str]:
         stream = pyexcel.iget_array(file_name=self.filepath)
-        return next(stream)
+        return [str(col) for col in next(stream)]

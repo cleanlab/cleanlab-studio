@@ -27,7 +27,6 @@ from cleanlab_cli.util import (
     get_filename,
     dump_json,
 )
-import time
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
@@ -42,7 +41,6 @@ def _find_best_matching_column(target_column: str, columns: List[str]) -> Option
     :return:
     """
     assert len(columns) > 0, "list of columns is empty"
-    columns = [str(c) for c in columns]
     poss = []
     for c in columns:
         if c.lower() == target_column:
