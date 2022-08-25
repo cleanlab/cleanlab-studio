@@ -19,6 +19,6 @@ jobs:
           pip install --upgrade build
           pip install --upgrade twine
       - name: Build package
-          python3 -m build
+        run: python3 -m build
       - name: Release package
         run: twine upload dist/* -u TOKEN -p ${{ secrets.PYPI_TOKEN }}
