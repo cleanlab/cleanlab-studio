@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  build-and-releasepypi-package:
+  build-and-release-pypi-package:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,4 +21,4 @@ jobs:
       - name: Build package
         run: python3 -m build
       - name: Release package
-        run: twine upload dist/* -u TOKEN -p ${{ secrets.PYPI_TOKEN }} --verbose
+        run: twine upload dist/* -u __token__ -p ${{ secrets.PYPI_TOKEN }} --verbose
