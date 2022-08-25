@@ -39,6 +39,17 @@ black .
 
 ## Uploading to PyPI
 
+### Through GitHub Actions
+
+- Update the version number in the repo (see **Incrementing the package version number**)
+- Commit the changes in a commit titled with the new version number `v0.[x].[y]` (substitute `x` and `y`).
+- **Tag** the commit with the new version number.
+- Push the commit to `main`
+
+The tagging of the commit should trigger the GitHub Actions workflow to build and release the package.
+
+### Manually (don't do this unless the previous section fails!)
+
 References:
 
 - https://packaging.python.org/en/latest/tutorials/packaging-projects/
