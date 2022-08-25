@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - v0.*
+    branches:
+      - main
 
 jobs:
   build-and-releasepypi-package:
