@@ -2,8 +2,6 @@ name: Tag and release new PyPi package
 
 on:
   push:
-    branches:
-      - main
     tags:
       - v0.*
 
@@ -21,4 +19,4 @@ jobs:
       - name: Build package
         run: python3 -m build
       - name: Release package
-        run: twine upload dist/* -u TOKEN -p ${{ secrets.PYPI_TOKEN }}
+        run: twine upload dist/* -u TOKEN -p ${{ secrets.PYPI_TOKEN }} --verbose
