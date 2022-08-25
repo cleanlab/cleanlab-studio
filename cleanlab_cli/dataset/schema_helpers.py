@@ -27,7 +27,6 @@ from cleanlab_cli.util import (
     get_filename,
     dump_json,
 )
-import time
 
 ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
