@@ -23,6 +23,7 @@ from sys import getsizeof
 from enum import Enum
 from tqdm import tqdm
 from cleanlab_cli import api_service
+from cleanlab_cli.types import Schema
 from cleanlab_cli.util import (
     is_null_value,
     dump_json,
@@ -44,7 +45,7 @@ class ValidationWarning(Enum):
     DUPLICATE_ID = 4
 
 
-def warning_to_readable_name(warning: str):
+def warning_to_readable_name(warning: str) -> str:
     return {
         "MISSING_ID": "Rows with missing IDs (rows are dropped)",
         "MISSING_VAL": "Rows with missing values (values replaced with null)",
@@ -57,7 +58,7 @@ def warning_to_readable_name(warning: str):
     }[warning]
 
 
-def get_value_type(val):
+def get_value_type(val: Any) -> str:
     for python_type, readable_string in PYTHON_TYPES_TO_READABLE_STRING.items():
         if isinstance(val, python_type):
             return readable_string
@@ -199,7 +200,7 @@ def validate_and_process_record(
     return row, row_id, warnings
 
 
-def create_feedback_log():
+def create_feedback_log() -> Dict[str, Dict]:
     log = dict()
     log[ValidationWarning.MISSING_ID.name] = []
     # map from row ID to warnings
@@ -209,7 +210,7 @@ def create_feedback_log():
     return log
 
 
-def update_log_with_warnings(log, row_id, warnings):
+def update_log_with_warnings(log, row_id, warnings) -> Dict[str, Dict]:
     if warnings:
         for warn_type in warnings:
             if warn_type == ValidationWarning.MISSING_ID.name:
@@ -219,7 +220,7 @@ def update_log_with_warnings(log, row_id, warnings):
     return log
 
 
-def echo_log_warnings(log):
+def echo_log_warnings(log) -> None:
     for w in ValidationWarning:
         warning_count = len(log[w.name])
         if warning_count > 0:
@@ -229,11 +230,11 @@ def echo_log_warnings(log):
 def validate_rows(
     dataset_filepath: str,
     columns: List[str],
-    schema: Dict[str, Any],
+    schema: Schema,
     log: dict,
     upload_queue: queue.Queue,
     existing_ids: Optional[Collection[str]] = None,
-):
+) -> None:
     """Iterates through dataset and validates rows. Places validated rows in upload queue.
 
     :param dataset_filepath: file path to load dataset from
@@ -273,7 +274,7 @@ async def upload_rows(
     columns: List[str],
     upload_queue: queue.Queue,
     rows_per_payload: int,
-):
+) -> None:
     """Gets rows from upload queue and uploads to API.
 
     :param api_key: 32-character alphanumeric string
@@ -334,13 +335,13 @@ async def upload_rows(
 
 def upload_dataset(
     api_key: str,
-    dataset_id: Optional[str],
+    dataset_id: str,
     filepath: str,
-    schema: Dict[str, Any],
+    schema: Schema,
     existing_ids: Optional[Collection[str]] = None,
     output: Optional[str] = None,
     payload_size: float = 10,
-):
+) -> None:
     """
 
     :param api_key: 32-character alphanumeric string
@@ -436,7 +437,7 @@ def group_feature_types(schema):
     return feature_types_to_columns
 
 
-def save_feedback(feedback, filename):
+def save_feedback(feedback: Dict[str, str], filename: str) -> None:
     if not filename:
         raise ValueError("No filepath provided for saving feedback")
     feedback = {warning_to_readable_name(k): v for k, v in feedback.items()}

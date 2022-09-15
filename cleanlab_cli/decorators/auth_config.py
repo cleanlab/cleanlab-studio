@@ -2,13 +2,14 @@ import click
 from cleanlab_cli.api_service import validate_api_key
 from cleanlab_cli.click_helpers import abort
 from cleanlab_cli.settings import CleanlabSettings
+from typing import Optional
 
 
 class AuthConfig:
-    def __init__(self):
-        self.api_key = None
+    def __init__(self) -> None:
+        self.api_key: Optional[str] = None
 
-    def get_api_key(self):
+    def get_api_key(self) -> str:
         if self.api_key is None:
             try:
                 api_key = CleanlabSettings.load().api_key

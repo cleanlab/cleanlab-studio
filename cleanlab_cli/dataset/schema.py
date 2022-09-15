@@ -1,3 +1,5 @@
+from typing import Optional, Set
+
 import click
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
@@ -7,17 +9,18 @@ from cleanlab_cli.dataset.schema_helpers import (
     _find_best_matching_column,
 )
 from cleanlab_cli.dataset import upload_helpers
+from cleanlab_cli.decorators.previous_state import PreviousState
+from cleanlab_cli.types import Schema, Modality, IDType, CommandState
 from cleanlab_cli.util import init_dataset_from_filepath
 from cleanlab_cli.decorators import previous_state
 import json
 from cleanlab_cli.click_helpers import abort, info, success
 from cleanlab_cli import click_helpers
 from tqdm import tqdm
-import time
 
 
 @click.group(help="generate and validate dataset schema, or check your dataset against a schema")
-def schema():
+def schema() -> None:
     pass
 
 
@@ -25,13 +28,18 @@ def schema():
 @click.option("--schema", "-s", type=click.Path(), help="Schema filepath")
 @click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath")
 @previous_state
-def validate_schema_command(prev_state, schema, filepath):
+def validate_schema_command(
+    prev_state: PreviousState, schema: Optional[str], filepath: Optional[str]
+) -> None:
     if schema is None:
         schema = click_helpers.prompt_for_filepath("Specify your schema filepath")
-    prev_state.init_state(dict(command="validate schema", schema=schema, filepath=filepath))
+    command_state: CommandState = dict(
+        command="validate schema", schema=schema, filepath=filepath
+    )  # TODO check this!!
+    prev_state.init_state(command_state)
     loaded_schema = load_schema(schema)
-    dataset = init_dataset_from_filepath(filepath)
     if filepath:
+        dataset = init_dataset_from_filepath(filepath)
         cols = dataset.get_columns()
     else:
         cols = list(loaded_schema["fields"])
@@ -47,23 +55,26 @@ def validate_schema_command(prev_state, schema, filepath):
 @click.option("--schema", "-s", type=click.Path(), help="Schema filepath")
 @click.option("--output", "-o", type=click.Path(), help="Output filepath for type issues found")
 @previous_state
-def check_dataset_command(prev_state, filepath, schema, output):
+def check_dataset_command(
+    prev_state: PreviousState, filepath: Optional[str], schema: Optional[str], output: Optional[str]
+) -> None:
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
     if schema is None:
         schema = click_helpers.prompt_for_filepath("Specify your schema filepath")
 
-    prev_state.init_state(
-        dict(command="check dataset", args=dict(schema=schema, filepath=filepath))
+    command_state: CommandState = dict(
+        command="check dataset", args=dict(schema=schema, filepath=filepath)
     )
+    prev_state.init_state(command_state)
 
     dataset = init_dataset_from_filepath(filepath)
     loaded_schema = load_schema(schema)
     log = upload_helpers.create_feedback_log()
     num_records = len(dataset)
-    seen_ids = set()
-    existing_ids = set()
+    seen_ids: Set[IDType] = set()
+    existing_ids: Set[IDType] = set()
 
     for record in tqdm(
         dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"
@@ -123,7 +134,14 @@ def check_dataset_command(prev_state, filepath, schema, output):
     help="Custom name for dataset",
 )
 @previous_state
-def generate_schema_command(prev_state, filepath, output, id_column, modality, name):
+def generate_schema_command(
+    prev_state: PreviousState,
+    filepath: Optional[str],
+    output: Optional[str],
+    id_column: Optional[str],
+    modality: Optional[Modality],
+    name: Optional[str],
+) -> None:
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
 
@@ -135,18 +153,17 @@ def generate_schema_command(prev_state, filepath, output, id_column, modality, n
             "Specify the name of the ID column in your dataset.", default=id_column_guess
         )
 
-    prev_state.init_state(
-        dict(
-            command="generate schema",
-            args=dict(
-                filepath=filepath,
-                output=output,
-                id_column=id_column,
-                modality=modality,
-                name=name,
-            ),
+    command_state: CommandState = dict(
+        command="generate schema",
+        args=dict(
+            filepath=filepath,
+            output=output,
+            id_column=id_column,
+            modality=modality,
+            name=name,
         ),
     )
+    prev_state.init_state(command_state)
 
     proposed_schema = propose_schema(filepath, columns, id_column, modality, name)
     click.echo(json.dumps(proposed_schema, indent=2))

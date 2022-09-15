@@ -1,13 +1,16 @@
 from decimal import Decimal
+from typing import Type, Dict, Union, Set
 
-DATA_TYPES_TO_FEATURE_TYPES = {
+from cleanlab_cli.types import DataType, FeatureType
+
+DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
     "string": {"text", "categorical", "datetime", "identifier"},
     "integer": {"categorical", "datetime", "identifier", "numeric"},
     "float": {"datetime", "numeric"},
     "boolean": {"boolean"},
 }
 
-PYTHON_TYPES_TO_READABLE_STRING = {
+PYTHON_TYPES_TO_READABLE_STRING: Dict[Union[Type, Decimal], DataType] = {
     str: "string",
     float: "float",
     int: "integer",
@@ -15,7 +18,7 @@ PYTHON_TYPES_TO_READABLE_STRING = {
     Decimal: "float",
 }
 
-DATA_TYPES_TO_PYTHON_TYPES = {
+DATA_TYPES_TO_PYTHON_TYPES: Dict[DataType, Type] = {
     "string": str,
     "float": float,
     "integer": int,

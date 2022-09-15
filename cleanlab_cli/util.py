@@ -6,32 +6,33 @@ import os
 import pathlib
 import jsonstreams
 import pandas as pd
+from typing import Optional
 
 from cleanlab_cli.classes import CsvDataset, JsonDataset, ExcelDataset
+from cleanlab_cli.classes.dataset import Dataset
+from cleanlab_cli.types import Schema, ALLOWED_EXTENSIONS, DatasetFileExtensionType
 
-ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx", ".json"]
 
-
-def get_file_extension(filename):
+def get_file_extension(filename) -> DatasetFileExtensionType:
     file_extension = pathlib.Path(filename).suffix
     if file_extension in ALLOWED_EXTENSIONS:
         return file_extension
     raise ValueError(f"File extension for {filename} did not match allowed extensions.")
 
 
-def is_allowed_extension(filename):
+def is_allowed_extension(filename: str) -> bool:
     return any([filename.endswith(ext) for ext in ALLOWED_EXTENSIONS])
 
 
-def get_filename(filepath):
+def get_filename(filepath: str) -> str:
     return os.path.split(filepath)[-1]
 
 
-def get_file_size(filepath):
+def get_file_size(filepath: str) -> int:
     return os.path.getsize(filepath)
 
 
-def read_file_as_df(filepath):
+def read_file_as_df(filepath: str) -> pd.DataFrame:
     ext = get_file_extension(filepath)
     if ext == ".json":
         df = pd.read_json(filepath, convert_axes=False, convert_dates=False).T
@@ -48,11 +49,11 @@ def read_file_as_df(filepath):
     return df
 
 
-def is_null_value(val):
+def is_null_value(val: str) -> str:
     return val is None or val == "" or pd.isna(val)
 
 
-def init_dataset_from_filepath(filepath):
+def init_dataset_from_filepath(filepath: str) -> Dataset:
     ext = get_file_extension(filepath)
     if ext == ".csv":
         return CsvDataset(filepath)
@@ -62,12 +63,12 @@ def init_dataset_from_filepath(filepath):
         return JsonDataset(filepath)
 
 
-def dump_json(filepath, schema):
+def dump_json(filepath: str, schema: Schema) -> None:  # TODO general dict fix this!
     with open(filepath, "w") as f:
         f.write(json.dumps(schema, indent=2))
 
 
-def append_rows(rows, filename):
+def append_rows(rows, filename: str):
     df = pd.DataFrame(rows)
     extension = get_file_extension(filename)
     if extension == ".csv":
@@ -86,7 +87,9 @@ def append_rows(rows, filename):
         raise ValueError(f"Unsupported file extension: {extension}")
 
 
-def get_dataset_chunks(filepath, id_column, ids_to_fields_to_values, num_rows_per_chunk):
+def get_dataset_chunks(
+    filepath: str, id_column: str, ids_to_fields_to_values, num_rows_per_chunk: int
+):
     dataset = init_dataset_from_filepath(filepath)
     chunk = []
     for r in dataset.read_streaming_records():

@@ -5,13 +5,7 @@ Helper functions for working with schemas
 import json
 from decimal import Decimal
 import random
-from typing import (
-    Any,
-    Optional,
-    Dict,
-    List,
-    Collection,
-)
+from typing import Any, Optional, Dict, List, Collection, Tuple
 
 import pandas as pd
 from pandas import NaT
@@ -22,6 +16,7 @@ from cleanlab_cli.click_helpers import progress, success, info, abort
 from cleanlab_cli.dataset.schema_types import (
     DATA_TYPES_TO_FEATURE_TYPES,
 )
+from cleanlab_cli.types import Schema, DataType, FeatureType, Modality
 from cleanlab_cli.util import (
     init_dataset_from_filepath,
     get_filename,
@@ -56,7 +51,7 @@ def _find_best_matching_column(target_column: str, columns: List[str]) -> Option
         return columns[0]
 
 
-def load_schema(filepath):
+def load_schema(filepath: str) -> Schema:
     with open(filepath, "r") as f:
         return json.load(f)
 
@@ -170,12 +165,12 @@ def validate_schema(schema, columns: Collection[str]):
         raise ValueError(f"Unsupported dataset modality: {modality}")
 
 
-def multiple_separate_words_detected(values):
+def multiple_separate_words_detected(values: List[str]) -> bool:
     avg_num_words = sum([len(str(v).split()) for v in values]) / len(values)
     return avg_num_words >= 3
 
 
-def _values_are_datetime(values):
+def _values_are_datetime(values: Collection[Any]) -> bool:
     try:
         # check for datetime first
         val_sample = random.sample(list(values), 20)
@@ -188,7 +183,7 @@ def _values_are_datetime(values):
     return True
 
 
-def _values_are_integers(values):
+def _values_are_integers(values: Collection[Any]) -> bool:
     try:
         val_sample = random.sample(list(values), 20)
         for s in val_sample:
@@ -199,7 +194,7 @@ def _values_are_integers(values):
     return True
 
 
-def _values_are_floats(values):
+def _values_are_floats(values: Collection[Any]) -> bool:
     try:
         val_sample = random.sample(list(values), 20)
         for s in val_sample:
@@ -209,7 +204,7 @@ def _values_are_floats(values):
     return True
 
 
-def infer_types(values: Collection[Any]):
+def infer_types(values: Collection[Any]) -> Tuple[str, str]:
     """
     Infer the data type and feature type of a collection of a values using simple heuristics.
 
@@ -282,7 +277,7 @@ def propose_schema(
     name: Optional[str] = None,
     sample_size: int = 10000,
     max_rows_checked: int = 200000,
-) -> Dict[str, str]:
+) -> Schema:
     """
     Generates a schema for a dataset based on a sample of the dataset's rows.
 
@@ -365,8 +360,15 @@ def propose_schema(
     return retval
 
 
-def construct_schema(fields, data_types, feature_types, id_column, modality, dataset_name):
-    retval = {
+def construct_schema(
+    fields: List[str],
+    data_types: List[DataType],
+    feature_types: List[FeatureType],
+    id_column: str,
+    modality: Modality,
+    dataset_name: str,
+):
+    retval: Schema = {
         "fields": {},
         "metadata": {"id_column": id_column, "modality": modality, "name": dataset_name},
         "version": SCHEMA_VERSION,
@@ -376,7 +378,7 @@ def construct_schema(fields, data_types, feature_types, id_column, modality, dat
     return retval
 
 
-def save_schema(schema, filename: Optional[str]):
+def save_schema(schema: Schema, filename: Optional[str]) -> None:
     """
 
     :param schema:
