@@ -16,6 +16,7 @@ from cleanlab_cli.types import Schema, ALLOWED_EXTENSIONS, DatasetFileExtensionT
 def get_file_extension(filename) -> DatasetFileExtensionType:
     file_extension = pathlib.Path(filename).suffix
     if file_extension in ALLOWED_EXTENSIONS:
+        file_extension: DatasetFileExtensionType = file_extension
         return file_extension
     raise ValueError(f"File extension for {filename} did not match allowed extensions.")
 
@@ -49,7 +50,7 @@ def read_file_as_df(filepath: str) -> pd.DataFrame:
     return df
 
 
-def is_null_value(val: str) -> str:
+def is_null_value(val: str) -> bool:
     return val is None or val == "" or pd.isna(val)
 
 
@@ -59,7 +60,7 @@ def init_dataset_from_filepath(filepath: str) -> Dataset:
         return CsvDataset(filepath)
     elif ext in [".xls", ".xlsx"]:
         return ExcelDataset(filepath)
-    elif ext == ".json":
+    else:  # ext == ".json":
         return JsonDataset(filepath)
 
 
@@ -68,7 +69,7 @@ def dump_json(filepath: str, schema: Schema) -> None:  # TODO general dict fix t
         f.write(json.dumps(schema, indent=2))
 
 
-def append_rows(rows, filename: str):
+def append_rows(rows, filename: str) -> None:
     df = pd.DataFrame(rows)
     extension = get_file_extension(filename)
     if extension == ".csv":
@@ -108,10 +109,10 @@ def get_dataset_chunks(
 
 
 def combine_fields_with_dataset(
-    dataset_filepath,
-    id_column,
+    dataset_filepath: str,
+    id_column: str,
     ids_to_fields_to_values,
-    output_filepath,
+    output_filepath: str,
     num_rows_per_chunk=10000,
 ):
     output_extension = get_file_extension(output_filepath)

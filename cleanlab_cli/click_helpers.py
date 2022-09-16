@@ -73,8 +73,8 @@ def confirm_save_prompt_filepath(
 ) -> Optional[str]:
     save = confirm_save_data(save_message, default=save_default)
     if save:
-        output = click.prompt(prompt_message, default=prompt_default)
+        output: str = click.prompt(prompt_message, default=prompt_default)
+        return output
     else:
         info(no_save_message)
-        return
-    return output
+        return None

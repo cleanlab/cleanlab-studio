@@ -30,5 +30,5 @@ class CsvDataset(Dataset):
             for row in reader:
                 yield row
 
-    def read_file_as_dataframe(self):
+    def read_file_as_dataframe(self) -> pd.DataFrame:
         return pd.read_csv(self.filepath, keep_default_na=True)

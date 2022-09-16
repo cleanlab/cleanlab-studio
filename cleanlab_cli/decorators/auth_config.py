@@ -15,7 +15,9 @@ class AuthConfig:
                 api_key = CleanlabSettings.load().api_key
                 if api_key is None or not validate_api_key(api_key):
                     raise ValueError("Invalid API key.")
-                self.api_key = api_key
+                else:
+                    self.api_key = api_key
+                    return api_key
             except (FileNotFoundError, KeyError, ValueError):
                 abort("No valid API key found. Run 'cleanlab login' before running this command.")
         return self.api_key

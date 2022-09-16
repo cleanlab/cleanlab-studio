@@ -34,8 +34,8 @@ def validate_schema_command(
     if schema is None:
         schema = click_helpers.prompt_for_filepath("Specify your schema filepath")
     command_state: CommandState = dict(
-        command="validate schema", schema=schema, filepath=filepath
-    )  # TODO check this!!
+        command="validate schema", args=dict(schema=schema, filepath=filepath)
+    )
     prev_state.init_state(command_state)
     loaded_schema = load_schema(schema)
     if filepath:
@@ -73,8 +73,8 @@ def check_dataset_command(
     loaded_schema = load_schema(schema)
     log = upload_helpers.create_feedback_log()
     num_records = len(dataset)
-    seen_ids: Set[IDType] = set()
-    existing_ids: Set[IDType] = set()
+    seen_ids: Set[str] = set()
+    existing_ids: Set[str] = set()
 
     for record in tqdm(
         dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"

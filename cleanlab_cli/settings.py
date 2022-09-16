@@ -8,7 +8,7 @@ from cleanlab_cli.types import CleanlabSettingsDict
 
 
 class CleanlabSettings:
-    def __init__(self, version: str, api_key: Optional[str]):
+    def __init__(self, version: Optional[str], api_key: Optional[str]):
         self.version = version
         self.api_key = api_key
 

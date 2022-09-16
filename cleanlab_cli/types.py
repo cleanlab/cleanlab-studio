@@ -4,7 +4,7 @@ from typing import TypedDict
 JSONDict = Dict[str, Any]
 Modality = Literal["text", "tabular"]
 DataType = Literal["string", "integer", "float", "boolean"]
-FeatureType = Literal["identifier", "categorical", "numeric", "text", "boolean"]
+FeatureType = Literal["identifier", "categorical", "numeric", "text", "boolean", "datetime"]
 IDType = Union[str, int]
 DatasetFileExtensionType = Literal[".csv", ".xls", ".xlsx", ".json"]
 ALLOWED_EXTENSIONS: List[DatasetFileExtensionType] = [".csv", ".xls", ".xlsx", ".json"]
@@ -29,7 +29,7 @@ class Schema(TypedDict):
 
 class CommandState(TypedDict):
     command: Optional[str]
-    args: Dict[str, str]
+    args: Dict[str, Optional[str]]
 
 
 class CleanlabSettingsDict(TypedDict):

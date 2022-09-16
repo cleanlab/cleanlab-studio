@@ -53,10 +53,11 @@ def _find_best_matching_column(target_column: str, columns: List[str]) -> Option
 
 def load_schema(filepath: str) -> Schema:
     with open(filepath, "r") as f:
-        return json.load(f)
+        schema: Schema = json.load(f)
+        return schema
 
 
-def validate_schema(schema, columns: Collection[str]):
+def validate_schema(schema: Schema, columns: Collection[str]):
     """
     Checks that:
     (1) all schema column names are strings
@@ -321,9 +322,7 @@ def propose_schema(
             if random_idx < sample_size:
                 rows[random_idx] = row
     df = pd.DataFrame(data=rows, columns=columns)
-    retval: Dict[str, Any] = dict()
-    retval["metadata"] = {}
-    retval["fields"] = {}
+    retval: Schema = dict(metadata={}, fields={}, version="")
 
     for column_name in columns:
         if column_name == "":
@@ -367,7 +366,7 @@ def construct_schema(
     id_column: str,
     modality: Modality,
     dataset_name: str,
-):
+) -> Schema:
     retval: Schema = {
         "fields": {},
         "metadata": {"id_column": id_column, "modality": modality, "name": dataset_name},

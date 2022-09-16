@@ -23,7 +23,7 @@ from sys import getsizeof
 from enum import Enum
 from tqdm import tqdm
 from cleanlab_cli import api_service
-from cleanlab_cli.types import Schema
+from cleanlab_cli.types import Schema, DataType, IDType
 from cleanlab_cli.util import (
     is_null_value,
     dump_json,
@@ -65,13 +65,13 @@ def get_value_type(val: Any) -> str:
     return "unrecognized"
 
 
-def convert_to_python_type(val, data_type):
+def convert_to_python_type(val: Any, data_type: DataType):
     return DATA_TYPES_TO_PYTHON_TYPES[data_type](val)
 
 
 def validate_and_process_record(
     record,
-    schema,
+    schema: Schema,
     seen_ids: Set[str],
     existing_ids: Set[str],
     columns: Optional[List[str]] = None,
@@ -168,7 +168,7 @@ def validate_and_process_record(
                             coerced = False
                             if isinstance(column_value, str):
                                 try:
-                                    float_value = extract_float_value(column_value)
+                                    float_value = extract_float_string(column_value)
                                     row[column_name] = float(float_value)
                                     coerced = True
                                 except Exception:
@@ -233,7 +233,7 @@ def validate_rows(
     schema: Schema,
     log: dict,
     upload_queue: queue.Queue,
-    existing_ids: Optional[Collection[str]] = None,
+    existing_ids: Optional[Collection[IDType]] = None,
 ) -> None:
     """Iterates through dataset and validates rows. Places validated rows in upload queue.
 
@@ -270,7 +270,7 @@ def validate_rows(
 
 async def upload_rows(
     api_key: str,
-    dataset_id: Optional[str],
+    dataset_id: str,
     columns: List[str],
     upload_queue: queue.Queue,
     rows_per_payload: int,
@@ -338,7 +338,7 @@ def upload_dataset(
     dataset_id: str,
     filepath: str,
     schema: Schema,
-    existing_ids: Optional[Collection[str]] = None,
+    existing_ids: Optional[Collection[IDType]] = None,
     output: Optional[str] = None,
     payload_size: float = 10,
 ) -> None:
@@ -426,7 +426,7 @@ def upload_dataset(
     )
 
 
-def group_feature_types(schema):
+def group_feature_types(schema: Schema):
     """
     Given a schema, return a dict mapping each feature type to the list of columns with said feature type
     """
@@ -446,7 +446,7 @@ def save_feedback(feedback: Dict[str, str], filename: str) -> None:
     success("Saved.\n")
 
 
-def extract_float_value(column_value):
+def extract_float_string(column_value: str) -> str:
     """
     Floating point: Decimal number containing a decimal point, optionally preceded by a + or - sign
     and optionally followed by the e or E character and a decimal number.

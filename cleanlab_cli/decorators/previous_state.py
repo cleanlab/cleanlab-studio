@@ -29,7 +29,7 @@ class PreviousState:
             json.dump(self.state, f)
 
     def init_state(self, updates: CommandState) -> None:
-        self.state = dict()
+        self.state = dict(command=None, args=dict())
         self.state.update(updates)
         self.save_state()
 
@@ -37,7 +37,7 @@ class PreviousState:
         self.state["args"].update(args_dict)
         self.save_state()
 
-    def get_state(self):
+    def get_state(self) -> CommandState:
         return self.state
 
     def same_command(self, command_name: str, args: Dict[str, Any]) -> bool:

@@ -10,7 +10,7 @@ DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
     "boolean": {"boolean"},
 }
 
-PYTHON_TYPES_TO_READABLE_STRING: Dict[Union[Type, Decimal], DataType] = {
+PYTHON_TYPES_TO_READABLE_STRING: Dict[Union[type, Decimal], DataType] = {
     str: "string",
     float: "float",
     int: "integer",
@@ -18,7 +18,7 @@ PYTHON_TYPES_TO_READABLE_STRING: Dict[Union[Type, Decimal], DataType] = {
     Decimal: "float",
 }
 
-DATA_TYPES_TO_PYTHON_TYPES: Dict[DataType, Type] = {
+DATA_TYPES_TO_PYTHON_TYPES: Dict[DataType, type] = {
     "string": str,
     "float": float,
     "integer": int,
