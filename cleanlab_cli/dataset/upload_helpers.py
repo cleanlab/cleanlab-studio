@@ -35,6 +35,7 @@ from cleanlab_cli.types import (
     WarningLogType,
     RowWarningsType,
     FeatureType,
+    VALIDATION_WARNING_TYPES,
 )
 from cleanlab_cli.util import (
     is_null_value,
@@ -48,20 +49,6 @@ from cleanlab_cli.dataset.schema_types import (
 )
 from cleanlab_cli import click_helpers
 from cleanlab_cli.click_helpers import success, info, progress
-
-VALIDATION_WARNING_TYPES: List[ValidationWarningType] = [
-    "MISSING_ID",
-    "MISSING_VAL",
-    "TYPE_MISMATCH",
-    "DUPLICATE_ID",
-]
-
-
-class ValidationWarning(Enum):
-    MISSING_ID = 1
-    MISSING_VAL = 2
-    TYPE_MISMATCH = 3
-    DUPLICATE_ID = 4
 
 
 def warning_to_readable_name(warning: ValidationWarningType) -> str:

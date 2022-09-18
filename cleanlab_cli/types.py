@@ -7,7 +7,8 @@ DataType = Literal["string", "integer", "float", "boolean"]
 FeatureType = Literal["identifier", "categorical", "numeric", "text", "boolean", "datetime"]
 IDType = Union[str, int]
 ValidationWarningType = Literal["MISSING_ID", "MISSING_VAL", "TYPE_MISMATCH", "DUPLICATE_ID"]
-VALIDATION_WARNINGS: List[ValidationWarningType] = [
+
+VALIDATION_WARNING_TYPES: List[ValidationWarningType] = [
     "MISSING_ID",
     "MISSING_VAL",
     "TYPE_MISMATCH",
