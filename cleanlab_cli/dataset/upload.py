@@ -26,7 +26,7 @@ def resume_upload(api_key: str, dataset_id: str, filepath: str) -> None:
     if complete:
         abort("Dataset is already fully uploaded.")
     saved_schema = api_service.get_dataset_schema(api_key, dataset_id)
-    existing_ids = api_service.get_existing_ids(api_key, dataset_id)
+    existing_ids = {str(x) for x in api_service.get_existing_ids(api_key, dataset_id)}
     upload_dataset(api_key, dataset_id, filepath, saved_schema, existing_ids)
 
 

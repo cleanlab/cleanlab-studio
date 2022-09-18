@@ -30,7 +30,8 @@ class PreviousState:
 
     def init_state(self, updates: CommandState) -> None:
         self.state = dict(command=None, args=dict())
-        self.state.update(updates)
+        self.state["command"] = updates["command"]
+        self.state["args"] = updates["args"]
         self.save_state()
 
     def update_args(self, args_dict: Dict[str, Any]) -> None:

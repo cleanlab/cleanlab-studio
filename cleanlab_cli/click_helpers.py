@@ -46,10 +46,10 @@ def log(message: str) -> None:
 
 
 def prompt_for_filepath(prompt_message: str, default: Optional[Any] = None) -> str:
-    filepath = click.prompt(prompt_message, default=default)
+    filepath = str(click.prompt(prompt_message, default=default))
     while not os.path.exists(filepath):
         error(f"No file exists at: {filepath}")
-        filepath = click.prompt(prompt_message)
+        filepath = str(click.prompt(prompt_message))
     return filepath
 
 

@@ -1,4 +1,4 @@
-from typing import Optional, Set
+from typing import Optional, Set, List, Sized, Iterable, cast
 
 import click
 from cleanlab_cli.dataset.schema_helpers import (
@@ -71,7 +71,7 @@ def check_dataset_command(
 
     dataset = init_dataset_from_filepath(filepath)
     loaded_schema = load_schema(schema)
-    log = upload_helpers.create_feedback_log()
+    log = upload_helpers.create_warning_log()
     num_records = len(dataset)
     seen_ids: Set[str] = set()
     existing_ids: Set[str] = set()
@@ -84,9 +84,11 @@ def check_dataset_command(
         )
         upload_helpers.update_log_with_warnings(log, row_id, warnings)
         # row and row ID both present, i.e. row will be uploaded
-        seen_ids.add(row_id)
+        if row_id:
+            seen_ids.add(row_id)
 
-    total_warnings = sum([len(log[k]) for k in log])
+    log_warnings: Iterable[Sized] = cast(Iterable[Sized], list(log.values()))
+    total_warnings = sum(len(warnings) for warnings in log_warnings)
     if total_warnings == 0:
         success("\nNo type issues were found when checking your dataset. Nice!")
     else:
@@ -104,7 +106,7 @@ def check_dataset_command(
                 no_save_message="Dataset type issues were not saved.",
             )
         if output:
-            upload_helpers.save_feedback(log, output)
+            upload_helpers.save_warning_log(log, output)
             click_helpers.confirm_open_file(
                 "Would you like to open your issues file for viewing?", filepath=output
             )

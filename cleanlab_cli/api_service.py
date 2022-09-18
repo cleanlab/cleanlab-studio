@@ -2,11 +2,13 @@
 Methods for interacting with the command line server API
 1:1 mapping with command_line_api.py
 """
+import asyncio
 import gzip
 import json
 import os
 from typing import Dict, List, Any
 
+import aiohttp
 import requests
 
 from cleanlab_cli.click_helpers import abort, warn
@@ -16,7 +18,7 @@ from cleanlab_cli.types import JSONDict, Schema, IDType
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
 
 
-def handle_api_error(res: requests.Response, show_warning=False) -> None:
+def handle_api_error(res: requests.Response, show_warning: bool = False) -> None:
     handle_api_error_from_json(res.json(), show_warning)
 
 
@@ -70,7 +72,13 @@ def get_dataset_schema(api_key: str, dataset_id: str) -> Schema:
     return schema
 
 
-async def upload_rows_async(session, api_key: str, dataset_id: str, rows, columns_json) -> None:
+async def upload_rows_async(
+    session: aiohttp.ClientSession,
+    api_key: str,
+    dataset_id: str,
+    rows: List[Any],
+    columns_json: str,
+) -> None:
     url = base_url + f"/datasets/{dataset_id}"
     data = gzip.compress(
         json.dumps(dict(api_key=api_key, rows=json.dumps(rows), columns=columns_json)).encode(
@@ -87,8 +95,9 @@ async def upload_rows_async(session, api_key: str, dataset_id: str, rows, column
         handle_api_error_from_json(json.loads(res_text))
 
 
-def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False):
+def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> List[List[Any]]:
     """
+    Download all rows from specified Cleanlab columns
 
     :param api_key:
     :param cleanset_id:
@@ -99,7 +108,8 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
         base_url + f"/cleansets/{cleanset_id}/columns?all={all}", data=dict(api_key=api_key)
     )
     handle_api_error(res)
-    return res.json()["rows"]
+    rows: List[List[Any]] = res.json()["rows"]
+    return rows
 
 
 def get_completion_status(api_key: str, dataset_id: str) -> bool:

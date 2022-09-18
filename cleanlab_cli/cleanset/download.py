@@ -13,7 +13,7 @@ from cleanlab_cli.decorators import previous_state, auth_config
 from cleanlab_cli.decorators.auth_config import AuthConfig
 from cleanlab_cli.decorators.previous_state import PreviousState
 from cleanlab_cli.settings import CleanlabSettings
-from cleanlab_cli.types import IDType
+from cleanlab_cli.types import IDType, RecordType, DatasetFileExtension
 
 
 @click.command(help="download Cleanlab columns")
@@ -88,15 +88,15 @@ def download(
 
         clean_df = pd.DataFrame(rows, columns=clean_df_columns).set_index("id")
 
-        ids_to_fields_to_values: Dict[IDType, Dict[str, Any]] = defaultdict(dict)
+        ids_to_fields_to_values: Dict[str, RecordType] = defaultdict(dict)
         for row_id, row in clean_df.iterrows():
             fields_to_values = dict(row)
-            ids_to_fields_to_values[row_id] = fields_to_values
+            ids_to_fields_to_values[str(row_id)] = fields_to_values
 
         util.combine_fields_with_dataset(filepath, id_column, ids_to_fields_to_values, output)
         click_helpers.success(f"Saved to {output}")
     else:
-        while output is None or util.get_file_extension(output) != ".csv":
+        while output is None or util.get_file_extension(output) != DatasetFileExtension.csv:
             output = click.prompt(
                 "Specify your output filepath (must be .csv). Leave blank to use default",
                 default=f"clean_labels.csv",

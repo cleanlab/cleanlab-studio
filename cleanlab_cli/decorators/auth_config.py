@@ -20,6 +20,7 @@ class AuthConfig:
                     return api_key
             except (FileNotFoundError, KeyError, ValueError):
                 abort("No valid API key found. Run 'cleanlab login' before running this command.")
+        assert self.api_key is not None
         return self.api_key
 
 
