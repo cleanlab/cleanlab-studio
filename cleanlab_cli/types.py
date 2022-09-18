@@ -1,6 +1,5 @@
 from enum import Enum
-from typing import Dict, Any, Literal, Optional, Union, List
-from typing_extensions import TypedDict, NotRequired
+from typing import Dict, Any, Literal, Optional, Union, List, TypedDict
 
 JSONDict = Dict[str, Any]
 Modality = Literal["text", "tabular"]
@@ -26,13 +25,6 @@ class DatasetFileExtension(Enum):
 RecordType = Dict[str, Any]
 
 RowWarningsType = Dict[ValidationWarningType, List[str]]
-
-
-# class RowWarningsType(TypedDict):
-#     MISSING_ID: NotRequired[List[str]]
-#     MISSING_VAL: NotRequired[List[str]]
-#     TYPE_MISMATCH: NotRequired[List[str]]
-#     DUPLICATE_ID: NotRequired[List[str]]
 
 
 class WarningLogType(TypedDict):
