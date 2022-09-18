@@ -3,7 +3,6 @@ Helper functions for working with schemas
 """
 
 import json
-from decimal import Decimal
 import random
 from typing import Any, Optional, Dict, List, Collection, Tuple
 
@@ -226,7 +225,7 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
             continue
         if isinstance(v, str):
             counts["string"] += 1
-        elif isinstance(v, float) or isinstance(v, Decimal):
+        elif isinstance(v, float):
             counts["float"] += 1
         elif isinstance(v, int):
             counts["integer"] += 1

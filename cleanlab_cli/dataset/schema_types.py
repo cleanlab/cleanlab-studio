@@ -1,5 +1,4 @@
-from decimal import Decimal
-from typing import Type, Dict, Union, Set
+from typing import Dict, Set
 
 from cleanlab_cli.types import DataType, FeatureType
 
@@ -15,7 +14,6 @@ PYTHON_TYPES_TO_READABLE_STRING: Dict[type, DataType] = {
     float: "float",
     int: "integer",
     bool: "boolean",
-    Decimal: "float",
 }
 
 DATA_TYPES_TO_PYTHON_TYPES: Dict[DataType, type] = {
