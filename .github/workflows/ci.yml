@@ -1,6 +1,6 @@
 name: CI
 
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 jobs:
   test:
@@ -13,27 +13,25 @@ jobs:
           - macos-latest
           - windows-latest
         python:
-          - "3.6"
-          - "3.7"
           - "3.8"
           - "3.9"
           - "3.10"
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python }}
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install .
-        pip install -r tests/requirements_test.txt
-    - name: Install Cleanlab CLI
-      run: pip install -e .
-    - name: Run tests
-      run: |
-        pytest --verbose
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install .
+          pip install -r tests/requirements_test.txt
+      - name: Install Cleanlab CLI
+        run: pip install -e .
+      - name: Run tests
+        run: |
+          pytest --verbose
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
@@ -45,4 +43,4 @@ jobs:
           pip install . # install deps
           pip install mypy
           mypy --install-types --non-interactive cleanlab_cli
-      - run: mypy cleanlab_cli
+      - run: mypy --strict cleanlab_cli
