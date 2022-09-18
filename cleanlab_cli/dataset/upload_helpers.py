@@ -251,7 +251,7 @@ def validate_rows(
     columns: List[str],
     schema: Schema,
     log: WarningLogType,
-    upload_queue: queue.Queue[Optional[List[Any]]],
+    upload_queue: "queue.Queue[Optional[List[Any]]]",
     existing_ids: Optional[Collection[str]] = None,
 ) -> None:
     """Iterates through dataset and validates rows. Places validated rows in upload queue.
@@ -292,7 +292,7 @@ async def upload_rows(
     api_key: str,
     dataset_id: str,
     columns: List[str],
-    upload_queue: queue.Queue[Optional[List[Any]]],
+    upload_queue: "queue.Queue[Optional[List[Any]]]",
     rows_per_payload: int,
 ) -> None:
     """Gets rows from upload queue and uploads to API.
