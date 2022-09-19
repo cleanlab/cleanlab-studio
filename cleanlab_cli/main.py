@@ -12,7 +12,7 @@ from cleanlab_cli.version import __version__
 
 
 @click.group()
-def cli():
+def cli() -> None:
     CleanlabSettings.init_cleanlab_settings()
     valid_version = api_service.check_client_version()
     if not valid_version:

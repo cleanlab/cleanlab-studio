@@ -1,8 +1,10 @@
 import json
 from cleanlab_cli.api_service import validate_api_key
 from cleanlab_cli.click_helpers import *
+from cleanlab_cli.decorators.previous_state import PreviousState
 from cleanlab_cli.settings import CleanlabSettings
 from cleanlab_cli.decorators import previous_state
+import click
 
 
 @click.command(help="authentication for Cleanlab Studio")
@@ -14,7 +16,7 @@ from cleanlab_cli.decorators import previous_state
     help="API key for CLI uploads. You can get this from https://app.cleanlab.ai/upload.",
 )
 @previous_state
-def login(prev_state, key):
+def login(prev_state: PreviousState, key: str) -> None:
     prev_state.init_state(dict(command="login", args=dict(key=key)))
     CleanlabSettings.init_cleanlab_dir()
 

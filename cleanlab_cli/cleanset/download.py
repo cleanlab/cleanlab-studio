@@ -1,5 +1,6 @@
 import os
 from collections import defaultdict
+from typing import Dict, Any, Optional
 
 import click
 import pandas as pd
@@ -9,7 +10,10 @@ from cleanlab_cli import click_helpers
 from cleanlab_cli import util
 from cleanlab_cli.click_helpers import log, progress
 from cleanlab_cli.decorators import previous_state, auth_config
+from cleanlab_cli.decorators.auth_config import AuthConfig
+from cleanlab_cli.decorators.previous_state import PreviousState
 from cleanlab_cli.settings import CleanlabSettings
+from cleanlab_cli.types import IDType, RecordType, DatasetFileExtension
 
 
 @click.command(help="download Cleanlab columns")
@@ -45,7 +49,14 @@ from cleanlab_cli.settings import CleanlabSettings
 )
 @previous_state
 @auth_config
-def download(config, prev_state, id, filepath, output, all):
+def download(
+    config: AuthConfig,
+    prev_state: PreviousState,
+    id: str,
+    filepath: Optional[str],
+    output: Optional[str],
+    all: bool,
+) -> None:
     prev_state.init_state(dict(command="download labels", args=dict(id=id)))
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
@@ -77,15 +88,15 @@ def download(config, prev_state, id, filepath, output, all):
 
         clean_df = pd.DataFrame(rows, columns=clean_df_columns).set_index("id")
 
-        ids_to_fields_to_values = defaultdict(dict)
+        ids_to_fields_to_values: Dict[str, RecordType] = defaultdict(dict)
         for row_id, row in clean_df.iterrows():
             fields_to_values = dict(row)
-            ids_to_fields_to_values[row_id] = fields_to_values
+            ids_to_fields_to_values[str(row_id)] = fields_to_values
 
         util.combine_fields_with_dataset(filepath, id_column, ids_to_fields_to_values, output)
         click_helpers.success(f"Saved to {output}")
     else:
-        while output is None or util.get_file_extension(output) != ".csv":
+        while output is None or util.get_file_extension(output) != DatasetFileExtension.csv:
             output = click.prompt(
                 "Specify your output filepath (must be .csv). Leave blank to use default",
                 default=f"clean_labels.csv",

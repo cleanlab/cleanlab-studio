@@ -1,4 +1,5 @@
 import json
+from typing import Optional, List
 
 import click
 
@@ -14,20 +15,24 @@ from cleanlab_cli.dataset.schema_helpers import (
 )
 from cleanlab_cli.dataset.upload_helpers import upload_dataset
 from cleanlab_cli.decorators import auth_config, previous_state
+from cleanlab_cli.decorators.auth_config import AuthConfig
+from cleanlab_cli.decorators.previous_state import PreviousState
+from cleanlab_cli.types import Schema, Modality, CommandState
 from cleanlab_cli.util import init_dataset_from_filepath
 
 
-def resume_upload(api_key, dataset_id, filepath):
+def resume_upload(api_key: str, dataset_id: str, filepath: str) -> None:
     complete = api_service.get_completion_status(api_key, dataset_id)
     if complete:
         abort("Dataset is already fully uploaded.")
     saved_schema = api_service.get_dataset_schema(api_key, dataset_id)
-    existing_ids = api_service.get_existing_ids(api_key, dataset_id)
+    existing_ids = {str(x) for x in api_service.get_existing_ids(api_key, dataset_id)}
     upload_dataset(api_key, dataset_id, filepath, saved_schema, existing_ids)
-    return
 
 
-def upload_with_schema(api_key, schema, columns, filepath, prev_state):
+def upload_with_schema(
+    api_key: str, schema: str, columns: List[str], filepath: str, prev_state: PreviousState
+) -> None:
     progress("Validating provided schema...")
     loaded_schema = load_schema(schema)
     try:
@@ -44,7 +49,6 @@ def upload_with_schema(api_key, schema, columns, filepath, prev_state):
         f" {filepath} --id {dataset_id}"
     )
     upload_dataset(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
-    return
 
 
 @click.command(help="upload your dataset to Cleanlab Studio")
@@ -90,7 +94,18 @@ def upload_with_schema(api_key, schema, columns, filepath, prev_state):
 )
 @previous_state
 @auth_config
-def upload(config, prev_state, filepath, id, schema, id_column, modality, name, output, resume):
+def upload(
+    config: AuthConfig,
+    prev_state: PreviousState,
+    filepath: Optional[str],
+    id: Optional[str],
+    schema: Optional[str],
+    id_column: Optional[str],
+    modality: Optional[Modality],
+    name: Optional[str],
+    output: Optional[str],
+    resume: Optional[bool],
+) -> None:
     api_key = config.get_api_key()
 
     if resume:
@@ -141,7 +156,8 @@ def upload(config, prev_state, filepath, id, schema, id_column, modality, name, 
     else:
         dataset_id = id
 
-    prev_state.init_state(dict(command="dataset upload", args=args))
+    command_state: CommandState = dict(command="dataset upload", args=args)
+    prev_state.init_state(command_state)
 
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")

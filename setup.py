@@ -44,7 +44,7 @@ setup(
     keywords="cleanlab",
     packages=find_packages(exclude=[]),
     py_modules=["main"],
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     install_requires=[
         "aiohttp>=3.8.1",
         "Click>=8.0.4",

@@ -3,15 +3,8 @@ Helper functions for working with schemas
 """
 
 import json
-from decimal import Decimal
 import random
-from typing import (
-    Any,
-    Optional,
-    Dict,
-    List,
-    Collection,
-)
+from typing import Any, Optional, Dict, List, Collection, Tuple
 
 import pandas as pd
 from pandas import NaT
@@ -22,13 +15,19 @@ from cleanlab_cli.click_helpers import progress, success, info, abort
 from cleanlab_cli.dataset.schema_types import (
     DATA_TYPES_TO_FEATURE_TYPES,
 )
+from cleanlab_cli.types import (
+    Schema,
+    DataType,
+    FeatureType,
+    Modality,
+    FieldSpecification,
+    SchemaMetadata,
+)
 from cleanlab_cli.util import (
     init_dataset_from_filepath,
     get_filename,
     dump_json,
 )
-
-ALLOWED_EXTENSIONS = [".csv", ".xls", ".xlsx"]
 
 
 def _find_best_matching_column(target_column: str, columns: List[str]) -> Optional[str]:
@@ -56,12 +55,13 @@ def _find_best_matching_column(target_column: str, columns: List[str]) -> Option
         return columns[0]
 
 
-def load_schema(filepath):
+def load_schema(filepath: str) -> Schema:
     with open(filepath, "r") as f:
-        return json.load(f)
+        schema: Schema = json.load(f)
+        return schema
 
 
-def validate_schema(schema, columns: Collection[str]):
+def validate_schema(schema: Schema, columns: Collection[str]) -> None:
     """
     Checks that:
     (1) all schema column names are strings
@@ -170,12 +170,12 @@ def validate_schema(schema, columns: Collection[str]):
         raise ValueError(f"Unsupported dataset modality: {modality}")
 
 
-def multiple_separate_words_detected(values):
+def multiple_separate_words_detected(values: Collection[Any]) -> bool:
     avg_num_words = sum([len(str(v).split()) for v in values]) / len(values)
     return avg_num_words >= 3
 
 
-def _values_are_datetime(values):
+def _values_are_datetime(values: Collection[Any]) -> bool:
     try:
         # check for datetime first
         val_sample = random.sample(list(values), 20)
@@ -188,7 +188,7 @@ def _values_are_datetime(values):
     return True
 
 
-def _values_are_integers(values):
+def _values_are_integers(values: Collection[Any]) -> bool:
     try:
         val_sample = random.sample(list(values), 20)
         for s in val_sample:
@@ -199,7 +199,7 @@ def _values_are_integers(values):
     return True
 
 
-def _values_are_floats(values):
+def _values_are_floats(values: Collection[Any]) -> bool:
     try:
         val_sample = random.sample(list(values), 20)
         for s in val_sample:
@@ -209,7 +209,7 @@ def _values_are_floats(values):
     return True
 
 
-def infer_types(values: Collection[Any]):
+def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
     """
     Infer the data type and feature type of a collection of a values using simple heuristics.
 
@@ -225,7 +225,7 @@ def infer_types(values: Collection[Any]):
             continue
         if isinstance(v, str):
             counts["string"] += 1
-        elif isinstance(v, float) or isinstance(v, Decimal):
+        elif isinstance(v, float):
             counts["float"] += 1
         elif isinstance(v, int):
             counts["integer"] += 1
@@ -278,11 +278,11 @@ def propose_schema(
     filepath: str,
     columns: Optional[Collection[str]] = None,
     id_column: Optional[str] = None,
-    modality: Optional[str] = None,
+    modality: Optional[Modality] = None,
     name: Optional[str] = None,
     sample_size: int = 10000,
     max_rows_checked: int = 200000,
-) -> Dict[str, str]:
+) -> Schema:
     """
     Generates a schema for a dataset based on a sample of the dataset's rows.
 
@@ -326,9 +326,11 @@ def propose_schema(
             if random_idx < sample_size:
                 rows[random_idx] = row
     df = pd.DataFrame(data=rows, columns=columns)
-    retval: Dict[str, Any] = dict()
-    retval["metadata"] = {}
-    retval["fields"] = {}
+
+    # initialize to defaults to pass type check
+    retval: Schema = dict(
+        metadata=dict(id_column="", modality="text", name=""), fields={}, version=""
+    )
 
     for column_name in columns:
         if column_name == "":
@@ -342,7 +344,10 @@ def propose_schema(
 
         col_data_type, col_feature_type = infer_types(column_values)
 
-        field_spec = {"data_type": col_data_type, "feature_type": col_feature_type}
+        field_spec: FieldSpecification = {
+            "data_type": col_data_type,
+            "feature_type": col_feature_type,
+        }
 
         if col_feature_type is None:
             del field_spec["feature_type"]
@@ -360,13 +365,27 @@ def propose_schema(
         if id_column not in columns:
             abort(f"ID column '{id_column}' does not exist in the dataset.")
 
-    retval["metadata"] = {"id_column": id_column, "modality": modality, "name": name}
+    assert id_column is not None  # TODO better way to show mypy that id_column is a string?
+
+    metadata: SchemaMetadata = {
+        "id_column": id_column,
+        "modality": modality,
+        "name": name,
+    }
+    retval["metadata"] = metadata
     retval["version"] = SCHEMA_VERSION
     return retval
 
 
-def construct_schema(fields, data_types, feature_types, id_column, modality, dataset_name):
-    retval = {
+def construct_schema(
+    fields: List[str],
+    data_types: List[DataType],
+    feature_types: List[FeatureType],
+    id_column: str,
+    modality: Modality,
+    dataset_name: str,
+) -> Schema:
+    retval: Schema = {
         "fields": {},
         "metadata": {"id_column": id_column, "modality": modality, "name": dataset_name},
         "version": SCHEMA_VERSION,
@@ -376,7 +395,7 @@ def construct_schema(fields, data_types, feature_types, id_column, modality, dat
     return retval
 
 
-def save_schema(schema, filename: Optional[str]):
+def save_schema(schema: Schema, filename: Optional[str]) -> None:
     """
 
     :param schema:
