@@ -182,10 +182,14 @@ def is_filepath(string: str, check_existing: bool = False) -> bool:
     return pathlib.Path(string).suffix != "" and " " not in string
 
 
+def get_validation_sample_size(values):
+    return max(20, len(values))
+
+
 def _values_are_datetime(values: Collection[Any]) -> bool:
     try:
         # check for datetime first
-        val_sample = random.sample(list(values), 20)
+        val_sample = random.sample(list(values), get_validation_sample_size(20))
         for s in val_sample:
             res = pd.to_datetime(s)
             if res is NaT:
@@ -197,7 +201,7 @@ def _values_are_datetime(values: Collection[Any]) -> bool:
 
 def _values_are_integers(values: Collection[Any]) -> bool:
     try:
-        val_sample = random.sample(list(values), 20)
+        val_sample = random.sample(list(values), get_validation_sample_size(values))
         for s in val_sample:
             if str(int(s)) != s:
                 return False
@@ -208,11 +212,19 @@ def _values_are_integers(values: Collection[Any]) -> bool:
 
 def _values_are_floats(values: Collection[Any]) -> bool:
     try:
-        val_sample = random.sample(list(values), 20)
+        val_sample = random.sample(list(values), get_validation_sample_size(20))
         for s in val_sample:
             float(s)
     except Exception:
         return False
+    return True
+
+
+def _values_are_filepaths(values: Collection[Any]) -> bool:
+    val_sample = random.sample(list(values), 20)
+    for s in val_sample:
+        if not is_filepath(s):
+            return False
     return True
 
 
@@ -260,7 +272,7 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
             if multiple_separate_words_detected(values):
                 return "string", "text"
             else:
-                if all([is_filepath(s) for s in random.sample(list(values), 20)]):
+                if _values_are_filepaths(values):
                     return "string", "filepath"
                 return "string", "identifier"
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
