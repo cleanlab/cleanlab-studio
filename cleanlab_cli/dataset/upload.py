@@ -17,7 +17,7 @@ from cleanlab_cli.dataset.upload_helpers import upload_dataset
 from cleanlab_cli.decorators import auth_config, previous_state
 from cleanlab_cli.decorators.auth_config import AuthConfig
 from cleanlab_cli.decorators.previous_state import PreviousState
-from cleanlab_cli.types import Schema, Modality, CommandState
+from cleanlab_cli.types import Schema, Modality, CommandState, MODALITIES
 from cleanlab_cli.util import init_dataset_from_filepath
 
 
@@ -77,8 +77,8 @@ def upload_with_schema(
 @click.option(
     "--modality",
     "-m",
-    type=click.Choice(["text", "tabular"]),
-    help="If uploading a new dataset without a schema, specify data modality: text, tabular",
+    type=click.Choice(MODALITIES),
+    help=f"If uploading a new dataset without a schema, specify data modality: {', '.join(MODALITIES)}",
 )
 @click.option(
     "--name",
@@ -181,8 +181,8 @@ def upload(
     ### Check that all required arguments are present
 
     if modality is None:
-        while modality not in ["text", "tabular"]:
-            modality = click.prompt("Specify your dataset modality (text, tabular)")
+        while modality not in MODALITIES:
+            modality = click.prompt(f"Specify your dataset modality ({', '.join(MODALITIES)})")
 
     if id_column is None:
         id_column_guess = _find_best_matching_column("id", columns)

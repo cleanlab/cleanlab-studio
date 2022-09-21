@@ -10,7 +10,7 @@ from cleanlab_cli.dataset.schema_helpers import (
 )
 from cleanlab_cli.dataset import upload_helpers
 from cleanlab_cli.decorators.previous_state import PreviousState
-from cleanlab_cli.types import Schema, Modality, IDType, CommandState
+from cleanlab_cli.types import Schema, Modality, IDType, CommandState, MODALITIES
 from cleanlab_cli.util import init_dataset_from_filepath
 from cleanlab_cli.decorators import previous_state
 import json
@@ -127,7 +127,7 @@ def check_dataset_command(
     "--modality",
     "--m",
     prompt=True,
-    type=click.Choice(["text", "tabular"]),
+    type=click.Choice(MODALITIES),
     help="Dataset modality: text or tabular",
 )
 @click.option(

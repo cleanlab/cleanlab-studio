@@ -3,6 +3,8 @@ Helper functions for working with schemas
 """
 
 import json
+import os.path
+import pathlib
 import random
 from typing import Any, Optional, Dict, List, Collection, Tuple
 
@@ -22,6 +24,7 @@ from cleanlab_cli.types import (
     Modality,
     FieldSpecification,
     SchemaMetadata,
+    DATATYPES,
 )
 from cleanlab_cli.util import (
     init_dataset_from_filepath,
@@ -113,13 +116,11 @@ def validate_schema(schema: Schema, columns: Collection[str]) -> None:
     if not schema_columns.issubset(columns):
         raise ValueError(f"Dataset is missing schema columns: {schema_columns - columns}")
 
-    recognized_column_types = {"string", "integer", "float", "boolean", "datetime"}
-
     ## Check that each field has a feature_type that matches the base type
     for spec in schema["fields"].values():
         column_type = spec["data_type"]
         column_feature_type = spec.get("feature_type", None)
-        if column_type not in recognized_column_types:
+        if column_type not in DATATYPES:
             raise ValueError(f"Unrecognized column data type: {column_type}")
 
         if column_feature_type:
@@ -175,6 +176,12 @@ def multiple_separate_words_detected(values: Collection[Any]) -> bool:
     return avg_num_words >= 3
 
 
+def is_filepath(string: str, check_existing: bool = False) -> bool:
+    if check_existing:
+        return os.path.exists(string)
+    return pathlib.Path(string).suffix != "" and " " not in string
+
+
 def _values_are_datetime(values: Collection[Any]) -> bool:
     try:
         # check for datetime first
@@ -213,7 +220,7 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
     """
     Infer the data type and feature type of a collection of a values using simple heuristics.
 
-    :param values: a Collection of data values
+    :param values: a Collection of data values (that are not null and not empty string)
     """
     counts = {"string": 0, "integer": 0, "float": 0, "boolean": 0}
     ID_RATIO_THRESHOLD = 0.97  # lowerbound
@@ -253,6 +260,8 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
             if multiple_separate_words_detected(values):
                 return "string", "text"
             else:
+                if all([is_filepath(s) for s in random.sample(list(values), 20)]):
+                    return "string", "filepath"
                 return "string", "identifier"
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
             return "string", "categorical"
@@ -348,9 +357,6 @@ def propose_schema(
             "data_type": col_data_type,
             "feature_type": col_feature_type,
         }
-
-        if col_feature_type is None:
-            del field_spec["feature_type"]
 
         retval["fields"][column_name] = field_spec
 

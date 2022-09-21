@@ -1,10 +1,15 @@
 from enum import Enum
-from typing import Dict, Any, Literal, Optional, Union, List, TypedDict
+from typing import Dict, Any, Literal, Optional, Union, List
+from typing_extensions import NotRequired, TypedDict
 
 JSONDict = Dict[str, Any]
-Modality = Literal["text", "tabular"]
+Modality = Literal["text", "tabular", "image"]
+MODALITIES = ["text", "tabular", "image"]
 DataType = Literal["string", "integer", "float", "boolean"]
-FeatureType = Literal["identifier", "categorical", "numeric", "text", "boolean", "datetime"]
+DATATYPES = ["string", "integer", "float", "boolean"]
+FeatureType = Literal[
+    "identifier", "categorical", "numeric", "text", "boolean", "datetime", "filepath"
+]
 IDType = Union[str, int]
 ValidationWarningType = Literal["MISSING_ID", "MISSING_VAL", "TYPE_MISMATCH", "DUPLICATE_ID"]
 
@@ -44,6 +49,7 @@ class SchemaMetadata(TypedDict):
     id_column: str
     modality: Modality
     name: str
+    filepath: NotRequired[str]
 
 
 class Schema(TypedDict):
