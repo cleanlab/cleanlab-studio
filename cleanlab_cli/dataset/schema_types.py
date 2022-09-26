@@ -114,11 +114,18 @@ class Schema:
             fields_[field] = FieldSpecification.create(
                 field_spec["data_type"], field_spec["feature_type"]
             )
+
+        # metadata variables
+        id_column = metadata["id_column"]
+        modality = metadata["modality"]
+        name = metadata["name"]
+        assert id_column is not None
+        assert modality is not None
+        assert name is not None
+        filepath_column: Optional[str] = metadata.get("filepath_column", None)
         return Schema(
             metadata=SchemaMetadata.create(
-                id_column=metadata["id_column"],
-                modality=metadata["modality"],
-                name=metadata["name"],
+                id_column=id_column, modality=modality, name=name, filepath_column=filepath_column
             ),
             fields=fields_,
             version=version,
