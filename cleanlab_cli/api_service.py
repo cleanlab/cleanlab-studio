@@ -12,8 +12,9 @@ import aiohttp
 import requests
 
 from cleanlab_cli.click_helpers import abort, warn
+from cleanlab_cli.dataset.schema_types import Schema
 from cleanlab_cli import __version__
-from cleanlab_cli.types import JSONDict, Schema, IDType
+from cleanlab_cli.types import JSONDict, IDType
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
 
@@ -34,12 +35,12 @@ def handle_api_error_from_json(res_json: JSONDict, show_warning: bool = False) -
 
 
 def initialize_dataset(api_key: str, schema: Schema) -> str:
-    fields = list(schema["fields"])
-    data_types = [spec["data_type"] for spec in schema["fields"].values()]
-    feature_types = [spec["feature_type"] for spec in schema["fields"].values()]
-    id_column = schema["metadata"]["id_column"]
-    modality = schema["metadata"]["modality"]
-    dataset_name = schema["metadata"]["name"]
+    fields = list(schema.fields)
+    data_types = [spec.data_type.value for spec in schema.fields.values()]
+    feature_types = [spec.feature_type.value for spec in schema.fields.values()]
+    id_column = schema.metadata.id_column
+    modality = schema.metadata.modality.value
+    dataset_name = schema.metadata.name
 
     res = requests.post(
         base_url + "/datasets",

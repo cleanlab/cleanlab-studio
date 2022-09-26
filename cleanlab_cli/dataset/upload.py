@@ -17,7 +17,7 @@ from cleanlab_cli.dataset.upload_helpers import upload_dataset
 from cleanlab_cli.decorators import auth_config, previous_state
 from cleanlab_cli.decorators.auth_config import AuthConfig
 from cleanlab_cli.decorators.previous_state import PreviousState
-from cleanlab_cli.types import Schema, Modality, CommandState, MODALITIES
+from cleanlab_cli.types import Modality, CommandState, MODALITIES
 from cleanlab_cli.util import init_dataset_from_filepath
 
 
@@ -101,7 +101,7 @@ def upload(
     id: Optional[str],
     schema: Optional[str],
     id_column: Optional[str],
-    modality: Optional[Modality],
+    modality: Optional[str],
     name: Optional[str],
     output: Optional[str],
     resume: Optional[bool],

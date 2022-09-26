@@ -24,18 +24,11 @@ from typing import (
 )
 from collections import defaultdict
 from sys import getsizeof
-from enum import Enum
 from tqdm import tqdm
 from cleanlab_cli import api_service
+from cleanlab_cli.dataset.upload_types import ValidationWarning, WarningLog, RowWarningsType
 from cleanlab_cli.types import (
-    Schema,
-    DataType,
-    ValidationWarningType,
     RecordType,
-    WarningLogType,
-    RowWarningsType,
-    FeatureType,
-    VALIDATION_WARNING_TYPES,
 )
 from cleanlab_cli.util import (
     is_null_value,
@@ -46,19 +39,22 @@ from cleanlab_cli.util import (
 from cleanlab_cli.dataset.schema_types import (
     PYTHON_TYPES_TO_READABLE_STRING,
     DATA_TYPES_TO_PYTHON_TYPES,
+    DataType,
+    Schema,
+    FeatureType,
 )
 from cleanlab_cli import click_helpers
 from cleanlab_cli.click_helpers import success, info, progress
 
 
-def warning_to_readable_name(warning: ValidationWarningType) -> str:
+def warning_to_readable_name(warning: ValidationWarning) -> str:
     return {
-        "MISSING_ID": "Rows with missing IDs (rows are dropped)",
-        "MISSING_VAL": "Rows with missing values (values replaced with null)",
-        "TYPE_MISMATCH": (
+        ValidationWarning.MISSING_ID: "Rows with missing IDs (rows are dropped)",
+        ValidationWarning.MISSING_VAL: "Rows with missing values (values replaced with null)",
+        ValidationWarning.TYPE_MISMATCH: (
             "Rows with values that do not match the schema (values replaced with null)"
         ),
-        "DUPLICATE_ID": (
+        ValidationWarning.DUPLICATE_ID: (
             "Rows with duplicate IDs (only the first row instance is kept, all later rows dropped)"
         ),
     }[warning]
@@ -101,8 +97,8 @@ def validate_and_process_record(
     :param existing_ids:
     :return: tuple (processed row: dict[str, any], row ID: optional[str], warnings: dict[warn_type: str, desc: str])
     """
-    fields = schema["fields"]
-    id_column = schema["metadata"]["id_column"]
+    fields = schema.fields
+    id_column = schema.metadata.id_column
 
     if columns is None:
         columns = list(fields)
@@ -113,7 +109,7 @@ def validate_and_process_record(
         return (
             None,
             None,
-            {"MISSING_ID": [f"Missing ID for record: {dict(record)}."]},
+            {ValidationWarning.MISSING_ID: [f"Missing ID for record: {dict(record)}."]},
         )
 
     row_id = str(row_id)
@@ -124,25 +120,25 @@ def validate_and_process_record(
         return (
             None,
             row_id,
-            {"DUPLICATE_ID": [f"Duplicate ID found: {dict(record)}"]},
+            {ValidationWarning.DUPLICATE_ID: [f"Duplicate ID found: {dict(record)}"]},
         )
 
-    warnings: Dict[ValidationWarningType, List[str]] = defaultdict(list)
+    warnings: Dict[ValidationWarning, List[str]] = defaultdict(list)
 
     row = {c: record.get(c, None) for c in columns}
 
     for column_name, column_value in record.items():
         if column_name not in fields:
             continue
-        col_type = fields[column_name]["data_type"]
-        col_feature_type = fields[column_name]["feature_type"]
+        col_type = fields[column_name].data_type
+        col_feature_type = fields[column_name].feature_type
 
-        warning: Optional[Tuple[str, ValidationWarningType]] = None
+        warning: Optional[Tuple[str, ValidationWarning]] = None
         if is_null_value(column_value):
             row[column_name] = None
-            warning = f"{column_name}: value is missing", "MISSING_VAL"
+            warning = f"{column_name}: value is missing", ValidationWarning.MISSING_ID
         else:
-            if col_feature_type == "datetime":
+            if col_feature_type == FeatureType.datetime:
                 try:
                     timestamp_value = convert_to_python_type(column_value, col_type)
                     pd.Timestamp(timestamp_value)
@@ -151,12 +147,12 @@ def validate_and_process_record(
                         f"{column_name}: expected datetime but unable to parse '{column_value}'"
                         f" with {get_value_type(column_value)} type. Datetime strings must be"
                         " parsable by pandas.Timestamp().",
-                        "TYPE_MISMATCH",
+                        ValidationWarning.TYPE_MISMATCH,
                     )
             else:
-                if col_type == "string":
+                if col_type == DataType.string:
                     row[column_name] = str(column_value)  # type coercion
-                elif col_type == "integer":
+                elif col_type == DataType.integer:
                     if not isinstance(column_value, int):
                         if isinstance(column_value, str) and column_value.isdigit():
                             row[column_name] = int(column_value)
@@ -164,9 +160,9 @@ def validate_and_process_record(
                             warning = (
                                 f"{column_name}: expected 'int' but got '{column_value}' with"
                                 f" {get_value_type(column_value)} type",
-                                "TYPE_MISMATCH",
+                                ValidationWarning.TYPE_MISMATCH,
                             )
-                elif col_type == "float":
+                elif col_type == DataType.float:
                     if not (isinstance(column_value, int) or isinstance(column_value, float)):
                         coerced = False
                         if isinstance(column_value, str):
@@ -180,9 +176,9 @@ def validate_and_process_record(
                             warning = (
                                 f"{column_name}: expected 'float' but got '{column_value}' with"
                                 f" {get_value_type(column_value)} type",
-                                "TYPE_MISMATCH",
+                                ValidationWarning.TYPE_MISMATCH,
                             )
-                elif col_type == "boolean":
+                elif col_type == DataType.boolean:
                     if not isinstance(column_value, bool):
                         col_val_lower = str(column_value).lower()
                         if col_val_lower in ["true", "t", "yes", "1"]:
@@ -193,7 +189,7 @@ def validate_and_process_record(
                             warning = (
                                 f"{column_name}: expected 'bool' but got '{column_value}' with"
                                 f" {get_value_type(column_value)} type",
-                                "TYPE_MISMATCH",
+                                ValidationWarning.TYPE_MISMATCH,
                             )
 
         if warning:
@@ -203,32 +199,30 @@ def validate_and_process_record(
     return row, row_id, warnings
 
 
-def create_warning_log() -> WarningLogType:
-    log: WarningLogType = {
-        "MISSING_ID": [],
-        "MISSING_VAL": dict(),
-        "DUPLICATE_ID": dict(),
-        "TYPE_MISMATCH": dict(),
-    }
-    return log
+def create_warning_log() -> WarningLog:
+    return WarningLog.init()
 
 
 def update_log_with_warnings(
-    log: WarningLogType, row_id: Optional[str], warnings: Optional[RowWarningsType]
-) -> WarningLogType:
+    log: WarningLog, row_id: Optional[str], warnings: Optional[RowWarningsType]
+) -> WarningLog:
     if warnings:
         for warn_type in warnings:
-            if warn_type == "MISSING_ID":
-                log[warn_type] += warnings[warn_type]
+            if warn_type == ValidationWarning.MISSING_ID:
+                log_warnings = log.get(warn_type)
+                assert isinstance(log_warnings, list)
+                log_warnings += warnings[warn_type]
             else:  # ID is present
                 assert row_id is not None
-                log[warn_type][row_id] = warnings[warn_type]
+                log_warnings = log.get(warn_type)
+                assert isinstance(log_warnings, dict)
+                log_warnings[row_id] = warnings[warn_type]
     return log
 
 
-def echo_log_warnings(log: WarningLogType) -> None:
-    for warning_type in VALIDATION_WARNING_TYPES:
-        warning_count = len(log[warning_type])
+def echo_log_warnings(log: WarningLog) -> None:
+    for warning_type in ValidationWarning:
+        warning_count = len(log.get(warning_type))
         if warning_count > 0:
             click.echo(f"{warning_to_readable_name(warning_type)}: {warning_count}")
 
@@ -237,7 +231,7 @@ def validate_rows(
     dataset_filepath: str,
     columns: List[str],
     schema: Schema,
-    log: WarningLogType,
+    log: WarningLog,
     upload_queue: "queue.Queue[Optional[List[Any]]]",
     existing_ids: Optional[Collection[str]] = None,
 ) -> None:
@@ -360,8 +354,7 @@ def upload_dataset(
     :param payload_size: size of each chunk of rows uploaded, in MB
     :return: None
     """
-    columns = list(schema["fields"].keys())
-
+    columns = list(schema.fields.keys())
     log = create_warning_log()
 
     file_size = get_file_size(filepath)
@@ -403,7 +396,7 @@ def upload_dataset(
     # Check against soft quota, warn if applicable
     api_service.check_dataset_limit(file_size=0, api_key=api_key, show_warning=True)
 
-    total_warnings: int = sum([len(log[w]) for w in VALIDATION_WARNING_TYPES])
+    total_warnings: int = sum([len(log.get(w)) for w in ValidationWarning])
     issues_found = total_warnings > 0
     if not issues_found:
         success("\nNo issues were encountered when uploading your dataset. Nice!")
@@ -438,22 +431,16 @@ def group_feature_types(schema: Schema) -> Dict[FeatureType, List[str]]:
     Given a schema, return a dict mapping each feature type to the list of columns with said feature type
     """
     feature_types_to_columns = defaultdict(list)
-    for field_name, spec in schema["fields"].items():
-        feature_type = spec["feature_type"]
-        feature_types_to_columns[feature_type].append(field_name)
+    for field_name, spec in schema.fields.items():
+        feature_types_to_columns[spec.feature_type].append(field_name)
     return feature_types_to_columns
 
 
-def save_warning_log(warning_log: WarningLogType, filename: str) -> None:
+def save_warning_log(warning_log: WarningLog, filename: str) -> None:
     if not filename:
         raise ValueError("No filepath provided for saving warning_log")
-    retval = {
-        warning_to_readable_name(k): warning_log[k]
-        for k in VALIDATION_WARNING_TYPES
-        if k in warning_log
-    }
     progress(f"Writing issues to {filename}...")
-    dump_json(filename, retval)
+    dump_json(filename, warning_log.to_dict(readable=True))
     success("Saved.\n")
 
 
