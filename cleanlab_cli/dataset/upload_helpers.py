@@ -26,7 +26,12 @@ from collections import defaultdict
 from sys import getsizeof
 from tqdm import tqdm
 from cleanlab_cli import api_service
-from cleanlab_cli.dataset.upload_types import ValidationWarning, WarningLog, RowWarningsType
+from cleanlab_cli.dataset.upload_types import (
+    ValidationWarning,
+    WarningLog,
+    RowWarningsType,
+    warning_to_readable_name,
+)
 from cleanlab_cli.types import (
     RecordType,
 )
