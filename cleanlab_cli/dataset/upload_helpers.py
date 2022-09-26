@@ -47,19 +47,6 @@ from cleanlab_cli import click_helpers
 from cleanlab_cli.click_helpers import success, info, progress
 
 
-def warning_to_readable_name(warning: ValidationWarning) -> str:
-    return {
-        ValidationWarning.MISSING_ID: "Rows with missing IDs (rows are dropped)",
-        ValidationWarning.MISSING_VAL: "Rows with missing values (values replaced with null)",
-        ValidationWarning.TYPE_MISMATCH: (
-            "Rows with values that do not match the schema (values replaced with null)"
-        ),
-        ValidationWarning.DUPLICATE_ID: (
-            "Rows with duplicate IDs (only the first row instance is kept, all later rows dropped)"
-        ),
-    }[warning]
-
-
 def get_value_type(val: Any) -> str:
     for python_type, readable_string in PYTHON_TYPES_TO_READABLE_STRING.items():
         if isinstance(val, python_type):

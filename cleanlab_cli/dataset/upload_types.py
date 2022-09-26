@@ -2,14 +2,25 @@ from enum import Enum
 from typing import Dict, List, Collection
 from dataclasses import dataclass
 
-from cleanlab_cli.dataset.upload_helpers import warning_to_readable_name
-
 
 class ValidationWarning(Enum):
     MISSING_ID = "MISSING_ID"
     MISSING_VAL = "MISSING_VAL"
     TYPE_MISMATCH = "TYPE_MISMATCH"
     DUPLICATE_ID = "DUPLICATE_ID"
+
+
+def warning_to_readable_name(warning: ValidationWarning) -> str:
+    return {
+        ValidationWarning.MISSING_ID: "Rows with missing IDs (rows are dropped)",
+        ValidationWarning.MISSING_VAL: "Rows with missing values (values replaced with null)",
+        ValidationWarning.TYPE_MISMATCH: (
+            "Rows with values that do not match the schema (values replaced with null)"
+        ),
+        ValidationWarning.DUPLICATE_ID: (
+            "Rows with duplicate IDs (only the first row instance is kept, all later rows dropped)"
+        ),
+    }[warning]
 
 
 RowWarningsType = Dict[ValidationWarning, List[str]]
