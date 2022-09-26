@@ -1,8 +1,8 @@
 from enum import Enum
-from typing import Dict, List, Union, Collection
+from typing import Dict, List, Collection
 from dataclasses import dataclass
 
-from cleanlab_cli.dataset import warning_to_readable_name
+from cleanlab_cli.dataset.upload_helpers import warning_to_readable_name
 
 
 class ValidationWarning(Enum):

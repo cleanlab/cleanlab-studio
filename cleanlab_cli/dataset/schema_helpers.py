@@ -15,12 +15,9 @@ import semver
 from cleanlab_cli import MIN_SCHEMA_VERSION, SCHEMA_VERSION, MAX_SCHEMA_VERSION
 from cleanlab_cli.click_helpers import progress, success, info, abort
 from cleanlab_cli.dataset.schema_types import (
-    DATA_TYPES_TO_FEATURE_TYPES,
     FeatureType,
     Schema,
     DataType,
-    FieldSpecification,
-    SchemaMetadata,
 )
 from cleanlab_cli.types import Modality
 from cleanlab_cli.util import (
@@ -353,25 +350,6 @@ def propose_schema(
 
     metadata: Dict[str, Optional[str]] = dict(id_column=id_column, modality=modality, name=name)
     return Schema.create(metadata=metadata, fields=fields_dict, version=SCHEMA_VERSION)
-
-
-# def construct_schema(
-#     fields: List[str],
-#     data_types: List[DataType],
-#     feature_types: List[FeatureType],
-#     id_column: str,
-#     modality: Modality,
-#     dataset_name: str,
-# ) -> Schema:
-#     field_dict = dict()
-#     for field, data_type, feature_type in zip(fields, data_types, feature_types):
-#         field_dict[field] = {"data_type": data_type, "feature_type": feature_type}
-#     retval = {
-#         "fields": field_dict,
-#         "metadata": {"id_column": id_column, "modality": modality, "name": dataset_name},
-#         "version": SCHEMA_VERSION,
-#     }
-#     return Schema.create(schema_dict=retval)
 
 
 def save_schema(schema: Schema, filename: Optional[str]) -> None:
