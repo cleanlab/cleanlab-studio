@@ -149,7 +149,7 @@ def is_filepath(string: str, check_existing: bool = False) -> bool:
 
 
 def get_validation_sample_size(values: Sized) -> int:
-    return max(20, len(values))
+    return min(20, len(values))
 
 
 def _values_are_datetime(values: Collection[Any]) -> bool:
