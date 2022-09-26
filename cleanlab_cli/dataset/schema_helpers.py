@@ -187,7 +187,7 @@ def _values_are_floats(values: Collection[Any]) -> bool:
 
 
 def _values_are_filepaths(values: Collection[Any]) -> bool:
-    val_sample = random.sample(list(values), 20)
+    val_sample = random.sample(list(values), get_validation_sample_size(values))
     for s in val_sample:
         if not is_filepath(s):
             return False
