@@ -6,7 +6,6 @@ from cleanlab_cli.types import Modality
 
 SchemaMetadataDictType = Dict[str, Optional[str]]
 SchemaFieldsDictType = Dict[str, Dict[str, str]]
-SchemaDictType = Dict[str, Union[str, SchemaMetadataDictType, SchemaFieldsDictType]]
 
 
 class DataType(Enum):
@@ -74,7 +73,7 @@ class SchemaMetadata:
 
     @staticmethod
     def create(
-        id_column: str, modality: str, name: str, filepath_column: Optional[str]
+        id_column: str, modality: str, name: str, filepath_column: Optional[str] = None
     ) -> "SchemaMetadata":
         return SchemaMetadata(
             id_column=id_column,
