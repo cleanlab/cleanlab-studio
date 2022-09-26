@@ -168,7 +168,7 @@ def generate_schema_command(
     prev_state.init_state(command_state)
 
     proposed_schema = propose_schema(filepath, columns, id_column, modality, name)
-    click.echo(json.dumps(proposed_schema, indent=2))
+    click.echo(json.dumps(proposed_schema.to_dict(), indent=2))
     if not output:
         output = click_helpers.confirm_save_prompt_filepath(
             save_message="Would you like to save the generated schema?",

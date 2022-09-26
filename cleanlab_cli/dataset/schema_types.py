@@ -115,7 +115,11 @@ class Schema:
                 field_spec["data_type"], field_spec["feature_type"]
             )
         return Schema(
-            metadata=SchemaMetadata.create(*metadata),
+            metadata=SchemaMetadata.create(
+                id_column=metadata["id_column"],
+                modality=metadata["modality"],
+                name=metadata["name"],
+            ),
             fields=fields_,
             version=version,
         )
