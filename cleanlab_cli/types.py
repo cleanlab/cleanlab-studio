@@ -1,19 +1,17 @@
 from enum import Enum
-from typing import Dict, Any, Literal, Optional, Union, List, TypedDict
+from typing import Dict, Any, Optional, Union, TypedDict
 
 JSONDict = Dict[str, Any]
-Modality = Literal["text", "tabular"]
-DataType = Literal["string", "integer", "float", "boolean"]
-FeatureType = Literal["identifier", "categorical", "numeric", "text", "boolean", "datetime"]
 IDType = Union[str, int]
-ValidationWarningType = Literal["MISSING_ID", "MISSING_VAL", "TYPE_MISMATCH", "DUPLICATE_ID"]
 
-VALIDATION_WARNING_TYPES: List[ValidationWarningType] = [
-    "MISSING_ID",
-    "MISSING_VAL",
-    "TYPE_MISMATCH",
-    "DUPLICATE_ID",
-]
+
+class Modality(Enum):
+    text = "text"
+    tabular = "tabular"
+    image = "image"
+
+
+MODALITIES = [m.value for m in Modality]
 
 
 class DatasetFileExtension(Enum):
@@ -24,32 +22,6 @@ class DatasetFileExtension(Enum):
 
 
 RecordType = Dict[str, Any]
-
-RowWarningsType = Dict[ValidationWarningType, List[str]]
-
-
-class WarningLogType(TypedDict):
-    MISSING_ID: List[str]
-    MISSING_VAL: Dict[str, List[str]]
-    TYPE_MISMATCH: Dict[str, List[str]]
-    DUPLICATE_ID: Dict[str, List[str]]
-
-
-class FieldSpecification(TypedDict):
-    data_type: DataType
-    feature_type: FeatureType
-
-
-class SchemaMetadata(TypedDict):
-    id_column: str
-    modality: Modality
-    name: str
-
-
-class Schema(TypedDict):
-    metadata: SchemaMetadata
-    fields: Dict[str, FieldSpecification]
-    version: str
 
 
 class CommandState(TypedDict):

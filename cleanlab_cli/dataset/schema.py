@@ -10,7 +10,8 @@ from cleanlab_cli.dataset.schema_helpers import (
 )
 from cleanlab_cli.dataset import upload_helpers
 from cleanlab_cli.decorators.previous_state import PreviousState
-from cleanlab_cli.types import Schema, Modality, IDType, CommandState
+from cleanlab_cli.dataset.upload_types import ValidationWarning
+from cleanlab_cli.types import CommandState, MODALITIES
 from cleanlab_cli.util import init_dataset_from_filepath
 from cleanlab_cli.decorators import previous_state
 import json
@@ -42,7 +43,7 @@ def validate_schema_command(
         dataset = init_dataset_from_filepath(filepath)
         cols = dataset.get_columns()
     else:
-        cols = list(loaded_schema["fields"])
+        cols = list(loaded_schema.fields)
     try:
         validate_schema(loaded_schema, cols)
     except ValueError as e:
@@ -87,8 +88,7 @@ def check_dataset_command(
         if row_id:
             seen_ids.add(row_id)
 
-    log_warnings: Iterable[Sized] = cast(Iterable[Sized], list(log.values()))
-    total_warnings = sum(len(warnings) for warnings in log_warnings)
+    total_warnings = sum([len(log.get(warning_type)) for warning_type in ValidationWarning])
     if total_warnings == 0:
         success("\nNo type issues were found when checking your dataset. Nice!")
     else:
@@ -127,7 +127,7 @@ def check_dataset_command(
     "--modality",
     "--m",
     prompt=True,
-    type=click.Choice(["text", "tabular"]),
+    type=click.Choice(MODALITIES),
     help="Dataset modality: text or tabular",
 )
 @click.option(
@@ -141,7 +141,7 @@ def generate_schema_command(
     filepath: Optional[str],
     output: Optional[str],
     id_column: Optional[str],
-    modality: Optional[Modality],
+    modality: Optional[str],
     name: Optional[str],
 ) -> None:
     if filepath is None:
@@ -168,7 +168,7 @@ def generate_schema_command(
     prev_state.init_state(command_state)
 
     proposed_schema = propose_schema(filepath, columns, id_column, modality, name)
-    click.echo(json.dumps(proposed_schema, indent=2))
+    click.echo(json.dumps(proposed_schema.to_dict(), indent=2))
     if not output:
         output = click_helpers.confirm_save_prompt_filepath(
             save_message="Would you like to save the generated schema?",
