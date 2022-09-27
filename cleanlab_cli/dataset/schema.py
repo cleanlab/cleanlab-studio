@@ -1,6 +1,11 @@
 from typing import Optional, Set, List, Sized, Iterable, cast
 
 import click
+
+from cleanlab_cli.dataset.helpers import (
+    get_id_column_if_undefined,
+    get_filepath_column_if_undefined,
+)
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
@@ -11,7 +16,7 @@ from cleanlab_cli.dataset.schema_helpers import (
 from cleanlab_cli.dataset import upload_helpers
 from cleanlab_cli.decorators.previous_state import PreviousState
 from cleanlab_cli.dataset.upload_types import ValidationWarning
-from cleanlab_cli.types import CommandState, MODALITIES
+from cleanlab_cli.types import CommandState, MODALITIES, Modality
 from cleanlab_cli.util import init_dataset_from_filepath
 from cleanlab_cli.decorators import previous_state
 import json
@@ -128,7 +133,12 @@ def check_dataset_command(
     "--m",
     prompt=True,
     type=click.Choice(MODALITIES),
-    help="Dataset modality: text or tabular",
+    help=f"Dataset modality: {', '.join(MODALITIES)}",
+)
+@click.option(
+    "--filepath-column",
+    type=str,
+    help=f"If uploading an image dataset, specify the column containing the image filepaths.",
 )
 @click.option(
     "--name",
@@ -142,6 +152,7 @@ def generate_schema_command(
     output: Optional[str],
     id_column: Optional[str],
     modality: Optional[str],
+    filepath_column: Optional[str],
     name: Optional[str],
 ) -> None:
     if filepath is None:
@@ -149,12 +160,11 @@ def generate_schema_command(
 
     dataset = init_dataset_from_filepath(filepath)
     columns = dataset.get_columns()
-    id_column_guess = _find_best_matching_column("id", columns)
-    while id_column not in columns:
-        id_column = click.prompt(
-            "Specify the name of the ID column in your dataset.", default=id_column_guess
+    id_column = get_id_column_if_undefined(id_column=id_column, columns=columns)
+    if modality == Modality.image.value:
+        filepath_column = get_filepath_column_if_undefined(
+            modality=modality, filepath_column=filepath_column, columns=columns
         )
-
     command_state: CommandState = dict(
         command="generate schema",
         args=dict(
@@ -162,12 +172,20 @@ def generate_schema_command(
             output=output,
             id_column=id_column,
             modality=modality,
+            filepath_column=filepath_column,
             name=name,
         ),
     )
     prev_state.init_state(command_state)
 
-    proposed_schema = propose_schema(filepath, columns, id_column, modality, name)
+    proposed_schema = propose_schema(
+        filepath=filepath,
+        columns=columns,
+        id_column=id_column,
+        modality=modality,
+        filepath_column=filepath_column,
+        name=name,
+    )
     click.echo(json.dumps(proposed_schema.to_dict(), indent=2))
     if not output:
         output = click_helpers.confirm_save_prompt_filepath(
