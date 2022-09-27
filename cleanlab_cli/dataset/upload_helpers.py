@@ -24,8 +24,11 @@ from typing import (
 )
 from collections import defaultdict
 from sys import getsizeof
+
 from tqdm import tqdm
+
 from cleanlab_cli import api_service
+from cleanlab_cli.classes.dataset import Dataset
 from cleanlab_cli.dataset.upload_types import (
     ValidationWarning,
     WarningLog,
@@ -221,7 +224,6 @@ def echo_log_warnings(log: WarningLog) -> None:
 
 def validate_rows(
     dataset_filepath: str,
-    columns: List[str],
     schema: Schema,
     log: WarningLog,
     upload_queue: "queue.Queue[Optional[List[Any]]]",
@@ -240,24 +242,15 @@ def validate_rows(
     seen_ids: Set[str] = set()
 
     dataset = init_dataset_from_filepath(dataset_filepath)
-    num_records = len(dataset)
 
-    for record in tqdm(
-        dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"
-    ):
-        row, row_id, warnings = validate_and_process_record(
-            record, schema, seen_ids, existing_ids, columns
-        )
-
-        update_log_with_warnings(log, row_id, warnings)
-
-        # row and row ID both present, i.e. row will be uploaded
-        if row_id:
-            seen_ids.add(row_id)
-
-        if row:
-            upload_queue.put(list(row.values()), block=True)
-
+    process_dataset(
+        dataset=dataset,
+        schema=schema,
+        seen_ids=seen_ids,
+        existing_ids=existing_ids,
+        log=log,
+        upload_queue=upload_queue,
+    )
     upload_queue.put(None, block=True)
 
 
@@ -362,7 +355,6 @@ def upload_dataset(
         target=validate_rows,
         kwargs={
             "dataset_filepath": filepath,
-            "columns": columns,
             "schema": schema,
             "log": log,
             "upload_queue": upload_queue,
@@ -446,3 +438,28 @@ def extract_float_string(column_value: str) -> str:
     float_regex_pattern = r"[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"
     float_value = re.search(float_regex_pattern, column_value)
     return float_value.group(0) if float_value else ""
+
+
+def process_dataset(
+    dataset: Dataset,
+    schema: Schema,
+    seen_ids: Set[str],
+    existing_ids: Set[str],
+    log: WarningLog,
+    upload_queue: Optional["queue.Queue[Optional[List[Any]]]"] = None,
+) -> None:
+    """
+    Validate and processes records, while updating the warning log
+    If an upload queue is provided, valid rows are put on it
+    """
+    for record in tqdm(
+        dataset.read_streaming_records(), total=len(dataset), initial=1, leave=True, unit=" rows"
+    ):
+        row, row_id, warnings = validate_and_process_record(record, schema, seen_ids, existing_ids)
+        update_log_with_warnings(log, row_id, warnings)
+        # row and row ID both present, i.e. row will be uploaded
+        if row_id:
+            seen_ids.add(row_id)
+
+        if upload_queue and row is not None:
+            upload_queue.put(list(row.values()), block=True)

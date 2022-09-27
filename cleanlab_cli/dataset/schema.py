@@ -6,6 +6,7 @@ from cleanlab_cli.dataset.helpers import (
     get_id_column_if_undefined,
     get_filepath_column_if_undefined,
 )
+from cleanlab_cli.dataset.upload_helpers import process_dataset
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
@@ -78,20 +79,12 @@ def check_dataset_command(
     dataset = init_dataset_from_filepath(filepath)
     loaded_schema = load_schema(schema)
     log = upload_helpers.create_warning_log()
-    num_records = len(dataset)
     seen_ids: Set[str] = set()
     existing_ids: Set[str] = set()
 
-    for record in tqdm(
-        dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"
-    ):
-        row, row_id, warnings = upload_helpers.validate_and_process_record(
-            record, loaded_schema, seen_ids, existing_ids
-        )
-        upload_helpers.update_log_with_warnings(log, row_id, warnings)
-        # row and row ID both present, i.e. row will be uploaded
-        if row_id:
-            seen_ids.add(row_id)
+    process_dataset(
+        dataset=dataset, schema=loaded_schema, seen_ids=seen_ids, existing_ids=existing_ids, log=log
+    )
 
     total_warnings = sum([len(log.get(warning_type)) for warning_type in ValidationWarning])
     if total_warnings == 0:
@@ -165,6 +158,7 @@ def generate_schema_command(
         filepath_column = get_filepath_column_if_undefined(
             modality=modality, filepath_column=filepath_column, columns=columns
         )
+
     command_state: CommandState = dict(
         command="generate schema",
         args=dict(
@@ -187,6 +181,7 @@ def generate_schema_command(
         name=name,
     )
     click.echo(json.dumps(proposed_schema.to_dict(), indent=2))
+
     if not output:
         output = click_helpers.confirm_save_prompt_filepath(
             save_message="Would you like to save the generated schema?",
@@ -197,6 +192,7 @@ def generate_schema_command(
         )
         if output is None:
             return
+
     save_schema(proposed_schema, output)
     click_helpers.confirm_open_file(
         message="Would you like to open your schema file?", filepath=output
