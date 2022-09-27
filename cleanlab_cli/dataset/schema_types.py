@@ -112,7 +112,7 @@ class Schema:
                     "Found empty string for schema column name. Schema columns cannot be empty strings."
                 )
             fields_[field] = FieldSpecification.create(
-                field_spec["data_type"], field_spec["feature_type"]
+                data_type=field_spec["data_type"], feature_type=field_spec["feature_type"]
             )
 
         # metadata variables
@@ -144,10 +144,10 @@ class Schema:
 
 
 PYTHON_TYPES_TO_READABLE_STRING: Dict[type, str] = {
-    str: "string",
-    float: "float",
-    int: "integer",
-    bool: "boolean",
+    str: DataType.string.value,
+    float: DataType.float.value,
+    int: DataType.integer.value,
+    bool: DataType.boolean.value,
 }
 
 DATA_TYPES_TO_PYTHON_TYPES: Dict[DataType, type] = {

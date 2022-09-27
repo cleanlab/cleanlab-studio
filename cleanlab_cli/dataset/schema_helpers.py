@@ -323,7 +323,9 @@ def propose_schema(
         column_values = [v for v in column_values if v != ""]
 
         if len(column_values) == 0:  # all values in column are empty, give default string[text]
-            fields_dict[column_name] = {"data_type": "string", "feature_type": "text"}
+            fields_dict[column_name] = dict(
+                data_type=DataType.string.value, feature_type=FeatureType.text.value
+            )
             continue
 
         col_data_type, col_feature_type = infer_types(column_values)
