@@ -2,6 +2,7 @@
 Helper functions for processing and uploading dataset rows
 """
 import asyncio
+import os.path
 import threading
 import queue
 from asyncio import Task
@@ -37,6 +38,7 @@ from cleanlab_cli.dataset.upload_types import (
 )
 from cleanlab_cli.types import (
     RecordType,
+    Modality,
 )
 from cleanlab_cli.util import (
     is_null_value,
@@ -52,7 +54,7 @@ from cleanlab_cli.dataset.schema_types import (
     FeatureType,
 )
 from cleanlab_cli import click_helpers
-from cleanlab_cli.click_helpers import success, info, progress
+from cleanlab_cli.click_helpers import success, info, progress, abort
 
 
 def get_value_type(val: Any) -> str:
@@ -71,7 +73,6 @@ def validate_and_process_record(
     schema: Schema,
     seen_ids: Set[str],
     existing_ids: Set[str],
-    columns: Optional[List[str]] = None,
 ) -> Tuple[Optional[RecordType], Optional[str], Optional[RowWarningsType]]:
     """
     Validate the row against the provided schema; generate warnings where issues are found
@@ -88,15 +89,12 @@ def validate_and_process_record(
     :param record: a row in the dataset
     :param schema: dataset schema
     :param seen_ids: the set of row IDs that have been processed so far
-    :param columns:
     :param existing_ids:
     :return: tuple (processed row: dict[str, any], row ID: optional[str], warnings: dict[warn_type: str, desc: str])
     """
     fields = schema.fields
     id_column = schema.metadata.id_column
-
-    if columns is None:
-        columns = list(fields)
+    columns = list(fields)
 
     row_id = record.get(id_column, None)
 
@@ -131,7 +129,7 @@ def validate_and_process_record(
         warning: Optional[Tuple[str, ValidationWarning]] = None
         if is_null_value(column_value):
             row[column_name] = None
-            warning = f"{column_name}: value is missing", ValidationWarning.MISSING_ID
+            warning = f"{column_name}: value is missing", ValidationWarning.MISSING_VAL
         else:
             if col_feature_type == FeatureType.datetime:
                 try:
@@ -144,6 +142,8 @@ def validate_and_process_record(
                         " parsable by pandas.Timestamp().",
                         ValidationWarning.TYPE_MISMATCH,
                     )
+            elif col_feature_type == FeatureType.filepath:
+                pass
             else:
                 if col_type == DataType.string:
                     row[column_name] = str(column_value)  # type coercion
@@ -319,6 +319,44 @@ async def upload_rows(
         await asyncio.gather(*upload_tasks)
 
 
+def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_column: str):
+    """
+    Check the filepath column of a dataset to see if any of the filepaths are invalid.
+    If >0 filepaths are invalid, print the number of invalid filepaths and prompt user for confirmation about
+    outputting filepaths to console.
+    """
+    dataset = init_dataset_from_filepath(dataset_filepath)
+    if filepath_column not in dataset.get_columns():
+        raise ValueError(
+            f"No filepath column '{filepath_column}' found in dataset at {dataset_filepath}."
+        )
+    invalid_filepaths = []
+    for record in dataset.read_streaming_records():
+        filepath_value = record[filepath_column]
+        if not os.path.exists(filepath_value):
+            invalid_filepaths.append(filepath_value)
+
+    num_invalid_filepaths = len(invalid_filepaths)
+    if num_invalid_filepaths > 0:
+        click.echo(
+            f"Found {num_invalid_filepaths} invalid filepaths in specified filepath column: {filepath_column}. "
+            f"As this is a {modality.value} dataset, these {num_invalid_filepaths} rows will be skipped unless the filepaths are fixed. "
+            f""
+        )
+        to_print = click.confirm(
+            f"Would you like to print the {num_invalid_filepaths} filepaths to console?"
+        )
+        if to_print:
+            click.echo("Invalid filepaths:\n")
+            click.echo(", ".join(invalid_filepaths))
+
+        continue_with_upload = click.confirm(
+            "Would you like to proceed with dataset upload? Rows with invalid filepaths will be skipped."
+        )
+        if not continue_with_upload:
+            abort("Dataset upload aborted.")
+
+
 def upload_dataset(
     api_key: str,
     dataset_id: str,
@@ -344,6 +382,13 @@ def upload_dataset(
 
     file_size = get_file_size(filepath)
     api_service.check_dataset_limit(file_size, api_key=api_key, show_warning=False)
+
+    if schema.metadata.modality == Modality.image.value:
+        check_filepath_column(
+            modality=schema.metadata.modality,
+            dataset_filepath=filepath,
+            filepath_column=schema.metadata.filepath_column,
+        )
 
     # NOTE: makes simplifying assumption that first row size is representative of all row sizes
     row_size = getsizeof(next(init_dataset_from_filepath(filepath).read_streaming_records()))
