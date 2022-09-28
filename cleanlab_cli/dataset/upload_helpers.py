@@ -30,6 +30,7 @@ from tqdm import tqdm
 
 from cleanlab_cli import api_service
 from cleanlab_cli.classes.dataset import Dataset
+from cleanlab_cli.dataset.image_utils import is_valid_image
 from cleanlab_cli.dataset.upload_types import (
     ValidationWarning,
     WarningLog,
@@ -143,7 +144,20 @@ def validate_and_process_record(
                         ValidationWarning.TYPE_MISMATCH,
                     )
             elif col_feature_type == FeatureType.filepath:
-                pass
+                if schema.metadata.modality == Modality.image:
+                    if not os.path.exists(column_value):
+                        warning = (
+                            f"{column_name}: expected filepath but unable to find file at specified filepath {column_value}. "
+                            f"Filepath must be absolute or relative to your current working directory: {os.getcwd()}",
+                            ValidationWarning.MISSING_FILE,
+                        )
+                    else:
+                        if not is_valid_image(column_value):
+                            warning = (
+                                f"{column_name}: could not open invalid file at {column_value}. Image file must have",
+                                ValidationWarning.INVALID_FILE,
+                            )
+
             else:
                 if col_type == DataType.string:
                     row[column_name] = str(column_value)  # type coercion

@@ -21,6 +21,11 @@ class DatasetFileExtension(Enum):
     json = ".json"
 
 
+class ImageFileExtension(Enum):
+    jpeg = ".jpeg"
+    png = ".png"
+
+
 RecordType = Dict[str, Any]
 
 

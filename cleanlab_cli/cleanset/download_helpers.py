@@ -2,7 +2,7 @@ import jsonstreams
 from typing import Dict
 
 from cleanlab_cli.types import RecordType, DatasetFileExtension
-from cleanlab_cli.util import get_file_extension, get_dataset_chunks, append_rows
+from cleanlab_cli.util import get_dataset_file_extension, get_dataset_chunks, append_rows
 
 
 def combine_fields_with_dataset(
@@ -12,7 +12,7 @@ def combine_fields_with_dataset(
     output_filepath: str,
     num_rows_per_chunk: int = 10000,
 ) -> None:
-    output_extension = get_file_extension(output_filepath)
+    output_extension = get_dataset_file_extension(output_filepath)
     if output_extension == DatasetFileExtension.json:
         with jsonstreams.Stream(
             jsonstreams.Type.OBJECT, filename=output_filepath, indent=True, pretty=True

@@ -12,12 +12,18 @@ from cleanlab_cli.classes.dataset import Dataset
 from cleanlab_cli.types import (
     RecordType,
     DatasetFileExtension,
+    ImageFileExtension,
 )
 
 
-def get_file_extension(filename: str) -> DatasetFileExtension:
+def get_dataset_file_extension(filename: str) -> DatasetFileExtension:
     file_extension = pathlib.Path(filename).suffix
     return DatasetFileExtension(file_extension)
+
+
+def get_image_file_extension(filename: str) -> ImageFileExtension:
+    file_extension = pathlib.Path(filename).suffix
+    return ImageFileExtension(file_extension)
 
 
 def get_filename(filepath: str) -> str:
@@ -29,7 +35,7 @@ def get_file_size(filepath: str) -> int:
 
 
 def read_file_as_df(filepath: str) -> pd.DataFrame:
-    ext = get_file_extension(filepath)
+    ext = get_dataset_file_extension(filepath)
     if ext == DatasetFileExtension.json:
         df = pd.read_json(filepath, convert_axes=False, convert_dates=False).T
         df.index = df.index.astype("str")
@@ -48,7 +54,7 @@ def is_null_value(val: str) -> bool:
 
 
 def init_dataset_from_filepath(filepath: str) -> Dataset:
-    ext = get_file_extension(filepath)
+    ext = get_dataset_file_extension(filepath)
     if ext == DatasetFileExtension.csv:
         return CsvDataset(filepath)
     elif ext == DatasetFileExtension.xls or ext == DatasetFileExtension.xlsx:
@@ -64,7 +70,7 @@ def dump_json(filepath: str, obj: object) -> None:
 
 def append_rows(rows: List[RecordType], filename: str) -> None:
     df = pd.DataFrame(rows)
-    ext = get_file_extension(filename)
+    ext = get_dataset_file_extension(filename)
     if ext == DatasetFileExtension.csv:
         if not os.path.exists(filename):
             df.to_csv(filename, mode="w", index=False, header=True)

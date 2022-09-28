@@ -97,7 +97,7 @@ def download(
         combine_fields_with_dataset(filepath, id_column, ids_to_fields_to_values, output)
         click_helpers.success(f"Saved to {output}")
     else:
-        while output is None or util.get_file_extension(output) != DatasetFileExtension.csv:
+        while output is None or util.get_dataset_file_extension(output) != DatasetFileExtension.csv:
             output = click.prompt(
                 "Specify your output filepath (must be .csv). Leave blank to use default",
                 default=f"clean_labels.csv",
