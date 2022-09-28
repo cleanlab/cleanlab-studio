@@ -118,7 +118,6 @@ def check_dataset_command(
 @click.option(
     "--id-column",
     type=str,
-    prompt=True,
     help="Name of ID column in the dataset",
 )
 @click.option(
