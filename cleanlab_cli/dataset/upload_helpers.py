@@ -344,25 +344,25 @@ def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_co
         raise ValueError(
             f"No filepath column '{filepath_column}' found in dataset at {dataset_filepath}."
         )
-    invalid_filepaths = []
+    nonexistent_filepaths = []
     for record in dataset.read_streaming_records():
         filepath_value = record[filepath_column]
         if not os.path.exists(filepath_value):
-            invalid_filepaths.append(filepath_value)
+            nonexistent_filepaths.append(filepath_value)
 
-    num_invalid_filepaths = len(invalid_filepaths)
-    if num_invalid_filepaths > 0:
+    num_nonexistent_filepaths = len(nonexistent_filepaths)
+    if num_nonexistent_filepaths > 0:
         click.echo(
-            f"Found {num_invalid_filepaths} invalid filepaths in specified filepath column: {filepath_column}. "
-            f"As this is a {modality.value} dataset, these {num_invalid_filepaths} rows will be skipped unless the filepaths are fixed. "
-            f""
+            f"Found {num_nonexistent_filepaths} non-existent filepaths in specified filepath column: {filepath_column}. "
+            f"As this is a {modality.value} dataset, these {num_nonexistent_filepaths} rows will be skipped unless the filepaths are fixed. "
+            f"Filepaths must be absolute or relative to your current working directory: {os.getcwd()}"
         )
         to_print = click.confirm(
-            f"Would you like to print the {num_invalid_filepaths} filepaths to console?"
+            f"Would you like to print the {num_nonexistent_filepaths} filepaths to console?"
         )
         if to_print:
             click.echo("Invalid filepaths:\n")
-            click.echo(", ".join(invalid_filepaths))
+            click.echo(", ".join(nonexistent_filepaths))
 
         continue_with_upload = click.confirm(
             "Would you like to proceed with dataset upload? Rows with invalid filepaths will be skipped."
