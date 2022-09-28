@@ -31,6 +31,7 @@ DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
         FeatureType.categorical,
         FeatureType.datetime,
         FeatureType.identifier,
+        FeatureType.filepath,
     },
     DataType.integer: {
         FeatureType.categorical,

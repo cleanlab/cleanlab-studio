@@ -58,6 +58,7 @@ setup(
         "ijson>=3.1.4",
         "jsonstreams>=0.6.0",
         "semver>=2.13.0",
+        "Pillow>=9.2.0",
     ],
     entry_points="""
         [console_scripts]

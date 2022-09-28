@@ -8,6 +8,7 @@ import pandas as pd
 from cleanlab_cli import api_service
 from cleanlab_cli import click_helpers
 from cleanlab_cli import util
+from cleanlab_cli.cleanset.download_helpers import combine_fields_with_dataset
 from cleanlab_cli.click_helpers import log, progress
 from cleanlab_cli.decorators import previous_state, auth_config
 from cleanlab_cli.decorators.auth_config import AuthConfig
@@ -93,10 +94,10 @@ def download(
             fields_to_values = dict(row)
             ids_to_fields_to_values[str(row_id)] = fields_to_values
 
-        util.combine_fields_with_dataset(filepath, id_column, ids_to_fields_to_values, output)
+        combine_fields_with_dataset(filepath, id_column, ids_to_fields_to_values, output)
         click_helpers.success(f"Saved to {output}")
     else:
-        while output is None or util.get_file_extension(output) != DatasetFileExtension.csv:
+        while output is None or util.get_dataset_file_extension(output) != DatasetFileExtension.csv:
             output = click.prompt(
                 "Specify your output filepath (must be .csv). Leave blank to use default",
                 default=f"clean_labels.csv",

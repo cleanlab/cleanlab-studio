@@ -2,6 +2,7 @@
 Helper functions for processing and uploading dataset rows
 """
 import asyncio
+import os.path
 import threading
 import queue
 from asyncio import Task
@@ -24,8 +25,12 @@ from typing import (
 )
 from collections import defaultdict
 from sys import getsizeof
+
 from tqdm import tqdm
+
 from cleanlab_cli import api_service
+from cleanlab_cli.classes.dataset import Dataset
+from cleanlab_cli.dataset.image_utils import is_valid_image
 from cleanlab_cli.dataset.upload_types import (
     ValidationWarning,
     WarningLog,
@@ -34,6 +39,7 @@ from cleanlab_cli.dataset.upload_types import (
 )
 from cleanlab_cli.types import (
     RecordType,
+    Modality,
 )
 from cleanlab_cli.util import (
     is_null_value,
@@ -49,7 +55,7 @@ from cleanlab_cli.dataset.schema_types import (
     FeatureType,
 )
 from cleanlab_cli import click_helpers
-from cleanlab_cli.click_helpers import success, info, progress
+from cleanlab_cli.click_helpers import success, info, progress, abort
 
 
 def get_value_type(val: Any) -> str:
@@ -68,7 +74,6 @@ def validate_and_process_record(
     schema: Schema,
     seen_ids: Set[str],
     existing_ids: Set[str],
-    columns: Optional[List[str]] = None,
 ) -> Tuple[Optional[RecordType], Optional[str], Optional[RowWarningsType]]:
     """
     Validate the row against the provided schema; generate warnings where issues are found
@@ -85,15 +90,12 @@ def validate_and_process_record(
     :param record: a row in the dataset
     :param schema: dataset schema
     :param seen_ids: the set of row IDs that have been processed so far
-    :param columns:
     :param existing_ids:
     :return: tuple (processed row: dict[str, any], row ID: optional[str], warnings: dict[warn_type: str, desc: str])
     """
     fields = schema.fields
     id_column = schema.metadata.id_column
-
-    if columns is None:
-        columns = list(fields)
+    columns = list(fields)
 
     row_id = record.get(id_column, None)
 
@@ -128,7 +130,7 @@ def validate_and_process_record(
         warning: Optional[Tuple[str, ValidationWarning]] = None
         if is_null_value(column_value):
             row[column_name] = None
-            warning = f"{column_name}: value is missing", ValidationWarning.MISSING_ID
+            warning = f"{column_name}: value is missing", ValidationWarning.MISSING_VAL
         else:
             if col_feature_type == FeatureType.datetime:
                 try:
@@ -141,6 +143,21 @@ def validate_and_process_record(
                         " parsable by pandas.Timestamp().",
                         ValidationWarning.TYPE_MISMATCH,
                     )
+            elif col_feature_type == FeatureType.filepath:
+                if schema.metadata.modality == Modality.image:
+                    if not os.path.exists(column_value):
+                        warning = (
+                            f"{column_name}: expected filepath but unable to find file at specified filepath {column_value}. "
+                            f"Filepath must be absolute or relative to your current working directory: {os.getcwd()}",
+                            ValidationWarning.MISSING_FILE,
+                        )
+                    else:
+                        if not is_valid_image(column_value):
+                            warning = (
+                                f"{column_name}: could not open invalid file at {column_value}. Image file must have",
+                                ValidationWarning.INVALID_FILE,
+                            )
+
             else:
                 if col_type == DataType.string:
                     row[column_name] = str(column_value)  # type coercion
@@ -221,7 +238,6 @@ def echo_log_warnings(log: WarningLog) -> None:
 
 def validate_rows(
     dataset_filepath: str,
-    columns: List[str],
     schema: Schema,
     log: WarningLog,
     upload_queue: "queue.Queue[Optional[List[Any]]]",
@@ -240,24 +256,15 @@ def validate_rows(
     seen_ids: Set[str] = set()
 
     dataset = init_dataset_from_filepath(dataset_filepath)
-    num_records = len(dataset)
 
-    for record in tqdm(
-        dataset.read_streaming_records(), total=num_records, initial=1, leave=True, unit=" rows"
-    ):
-        row, row_id, warnings = validate_and_process_record(
-            record, schema, seen_ids, existing_ids, columns
-        )
-
-        update_log_with_warnings(log, row_id, warnings)
-
-        # row and row ID both present, i.e. row will be uploaded
-        if row_id:
-            seen_ids.add(row_id)
-
-        if row:
-            upload_queue.put(list(row.values()), block=True)
-
+    process_dataset(
+        dataset=dataset,
+        schema=schema,
+        seen_ids=seen_ids,
+        existing_ids=existing_ids,
+        log=log,
+        upload_queue=upload_queue,
+    )
     upload_queue.put(None, block=True)
 
 
@@ -326,6 +333,44 @@ async def upload_rows(
         await asyncio.gather(*upload_tasks)
 
 
+def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_column: str) -> None:
+    """
+    Check the filepath column of a dataset to see if any of the filepaths are invalid.
+    If >0 filepaths are invalid, print the number of invalid filepaths and prompt user for confirmation about
+    outputting filepaths to console.
+    """
+    dataset = init_dataset_from_filepath(dataset_filepath)
+    if filepath_column not in dataset.get_columns():
+        raise ValueError(
+            f"No filepath column '{filepath_column}' found in dataset at {dataset_filepath}."
+        )
+    nonexistent_filepaths = []
+    for record in dataset.read_streaming_records():
+        filepath_value = record[filepath_column]
+        if not os.path.exists(filepath_value):
+            nonexistent_filepaths.append(filepath_value)
+
+    num_nonexistent_filepaths = len(nonexistent_filepaths)
+    if num_nonexistent_filepaths > 0:
+        click.echo(
+            f"Found {num_nonexistent_filepaths} non-existent filepaths in specified filepath column: {filepath_column}. "
+            f"As this is a {modality.value} dataset, these {num_nonexistent_filepaths} rows will be skipped unless the filepaths are fixed. "
+            f"Filepaths must be absolute or relative to your current working directory: {os.getcwd()}"
+        )
+        to_print = click.confirm(
+            f"Would you like to print the {num_nonexistent_filepaths} filepaths to console?"
+        )
+        if to_print:
+            click.echo("Invalid filepaths:\n")
+            click.echo(", ".join(nonexistent_filepaths))
+
+        continue_with_upload = click.confirm(
+            "Would you like to proceed with dataset upload? Rows with invalid filepaths will be skipped."
+        )
+        if not continue_with_upload:
+            abort("Dataset upload aborted.")
+
+
 def upload_dataset(
     api_key: str,
     dataset_id: str,
@@ -352,6 +397,14 @@ def upload_dataset(
     file_size = get_file_size(filepath)
     api_service.check_dataset_limit(file_size, api_key=api_key, show_warning=False)
 
+    if schema.metadata.modality == Modality.image:
+        assert schema.metadata.filepath_column is not None
+        check_filepath_column(
+            modality=schema.metadata.modality,
+            dataset_filepath=filepath,
+            filepath_column=schema.metadata.filepath_column,
+        )
+
     # NOTE: makes simplifying assumption that first row size is representative of all row sizes
     row_size = getsizeof(next(init_dataset_from_filepath(filepath).read_streaming_records()))
     rows_per_payload = int(payload_size * 1e6 / row_size)
@@ -362,7 +415,6 @@ def upload_dataset(
         target=validate_rows,
         kwargs={
             "dataset_filepath": filepath,
-            "columns": columns,
             "schema": schema,
             "log": log,
             "upload_queue": upload_queue,
@@ -446,3 +498,28 @@ def extract_float_string(column_value: str) -> str:
     float_regex_pattern = r"[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"
     float_value = re.search(float_regex_pattern, column_value)
     return float_value.group(0) if float_value else ""
+
+
+def process_dataset(
+    dataset: Dataset,
+    schema: Schema,
+    seen_ids: Set[str],
+    existing_ids: Set[str],
+    log: WarningLog,
+    upload_queue: Optional["queue.Queue[Optional[List[Any]]]"] = None,
+) -> None:
+    """
+    Validate and processes records, while updating the warning log
+    If an upload queue is provided, valid rows are put on it
+    """
+    for record in tqdm(
+        dataset.read_streaming_records(), total=len(dataset), initial=1, leave=True, unit=" rows"
+    ):
+        row, row_id, warnings = validate_and_process_record(record, schema, seen_ids, existing_ids)
+        update_log_with_warnings(log, row_id, warnings)
+        # row and row ID both present, i.e. row will be uploaded
+        if row_id:
+            seen_ids.add(row_id)
+
+        if upload_queue and row is not None:
+            upload_queue.put(list(row.values()), block=True)

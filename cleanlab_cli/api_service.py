@@ -35,39 +35,22 @@ def handle_api_error_from_json(res_json: JSONDict, show_warning: bool = False) -
 
 
 def initialize_dataset(api_key: str, schema: Schema) -> str:
-    fields = list(schema.fields)
-    data_types = [spec.data_type.value for spec in schema.fields.values()]
-    feature_types = [spec.feature_type.value for spec in schema.fields.values()]
-    id_column = schema.metadata.id_column
-    modality = schema.metadata.modality.value
-    dataset_name = schema.metadata.name
-
-    res = requests.post(
-        base_url + "/datasets",
-        data={
-            "api_key": api_key,
-            "fields": json.dumps(fields),
-            "data_types": json.dumps(data_types),
-            "feature_types": json.dumps(feature_types),
-            "id_column": id_column,
-            "modality": modality,
-            "dataset_name": dataset_name,
-        },
-    )
+    request_json = dict(api_key=api_key, schema=schema.to_dict())
+    res = requests.post(base_url + "/datasets", json=request_json)
     handle_api_error(res)
     dataset_id: str = res.json()["dataset_id"]
     return dataset_id
 
 
 def get_existing_ids(api_key: str, dataset_id: str) -> List[IDType]:
-    res = requests.get(base_url + f"/datasets/{dataset_id}/ids", data=dict(api_key=api_key))
+    res = requests.get(base_url + f"/datasets/{dataset_id}/ids", json=dict(api_key=api_key))
     handle_api_error(res)
     existing_ids: List[IDType] = res.json()["existing_ids"]
     return existing_ids
 
 
 def get_dataset_schema(api_key: str, dataset_id: str) -> Schema:
-    res = requests.get(base_url + f"/datasets/{dataset_id}/schema", data=dict(api_key=api_key))
+    res = requests.get(base_url + f"/datasets/{dataset_id}/schema", json=dict(api_key=api_key))
     handle_api_error(res)
     schema: Schema = res.json()["schema"]
     return schema
@@ -106,7 +89,7 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
     :return: return (rows, id_column)
     """
     res = requests.get(
-        base_url + f"/cleansets/{cleanset_id}/columns?all={all}", data=dict(api_key=api_key)
+        base_url + f"/cleansets/{cleanset_id}/columns?all={all}", json=dict(api_key=api_key)
     )
     handle_api_error(res)
     rows: List[List[Any]] = res.json()["rows"]
@@ -114,33 +97,33 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
 
 
 def get_completion_status(api_key: str, dataset_id: str) -> bool:
-    res = requests.get(base_url + f"/datasets/{dataset_id}/complete", data=dict(api_key=api_key))
+    res = requests.get(base_url + f"/datasets/{dataset_id}/complete", json=dict(api_key=api_key))
     handle_api_error(res)
     completed: bool = res.json()["complete"]
     return completed
 
 
 def complete_upload(api_key: str, dataset_id: str) -> None:
-    res = requests.patch(base_url + f"/datasets/{dataset_id}/complete", data=dict(api_key=api_key))
+    res = requests.patch(base_url + f"/datasets/{dataset_id}/complete", json=dict(api_key=api_key))
     handle_api_error(res)
 
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:
-    res = requests.get(base_url + f"/cleansets/{cleanset_id}/id_column", data=dict(api_key=api_key))
+    res = requests.get(base_url + f"/cleansets/{cleanset_id}/id_column", json=dict(api_key=api_key))
     handle_api_error(res)
     id_column: str = res.json()["id_column"]
     return id_column
 
 
 def validate_api_key(api_key: str) -> bool:
-    res = requests.get(base_url + "/validate", data=dict(api_key=api_key))
+    res = requests.get(base_url + "/validate", json=dict(api_key=api_key))
     handle_api_error(res)
     valid: bool = res.json()["valid"]
     return valid
 
 
 def check_client_version() -> bool:
-    res = requests.post(base_url + "/check_client_version", data=dict(version=__version__))
+    res = requests.post(base_url + "/check_client_version", json=dict(version=__version__))
     handle_api_error(res)
     valid: bool = res.json()["valid"]
     return valid
@@ -148,7 +131,7 @@ def check_client_version() -> bool:
 
 def check_dataset_limit(file_size: int, api_key: str, show_warning: bool = False) -> JSONDict:
     res = requests.post(
-        base_url + "/check_dataset_limit", data=dict(api_key=api_key, file_size=file_size)
+        base_url + "/check_dataset_limit", json=dict(api_key=api_key, file_size=file_size)
     )
     handle_api_error(res, show_warning=show_warning)
     res_json: JSONDict = res.json()

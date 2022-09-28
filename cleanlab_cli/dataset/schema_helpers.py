@@ -31,12 +31,14 @@ def _find_best_matching_column(target_column: str, columns: List[str]) -> Option
     """
     Find the column from `columns` that is the closest match to the `target_col`.
     If no columns are likely, pick the first column of `columns`
+    If no columns are provided, return None
 
     :param target_column: some reserved column name, typically: 'id', 'label', or 'text'
     :param columns: non-empty list of column names
     :return:
     """
-    assert len(columns) > 0, "list of columns is empty"
+    if len(columns) == 0:
+        return None
     poss = []
     for c in columns:
         if c.lower() == target_column:
@@ -65,7 +67,6 @@ def load_schema(filepath: str) -> Schema:
 
 def validate_schema(schema: Schema, columns: Collection[str]) -> None:
     """
-
     Checks that:
     (1) all schema column names are strings
     (2) all schema columns exist in the dataset columns
@@ -266,6 +267,7 @@ def propose_schema(
     columns: Optional[Collection[str]] = None,
     id_column: Optional[str] = None,
     modality: Optional[str] = None,
+    filepath_column: Optional[str] = None,
     name: Optional[str] = None,
     sample_size: int = 10000,
     max_rows_checked: int = 200000,
@@ -279,6 +281,7 @@ def propose_schema(
     :param columns: columns to generate a schema for
     :param id_column: ID column name
     :param name: name of dataset
+    :param filepath_column: filepath column name, i.e. name of column holding media filepaths (needed if modality is image)
     :param modality: data modality
     :param sample_size: default of 1000
     :param max_rows_checked: max rows to sample from
@@ -350,7 +353,9 @@ def propose_schema(
 
     assert id_column is not None
 
-    metadata: Dict[str, Optional[str]] = dict(id_column=id_column, modality=modality, name=name)
+    metadata: Dict[str, Optional[str]] = dict(
+        id_column=id_column, modality=modality, name=name, filepath_column=filepath_column
+    )
     return Schema.create(metadata=metadata, fields=fields_dict, version=SCHEMA_VERSION)
 
 

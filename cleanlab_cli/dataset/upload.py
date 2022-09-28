@@ -6,12 +6,15 @@ import click
 from cleanlab_cli import api_service
 from cleanlab_cli import click_helpers
 from cleanlab_cli.click_helpers import progress, success, abort, info, log
+from cleanlab_cli.dataset.helpers import (
+    get_id_column_if_undefined,
+    get_filepath_column_if_undefined,
+)
 from cleanlab_cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
     propose_schema,
     save_schema,
-    _find_best_matching_column,
 )
 from cleanlab_cli.dataset.upload_helpers import upload_dataset
 from cleanlab_cli.decorators import auth_config, previous_state
@@ -81,6 +84,11 @@ def upload_with_schema(
     help=f"If uploading a new dataset without a schema, specify data modality: {', '.join(MODALITIES)}",
 )
 @click.option(
+    "--filepath-column",
+    type=str,
+    help=f"If uploading an image dataset, specify the column containing the image filepaths.",
+)
+@click.option(
     "--name",
     "-n",
     type=str,
@@ -102,6 +110,7 @@ def upload(
     schema: Optional[str],
     id_column: Optional[str],
     modality: Optional[str],
+    filepath_column: Optional[str],
     name: Optional[str],
     output: Optional[str],
     resume: Optional[bool],
@@ -184,18 +193,26 @@ def upload(
         while modality not in MODALITIES:
             modality = click.prompt(f"Specify your dataset modality ({', '.join(MODALITIES)})")
 
-    if id_column is None:
-        id_column_guess = _find_best_matching_column("id", columns)
-        while id_column not in columns:
-            id_column = click.prompt(
-                "Specify the name of the ID column in your dataset.", default=id_column_guess
-            )
+    id_column = get_id_column_if_undefined(id_column=id_column, columns=columns)
+    if modality == Modality.image.value:
+        filepath_column = get_filepath_column_if_undefined(
+            modality=modality, filepath_column=filepath_column, columns=columns
+        )
 
-    prev_state.update_args(dict(modality=modality, id_column=id_column))
+    prev_state.update_args(
+        dict(modality=modality, id_column=id_column, filepath_column=filepath_column)
+    )
 
     ### Propose schema
-    proposed_schema = propose_schema(filepath, columns, id_column, modality, name)
-    log(json.dumps(proposed_schema, indent=2))
+    proposed_schema = propose_schema(
+        filepath=filepath,
+        columns=columns,
+        id_column=id_column,
+        modality=modality,
+        filepath_column=filepath_column,
+        name=name,
+    )
+    log(json.dumps(proposed_schema.to_dict(), indent=2))
     info(f"No schema was provided. We propose the above schema based on your dataset.")
 
     proceed_upload = click.confirm("\nUse this schema?", default=None)
