@@ -319,7 +319,7 @@ async def upload_rows(
         await asyncio.gather(*upload_tasks)
 
 
-def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_column: str):
+def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_column: str) -> None:
     """
     Check the filepath column of a dataset to see if any of the filepaths are invalid.
     If >0 filepaths are invalid, print the number of invalid filepaths and prompt user for confirmation about
@@ -383,7 +383,8 @@ def upload_dataset(
     file_size = get_file_size(filepath)
     api_service.check_dataset_limit(file_size, api_key=api_key, show_warning=False)
 
-    if schema.metadata.modality == Modality.image.value:
+    if schema.metadata.modality == Modality.image:
+        assert schema.metadata.filepath_column is not None
         check_filepath_column(
             modality=schema.metadata.modality,
             dataset_filepath=filepath,

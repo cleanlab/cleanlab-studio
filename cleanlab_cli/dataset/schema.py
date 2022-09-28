@@ -12,7 +12,6 @@ from cleanlab_cli.dataset.schema_helpers import (
     validate_schema,
     propose_schema,
     save_schema,
-    _find_best_matching_column,
 )
 from cleanlab_cli.dataset import upload_helpers
 from cleanlab_cli.decorators.previous_state import PreviousState
@@ -23,7 +22,6 @@ from cleanlab_cli.decorators import previous_state
 import json
 from cleanlab_cli.click_helpers import abort, info, success
 from cleanlab_cli import click_helpers
-from tqdm import tqdm
 
 
 @click.group(help="generate and validate dataset schema, or check your dataset against a schema")
