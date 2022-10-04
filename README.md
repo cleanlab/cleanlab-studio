@@ -3,7 +3,7 @@
 Command line interface for all things Cleanlab Studio.
 
 This currently supports generating <a href="#schema">dataset schema</a>, uploading <a href="#dataset-format">
-datasets</a> into Cleanlab Studio, and downloading clean labels from Cleanlab Studio.
+datasets</a> into Cleanlab Studio, and downloading cleansets from Cleanlab Studio.
 
 ## Installation
 
