@@ -1,7 +1,7 @@
 """
 Helper functions for working with schemas
 """
-
+import decimal
 import json
 import os.path
 import pathlib
@@ -217,6 +217,8 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
             counts[DataType.integer] += 1
         elif isinstance(v, bool):
             counts[DataType.integer] += 1
+        elif isinstance(v, decimal.Decimal):  # loading from JSONs can produce Decimal values
+            counts[DataType.float] += 1
         else:
             raise ValueError(f"Value {v} has an unrecognized type: {type(v)}")
 
