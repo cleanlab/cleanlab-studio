@@ -18,9 +18,9 @@ def image_file_exists(image_filepath: str, dataset_filepath: str) -> bool:
     return os.path.exists(get_image_filepath(image_filepath, dataset_filepath))
 
 
-def is_valid_image(image_filepath: str, dataset_filepath: str) -> bool:
+def image_file_readable(image_filepath: str, dataset_filepath: str) -> bool:
     """
-    valid == has extension .jpeg or .png and image file can be opened by Pillow
+    readable == has extension .jpeg or .png and image file can be opened by Pillow
     """
     try:
         image_filepath = get_image_filepath(image_filepath, dataset_filepath)

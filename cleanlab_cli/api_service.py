@@ -12,6 +12,7 @@ import aiohttp
 import requests
 
 from cleanlab_cli.click_helpers import abort, warn
+from cleanlab_cli.dataset.image_utils import get_image_filepath
 from cleanlab_cli.dataset.schema_types import Schema
 from cleanlab_cli import __version__
 from cleanlab_cli.types import JSONDict, IDType, Modality
@@ -79,6 +80,7 @@ async def upload_rows_async(
     session: aiohttp.ClientSession,
     api_key: str,
     dataset_id: str,
+    dataset_filepath: str,
     schema: Schema,
     rows: List[Any],
 ) -> None:
@@ -90,7 +92,7 @@ async def upload_rows_async(
         filepath_column = Schema.metadata.filepath_column
         assert filepath_column is not None
         filepath_column_idx = columns.index(filepath_column)
-        filepaths = [row[filepath_column_idx] for row in rows]
+        filepaths = [get_image_filepath(row[filepath_column_idx], dataset_filepath) for row in rows]
 
         filepath_to_post = get_presigned_posts(
             api_key=api_key, dataset_id=dataset_id, filepaths=filepaths, media_type=modality.value

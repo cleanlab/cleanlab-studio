@@ -34,7 +34,7 @@ def login(prev_state: PreviousState, key: str) -> None:
     except json.decoder.JSONDecodeError:
         error("CLI settings are corrupted and could not be read.")
         overwrite = click.confirm(
-            "Would you like to create a new settings file with the provided API key?",
+            "Create a new settings file with the provided API key?",
             default=None,
         )
         if overwrite:
