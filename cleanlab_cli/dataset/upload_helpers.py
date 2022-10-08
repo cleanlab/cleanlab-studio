@@ -473,6 +473,8 @@ def upload_dataset(
 
     total_warnings: int = sum([len(log.get(w)) for w in ValidationWarning])
     issues_found = total_warnings > 0
+
+    conclude_upload = True
     if not issues_found:
         success("\nNo issues were encountered when uploading your dataset. Nice!")
         api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
@@ -484,7 +486,16 @@ def upload_dataset(
         )
 
         if num_invalid_filepaths > 0:
-            to_complete = click.confirm(f"Conclude dataset upload? ")
+            click_helpers.warn(
+                f"{num_invalid_filepaths} rows failed to upload due to invalid filepaths."
+            )
+            conclude_upload = click.confirm(
+                f"Conclude dataset upload? Concluding means that no more rows can be uploaded. "
+                f"Otherwise, submit 'n' and resume uploading later with the dataset ID ({dataset_id}) after fixing rows with invalid filepaths."
+            )
+            if not conclude_upload:
+                click_helpers.warn("Dataset upload is incomplete.")
+
         if not output:
             output = click_helpers.confirm_save_prompt_filepath(
                 save_message="Save the issues for viewing?",
@@ -499,10 +510,10 @@ def upload_dataset(
         if output:
             save_warning_log(log, output)
             click_helpers.confirm_open_file("Open your issues file for viewing?", filepath=output)
-    click.secho(
-        "Upload completed. View your uploaded dataset at https://app.cleanlab.ai",
-        fg="green",
-    )
+    if conclude_upload:
+        click_helpers.success(
+            "Upload completed. View your uploaded dataset at https://app.cleanlab.ai"
+        )
 
 
 def group_feature_types(schema: Schema) -> Dict[FeatureType, List[str]]:

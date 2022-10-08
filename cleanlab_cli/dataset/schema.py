@@ -105,7 +105,7 @@ def check_dataset_command(
             upload_helpers.save_warning_log(log, output)
             click_helpers.confirm_open_file("Open your issues file for viewing?", filepath=output)
 
-    click.secho("Check completed.", fg="green")
+    click_helpers.success("Check completed.")
 
 
 @schema.command(name="generate", help="generate a schema based on your dataset")
