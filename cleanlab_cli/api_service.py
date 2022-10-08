@@ -85,22 +85,24 @@ async def upload_rows_async(
     modality = Schema.metadata.modality
     needs_media_upload = modality in [Modality.image]
     columns = list(schema.fields.keys())
-    filepath_column = Schema.metadata.filepath_column
-    filepath_column_idx = columns.index(filepath_column)
 
     if needs_media_upload:
+        filepath_column = Schema.metadata.filepath_column
+        assert filepath_column is not None
+        filepath_column_idx = columns.index(filepath_column)
         filepaths = [row[filepath_column_idx] for row in rows]
 
-        presigned_posts = get_presigned_posts(
+        filepath_to_post = get_presigned_posts(
             api_key=api_key, dataset_id=dataset_id, filepaths=filepaths, media_type=modality.value
         )
-
-        for filepath, presigned_post in zip(filepaths, presigned_posts):
-            await session.post(
-                url=presigned_post["url"],
-                data=presigned_post["fields"],
-                files={"file": open(filepath, "rb")},
-            )
+        for filepath in filepaths:
+            presigned_post = filepath_to_post.get(filepath)
+            if presigned_post is not None:
+                await session.post(
+                    url=presigned_post["url"],
+                    data=presigned_post["fields"],
+                    files={"file": open(filepath, "rb")},
+                )
 
     url = base_url + f"/datasets/{dataset_id}"
     data = gzip.compress(

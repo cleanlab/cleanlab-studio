@@ -281,7 +281,6 @@ async def upload_rows(
     api_key: str,
     dataset_id: str,
     schema: Schema,
-    columns: List[str],
     upload_queue: "queue.Queue[Optional[List[Any]]]",
     rows_per_payload: int,
 ) -> None:
