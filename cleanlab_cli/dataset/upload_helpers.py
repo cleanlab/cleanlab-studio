@@ -31,7 +31,7 @@ from tqdm import tqdm
 
 from cleanlab_cli import api_service
 from cleanlab_cli.classes.dataset import Dataset
-from cleanlab_cli.dataset.image_utils import is_valid_image
+from cleanlab_cli.dataset.image_utils import is_valid_image, image_file_exists
 from cleanlab_cli.dataset.upload_types import (
     ValidationWarning,
     WarningLog,
@@ -71,6 +71,7 @@ def convert_to_python_type(val: Any, data_type: DataType) -> Any:
 
 
 def validate_and_process_record(
+    dataset: Dataset,
     record: RecordType,
     schema: Schema,
     seen_ids: Set[str],
@@ -97,7 +98,7 @@ def validate_and_process_record(
     fields = schema.fields
     id_column = schema.metadata.id_column
     columns = list(fields)
-
+    dataset_filepath = dataset.filepath
     row_id = record.get(id_column, None)
 
     if row_id == "" or row_id is None:
@@ -146,10 +147,10 @@ def validate_and_process_record(
                     )
             elif col_feature_type == FeatureType.filepath:
                 if schema.metadata.modality == Modality.image:
-                    if not os.path.exists(column_value):
+                    if not image_file_exists(column_value, dataset_filepath):
                         msg, warn_type = (
                             f"{column_name}: expected filepath but unable to find file at specified filepath {column_value}. "
-                            f"Filepath must be absolute or relative to your current working directory: {os.getcwd()}",
+                            f"Filepath must be absolute or relative to the directory containing your dataset file.",
                             ValidationWarning.MISSING_FILE,
                         )
                         warnings[warn_type].append(msg)
@@ -522,7 +523,9 @@ def process_dataset(
     for record in tqdm(
         dataset.read_streaming_records(), total=len(dataset), initial=1, leave=True, unit=" rows"
     ):
-        row, row_id, warnings = validate_and_process_record(record, schema, seen_ids, existing_ids)
+        row, row_id, warnings = validate_and_process_record(
+            dataset, record, schema, seen_ids, existing_ids
+        )
         update_log_with_warnings(log, row_id, warnings)
         # row and row ID both present, i.e. row will be uploaded
         if row_id:
