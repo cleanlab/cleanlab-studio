@@ -147,17 +147,21 @@ def validate_and_process_record(
             elif col_feature_type == FeatureType.filepath:
                 if schema.metadata.modality == Modality.image:
                     if not os.path.exists(column_value):
-                        warning = (
+                        msg, warn_type = (
                             f"{column_name}: expected filepath but unable to find file at specified filepath {column_value}. "
                             f"Filepath must be absolute or relative to your current working directory: {os.getcwd()}",
                             ValidationWarning.MISSING_FILE,
                         )
+                        warnings[warn_type].append(msg)
+                        return None, row_id, warnings
                     else:
-                        if not is_valid_image(column_value):
-                            warning = (
-                                f"{column_name}: could not open invalid file at {column_value}. Image file must have",
+                        if not is_valid_image(column_value):  # TODO validity check
+                            msg, warn_type = (
+                                f"{column_name}: could not open invalid file at {column_value}.",
                                 ValidationWarning.INVALID_FILE,
                             )
+                            warnings[warn_type].append(msg)
+                            return None, row_id, warnings
 
             else:
                 if col_type == DataType.string:
@@ -276,6 +280,7 @@ def validate_rows(
 async def upload_rows(
     api_key: str,
     dataset_id: str,
+    schema: Schema,
     columns: List[str],
     upload_queue: "queue.Queue[Optional[List[Any]]]",
     rows_per_payload: int,
@@ -288,7 +293,6 @@ async def upload_rows(
     :param upload_queue: queue to get validated rows from
     :param rows_per_payload: number of rows to upload per payload/chunk
     """
-    columns_json: str = json.dumps(columns)
 
     async with aiohttp.ClientSession() as session:
         payload = []
@@ -306,8 +310,8 @@ async def upload_rows(
                             session=session,
                             api_key=api_key,
                             dataset_id=dataset_id,
+                            schema=schema,
                             rows=payload,
-                            columns_json=columns_json,
                         )
                     )
                 )
@@ -330,8 +334,8 @@ async def upload_rows(
                     session=session,
                     api_key=api_key,
                     dataset_id=dataset_id,
+                    schema=schema,
                     rows=payload,
-                    columns_json=columns_json,
                 )
             )
 
@@ -396,7 +400,6 @@ def upload_dataset(
     :param payload_size: size of each chunk of rows uploaded, in MB
     :return: None
     """
-    columns = list(schema.fields.keys())
     log = create_warning_log()
 
     file_size = get_file_size(filepath)
@@ -433,7 +436,7 @@ def upload_dataset(
         upload_rows(
             api_key=api_key,
             dataset_id=dataset_id,
-            columns=columns,
+            schema=schema,
             upload_queue=upload_queue,
             rows_per_payload=rows_per_payload,
         )
