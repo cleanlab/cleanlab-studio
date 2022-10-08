@@ -84,12 +84,12 @@ async def upload_rows_async(
     schema: Schema,
     rows: List[Any],
 ) -> None:
-    modality = Schema.metadata.modality
+    modality = schema.metadata.modality
     needs_media_upload = modality in [Modality.image]
     columns = list(schema.fields.keys())
 
     if needs_media_upload:
-        filepath_column = Schema.metadata.filepath_column
+        filepath_column = schema.metadata.filepath_column
         assert filepath_column is not None
         filepath_column_idx = columns.index(filepath_column)
         filepaths = [get_image_filepath(row[filepath_column_idx], dataset_filepath) for row in rows]

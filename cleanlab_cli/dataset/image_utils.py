@@ -4,6 +4,8 @@ from cleanlab_cli.types import ImageFileExtension
 from PIL import Image
 from pathlib import Path
 
+from cleanlab_cli.util import get_image_file_extension
+
 
 def get_image_filepath(image_filepath: str, dataset_filepath: str) -> str:
     if os.path.isabs(image_filepath):
@@ -24,7 +26,7 @@ def image_file_readable(image_filepath: str, dataset_filepath: str) -> bool:
     """
     try:
         image_filepath = get_image_filepath(image_filepath, dataset_filepath)
-        ImageFileExtension(image_filepath)
+        get_image_file_extension(image_filepath)
         Image.open(image_filepath)
     except ValueError:
         return False

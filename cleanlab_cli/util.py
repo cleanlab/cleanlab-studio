@@ -21,9 +21,16 @@ def get_dataset_file_extension(filename: str) -> DatasetFileExtension:
     return DatasetFileExtension(file_extension)
 
 
+def _standardize_image_file_extension(file_extension: str) -> str:
+    file_extension = file_extension.lower()
+    if file_extension == ".jpg":
+        return ".jpeg"
+    return file_extension
+
+
 def get_image_file_extension(filename: str) -> ImageFileExtension:
     file_extension = pathlib.Path(filename).suffix
-    return ImageFileExtension(file_extension)
+    return ImageFileExtension(_standardize_image_file_extension(file_extension))
 
 
 def get_filename(filepath: str) -> str:
