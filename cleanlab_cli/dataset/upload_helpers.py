@@ -149,16 +149,16 @@ def validate_and_process_record(
                 if schema.metadata.modality == Modality.image:
                     if not image_file_exists(column_value, dataset_filepath):
                         msg, warn_type = (
-                            f"{column_name}: expected filepath but unable to find file at specified filepath {column_value}. "
+                            f"{column_name}: unable to find file at specified filepath {column_value}. "
                             f"Filepath must be absolute or relative to the directory containing your dataset file.",
                             ValidationWarning.MISSING_FILE,
                         )
                         warnings[warn_type].append(msg)
                         return None, row_id, warnings
                     else:
-                        if not is_valid_image(column_value):  # TODO validity check
+                        if not is_valid_image(column_value, dataset_filepath):
                             msg, warn_type = (
-                                f"{column_name}: could not open invalid file at {column_value}.",
+                                f"{column_name}: could not open file at {column_value}.",
                                 ValidationWarning.INVALID_FILE,
                             )
                             warnings[warn_type].append(msg)
