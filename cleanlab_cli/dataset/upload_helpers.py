@@ -356,15 +356,15 @@ def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_co
     nonexistent_filepaths = []
     for record in dataset.read_streaming_records():
         filepath_value = record[filepath_column]
-        if not os.path.exists(filepath_value):
+        if not image_file_exists(filepath_value, dataset_filepath):
             nonexistent_filepaths.append(filepath_value)
 
     num_nonexistent_filepaths = len(nonexistent_filepaths)
     if num_nonexistent_filepaths > 0:
         click.echo(
-            f"Found {num_nonexistent_filepaths} non-existent filepaths in specified filepath column: {filepath_column}. "
-            f"As this is a {modality.value} dataset, these {num_nonexistent_filepaths} rows will be skipped unless the filepaths are fixed. "
-            f"Filepaths must be absolute or relative to your current working directory: {os.getcwd()}"
+            f"Found {num_nonexistent_filepaths} non-existent filepaths in specified {modality.value} filepath column: {filepath_column}.\n"
+            f"These {num_nonexistent_filepaths} rows will be skipped unless the filepaths are corrected. "
+            f"Filepaths must be absolute or relative to the directory containing your dataset."
         )
         to_print = click.confirm(
             f"Would you like to print the {num_nonexistent_filepaths} filepaths to console?"
