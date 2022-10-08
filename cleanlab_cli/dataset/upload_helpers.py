@@ -2,6 +2,7 @@
 Helper functions for processing and uploading dataset rows
 """
 import asyncio
+import decimal
 import os.path
 import threading
 import queue
@@ -181,6 +182,10 @@ def validate_and_process_record(
                                 coerced = True
                             except Exception:
                                 pass
+                        elif isinstance(column_value, decimal.Decimal):
+                            # comes from loading json datasets
+                            row[column_name] = float(column_value)
+                            coerced = True
                         if not coerced:
                             warning = (
                                 f"{column_name}: expected 'float' but got '{column_value}' with"
@@ -395,7 +400,7 @@ def upload_dataset(
     log = create_warning_log()
 
     file_size = get_file_size(filepath)
-    api_service.check_dataset_limit(file_size, api_key=api_key, show_warning=False)
+    api_service.check_dataset_limit(api_key=api_key, file_size=file_size, show_warning=False)
 
     if schema.metadata.modality == Modality.image:
         assert schema.metadata.filepath_column is not None
@@ -438,7 +443,7 @@ def upload_dataset(
     api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
 
     # Check against soft quota, warn if applicable
-    api_service.check_dataset_limit(file_size=0, api_key=api_key, show_warning=True)
+    api_service.check_dataset_limit(api_key=api_key, file_size=0, show_warning=True)
 
     total_warnings: int = sum([len(log.get(w)) for w in ValidationWarning])
     issues_found = total_warnings > 0

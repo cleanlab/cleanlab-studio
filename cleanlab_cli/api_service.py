@@ -6,7 +6,7 @@ import asyncio
 import gzip
 import json
 import os
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 import aiohttp
 import requests
@@ -17,6 +17,17 @@ from cleanlab_cli import __version__
 from cleanlab_cli.types import JSONDict, IDType
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
+
+
+def _construct_headers(
+    api_key: Optional[str], content_type: Optional[str] = "application/json"
+) -> JSONDict:
+    retval = dict()
+    if api_key:
+        retval["Authorization"] = f"bearer {api_key}"
+    if content_type:
+        retval["Content-Type"] = content_type
+    return retval
 
 
 def handle_api_error(res: requests.Response, show_warning: bool = False) -> None:
@@ -35,22 +46,30 @@ def handle_api_error_from_json(res_json: JSONDict, show_warning: bool = False) -
 
 
 def initialize_dataset(api_key: str, schema: Schema) -> str:
-    request_json = dict(api_key=api_key, schema=schema.to_dict())
-    res = requests.post(base_url + "/datasets", json=request_json)
+    request_json = dict(schema=schema.to_dict())
+    res = requests.post(
+        base_url + "/datasets", json=request_json, headers=_construct_headers(api_key)
+    )
     handle_api_error(res)
     dataset_id: str = res.json()["dataset_id"]
     return dataset_id
 
 
 def get_existing_ids(api_key: str, dataset_id: str) -> List[IDType]:
-    res = requests.get(base_url + f"/datasets/{dataset_id}/ids", json=dict(api_key=api_key))
+    res = requests.get(
+        base_url + f"/datasets/{dataset_id}/ids",
+        headers=_construct_headers(api_key),
+    )
     handle_api_error(res)
     existing_ids: List[IDType] = res.json()["existing_ids"]
     return existing_ids
 
 
 def get_dataset_schema(api_key: str, dataset_id: str) -> Schema:
-    res = requests.get(base_url + f"/datasets/{dataset_id}/schema", json=dict(api_key=api_key))
+    res = requests.get(
+        base_url + f"/datasets/{dataset_id}/schema",
+        headers=_construct_headers(api_key),
+    )
     handle_api_error(res)
     schema: Schema = res.json()["schema"]
     return schema
@@ -65,14 +84,10 @@ async def upload_rows_async(
 ) -> None:
     url = base_url + f"/datasets/{dataset_id}"
     data = gzip.compress(
-        json.dumps(dict(api_key=api_key, rows=json.dumps(rows), columns=columns_json)).encode(
-            "utf-8"
-        )
+        json.dumps(dict(rows=json.dumps(rows), columns=columns_json)).encode("utf-8")
     )
-    headers = {
-        "Content-Type": "application/json",
-        "Content-Encoding": "gzip",
-    }
+    headers = _construct_headers(api_key)
+    headers["Content-Encoding"] = "gzip"
 
     async with session.post(url=url, data=data, headers=headers) as res:
         res_text = await res.read()
@@ -89,7 +104,8 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
     :return: return (rows, id_column)
     """
     res = requests.get(
-        base_url + f"/cleansets/{cleanset_id}/columns?all={all}", json=dict(api_key=api_key)
+        base_url + f"/cleansets/{cleanset_id}/columns?all={all}",
+        headers=_construct_headers(api_key),
     )
     handle_api_error(res)
     rows: List[List[Any]] = res.json()["rows"]
@@ -97,26 +113,37 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
 
 
 def get_completion_status(api_key: str, dataset_id: str) -> bool:
-    res = requests.get(base_url + f"/datasets/{dataset_id}/complete", json=dict(api_key=api_key))
+    res = requests.get(
+        base_url + f"/datasets/{dataset_id}/complete",
+        headers=_construct_headers(api_key),
+    )
     handle_api_error(res)
     completed: bool = res.json()["complete"]
     return completed
 
 
 def complete_upload(api_key: str, dataset_id: str) -> None:
-    res = requests.patch(base_url + f"/datasets/{dataset_id}/complete", json=dict(api_key=api_key))
+    res = requests.patch(
+        base_url + f"/datasets/{dataset_id}/complete",
+        headers=_construct_headers(api_key),
+    )
     handle_api_error(res)
 
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:
-    res = requests.get(base_url + f"/cleansets/{cleanset_id}/id_column", json=dict(api_key=api_key))
+    res = requests.get(
+        base_url + f"/cleansets/{cleanset_id}/id_column",
+        headers={"Authorization": f"bearer {api_key}"},
+    )
     handle_api_error(res)
     id_column: str = res.json()["id_column"]
     return id_column
 
 
 def validate_api_key(api_key: str) -> bool:
-    res = requests.get(base_url + "/validate", json=dict(api_key=api_key))
+    res = requests.get(
+        base_url + "/validate", json=dict(api_key=api_key), headers=_construct_headers(api_key)
+    )
     handle_api_error(res)
     valid: bool = res.json()["valid"]
     return valid
@@ -129,9 +156,11 @@ def check_client_version() -> bool:
     return valid
 
 
-def check_dataset_limit(file_size: int, api_key: str, show_warning: bool = False) -> JSONDict:
+def check_dataset_limit(api_key: str, file_size: int, show_warning: bool = False) -> JSONDict:
     res = requests.post(
-        base_url + "/check_dataset_limit", json=dict(api_key=api_key, file_size=file_size)
+        base_url + "/check_dataset_limit",
+        json=dict(file_size=file_size),
+        headers=_construct_headers(api_key),
     )
     handle_api_error(res, show_warning=show_warning)
     res_json: JSONDict = res.json()
