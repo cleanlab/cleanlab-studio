@@ -93,7 +93,7 @@ def check_dataset_command(
 
         if not output:
             output = click_helpers.confirm_save_prompt_filepath(
-                save_message="Would you like to save the issues for viewing?",
+                save_message="Save the issues for viewing?",
                 save_default=None,
                 prompt_message=(
                     "Specify a filename for the dataset issues. Leave this blank to use default"
@@ -103,11 +103,9 @@ def check_dataset_command(
             )
         if output:
             upload_helpers.save_warning_log(log, output)
-            click_helpers.confirm_open_file(
-                "Would you like to open your issues file for viewing?", filepath=output
-            )
+            click_helpers.confirm_open_file("Open your issues file for viewing?", filepath=output)
 
-    click.secho("Check completed.", fg="green")
+    click_helpers.success("Check completed.")
 
 
 @schema.command(name="generate", help="generate a schema based on your dataset")
@@ -181,7 +179,7 @@ def generate_schema_command(
 
     if not output:
         output = click_helpers.confirm_save_prompt_filepath(
-            save_message="Would you like to save the generated schema?",
+            save_message="Save the generated schema?",
             save_default=None,
             prompt_message="Specify a filename for the schema. Leave this blank to use default",
             prompt_default="schema.json",
@@ -191,6 +189,4 @@ def generate_schema_command(
             return
 
     save_schema(proposed_schema, output)
-    click_helpers.confirm_open_file(
-        message="Would you like to open your schema file?", filepath=output
-    )
+    click_helpers.confirm_open_file(message="Open your schema file?", filepath=output)

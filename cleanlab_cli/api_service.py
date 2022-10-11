@@ -12,9 +12,10 @@ import aiohttp
 import requests
 
 from cleanlab_cli.click_helpers import abort, warn
+from cleanlab_cli.dataset.image_utils import get_image_filepath
 from cleanlab_cli.dataset.schema_types import Schema
 from cleanlab_cli import __version__
-from cleanlab_cli.types import JSONDict, IDType
+from cleanlab_cli.types import JSONDict, IDType, Modality
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
 
@@ -79,12 +80,35 @@ async def upload_rows_async(
     session: aiohttp.ClientSession,
     api_key: str,
     dataset_id: str,
+    dataset_filepath: str,
+    schema: Schema,
     rows: List[Any],
-    columns_json: str,
 ) -> None:
+    modality = schema.metadata.modality
+    needs_media_upload = modality in [Modality.image]
+    columns = list(schema.fields.keys())
+
+    if needs_media_upload:
+        filepath_column = schema.metadata.filepath_column
+        assert filepath_column is not None
+        filepath_column_idx = columns.index(filepath_column)
+        filepaths = [get_image_filepath(row[filepath_column_idx], dataset_filepath) for row in rows]
+
+        filepath_to_post = get_presigned_posts(
+            api_key=api_key, dataset_id=dataset_id, filepaths=filepaths, media_type=modality.value
+        )
+        for filepath in filepaths:
+            presigned_post = filepath_to_post.get(filepath)
+            if presigned_post is not None:
+                await session.post(
+                    url=presigned_post["url"],
+                    data=presigned_post["fields"],
+                    files={"file": open(filepath, "rb")},
+                )
+
     url = base_url + f"/datasets/{dataset_id}"
     data = gzip.compress(
-        json.dumps(dict(rows=json.dumps(rows), columns=columns_json)).encode("utf-8")
+        json.dumps(dict(rows=json.dumps(rows), columns=json.dumps(columns))).encode("utf-8")
     )
     headers = _construct_headers(api_key)
     headers["Content-Encoding"] = "gzip"
@@ -163,5 +187,18 @@ def check_dataset_limit(api_key: str, file_size: int, show_warning: bool = False
         headers=_construct_headers(api_key),
     )
     handle_api_error(res, show_warning=show_warning)
+    res_json: JSONDict = res.json()
+    return res_json
+
+
+def get_presigned_posts(
+    api_key: str, dataset_id: str, filepaths: List[str], media_type: str
+) -> JSONDict:
+    res = requests.get(
+        base_url + "/media_upload/presigned_posts",
+        json=dict(dataset_id=dataset_id, filepaths=filepaths, type=media_type),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
     res_json: JSONDict = res.json()
     return res_json

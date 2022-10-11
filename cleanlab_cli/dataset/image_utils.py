@@ -1,16 +1,33 @@
+import os.path
+
 from cleanlab_cli.types import ImageFileExtension
 from PIL import Image
+from pathlib import Path
+
+from cleanlab_cli.util import get_image_file_extension
 
 
-def is_valid_image(filepath: str) -> bool:
+def get_image_filepath(image_filepath: str, dataset_filepath: str) -> str:
+    if os.path.isabs(image_filepath):
+        return image_filepath
+    else:
+        dataset_path = Path(dataset_filepath)
+        directory_path = dataset_path.parent.absolute()
+        return os.path.join(directory_path, image_filepath)
+
+
+def image_file_exists(image_filepath: str, dataset_filepath: str) -> bool:
+    return os.path.exists(get_image_filepath(image_filepath, dataset_filepath))
+
+
+def image_file_readable(image_filepath: str, dataset_filepath: str) -> bool:
     """
-    valid == has extension .jpeg or .png and image file can be opened by Pillow
-    :param filepath:
-    :return:
+    readable == has extension .jpeg or .png and image file can be opened by Pillow
     """
     try:
-        ImageFileExtension(filepath)
-        Image.open(filepath)
+        image_filepath = get_image_filepath(image_filepath, dataset_filepath)
+        get_image_file_extension(image_filepath)  # throws an error if extension is not recognized
+        Image.open(image_filepath)
     except ValueError:
         return False
     except IOError:

@@ -31,7 +31,11 @@ from tqdm import tqdm
 
 from cleanlab_cli import api_service
 from cleanlab_cli.classes.dataset import Dataset
-from cleanlab_cli.dataset.image_utils import is_valid_image
+from cleanlab_cli.dataset.image_utils import (
+    image_file_readable,
+    image_file_exists,
+    get_image_filepath,
+)
 from cleanlab_cli.dataset.upload_types import (
     ValidationWarning,
     WarningLog,
@@ -71,6 +75,7 @@ def convert_to_python_type(val: Any, data_type: DataType) -> Any:
 
 
 def validate_and_process_record(
+    dataset: Dataset,
     record: RecordType,
     schema: Schema,
     seen_ids: Set[str],
@@ -97,7 +102,7 @@ def validate_and_process_record(
     fields = schema.fields
     id_column = schema.metadata.id_column
     columns = list(fields)
-
+    dataset_filepath = dataset.filepath
     row_id = record.get(id_column, None)
 
     if row_id == "" or row_id is None:
@@ -146,18 +151,22 @@ def validate_and_process_record(
                     )
             elif col_feature_type == FeatureType.filepath:
                 if schema.metadata.modality == Modality.image:
-                    if not os.path.exists(column_value):
-                        warning = (
-                            f"{column_name}: expected filepath but unable to find file at specified filepath {column_value}. "
-                            f"Filepath must be absolute or relative to your current working directory: {os.getcwd()}",
+                    if not image_file_exists(column_value, dataset_filepath):
+                        msg, warn_type = (
+                            f"{column_name}: unable to find file at specified filepath {column_value}. "
+                            f"Filepath must be absolute or relative to the directory containing your dataset file.",
                             ValidationWarning.MISSING_FILE,
                         )
+                        warnings[warn_type].append(msg)
+                        return None, row_id, warnings
                     else:
-                        if not is_valid_image(column_value):
-                            warning = (
-                                f"{column_name}: could not open invalid file at {column_value}. Image file must have",
-                                ValidationWarning.INVALID_FILE,
+                        if not image_file_readable(column_value, dataset_filepath):
+                            msg, warn_type = (
+                                f"{column_name}: could not open file at {column_value}.",
+                                ValidationWarning.UNREADABLE_FILE,
                             )
+                            warnings[warn_type].append(msg)
+                            return None, row_id, warnings
 
             else:
                 if col_type == DataType.string:
@@ -276,19 +285,20 @@ def validate_rows(
 async def upload_rows(
     api_key: str,
     dataset_id: str,
-    columns: List[str],
+    dataset_filepath: str,
+    schema: Schema,
     upload_queue: "queue.Queue[Optional[List[Any]]]",
     rows_per_payload: int,
 ) -> None:
     """Gets rows from upload queue and uploads to API.
 
+    :param schema:
+    :param dataset_filepath:
     :param api_key: 32-character alphanumeric string
     :param dataset_id: dataset ID
-    :param columns: list of column identifiers for dataset
     :param upload_queue: queue to get validated rows from
     :param rows_per_payload: number of rows to upload per payload/chunk
     """
-    columns_json: str = json.dumps(columns)
 
     async with aiohttp.ClientSession() as session:
         payload = []
@@ -306,8 +316,9 @@ async def upload_rows(
                             session=session,
                             api_key=api_key,
                             dataset_id=dataset_id,
+                            dataset_filepath=dataset_filepath,
+                            schema=schema,
                             rows=payload,
-                            columns_json=columns_json,
                         )
                     )
                 )
@@ -330,8 +341,9 @@ async def upload_rows(
                     session=session,
                     api_key=api_key,
                     dataset_id=dataset_id,
+                    dataset_filepath=dataset_filepath,
+                    schema=schema,
                     rows=payload,
-                    columns_json=columns_json,
                 )
             )
 
@@ -350,27 +362,43 @@ def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_co
             f"No filepath column '{filepath_column}' found in dataset at {dataset_filepath}."
         )
     nonexistent_filepaths = []
+    unreadable_filepaths = []
     for record in dataset.read_streaming_records():
         filepath_value = record[filepath_column]
-        if not os.path.exists(filepath_value):
+        if not image_file_exists(filepath_value, dataset_filepath):
             nonexistent_filepaths.append(filepath_value)
+        elif not image_file_readable(filepath_value, dataset_filepath):
+            unreadable_filepaths.append(filepath_value)
 
     num_nonexistent_filepaths = len(nonexistent_filepaths)
-    if num_nonexistent_filepaths > 0:
+    num_unreadable_filepaths = len(unreadable_filepaths)
+    if num_nonexistent_filepaths + num_unreadable_filepaths > 0:
         click.echo(
-            f"Found {num_nonexistent_filepaths} non-existent filepaths in specified filepath column: {filepath_column}. "
-            f"As this is a {modality.value} dataset, these {num_nonexistent_filepaths} rows will be skipped unless the filepaths are fixed. "
-            f"Filepaths must be absolute or relative to your current working directory: {os.getcwd()}"
+            f"Found {num_nonexistent_filepaths} non-existent filepaths and {num_unreadable_filepaths} filepaths that could not be read in specified {modality.value} filepath column: {filepath_column}.\n"
+            f"These {num_nonexistent_filepaths + num_unreadable_filepaths} rows with invalid filepaths will be skipped unless the filepaths are corrected. "
+            f"Filepaths must be absolute or relative to the directory containing your dataset.\n"
         )
         to_print = click.confirm(
-            f"Would you like to print the {num_nonexistent_filepaths} filepaths to console?"
+            f"Print the {num_nonexistent_filepaths + num_unreadable_filepaths} filepaths to console?"
         )
         if to_print:
-            click.echo("Invalid filepaths:\n")
-            click.echo(", ".join(nonexistent_filepaths))
+            if num_nonexistent_filepaths > 0:
+                click.echo("Non-existent filepaths:\n")
+                click.echo(
+                    "\n".join(
+                        get_image_filepath(f, dataset_filepath) for f in nonexistent_filepaths
+                    )
+                )
+                click.echo("\n")
+            if num_unreadable_filepaths > 0:
+                click.echo("Filepaths that could not be read:\n")
+                click.echo(
+                    "\n".join(get_image_filepath(f, dataset_filepath) for f in unreadable_filepaths)
+                )
+                click.echo("\n")
 
         continue_with_upload = click.confirm(
-            "Would you like to proceed with dataset upload? Rows with invalid filepaths will be skipped."
+            "Proceed with dataset upload? (Rows with invalid filepaths will be skipped.)"
         )
         if not continue_with_upload:
             abort("Dataset upload aborted.")
@@ -396,7 +424,6 @@ def upload_dataset(
     :param payload_size: size of each chunk of rows uploaded, in MB
     :return: None
     """
-    columns = list(schema.fields.keys())
     log = create_warning_log()
 
     file_size = get_file_size(filepath)
@@ -433,29 +460,45 @@ def upload_dataset(
         upload_rows(
             api_key=api_key,
             dataset_id=dataset_id,
-            columns=columns,
+            dataset_filepath=filepath,
+            schema=schema,
             upload_queue=upload_queue,
             rows_per_payload=rows_per_payload,
         )
     )
     validation_thread.join()
 
-    api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
-
     # Check against soft quota, warn if applicable
     api_service.check_dataset_limit(api_key=api_key, file_size=0, show_warning=True)
 
     total_warnings: int = sum([len(log.get(w)) for w in ValidationWarning])
     issues_found = total_warnings > 0
+
+    conclude_upload = True
     if not issues_found:
         success("\nNo issues were encountered when uploading your dataset. Nice!")
+        api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
     else:
         info(f"\n{total_warnings} issues were encountered when uploading your dataset.")
         echo_log_warnings(log)
+        num_invalid_filepaths = len(log.get(ValidationWarning.MISSING_FILE)) + len(
+            log.get(ValidationWarning.UNREADABLE_FILE)
+        )
+
+        if num_invalid_filepaths > 0:
+            click_helpers.warn(
+                f"{num_invalid_filepaths} rows failed to upload due to invalid filepaths."
+            )
+            conclude_upload = click.confirm(
+                f"Conclude dataset upload? Concluding means that no more rows can be uploaded. "
+                f"Otherwise, submit 'n' and resume uploading later with the dataset ID ({dataset_id}) after fixing rows with invalid filepaths."
+            )
+            if not conclude_upload:
+                click_helpers.warn("Dataset upload is incomplete.")
 
         if not output:
             output = click_helpers.confirm_save_prompt_filepath(
-                save_message="Would you like to save the issues for viewing?",
+                save_message="Save the issues for viewing?",
                 save_default=None,
                 prompt_message=(
                     "Specify a filename for the dataset issues. Leave this blank to use default"
@@ -466,13 +509,11 @@ def upload_dataset(
         # if we have an output after the above prompt (or originally provided)
         if output:
             save_warning_log(log, output)
-            click_helpers.confirm_open_file(
-                "Would you like to open your issues file for viewing?", filepath=output
-            )
-    click.secho(
-        "Upload completed. View your uploaded dataset at https://app.cleanlab.ai",
-        fg="green",
-    )
+            click_helpers.confirm_open_file("Open your issues file for viewing?", filepath=output)
+    if conclude_upload:
+        click_helpers.success(
+            "Upload completed. View your uploaded dataset at https://app.cleanlab.ai"
+        )
 
 
 def group_feature_types(schema: Schema) -> Dict[FeatureType, List[str]]:
@@ -520,7 +561,9 @@ def process_dataset(
     for record in tqdm(
         dataset.read_streaming_records(), total=len(dataset), initial=1, leave=True, unit=" rows"
     ):
-        row, row_id, warnings = validate_and_process_record(record, schema, seen_ids, existing_ids)
+        row, row_id, warnings = validate_and_process_record(
+            dataset, record, schema, seen_ids, existing_ids
+        )
         update_log_with_warnings(log, row_id, warnings)
         # row and row ID both present, i.e. row will be uploaded
         if row_id:
