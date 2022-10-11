@@ -26,7 +26,7 @@ def image_file_readable(image_filepath: str, dataset_filepath: str) -> bool:
     """
     try:
         image_filepath = get_image_filepath(image_filepath, dataset_filepath)
-        get_image_file_extension(image_filepath)
+        get_image_file_extension(image_filepath)  # throws an error if extension is not recognized
         Image.open(image_filepath)
     except ValueError:
         return False
