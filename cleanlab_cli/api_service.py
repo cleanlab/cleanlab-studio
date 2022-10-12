@@ -100,7 +100,9 @@ async def upload_rows_async(
             api_key=api_key, dataset_id=dataset_id, filepaths=filepaths, media_type=modality.value
         )
         for original_filepath, absolute_filepath in zip(filepaths, absolute_filepaths):
-            presigned_post = filepath_to_post.get(original_filepath)["post"]
+            post_data = filepath_to_post.get(original_filepath)
+            assert isinstance(post_data, dict)
+            presigned_post = post_data["post"]
             # data = FormData()
             # data.add_field("file", open(filepath, "rb"))
             # data.add_field("fields", json.dumps(presigned_post["fields"]))
