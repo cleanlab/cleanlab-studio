@@ -43,6 +43,10 @@ class TestIntegerDataType:
         row, row_id, warnings = self.process_with_integer_numeric({"height": "180.0"})
         assert row["height"] == 180
 
+    def test_float_string_input_2(self) -> None:
+        row, row_id, warnings = self.process_with_integer_numeric({"height": "180.5"})
+        assert row["height"] is None
+
     def test_scientific_input(self) -> None:
         row, row_id, warnings = self.process_with_integer_numeric({"height": "1e9"})
         assert row["height"] == 1000000000
