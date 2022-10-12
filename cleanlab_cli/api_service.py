@@ -92,14 +92,14 @@ async def upload_rows_async(
         assert filepath_column is not None
         filepath_column_idx = columns.index(filepath_column)
         filepaths = [row[filepath_column_idx] for row in rows]
-        full_filepaths = [
+        absolute_filepaths = [
             get_image_filepath(row[filepath_column_idx], dataset_filepath) for row in rows
         ]
 
         filepath_to_post = get_presigned_posts(
             api_key=api_key, dataset_id=dataset_id, filepaths=filepaths, media_type=modality.value
         )
-        for original_filepath, full_filepath in zip(filepaths, full_filepaths):
+        for original_filepath, absolute_filepath in zip(filepaths, absolute_filepaths):
             presigned_post = filepath_to_post.get(original_filepath)["post"]
             # data = FormData()
             # data.add_field("file", open(filepath, "rb"))
@@ -107,7 +107,7 @@ async def upload_rows_async(
             if presigned_post is not None:
                 requests.post(
                     url=presigned_post["url"],
-                    files={"file": open(full_filepath, "rb")},
+                    files={"file": open(absolute_filepath, "rb")},
                     data=presigned_post["fields"],
                 )
                 # session.post(
