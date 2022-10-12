@@ -139,6 +139,7 @@ def validate_and_process_record(
                 try:
                     timestamp_value = convert_to_python_type(column_value, col_type)
                     pd.Timestamp(timestamp_value)
+                    row[column_name] = timestamp_value
                 except (ValueError, TypeError):
                     warning = (
                         f"{column_name}: expected datetime but unable to parse '{column_value}'"
