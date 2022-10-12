@@ -47,6 +47,10 @@ class TestIntegerNumeric:
         row, row_id, warnings = self.process_with_integer_numeric({"height": "1e9"})
         assert row["height"] == 1000000000
 
+    def test_boolean_input(self) -> None:
+        row, row_id, warnings = self.process_with_integer_numeric({"height": True})
+        assert row["height"] == 1
+
     def test_null_input(self) -> None:
         row, row_id, warnings = self.process_with_integer_numeric({"height": None})
         assert row["height"] is None
