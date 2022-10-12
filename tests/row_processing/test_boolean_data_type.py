@@ -49,6 +49,14 @@ class TestBooleanDataType:
         row, row_id, warnings = self.process_with_integer_numeric({"x": "f"})
         assert row["x"] is False
 
+    def test_y_input(self) -> None:
+        row, row_id, warnings = self.process_with_integer_numeric({"x": "y"})
+        assert row["x"] is True
+
+    def test_n_input(self) -> None:
+        row, row_id, warnings = self.process_with_integer_numeric({"x": "n"})
+        assert row["x"] is False
+
     def test_1_string_input(self) -> None:
         row, row_id, warnings = self.process_with_integer_numeric({"x": "1"})
         assert row["x"] is True
