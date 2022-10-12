@@ -68,6 +68,9 @@ def get_value_type(val: Any) -> str:
 
 
 def convert_to_python_type(val: Any, data_type: DataType) -> Any:
+    if isinstance(val, str):  # int("180.0") gives an error
+        if data_type == DataType.integer:
+            return int(float(val))
     return DATA_TYPES_TO_PYTHON_TYPES[data_type](val)
 
 
