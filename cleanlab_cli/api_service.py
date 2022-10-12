@@ -2,19 +2,18 @@
 Methods for interacting with the command line server API
 1:1 mapping with command_line_api.py
 """
-import asyncio
 import gzip
 import json
 import os
-from typing import Dict, List, Any, Optional
+from typing import List, Any, Optional
 
 import aiohttp
 import requests
 
+from cleanlab_cli import __version__
 from cleanlab_cli.click_helpers import abort, warn
 from cleanlab_cli.dataset.image_utils import get_image_filepath
 from cleanlab_cli.dataset.schema_types import Schema
-from cleanlab_cli import __version__
 from cleanlab_cli.types import JSONDict, IDType, Modality
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
@@ -98,13 +97,21 @@ async def upload_rows_async(
             api_key=api_key, dataset_id=dataset_id, filepaths=filepaths, media_type=modality.value
         )
         for filepath in filepaths:
-            presigned_post = filepath_to_post.get(filepath)
+            presigned_post = filepath_to_post.get(filepath)["post"]
+            # data = FormData()
+            # data.add_field("file", open(filepath, "rb"))
+            # data.add_field("fields", json.dumps(presigned_post["fields"]))
             if presigned_post is not None:
-                await session.post(
+                requests.post(
                     url=presigned_post["url"],
-                    data=presigned_post["fields"],
                     files={"file": open(filepath, "rb")},
+                    data=presigned_post["fields"],
                 )
+                # session.post(
+                #     url=presigned_post["url"],
+                #     data=data,
+                # )
+                # print(res)
 
     url = base_url + f"/datasets/{dataset_id}"
     data = gzip.compress(
