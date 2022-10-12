@@ -98,7 +98,7 @@ async def upload_rows_async(
             api_key=api_key, dataset_id=dataset_id, filepaths=filepaths, media_type=modality.value
         )
         for filepath in filepaths:
-            presigned_post = filepath_to_post.get(filepath)
+            presigned_post = filepath_to_post.get(filepath)["path"]
             if presigned_post is not None:
                 await session.post(
                     url=presigned_post["url"],
