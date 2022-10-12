@@ -9,7 +9,7 @@ from cleanlab_cli.types import RecordType
 from tests.row_processing.utils import process_record_with_fields
 
 
-class TestIntegerNumeric:
+class TestIntegerDataType:
     @staticmethod
     def process_with_integer_numeric(
         record: RecordType,

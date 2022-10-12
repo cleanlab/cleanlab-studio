@@ -221,9 +221,9 @@ def validate_and_process_record(
                 elif col_type == DataType.boolean:
                     if not isinstance(column_value, bool):
                         col_val_lower = str(column_value).lower()
-                        if col_val_lower in ["true", "t", "yes", "1"]:
+                        if col_val_lower in ["true", "t", "yes", "y", "1", "1.0"]:
                             row[column_name] = True
-                        elif col_val_lower in ["false", "f", "no", "0"]:
+                        elif col_val_lower in ["false", "f", "no", "n", "0", "0.0"]:
                             row[column_name] = False
                         else:
                             warning = (
