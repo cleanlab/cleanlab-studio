@@ -11,7 +11,7 @@ import aiohttp
 import requests
 
 from cleanlab_cli import __version__
-from cleanlab_cli.click_helpers import abort, warn
+from cleanlab_cli.click_helpers import abort, warn, info
 from cleanlab_cli.dataset.image_utils import get_image_filepath
 from cleanlab_cli.dataset.schema_types import Schema
 from cleanlab_cli.types import JSONDict, IDType, Modality
@@ -103,20 +103,12 @@ async def upload_rows_async(
             post_data = filepath_to_post.get(original_filepath)
             assert isinstance(post_data, dict)
             presigned_post = post_data["post"]
-            # data = FormData()
-            # data.add_field("file", open(filepath, "rb"))
-            # data.add_field("fields", json.dumps(presigned_post["fields"]))
             if presigned_post is not None:
-                requests.post(
+                await session.post(
                     url=presigned_post["url"],
-                    files={"file": open(absolute_filepath, "rb")},
-                    data=presigned_post["fields"],
+                    data={**presigned_post["fields"], "file": open(absolute_filepath, "rb")},
                 )
-                # session.post(
-                #     url=presigned_post["url"],
-                #     data=data,
-                # )
-                # print(res)
+                info(f"Uploaded {original_filepath}")
 
     url = base_url + f"/datasets/{dataset_id}"
     data = gzip.compress(
