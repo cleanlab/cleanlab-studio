@@ -13,11 +13,11 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
-sample_csv = os.path.join(abspath(dirname(__file__)), "resources/datasets/sample.csv")
-sample_schema = os.path.join(abspath(dirname(__file__)), "resources/schemas/sample_schema.json")
+sample_csv = os.path.join(abspath(dirname(__file__)), "../resources/datasets/sample.csv")
+sample_schema = os.path.join(abspath(dirname(__file__)), "../resources/schemas/sample_schema.json")
 
 
-def assert_success_else_error_output(test_name, result):
+def assert_success_else_error_output(test_name: str, result):
     if result.exit_code != 0:
         if hasattr(result, "exception"):
             traceback.print_tb(result.exception.__traceback__)
@@ -27,7 +27,7 @@ def assert_success_else_error_output(test_name, result):
         )
 
 
-def test_generate():
+def test_generate() -> None:
     dataset = init_dataset_from_filepath(sample_csv)
     df = dataset.read_file_as_dataframe()
     runner = CliRunner()
@@ -56,7 +56,7 @@ def test_generate():
             assert_success_else_error_output("Schema generation", result)
 
 
-def test_validate():
+def test_validate() -> None:
     dataset = init_dataset_from_filepath(sample_csv)
     df = dataset.read_file_as_dataframe()
     runner = CliRunner()
@@ -75,7 +75,7 @@ def test_validate():
             assert_success_else_error_output("Schema validation", result)
 
 
-def test_check_dataset():
+def test_check_dataset() -> None:
     dataset = init_dataset_from_filepath(sample_csv)
     df = dataset.read_file_as_dataframe()
     runner = CliRunner()

@@ -3,16 +3,12 @@ Helper functions for processing and uploading dataset rows
 """
 import asyncio
 import decimal
-import os.path
-import threading
 import queue
-from asyncio import Task
-
-import aiohttp
-import click
-import json
-import pandas as pd
 import re
+import threading
+from asyncio import Task
+from collections import defaultdict
+from sys import getsizeof
 from typing import (
     Optional,
     Dict,
@@ -24,17 +20,27 @@ from typing import (
     Coroutine,
     Union,
 )
-from collections import defaultdict
-from sys import getsizeof
 
+import aiohttp
+import click
+import pandas as pd
 from tqdm import tqdm
 
 from cleanlab_cli import api_service
+from cleanlab_cli import click_helpers
 from cleanlab_cli.classes.dataset import Dataset
+from cleanlab_cli.click_helpers import success, info, progress, abort
 from cleanlab_cli.dataset.image_utils import (
     image_file_readable,
     image_file_exists,
     get_image_filepath,
+)
+from cleanlab_cli.dataset.schema_types import (
+    PYTHON_TYPES_TO_READABLE_STRING,
+    DATA_TYPES_TO_PYTHON_TYPES,
+    DataType,
+    Schema,
+    FeatureType,
 )
 from cleanlab_cli.dataset.upload_types import (
     ValidationWarning,
@@ -52,15 +58,6 @@ from cleanlab_cli.util import (
     init_dataset_from_filepath,
     get_file_size,
 )
-from cleanlab_cli.dataset.schema_types import (
-    PYTHON_TYPES_TO_READABLE_STRING,
-    DATA_TYPES_TO_PYTHON_TYPES,
-    DataType,
-    Schema,
-    FeatureType,
-)
-from cleanlab_cli import click_helpers
-from cleanlab_cli.click_helpers import success, info, progress, abort
 
 
 def get_value_type(val: Any) -> str:
@@ -71,6 +68,9 @@ def get_value_type(val: Any) -> str:
 
 
 def convert_to_python_type(val: Any, data_type: DataType) -> Any:
+    if isinstance(val, str):  # int("180.0") gives an error
+        if data_type == DataType.integer:
+            return int(float(val))
     return DATA_TYPES_TO_PYTHON_TYPES[data_type](val)
 
 
@@ -142,11 +142,12 @@ def validate_and_process_record(
                 try:
                     timestamp_value = convert_to_python_type(column_value, col_type)
                     pd.Timestamp(timestamp_value)
+                    row[column_name] = timestamp_value
                 except (ValueError, TypeError):
                     warning = (
                         f"{column_name}: expected datetime but unable to parse '{column_value}'"
                         f" with {get_value_type(column_value)} type. Datetime strings must be"
-                        " parsable by pandas.Timestamp().",
+                        " parsable by pandas.Timestamp()",
                         ValidationWarning.TYPE_MISMATCH,
                     )
             elif col_feature_type == FeatureType.filepath:
@@ -173,9 +174,25 @@ def validate_and_process_record(
                     row[column_name] = str(column_value)  # type coercion
                 elif col_type == DataType.integer:
                     if not isinstance(column_value, int):
-                        if isinstance(column_value, str) and column_value.isdigit():
+                        coerced = False
+                        if isinstance(column_value, str):
+                            if column_value.isdigit():  # e.g. '180'
+                                row[column_name] = int(column_value)
+                                coerced = True
+                            else:
+                                try:
+                                    temp = float(column_value)
+                                    if temp == int(temp):
+                                        row[column_name] = int(temp)
+                                        coerced = True
+                                except ValueError:
+                                    pass
+                                    # elif
+                        elif isinstance(column_value, float) and int(column_value) == column_value:
                             row[column_name] = int(column_value)
-                        else:
+                            coerced = True
+
+                        if not coerced:
                             warning = (
                                 f"{column_name}: expected 'int' but got '{column_value}' with"
                                 f" {get_value_type(column_value)} type",
@@ -204,9 +221,9 @@ def validate_and_process_record(
                 elif col_type == DataType.boolean:
                     if not isinstance(column_value, bool):
                         col_val_lower = str(column_value).lower()
-                        if col_val_lower in ["true", "t", "yes", "1"]:
+                        if col_val_lower in ["true", "t", "yes", "y", "1", "1.0"]:
                             row[column_name] = True
-                        elif col_val_lower in ["false", "f", "no", "0"]:
+                        elif col_val_lower in ["false", "f", "no", "n", "0", "0.0"]:
                             row[column_name] = False
                         else:
                             warning = (
