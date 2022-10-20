@@ -47,7 +47,7 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         "aiohttp>=3.8.1",
-        "Click>=8.0.4",
+        "Click>=8.1.0",
         "colorama>=0.4.4",
         "pandas>=1.0.0",
         "pyexcel>=0.7.0",
