@@ -498,20 +498,22 @@ def upload_dataset(
     else:
         info(f"\n{total_warnings} issues were encountered when uploading your dataset.")
         echo_log_warnings(log)
-        num_invalid_filepaths = len(log.get(ValidationWarning.MISSING_FILE)) + len(
-            log.get(ValidationWarning.UNREADABLE_FILE)
-        )
 
-        if num_invalid_filepaths > 0:
-            click_helpers.warn(
-                f"{num_invalid_filepaths} rows failed to upload due to invalid filepaths."
+        if schema.metadata.modality == Modality.image:
+            num_invalid_filepaths = len(log.get(ValidationWarning.MISSING_FILE)) + len(
+                log.get(ValidationWarning.UNREADABLE_FILE)
             )
-            conclude_upload = click.confirm(
-                f"Conclude dataset upload? Concluding means that no more rows can be uploaded. "
-                f"Otherwise, submit 'n' and resume uploading later with the dataset ID ({dataset_id}) after fixing rows with invalid filepaths."
-            )
-            if not conclude_upload:
-                click_helpers.warn("Dataset upload is incomplete.")
+
+            if num_invalid_filepaths > 0:
+                click_helpers.warn(
+                    f"{num_invalid_filepaths} rows failed to upload due to invalid filepaths."
+                )
+                conclude_upload = click.confirm(
+                    f"Conclude dataset upload? Concluding means that no more rows can be uploaded. "
+                    f"Otherwise, submit 'n' and resume uploading later with the dataset ID ({dataset_id}) after fixing rows with invalid filepaths."
+                )
+                if not conclude_upload:
+                    click_helpers.warn("Dataset upload is incomplete.")
 
         if not output:
             output = click_helpers.confirm_save_prompt_filepath(
@@ -527,7 +529,9 @@ def upload_dataset(
         if output:
             save_warning_log(log, output)
             click_helpers.confirm_open_file("Open your issues file for viewing?", filepath=output)
+
     if conclude_upload:
+        api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
         click_helpers.success(
             "Upload completed. View your uploaded dataset at https://app.cleanlab.ai"
         )
