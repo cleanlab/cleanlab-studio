@@ -1,12 +1,8 @@
 import random
-from typing import List, Any
 
 from cleanlab_cli.dataset import DataType, FeatureType
 from cleanlab_cli.dataset.schema_helpers import infer_types
-
-
-def cast_to_strings(values: List[Any]):
-    return [str(x) for x in values]
+from tests.schema_generation.utils import cast_to_strings
 
 
 class TestInferIntegerDataType:
