@@ -155,7 +155,7 @@ def get_validation_sample_size(values: Sized) -> int:
     return min(20, len(values))
 
 
-def _values_are_datetime(values: Collection[Any]) -> bool:
+def string_values_are_datetime(values: Collection[Any]) -> bool:
     try:
         # check for datetime first
         val_sample = random.sample(list(values), get_validation_sample_size(values))
@@ -168,7 +168,7 @@ def _values_are_datetime(values: Collection[Any]) -> bool:
     return True
 
 
-def _values_are_integers(values: Collection[Any]) -> bool:
+def string_values_are_integers(values: Collection[Any]) -> bool:
     try:
         val_sample = random.sample(list(values), get_validation_sample_size(values))
         for s in val_sample:
@@ -179,7 +179,7 @@ def _values_are_integers(values: Collection[Any]) -> bool:
     return True
 
 
-def _values_are_floats(values: Collection[Any]) -> bool:
+def string_values_are_floats(values: Collection[Any]) -> bool:
     try:
         val_sample = random.sample(list(values), get_validation_sample_size(values))
         for s in val_sample:
@@ -215,9 +215,9 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
             counts[DataType.string] += 1
         elif isinstance(v, float):
             counts[DataType.float] += 1
+        elif isinstance(v, bool):  # must come before int: isinstance(True, int) evaluates to True
+            counts[DataType.boolean] += 1
         elif isinstance(v, int):
-            counts[DataType.integer] += 1
-        elif isinstance(v, bool):
             counts[DataType.integer] += 1
         elif isinstance(v, decimal.Decimal):  # loading from JSONs can produce Decimal values
             counts[DataType.float] += 1
@@ -228,14 +228,14 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
     max_count_type = max(ratios, key=lambda k: ratios[k])
 
     # preliminary check: ints/floats may be loaded as strings
-    if max_count_type:
-        if _values_are_integers(values):
+    if max_count_type == DataType.string:
+        if string_values_are_integers(values):
             max_count_type = DataType.integer
-        elif _values_are_floats(values):
+        elif string_values_are_floats(values):
             max_count_type = DataType.float
 
     if max_count_type == DataType.string:
-        if _values_are_datetime(values):
+        if string_values_are_datetime(values):
             return DataType.string, FeatureType.datetime
         # is string type
         if ratio_unique >= ID_RATIO_THRESHOLD:
