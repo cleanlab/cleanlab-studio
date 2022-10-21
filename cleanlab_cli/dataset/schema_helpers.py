@@ -215,9 +215,9 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
             counts[DataType.string] += 1
         elif isinstance(v, float):
             counts[DataType.float] += 1
+        elif isinstance(v, bool):  # must come before int: isinstance(True, int) evaluates to True
+            counts[DataType.boolean] += 1
         elif isinstance(v, int):
-            counts[DataType.integer] += 1
-        elif isinstance(v, bool):
             counts[DataType.integer] += 1
         elif isinstance(v, decimal.Decimal):  # loading from JSONs can produce Decimal values
             counts[DataType.float] += 1
