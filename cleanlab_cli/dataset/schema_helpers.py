@@ -9,8 +9,8 @@ import random
 from typing import Any, Optional, Dict, List, Collection, Tuple, Sized
 
 import pandas as pd
-from pandas import NaT
 import semver
+from pandas import NaT
 
 from cleanlab_cli import MIN_SCHEMA_VERSION, SCHEMA_VERSION, MAX_SCHEMA_VERSION
 from cleanlab_cli.click_helpers import progress, success, info, abort
@@ -81,12 +81,14 @@ def validate_schema(schema: Schema, columns: Collection[str]) -> None:
 
     # check schema version validity
     schema_version = schema.version
-    if semver.compare(MIN_SCHEMA_VERSION, schema_version) == 1:  # min schema > schema_version
+    if (
+        semver.VersionInfo.parse(MIN_SCHEMA_VERSION).compare(schema_version) == 1
+    ):  # min schema > schema_version
         raise ValueError(
             "This schema version is incompatible with this version of the CLI. "
             "A new schema should be generated using 'cleanlab dataset schema generate'"
         )
-    elif semver.compare(MAX_SCHEMA_VERSION, schema_version) == -1:
+    elif semver.VersionInfo.parse(MAX_SCHEMA_VERSION).compare(schema_version) == -1:
         raise ValueError(
             "CLI is not up to date with your schema version. Run 'pip install --upgrade cleanlab-cli'."
         )
