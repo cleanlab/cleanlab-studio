@@ -267,11 +267,12 @@ type.
 
 **Data type** refers to the type of the field's values: string, integer, float, or boolean.
 
-Note that the integer type is *strict*, meaning floats will be rejected. In contrast, the float type is *lenient*,
-meaning integers are accepted. Users should select the float type if the field may include float values. Note too that
-integers can have categorical and identifier feature types, whereas floats cannot.
+Note that the integer type is partially *strict*, meaning floats that are equal to integers (e.g. `1.0`, `2.0`, etc)
+will be accepted, but floats like `0.8` and `1.5` will not. In contrast, the float type is *lenient*, meaning integers
+are accepted. Users should select the float type if the field may include float values. Note too that integers can have
+categorical and identifier feature types, whereas floats cannot.
 
-For booleans, the list of accepted values are: true/false, t/f, yes/no, and 1/0.
+For booleans, the list of accepted values are: true/false, t/f, yes/no, 1/0, 1.0/0.0.
 
 **Feature type** refers to the secondary type of the field, relating to how it is used in a machine learning model, such
 as whether it is:
