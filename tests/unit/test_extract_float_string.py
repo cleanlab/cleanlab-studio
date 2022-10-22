@@ -41,6 +41,9 @@ class TestExtractFloatString:
             assert extract_float_string(f"-{v}%") == f"-{v}"
 
     def test_invalid_strings(self):
-        invalid_strings = ["2c", "2c2", "c2c", "c2"]
+        invalid_strings = ["2c", "2c2", "c2c", "c2", "abc"]
         for s in invalid_strings:
             assert extract_float_string(s) == ""
+
+    def test_empty_string(self):
+        assert extract_float_string("") == ""
