@@ -557,14 +557,28 @@ def save_warning_log(warning_log: WarningLog, filename: str) -> None:
 
 def extract_float_string(column_value: str) -> str:
     """
-    Floating point: Decimal number containing a decimal point, optionally preceded by a + or - sign
-    and optionally followed by the e or E character and a decimal number.
+    Floating point: Decimal number containing a decimal point, optionally preceded by a + or - sign,
+    and then optionally preceded by a currency symbol.
+    Optionally followed by the e or E character and a decimal number, and optionally ended with a % symbol.
+
+    The extracted string should include only the value (i.e. includes decimals and E notation), and no other symbols.
+    If a - sign precedes the value string, it is preserved in the return value.
 
     Reference: https://docs.python.org/3/library/re.html#simulating-scanf
     """
-    float_regex_pattern = r"[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"
-    float_value = re.search(float_regex_pattern, column_value)
-    return float_value.group(0) if float_value else ""
+    float_regex_pattern = r"^([+-]?)[$€£]?((\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)[%]?$"
+    match = re.search(float_regex_pattern, column_value)
+    if match:
+        group_1 = match.group(1)
+        if group_1 in ["+", "-"]:
+            if group_1 == "-":
+                return f"-{match.group(2)}"
+            else:
+                return match.group(2)
+        else:
+            return match.group(2)
+    else:
+        return ""
 
 
 def process_dataset(
