@@ -3,8 +3,8 @@ import os
 from typing import Optional, Dict, Any
 import semver
 
-from cleanlab_studio import SETTINGS_VERSION, MIN_SETTINGS_VERSION, MAX_SETTINGS_VERSION
-from cleanlab_studio.types import CleanlabSettingsDict
+from cleanlab_studio.version import SETTINGS_VERSION, MIN_SETTINGS_VERSION, MAX_SETTINGS_VERSION
+from cleanlab_studio.cli.types import CleanlabSettingsDict
 
 
 class CleanlabSettings:

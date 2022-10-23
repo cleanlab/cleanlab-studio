@@ -1,8 +1,8 @@
 import jsonstreams
 from typing import Dict
 
-from cleanlab_studio.types import RecordType, DatasetFileExtension
-from cleanlab_studio.util import get_dataset_file_extension, get_dataset_chunks, append_rows
+from cleanlab_studio.cli.types import RecordType, DatasetFileExtension
+from cleanlab_studio.cli.util import get_dataset_file_extension, get_dataset_chunks, append_rows
 
 
 def combine_fields_with_dataset(

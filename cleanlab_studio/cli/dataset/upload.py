@@ -3,25 +3,25 @@ from typing import Optional, List
 
 import click
 
-from cleanlab_studio import api_service
-from cleanlab_studio import click_helpers
-from cleanlab_studio.click_helpers import progress, success, abort, info, log
-from cleanlab_studio.dataset.helpers import (
+from cleanlab_studio.cli import api_service
+from cleanlab_studio.cli import click_helpers
+from cleanlab_studio.cli.click_helpers import progress, success, abort, info, log
+from cleanlab_studio.cli.dataset.helpers import (
     get_id_column_if_undefined,
     get_filepath_column_if_undefined,
 )
-from cleanlab_studio.dataset.schema_helpers import (
+from cleanlab_studio.cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
     propose_schema,
     save_schema,
 )
-from cleanlab_studio.dataset.upload_helpers import upload_dataset
-from cleanlab_studio.decorators import auth_config, previous_state
-from cleanlab_studio.decorators.auth_config import AuthConfig
-from cleanlab_studio.decorators.previous_state import PreviousState
-from cleanlab_studio.types import Modality, CommandState, MODALITIES
-from cleanlab_studio.util import init_dataset_from_filepath
+from cleanlab_studio.cli.dataset.upload_helpers import upload_dataset
+from cleanlab_studio.cli.decorators import auth_config, previous_state
+from cleanlab_studio.cli.decorators.auth_config import AuthConfig
+from cleanlab_studio.cli.decorators.previous_state import PreviousState
+from cleanlab_studio.cli.types import Modality, CommandState, MODALITIES
+from cleanlab_studio.cli.util import init_dataset_from_filepath
 
 
 def resume_upload(api_key: str, dataset_id: str, filepath: str) -> None:

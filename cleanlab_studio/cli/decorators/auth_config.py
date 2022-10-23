@@ -1,7 +1,7 @@
 import click
-from cleanlab_studio.api_service import validate_api_key
-from cleanlab_studio.click_helpers import abort
-from cleanlab_studio.settings import CleanlabSettings
+from cleanlab_studio.cli.api_service import validate_api_key
+from cleanlab_studio.cli.click_helpers import abort
+from cleanlab_studio.cli.settings import CleanlabSettings
 from typing import Optional
 
 

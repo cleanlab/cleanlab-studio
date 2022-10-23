@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 import click
-from cleanlab_studio.dataset.schema_helpers import _find_best_matching_column
+from cleanlab_studio.cli.dataset.schema_helpers import _find_best_matching_column
 
 
 def get_id_column_if_undefined(id_column: Optional[str], columns: List[str]) -> str:

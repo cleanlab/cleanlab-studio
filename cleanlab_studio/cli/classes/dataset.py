@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, Generator, Any
 
 import pandas as pd
 
-from cleanlab_studio.types import RecordType
+from cleanlab_studio.cli.types import RecordType
 
 
 class Dataset:

@@ -1,10 +1,10 @@
 from typing import Tuple, Optional, Dict
 
-from cleanlab_studio import SCHEMA_VERSION
-from cleanlab_studio.classes.dataset import Dataset
-from cleanlab_studio.dataset import validate_and_process_record, Schema, RowWarningsType
-from cleanlab_studio.dataset.schema_types import SchemaMetadata
-from cleanlab_studio.types import RecordType
+from cleanlab_studio.version import SCHEMA_VERSION
+from cleanlab_studio.cli.classes.dataset import Dataset
+from cleanlab_studio.cli.dataset import validate_and_process_record, Schema, RowWarningsType
+from cleanlab_studio.cli.dataset.schema_types import SchemaMetadata
+from cleanlab_studio.cli.types import RecordType
 
 ID_COLUMN = "id"
 

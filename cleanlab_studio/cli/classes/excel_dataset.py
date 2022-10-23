@@ -1,10 +1,10 @@
 from typing import List, Generator, Any
 
-from cleanlab_studio.classes.dataset import Dataset
+from cleanlab_studio.cli.classes.dataset import Dataset
 import pyexcel
 import pandas as pd
 
-from cleanlab_studio.types import RecordType
+from cleanlab_studio.cli.types import RecordType
 
 
 class ExcelDataset(Dataset):

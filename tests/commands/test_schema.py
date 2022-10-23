@@ -1,10 +1,10 @@
 from click.testing import CliRunner
-from cleanlab_studio.dataset.schema import (
+from cleanlab_studio.cli.dataset.schema import (
     validate_schema_command,
     generate_schema_command,
     check_dataset_command,
 )
-from cleanlab_studio.util import init_dataset_from_filepath
+from cleanlab_studio.cli.util import init_dataset_from_filepath
 import os
 import sys
 from os.path import dirname, abspath

@@ -1,9 +1,9 @@
 import json
-from cleanlab_studio.api_service import validate_api_key
-from cleanlab_studio.click_helpers import *
-from cleanlab_studio.decorators.previous_state import PreviousState
-from cleanlab_studio.settings import CleanlabSettings
-from cleanlab_studio.decorators import previous_state
+from cleanlab_studio.cli.api_service import validate_api_key
+from cleanlab_studio.cli.click_helpers import *
+from cleanlab_studio.cli.decorators.previous_state import PreviousState
+from cleanlab_studio.cli.settings import CleanlabSettings
+from cleanlab_studio.cli.decorators import previous_state
 import click
 
 

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Set, Optional, Union, Any
 
-from cleanlab_studio.types import Modality
+from cleanlab_studio.cli.types import Modality
 
 SchemaMetadataDictType = Dict[str, Optional[str]]
 SchemaFieldsDictType = Dict[str, Dict[str, str]]

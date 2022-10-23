@@ -12,15 +12,15 @@ import pandas as pd
 import semver
 from pandas import NaT
 
-from cleanlab_studio import MIN_SCHEMA_VERSION, SCHEMA_VERSION, MAX_SCHEMA_VERSION
-from cleanlab_studio.click_helpers import progress, success, info, abort
-from cleanlab_studio.dataset.schema_types import (
+from cleanlab_studio.version import MIN_SCHEMA_VERSION, SCHEMA_VERSION, MAX_SCHEMA_VERSION
+from cleanlab_studio.cli.click_helpers import progress, success, info, abort
+from cleanlab_studio.cli.dataset.schema_types import (
     FeatureType,
     Schema,
     DataType,
 )
-from cleanlab_studio.types import Modality
-from cleanlab_studio.util import (
+from cleanlab_studio.cli.types import Modality
+from cleanlab_studio.cli.util import (
     init_dataset_from_filepath,
     get_filename,
     dump_json,

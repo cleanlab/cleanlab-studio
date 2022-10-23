@@ -62,6 +62,6 @@ setup(
     ],
     entry_points="""
         [console_scripts]
-        cleanlab=cleanlab_studio.main:cli
+        cleanlab=cleanlab_studio.cli:main
     """,
 )

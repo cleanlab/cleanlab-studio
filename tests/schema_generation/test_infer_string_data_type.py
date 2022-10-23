@@ -2,8 +2,8 @@ import random
 import uuid
 from datetime import datetime, timedelta
 
-from cleanlab_studio.dataset import DataType, FeatureType
-from cleanlab_studio.dataset.schema_helpers import infer_types
+from cleanlab_studio.cli.dataset import DataType, FeatureType
+from cleanlab_studio.cli.dataset.schema_helpers import infer_types
 
 
 class TestInferStringDataType:

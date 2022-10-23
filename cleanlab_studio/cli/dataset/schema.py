@@ -2,26 +2,26 @@ from typing import Optional, Set, List, Sized, Iterable, cast
 
 import click
 
-from cleanlab_studio.dataset.helpers import (
+from cleanlab_studio.cli.dataset.helpers import (
     get_id_column_if_undefined,
     get_filepath_column_if_undefined,
 )
-from cleanlab_studio.dataset.upload_helpers import process_dataset
-from cleanlab_studio.dataset.schema_helpers import (
+from cleanlab_studio.cli.dataset.upload_helpers import process_dataset
+from cleanlab_studio.cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
     propose_schema,
     save_schema,
 )
-from cleanlab_studio.dataset import upload_helpers
-from cleanlab_studio.decorators.previous_state import PreviousState
-from cleanlab_studio.dataset.upload_types import ValidationWarning
-from cleanlab_studio.types import CommandState, MODALITIES, Modality
-from cleanlab_studio.util import init_dataset_from_filepath
-from cleanlab_studio.decorators import previous_state
+from cleanlab_studio.cli.dataset import upload_helpers
+from cleanlab_studio.cli.decorators.previous_state import PreviousState
+from cleanlab_studio.cli.dataset.upload_types import ValidationWarning
+from cleanlab_studio.cli.types import CommandState, MODALITIES, Modality
+from cleanlab_studio.cli.util import init_dataset_from_filepath
+from cleanlab_studio.cli.decorators import previous_state
 import json
-from cleanlab_studio.click_helpers import abort, info, success
-from cleanlab_studio import click_helpers
+from cleanlab_studio.cli.click_helpers import abort, info, success
+from cleanlab_studio.cli import click_helpers
 
 
 @click.group(help="generate and validate dataset schema, or check your dataset against a schema")

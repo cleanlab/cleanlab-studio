@@ -2,12 +2,12 @@ import click
 import os
 import subprocess
 
-from cleanlab_studio import api_service
-from cleanlab_studio.click_helpers import abort
-from cleanlab_studio.dataset.commands import dataset
-from cleanlab_studio.cleanset.commands import cleanset
-from cleanlab_studio.login.login import login
-from cleanlab_studio.settings import CleanlabSettings
+from cleanlab_studio.cli import api_service
+from cleanlab_studio.cli.click_helpers import abort
+from cleanlab_studio.cli.dataset.commands import dataset
+from cleanlab_studio.cli.cleanset.commands import cleanset
+from cleanlab_studio.cli.login.login import login
+from cleanlab_studio.cli.settings import CleanlabSettings
 from cleanlab_studio.version import __version__
 
 

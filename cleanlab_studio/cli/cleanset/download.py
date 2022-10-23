@@ -5,16 +5,16 @@ from typing import Dict, Any, Optional
 import click
 import pandas as pd
 
-from cleanlab_studio import api_service
-from cleanlab_studio import click_helpers
-from cleanlab_studio import util
-from cleanlab_studio.cleanset.download_helpers import combine_fields_with_dataset
-from cleanlab_studio.click_helpers import log, progress
-from cleanlab_studio.decorators import previous_state, auth_config
-from cleanlab_studio.decorators.auth_config import AuthConfig
-from cleanlab_studio.decorators.previous_state import PreviousState
-from cleanlab_studio.settings import CleanlabSettings
-from cleanlab_studio.types import IDType, RecordType, DatasetFileExtension
+from cleanlab_studio.cli import api_service
+from cleanlab_studio.cli import click_helpers
+from cleanlab_studio.cli import util
+from cleanlab_studio.cli.cleanset.download_helpers import combine_fields_with_dataset
+from cleanlab_studio.cli.click_helpers import log, progress
+from cleanlab_studio.cli.decorators import previous_state, auth_config
+from cleanlab_studio.cli.decorators.auth_config import AuthConfig
+from cleanlab_studio.cli.decorators.previous_state import PreviousState
+from cleanlab_studio.cli.settings import CleanlabSettings
+from cleanlab_studio.cli.types import IDType, RecordType, DatasetFileExtension
 
 
 @click.command(help="download Cleanlab columns")
