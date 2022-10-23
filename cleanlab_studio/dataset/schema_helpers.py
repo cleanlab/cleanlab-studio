@@ -12,15 +12,15 @@ import pandas as pd
 import semver
 from pandas import NaT
 
-from cleanlab_cli import MIN_SCHEMA_VERSION, SCHEMA_VERSION, MAX_SCHEMA_VERSION
-from cleanlab_cli.click_helpers import progress, success, info, abort
-from cleanlab_cli.dataset.schema_types import (
+from cleanlab_studio import MIN_SCHEMA_VERSION, SCHEMA_VERSION, MAX_SCHEMA_VERSION
+from cleanlab_studio.click_helpers import progress, success, info, abort
+from cleanlab_studio.dataset.schema_types import (
     FeatureType,
     Schema,
     DataType,
 )
-from cleanlab_cli.types import Modality
-from cleanlab_cli.util import (
+from cleanlab_studio.types import Modality
+from cleanlab_studio.util import (
     init_dataset_from_filepath,
     get_filename,
     dump_json,
@@ -90,7 +90,7 @@ def validate_schema(schema: Schema, columns: Collection[str]) -> None:
         )
     elif semver.VersionInfo.parse(MAX_SCHEMA_VERSION).compare(schema_version) == -1:
         raise ValueError(
-            "CLI is not up to date with your schema version. Run 'pip install --upgrade cleanlab-cli'."
+            "CLI is not up to date with your schema version. Run 'pip install --upgrade cleanlab-studio'."
         )
 
     schema_columns = set(schema.fields)

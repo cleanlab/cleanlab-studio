@@ -1,4 +1,4 @@
-from cleanlab_cli.dataset import extract_float_string
+from cleanlab_studio.dataset import extract_float_string
 
 base_values = [180, 180.0, 180.5, 1.8e9]
 

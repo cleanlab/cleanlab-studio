@@ -26,33 +26,33 @@ import click
 import pandas as pd
 from tqdm import tqdm
 
-from cleanlab_cli import api_service
-from cleanlab_cli import click_helpers
-from cleanlab_cli.classes.dataset import Dataset
-from cleanlab_cli.click_helpers import success, info, progress, abort
-from cleanlab_cli.dataset.image_utils import (
+from cleanlab_studio import api_service
+from cleanlab_studio import click_helpers
+from cleanlab_studio.classes.dataset import Dataset
+from cleanlab_studio.click_helpers import success, info, progress, abort
+from cleanlab_studio.dataset.image_utils import (
     image_file_readable,
     image_file_exists,
     get_image_filepath,
 )
-from cleanlab_cli.dataset.schema_types import (
+from cleanlab_studio.dataset.schema_types import (
     PYTHON_TYPES_TO_READABLE_STRING,
     DATA_TYPES_TO_PYTHON_TYPES,
     DataType,
     Schema,
     FeatureType,
 )
-from cleanlab_cli.dataset.upload_types import (
+from cleanlab_studio.dataset.upload_types import (
     ValidationWarning,
     WarningLog,
     RowWarningsType,
     warning_to_readable_name,
 )
-from cleanlab_cli.types import (
+from cleanlab_studio.types import (
     RecordType,
     Modality,
 )
-from cleanlab_cli.util import (
+from cleanlab_studio.util import (
     is_null_value,
     dump_json,
     init_dataset_from_filepath,

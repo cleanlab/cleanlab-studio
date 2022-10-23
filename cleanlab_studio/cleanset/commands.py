@@ -1,5 +1,5 @@
 import click
-from cleanlab_cli.cleanset.download import download
+from cleanlab_studio.cleanset.download import download
 
 
 @click.group(help="download Cleanlab columns from cleansets")

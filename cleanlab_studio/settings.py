@@ -3,8 +3,8 @@ import os
 from typing import Optional, Dict, Any
 import semver
 
-from cleanlab_cli import SETTINGS_VERSION, MIN_SETTINGS_VERSION, MAX_SETTINGS_VERSION
-from cleanlab_cli.types import CleanlabSettingsDict
+from cleanlab_studio import SETTINGS_VERSION, MIN_SETTINGS_VERSION, MAX_SETTINGS_VERSION
+from cleanlab_studio.types import CleanlabSettingsDict
 
 
 class CleanlabSettings:
@@ -77,7 +77,7 @@ class CleanlabSettings:
             raise ValueError("Settings file must be migrated or re-generated.")
         elif semver.compare(MAX_SETTINGS_VERSION, self.version) == -1:
             raise ValueError(
-                "CLI is not up to date with your settings version. Run 'pip install --upgrade cleanlab-cli'."
+                "CLI is not up to date with your settings version. Run 'pip install --upgrade cleanlab-studio'."
             )
 
     def save(self) -> None:

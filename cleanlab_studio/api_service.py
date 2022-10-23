@@ -10,11 +10,11 @@ from typing import List, Any, Optional
 import aiohttp
 import requests
 
-from cleanlab_cli import __version__
-from cleanlab_cli.click_helpers import abort, warn, info
-from cleanlab_cli.dataset.image_utils import get_image_filepath
-from cleanlab_cli.dataset.schema_types import Schema
-from cleanlab_cli.types import JSONDict, IDType, Modality
+from cleanlab_studio import __version__
+from cleanlab_studio.click_helpers import abort, warn, info
+from cleanlab_studio.dataset.image_utils import get_image_filepath
+from cleanlab_studio.dataset.schema_types import Schema
+from cleanlab_studio.types import JSONDict, IDType, Modality
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
 

@@ -7,20 +7,20 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 # Get version number and store it in __version__
-exec(open("cleanlab_cli/version.py").read())
+exec(open("cleanlab_studio/version.py").read())
 
 setup(
-    name="cleanlab-cli",
+    name="cleanlab-studio",
     version=__version__,
     license="MIT",
-    author="Cleanlab Inc.",
+    author="Cleanlab Inc",
     author_email="team@cleanlab.ai",
-    description="Command line interface for all things Cleanlab Studio",
+    description="Client interface for all things Cleanlab Studio",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/cleanlab/cleanlab-cli",
+    url="https://github.com/cleanlab/cleanlab-studio",
     project_urls={
-        "Bug Tracker": "https://github.com/cleanlab/cleanlab-cli/issues",
+        "Bug Tracker": "https://github.com/cleanlab/cleanlab-studio/issues",
     },
     classifiers=[
         "License :: OSI Approved :: MIT License",
@@ -62,6 +62,6 @@ setup(
     ],
     entry_points="""
         [console_scripts]
-        cleanlab=cleanlab_cli.main:cli
+        cleanlab=cleanlab_studio.main:cli
     """,
 )

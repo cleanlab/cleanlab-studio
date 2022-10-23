@@ -1,7 +1,7 @@
-from cleanlab_cli.dataset.schema_helpers import propose_schema, validate_schema
+from cleanlab_studio.dataset.schema_helpers import propose_schema, validate_schema
 import requests
 import pytest
-from cleanlab_cli.util import get_filename
+from cleanlab_studio.util import get_filename
 import os
 
 FILESIZES = ["1M", "10M", "100M", "1G"]  # , "1G"]

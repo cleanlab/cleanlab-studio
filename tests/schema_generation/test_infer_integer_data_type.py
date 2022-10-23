@@ -1,7 +1,7 @@
 import random
 
-from cleanlab_cli.dataset import DataType, FeatureType
-from cleanlab_cli.dataset.schema_helpers import infer_types
+from cleanlab_studio.dataset import DataType, FeatureType
+from cleanlab_studio.dataset.schema_helpers import infer_types
 from tests.schema_generation.utils import cast_to_strings
 
 

@@ -1,6 +1,6 @@
 ## View performance benchmarks
 
-https://cleanlab.github.io/cleanlab-cli/dev/bench/
+https://cleanlab.github.io/cleanlab-studio/dev/bench/
 
 ## Development
 
@@ -63,7 +63,7 @@ References:
 To upload to TestPyPi:
 
 1. twine upload -r testpypi dist/*
-2. pip install -i https://test.pypi.org/simple/ cleanlab-cli
+2. pip install -i https://test.pypi.org/simple/ cleanlab-studio
 
 This last step may fail if test versions of some required packages are not available.
 
@@ -83,7 +83,7 @@ For *developers*, there are four version numbers to keep track of:
 4. The CLI settings version number
 
 The latest version numbers for (1), (2), and (4)
-are [stored in version.py](https://github.com/cleanlab/cleanlab-cli/blob/main/cleanlab_cli/version.py).
+are [stored in version.py](https://github.com/cleanlab/cleanlab-studio/blob/main/cleanlab_studio/version.py).
 
 ### Minimum supported versions
 
@@ -102,7 +102,7 @@ Similarly, each version of the **Cleanlab Studio CLI API** supports some:
 - `MIN_CLI_VERSION`: Minimum CLI version number
 
 The CLI, upon initializing, pings the CLI API with its version number to check if it is compatible. If the CLI
-version < `MIN_CLI_VERSION`, then the user is prompted to upgrade their `cleanlab-cli` package.
+version < `MIN_CLI_VERSION`, then the user is prompted to upgrade their `cleanlab-studio` package.
 
 Each **version of the CLI** also supports some:
 
@@ -150,5 +150,5 @@ Does this change in the API break the oldest supported versions of the CLI?
 
 Every time the version number is incremented, these parts of the codebase need to be updated:
 
-1. `cleanlab_cli/version.py`
+1. `cleanlab_studio/version.py`
 2. `README.md`

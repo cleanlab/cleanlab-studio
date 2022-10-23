@@ -1,4 +1,4 @@
-# cleanlab-cli [![Build Status](https://github.com/cleanlab/cleanlab-cli/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-cli/actions?query=workflow%3ACI) [![PyPI](https://img.shields.io/pypi/v/cleanlab-cli.svg)][PyPI]
+# cleanlab-studio [![Build Status](https://github.com/cleanlab/cleanlab-studio/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-studio/actions?query=workflow%3ACI) [![PyPI](https://img.shields.io/pypi/v/cleanlab-studio.svg)][PyPI]
 
 Command line interface for all things Cleanlab Studio.
 
@@ -10,13 +10,13 @@ datasets</a> into Cleanlab Studio, and downloading cleansets from Cleanlab Studi
 You can install the Cleanlab Studio CLI [from PyPI][PyPI] with:
 
 ```bash
-pip install cleanlab-cli
+pip install cleanlab-studio
 ```
 
 If you already have the CLI installed and wish to upgrade to the latest version, run:
 
 ```bash
-pip install --upgrade cleanlab-cli
+pip install --upgrade cleanlab-studio
 ```
 
 ## Workflow
@@ -30,7 +30,7 @@ Uploading datasets to Cleanlab Studio is a two-step process.
 ### Upload a dataset
 
 To upload a dataset without
-first [generating a schema](https://github.com/cleanlab/cleanlab-cli/#generate-dataset-schema) (i.e. Cleanlab will
+first [generating a schema](https://github.com/cleanlab/cleanlab-studio/#generate-dataset-schema) (i.e. Cleanlab will
 suggest one for you):
 
 `cleanlab dataset upload -f [dataset filepath]`
@@ -301,4 +301,4 @@ by [pandas.to_datetime()](https://pandas.pydata.org/docs/reference/api/pandas.to
 `version` indicates the version of the Cleanlab CLI package version used to generate the schema. The current Cleanlab
 schema version is `0.1.14`.
 
-[PyPI]: https://pypi.org/project/cleanlab-cli/
+[PyPI]: https://pypi.org/project/cleanlab-studio/

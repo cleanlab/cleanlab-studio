@@ -4,7 +4,7 @@ import pandas as pd
 import ijson
 
 from .dataset import Dataset
-from cleanlab_cli.types import RecordType
+from cleanlab_studio.types import RecordType
 
 
 class JsonDataset(Dataset):

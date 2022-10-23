@@ -1,11 +1,11 @@
 from typing import Tuple, Optional
 
-from cleanlab_cli.dataset import (
+from cleanlab_studio.dataset import (
     RowWarningsType,
     DataType,
     FeatureType,
 )
-from cleanlab_cli.types import RecordType
+from cleanlab_studio.types import RecordType
 from tests.row_processing.utils import process_record_with_fields
 
 

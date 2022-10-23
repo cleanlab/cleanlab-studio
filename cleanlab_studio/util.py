@@ -7,9 +7,9 @@ import pathlib
 import pandas as pd
 from typing import Optional, Dict, Any, List, Generator
 
-from cleanlab_cli.classes import CsvDataset, JsonDataset, ExcelDataset
-from cleanlab_cli.classes.dataset import Dataset
-from cleanlab_cli.types import (
+from cleanlab_studio.classes import CsvDataset, JsonDataset, ExcelDataset
+from cleanlab_studio.classes.dataset import Dataset
+from cleanlab_studio.types import (
     RecordType,
     DatasetFileExtension,
     ImageFileExtension,
