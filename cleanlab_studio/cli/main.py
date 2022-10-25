@@ -12,7 +12,10 @@ from cleanlab_studio.version import __version__
 
 
 @click.group()
-def cli() -> None:
+@click.pass_context
+def cli(ctx) -> None:
+    if ctx.invoked_subcommand == "version":
+        return  # avoid RTT / dependence on API to get client version
     CleanlabSettings.init_cleanlab_settings()
     valid_version = api_service.check_client_version()
     if not valid_version:
