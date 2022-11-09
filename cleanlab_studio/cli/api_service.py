@@ -5,6 +5,7 @@ Methods for interacting with the command line server API
 import gzip
 import json
 import os
+import asyncio
 from typing import List, Any, Optional
 
 import aiohttp
@@ -17,6 +18,9 @@ from cleanlab_studio.cli.dataset.schema_types import Schema
 from cleanlab_studio.cli.types import JSONDict, IDType, Modality
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
+
+
+MAX_PARALLEL_UPLOADS = 100  # XXX choose this dynamically?
 
 
 def _construct_headers(
@@ -99,16 +103,41 @@ async def upload_rows_async(
         filepath_to_post = get_presigned_posts(
             api_key=api_key, dataset_id=dataset_id, filepaths=filepaths, media_type=modality.value
         )
-        for original_filepath, absolute_filepath in zip(filepaths, absolute_filepaths):
-            post_data = filepath_to_post.get(original_filepath)
-            assert isinstance(post_data, dict)
-            presigned_post = post_data["post"]
-            if presigned_post is not None:
-                await session.post(
-                    url=presigned_post["url"],
-                    data={**presigned_post["fields"], "file": open(absolute_filepath, "rb")},
-                )
+        sem = asyncio.Semaphore(MAX_PARALLEL_UPLOADS)
+        cancelled = False
+
+        async def post_file(original_filepath, absolute_filepath):
+            async with sem:
+                # note: we pass in the path and we don't open the file until we
+                # get in here, so we don't have tons of concurrently opened
+                # files
+                if not cancelled:
+                    post_data = filepath_to_post.get(original_filepath)
+                    assert isinstance(post_data, dict)
+                    presigned_post = post_data["post"]
+                    async with session.post(
+                        url=presigned_post["url"],
+                        data={**presigned_post["fields"], "file": open(absolute_filepath, "rb")},
+                    ) as res:
+                        return res.ok, original_filepath
+            return None, original_filepath
+
+        for coro in asyncio.as_completed(
+            [
+                post_file(original_filepath, absolute_filepath)
+                for original_filepath, absolute_filepath in zip(filepaths, absolute_filepaths)
+            ]
+        ):
+            ok, original_filepath = await coro
+            if ok:
                 info(f"Uploaded {original_filepath}")
+            else:
+                # cancel tasks we don't need anymore, to give us flexibility to
+                # not abort() later but to throw an exception and keep the
+                # Python interpreter running without a bunch of leaked
+                # coroutines
+                cancelled = True
+                abort(f"Failed to upload {original_filepath}")
 
     url = base_url + f"/datasets/{dataset_id}"
     data = gzip.compress(
