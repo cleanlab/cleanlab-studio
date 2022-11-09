@@ -71,7 +71,7 @@ def get_dataset_schema(api_key: str, dataset_id: str) -> Schema:
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
-    schema: Schema = res.json()["schema"]
+    schema = Schema.from_dict(res.json()["schema"])
     return schema
 
 

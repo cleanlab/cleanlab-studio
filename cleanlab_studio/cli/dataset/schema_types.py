@@ -143,6 +143,14 @@ class Schema:
 
         return retval
 
+    @classmethod
+    def from_dict(cls, schema_dict: Dict[str, Any]) -> "Schema":
+        return Schema.create(
+            metadata=schema_dict["metadata"],
+            fields=schema_dict["fields"],
+            version=schema_dict["version"],
+        )
+
 
 PYTHON_TYPES_TO_READABLE_STRING: Dict[type, str] = {
     str: DataType.string.value,
