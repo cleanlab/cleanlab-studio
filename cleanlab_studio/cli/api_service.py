@@ -106,7 +106,9 @@ async def upload_rows_async(
         sem = asyncio.Semaphore(MAX_PARALLEL_UPLOADS)
         cancelled = False
 
-        async def post_file(original_filepath: str, absolute_filepath: str) -> Tuple[Optional[bool], str]:
+        async def post_file(
+            original_filepath: str, absolute_filepath: str
+        ) -> Tuple[Optional[bool], str]:
             async with sem:
                 # note: we pass in the path and we don't open the file until we
                 # get in here, so we don't have tons of concurrently opened
