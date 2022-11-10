@@ -6,7 +6,7 @@ import gzip
 import json
 import os
 import asyncio
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Tuple
 
 import aiohttp
 import requests
@@ -106,7 +106,7 @@ async def upload_rows_async(
         sem = asyncio.Semaphore(MAX_PARALLEL_UPLOADS)
         cancelled = False
 
-        async def post_file(original_filepath, absolute_filepath):
+        async def post_file(original_filepath: str, absolute_filepath: str) -> Tuple[Optional[bool], str]:
             async with sem:
                 # note: we pass in the path and we don't open the file until we
                 # get in here, so we don't have tons of concurrently opened
