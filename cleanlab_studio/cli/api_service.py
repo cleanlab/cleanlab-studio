@@ -20,7 +20,7 @@ from cleanlab_studio.cli.types import JSONDict, IDType, Modality
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
 
 
-MAX_PARALLEL_UPLOADS = 100  # XXX choose this dynamically?
+MAX_PARALLEL_UPLOADS = 30  # XXX choose this dynamically?
 
 
 def _construct_headers(
