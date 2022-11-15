@@ -35,10 +35,13 @@ suggest one for you):
 
 `cleanlab dataset upload -f [dataset filepath]`
 
-You will be asked to `"Specify your dataset modality (text, tabular):"`.
+**Note:** For image datasets, `[dataset filepath]` refers to the path of the labels file. <a href="#dataset-format">Learn more about the labels file.</a>
+
+You will be asked to `"Specify your dataset modality (text, tabular, image):"`.
 
 * Enter `text` to only find label errors based on a single column of text in your dataset.
 * Enter `tabular` to find data and label issues based on any subset of the column features.
+* Enter `image` to find label errors in your image dataset.
 
 To upload a dataset with a schema:
 
@@ -48,8 +51,7 @@ To **resume uploading** a dataset whose upload was interrupted:
 
 `cleanlab dataset upload -f [dataset filepath] --id [dataset ID]`
 
-A dataset ID is generated and printed to the terminal the first time the dataset is uploaded. It can also be accessed by
-visiting https://app.cleanlab.ai/datasets and selecting 'Resume' for the relevant dataset.
+A dataset ID is generated and printed to the terminal the first time the dataset is uploaded. It can also be accessed from the Datasets section of the Cleanlab Studio dashboard by visiting https://app.cleanlab.ai/ and selecting 'Resume' for the relevant dataset.
 
 #### Generate dataset schema
 
@@ -57,9 +59,15 @@ To generate a dataset schema (prior to uploading your dataset):
 
 `cleanlab dataset schema generate -f [dataset filepath]`
 
+* For `Modality (text, tabular, image): ` enter one of the following:
+  * `text` - to only find label errors based on a single column of text in your dataset.
+  * `tabular` - to find data and label issues based on any subset of the column features.
+  * `image` - to find label errors in your image dataset.
+
 * For `Id column: `, please enter the string name of of the column in your dataset that contains the id of each row.
-* For `Modality (text, tabular): `, please enter `text` to only find label errors based on a single column of text,
-  otherwise enter `tabular` to find data and label issues based on any subset of the column features.
+
+* For `filepath column: ` (only for image modality), please enter the string name of of the column in your dataset that contains the path to each image.
+
 
 To validate an existing schema, i.e. check that it is complete, well-formatted, and
 has <a href="#data-types-and-feature-types">data types with sensible feature types</a>:
@@ -124,7 +132,7 @@ label column.
 
 ## Dataset format
 
-Cleanlab currently only supports text and tabular dataset modalities.
+Cleanlab currently only supports text, tabular, and image dataset modalities.
 (If your dataset contains both text and tabular data, treat it as tabular.)
 The accepted dataset file types are: `.csv`, `.json`, and `.xls/.xlsx`.
 
@@ -283,16 +291,17 @@ as whether it is:
 - a boolean value
 - text
 - an identifier — a string / integer that identifies some entity
+- a filepath value (only valid for image datasets)
 
 Some feature types can only correspond to specific data types. The list of possible feature types for each data type is
 shown below
 
-| Data type  | Feature type                               |
-|:-----------|:-------------------------------------------|
-| string     | text, categorical, datetime, identifier    |
-| integer    | categorical, datetime, identifier, numeric |
-| float      | datetime, numeric                          |
-| boolean    | boolean                                    |
+| Data type  | Feature type                                         |
+|:-----------|:-----------------------------------------------------|
+| string     | text, categorical, datetime, identifier, filepath    |
+| integer    | categorical, datetime, identifier, numeric           |
+| float      | datetime, numeric                                    |
+| boolean    | boolean                                              |
 
 The `datetime` type should be used for datetime strings, e.g. "2015-02-24 11:35:52 -0800", and Unix timestamps (which
 will be integers or floats). Datetime values must be parsable
