@@ -134,30 +134,24 @@ label column.
 
 Cleanlab currently only supports text, tabular, and image dataset modalities.
 (If your dataset contains both text and tabular data, treat it as tabular.)
+
 The accepted dataset file types are: `.csv`, `.json`, and `.xls/.xlsx`.
 
-Below are some examples of how to format your dataset depending on modality and file type.
+Check below for instructions of formatting different dataset modalities.
 
-Every dataset must have an **ID column** (i.e. a column containing identifiers that uniquely identify each row) and a
-**label column** (for the prediction task).
+#### Tabular dataset format
+- dataset must have an **ID column** (`flower_id` in the example below) - a column containing identifiers that uniquely identify each row.
+- dataset must have a **label column** (`species` in the example below) for the prediction task.
+- Apart from the reserved column name: `clean_label`, you are free to name the columns in your dataset in any way you want.
 
-Apart from the reserved column name: `clean_label`, You are free to name the columns in your dataset in any way you
-want.
-
-<details>
-<summary>Tabular</summary>
-<br />
-<details>
-<summary>.csv, .xls/.xlsx</summary>
+###### .csv, .xls/.xlsx
 
 | flower_id | width | length | color | species |
 |:----------|:------|--------|-------|---------|
 | flower_01 | 4     | 3      | red   | rose    |
 | flower_02 | 7     | 2      | white | lily    |
 
-</details>
-<details>
-<summary>.json</summary>
+###### .json
 
 ```json
 {
@@ -179,25 +173,23 @@ want.
   ]
 }
 ```
-
-</details>
-</details>
-
-<details>
-<summary>Text</summary>
 <br />
-<details>
-<summary>.csv, .xls/.xlsx</summary>
+
+#### Text dataset format
+
+- dataset must have an **ID column** (`review_id` in the example below) - a column containing identifiers that uniquely identify each row.
+- dataset must have a **text column** (`review` in the example below) that serves as the input set for the prediction task.
+- dataset must have a **label column** (`sentiment` in the example below) that serves as the output for the prediction task.
+- Apart from the reserved column name: `clean_label`, you are free to name the columns in your dataset in any way you want.
+
+###### .csv, .xls/.xlsx
 
 | review_id | review | sentiment |
 |:----------|:-------|-----------|
 | review_1  | The sales rep was fantastic!     | positive  |
 | review_2  | He was a bit wishy-washy.     | negative  |
 
-</details>
-
-<details>
-<summary>.json</summary>
+###### .json
 
 ```json
 {
@@ -215,9 +207,59 @@ want.
   ]
 }
 ```
+<br />
 
-</details>
-</details>
+#### Image dataset format
+- Image Datasets have 2 components:
+  - **Set of images.**
+  - **Labels file** - A mapping from each image to a label. This mapping can be supplied either in a .csv, .xls/.xlsx, or json format.
+
+###### Labels file format
+- must have an **ID column** (`vizzy_id` in the example below) - a column containing identifiers that uniquely identify each row.
+- must have a **filepath column** (`vizzy_path` in the example below) that contains path to the image file.
+- must have a **label column** (`label` in the example below) that contains the label for the corresponding image file.
+- may have any number of metadata columns. Apart from the reserved column name: `clean_label`, you are free to name these columns any way you want.
+
+###### Dataset format
+
+###### .csv, .xls/.xlsx
+
+| vizzy_id | vizzy_path | label |
+|:----------|:-------|-----------|
+| 1  | Dataset/scruppy.jpeg    | cat  |
+| 2  | Dataset/tuffy/fluffy.png    | cat  |
+| 3  | oreo.jpeg    | dog  |
+| 4  | Dataset/mocha/mocha.jpeg    | dog  |
+
+###### .json
+
+```json
+{
+  "rows": [
+    {
+      "vizzy_id": "1",
+      "vizzy_path": "Dataset/scruppy.jpeg",
+      "label": "cat"
+    },
+    {
+      "vizzy_id": "2",
+      "vizzy_path": "Dataset/tuffy/fluffy.png",
+      "label": "cat"
+    },
+    {
+      "vizzy_id": "3",
+      "vizzy_path": "oreo.jpeg",
+      "label": "dog"
+    },
+    {
+      "vizzy_id": "4",
+      "vizzy_path": "Dataset/mocha/mocha.jpeg",
+      "label": "dog"
+    }
+  ]
+} 
+```
+<br />
 
 ## Schema
 
