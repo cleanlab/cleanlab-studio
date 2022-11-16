@@ -21,6 +21,8 @@ base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/
 
 
 MAX_PARALLEL_UPLOADS = 32  # XXX choose this dynamically?
+INITIAL_BACKOFF = 0.25  # seconds
+MAX_RETRIES = 4
 
 
 def _construct_headers(
@@ -117,11 +119,26 @@ async def upload_rows_async(
                     post_data = filepath_to_post.get(original_filepath)
                     assert isinstance(post_data, dict)
                     presigned_post = post_data["post"]
-                    async with session.post(
-                        url=presigned_post["url"],
-                        data={**presigned_post["fields"], "file": open(absolute_filepath, "rb")},
-                    ) as res:
-                        return res.ok, original_filepath
+
+                    retries = MAX_RETRIES
+                    wait = INITIAL_BACKOFF
+                    while retries:
+                        try:
+                            async with session.post(
+                                url=presigned_post["url"],
+                                data={
+                                    **presigned_post["fields"],
+                                    "file": open(absolute_filepath, "rb"),
+                                },
+                            ) as res:
+                                if res.ok:
+                                    return res.ok, original_filepath
+                        except Exception:
+                            pass  # ignore, will retry
+                        await asyncio.sleep(wait)
+                        wait *= 2
+                        retries -= 1
+                    return False, original_filepath
             return None, original_filepath
 
         for coro in asyncio.as_completed(
