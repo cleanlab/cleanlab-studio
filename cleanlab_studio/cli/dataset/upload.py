@@ -2,7 +2,7 @@ import json
 from typing import Optional, List
 
 import click
-
+import editor
 from cleanlab_studio.cli import api_service
 from cleanlab_studio.cli import click_helpers
 from cleanlab_studio.cli.click_helpers import progress, success, abort, info, log
@@ -22,6 +22,7 @@ from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.types import Modality, CommandState, MODALITIES
 from cleanlab_studio.cli.util import init_dataset_from_filepath
+from cleanlab_studio.cli.dataset.schema_types import Schema
 
 
 def resume_upload(api_key: str, dataset_id: str, filepath: str) -> None:
@@ -212,14 +213,30 @@ def upload(
         filepath_column=filepath_column,
         name=name,
     )
+    final_schema = proposed_schema
     log(json.dumps(proposed_schema.to_dict(), indent=2))
     info(f"No schema was provided. We propose the above schema based on your dataset.")
-
     proceed_upload = click.confirm("\nUse this schema?", default=None)
-    if not proceed_upload:
+    while not proceed_upload:
         info(
-            "Proposed schema rejected. Please submit your own schema using --schema.\n",
+            "Please submit a schema to proceed.\n",
         )
+        updated_schema = json.loads(
+            editor.edit(contents=json.dumps(proposed_schema.to_dict(), indent=2), use_tty=True)
+        )
+        final_schema = Schema.create(
+            metadata=updated_schema["metadata"],
+            fields=updated_schema["fields"],
+            version=updated_schema["version"],
+        )
+        log(json.dumps(final_schema.to_dict(), indent=2))
+        proceed_upload = click.confirm("\nUse this schema?", default=None)
+        if proceed_upload:
+            try:
+                validate_schema(final_schema, columns)
+            except ValueError as e:
+                abort(str(e))
+            success("Provided schema is valid!")
 
     save_filepath = click_helpers.confirm_save_prompt_filepath(
         save_message="Save the generated schema?",
@@ -229,12 +246,12 @@ def upload(
         no_save_message="Schema was not saved.",
     )
     if save_filepath:
-        save_schema(proposed_schema, save_filepath)
+        save_schema(final_schema, save_filepath)
 
     if proceed_upload:
-        dataset_id = api_service.initialize_dataset(api_key, proposed_schema)
+        dataset_id = api_service.initialize_dataset(api_key, final_schema)
         info(f"Dataset initialized with ID: {dataset_id}")
         prev_state.update_args(dict(dataset_id=dataset_id))
         upload_dataset(
-            api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema
+            api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=final_schema
         )
