@@ -6,25 +6,18 @@ import json
 import os.path
 import pathlib
 import random
-from typing import Any, Optional, Dict, List, Collection, Tuple, Sized
+import re
+from typing import Any, Collection, Dict, List, Optional, Sized, Tuple
 
 import pandas as pd
 import semver
 from pandas import NaT
 
-from cleanlab_studio.version import MIN_SCHEMA_VERSION, SCHEMA_VERSION, MAX_SCHEMA_VERSION
-from cleanlab_studio.cli.click_helpers import progress, success, info, abort
-from cleanlab_studio.cli.dataset.schema_types import (
-    FeatureType,
-    Schema,
-    DataType,
-)
+from cleanlab_studio.cli.click_helpers import abort, info, progress, success
+from cleanlab_studio.cli.dataset.schema_types import DataType, FeatureType, Schema
 from cleanlab_studio.cli.types import Modality
-from cleanlab_studio.cli.util import (
-    init_dataset_from_filepath,
-    get_filename,
-    dump_json,
-)
+from cleanlab_studio.cli.util import dump_json, get_filename, init_dataset_from_filepath
+from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
 
 def _find_best_matching_column(target_column: str, columns: List[str]) -> Optional[str]:
@@ -39,13 +32,19 @@ def _find_best_matching_column(target_column: str, columns: List[str]) -> Option
     """
     if len(columns) == 0:
         return None
+
+    if target_column == "id":
+        regex = r"id"
+    elif target_column == "filepath":
+        regex = r"file|path|dir"
+    else:
+        regex = r""
+
     poss = []
     for c in columns:
         if c.lower() == target_column:
             return c
-        elif c.lower().endswith(f"_{target_column}"):
-            poss.append(c)
-        elif c.lower().startswith(f"{target_column}_"):
+        elif any(re.findall(regex, c, re.IGNORECASE)):
             poss.append(c)
 
     if len(poss) > 0:  # pick first possibility
