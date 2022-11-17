@@ -1,9 +1,10 @@
 # cleanlab-studio [![Build Status](https://github.com/cleanlab/cleanlab-studio/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-studio/actions?query=workflow%3ACI) [![PyPI](https://img.shields.io/pypi/v/cleanlab-studio.svg)][PyPI]
 
-Command line interface for all things Cleanlab Studio.
+Command line interface for all things [Cleanlab Studio](https://cleanlab.ai/studio/). Upload datasets and download cleansets (cleaned datasets) from Cleanlab Studio in a single line of code!
 
-This currently supports generating <a href="#schema">dataset schema</a>, uploading <a href="#dataset-format">
-datasets</a> into Cleanlab Studio, and downloading cleansets from Cleanlab Studio.
+- [Installation](#installation)
+- [Quickstart](#quickstart)
+- [Reference](#reference)
 
 ## Installation
 
@@ -19,29 +20,129 @@ If you already have the CLI installed and wish to upgrade to the latest version,
 pip install --upgrade cleanlab-studio
 ```
 
-## Workflow
+## Quickstart
 
-Uploading datasets to Cleanlab Studio is a two-step process.
+1. If this is your first time using the Cleanlab CLI, authenticate with `cleanlab login`. You can find your API key at <https://app.cleanlab.ai/upload>, by clicking on "Upload via Command Line".
 
-1. We generate a schema describing the dataset and its <a href="#data-types-and-feature-types">data and feature
-   types</a>, which is verified by the user.
-2. Based on this schema, the dataset is parsed and uploaded to Cleanlab Studio.
+2. Upload your dataset ([image](#upload-an-image-dataset), [text](#upload-a-text-dataset), or [tabular](#upload-a-tabular-dataset)) using `cleanlab dataset upload`.
+
+3. Create a project in Cleanlab Studio.
+
+4. Improve your dataset in Cleanlab Studio (e.g., correct some labels).
+
+5. [Download your cleanset](#download-cleanset) with `cleanlab cleanset download`.
 
 ### Upload a dataset
 
+#### Upload an image dataset
+
+An image dataset consists of a collection of image files (organized in any way, in any folder hierarchy and with any file names), along with a metadata file specifying paths and labels (and optionally, other metadata). An image dataset might be organized like this:
+
+```
+- dogs
+  - scruffy.png
+  - spot.jpg
+- cats
+  - whiskers.png
+- fred.png
+- labels.csv
+```
+
+An example `labels.csv` looks like this:
+
+```
+id,path,label
+1,dogs/scruffy.png,dog
+2,dogs/spot.jpg,dog
+3,cats/whiskers.png,cat
+4,fred.png,human
+```
+
+The metadata file, `labels.csv`, must contain at least three columns:
+
+- an ID column (with unique identifiers for each datapoint)
+- a path column (with relative paths to image files)
+- a label column (with categorical labels)
+
+The metadata file is also allowed to have extra columns with various types of metadata.
+
+Image datasets can be uploaded with:
+
+```bash
+cleanlab dataset upload --modality image [metadata file]
+```
+
+Follow the prompts to specify the ID column and path column.
+
+If you have a dataset with metadata columns where this package isn't able to correctly infer the data/feature types, see the [reference](#reference) on dataset schemas.
+
+#### Upload a text dataset
+
+A text dataset contains a single predictve feature (text), along with labels. A text dataset should have a minimum of three columns:
+
+- an ID column (with unique identifiers for each datapoint)
+- a text column (containing text)
+- a label column (with categorical labels)
+
+The dataset is allowed to have extra columns. This package supports `.csv`, `.json`, and `.xls/.xlsx` datasets.
+
+Text datasets can be uploaded with:
+
+```bash
+cleanlab dataset upload --modality text [dataset]
+```
+
+If you have a dataset with columns where this package isn't able to correctly infer the data/feature types, see the [reference](#reference) on dataset schemas.
+
+#### Upload a tabular dataset
+
+A tabular dataset has a number of predictive features, along with labels. A tabular dataset should have at least:
+
+- an ID column (with unique identifiers for each datapoint)
+- a label column (with categorical labels)
+
+The dataset can have as many feature columns as you would like. This package supports `.csv`, `.json`, and `.xls/.xlsx` datasets.
+
+Tabular datasets can be uploaded with:
+
+```bash
+cleanlab dataset upload --modality tabular [dataset]
+```
+
+If you have a dataset with columns where this package isn't able to correctly infer the data/feature types, see the [reference](#reference) on dataset schemas.
+
+### Download Cleanset
+
+To download clean labels (i.e., labels that have been fixed through the Cleanlab Studio interface), first find the ID of the cleanset. You can find this by clicking the "Export Cleanset" button in the top right of a project page.
+
+```bash
+cleanlab cleanset download --id [cleanset ID]
+```
+
+The above command only downloads corrected labels. You can also download corrected labels and combine them with your local dataset in a single command:
+
+```bash
+cleanlab cleanset download --id [cleanset ID] -f [dataset filepath]
+```
+
+Include the `--all` flag to include **all** Cleanlab columns, i.e. issue, label quality, suggested label, clean label, instead of only the clean label column.
+
+## Reference
+
+### Workflow
+
+Uploading datasets to Cleanlab Studio is a two-step process.
+
+1. Generate a schema describing the dataset and its [data and feature types](#data-types-and-feature-types)
+2. Based on the schema, parse and upload the dataset to Cleanlab Studio.
+
+#### Upload a dataset
+
 To upload a dataset without
-first [generating a schema](https://github.com/cleanlab/cleanlab-studio/#generate-dataset-schema) (i.e. Cleanlab will
+first [generating a schema](#generate-dataset-schema) (i.e. Cleanlab will
 suggest one for you):
 
 `cleanlab dataset upload -f [dataset filepath]`
-
-**Note:** For image datasets, `[dataset filepath]` refers to the path of the labels file. <a href="#dataset-format">Learn more about the labels file.</a>
-
-You will be asked to `"Specify your dataset modality (text, tabular, image):"`.
-
-* Enter `text` to only find label errors based on a single column of text in your dataset.
-* Enter `tabular` to find data and label issues based on any subset of the column features.
-* Enter `image` to find data and label issues in your image dataset.
 
 To upload a dataset with a schema:
 
@@ -51,7 +152,7 @@ To **resume uploading** a dataset whose upload was interrupted:
 
 `cleanlab dataset upload -f [dataset filepath] --id [dataset ID]`
 
-A dataset ID is generated and printed to the terminal the first time the dataset is uploaded. It can also be accessed from the Datasets section of the Cleanlab Studio dashboard by visiting https://app.cleanlab.ai/ and selecting 'Resume' for the relevant dataset.
+A dataset ID is generated and printed to the terminal the first time the dataset is uploaded. It can also be accessed from the Datasets section of the Cleanlab Studio dashboard by visiting <https://app.cleanlab.ai/> and selecting "Resume" for the relevant dataset.
 
 #### Generate dataset schema
 
@@ -59,89 +160,23 @@ To generate a dataset schema (prior to uploading your dataset):
 
 `cleanlab dataset schema generate -f [dataset filepath]`
 
-* For `Modality (text, tabular, image): ` enter one of the following:
-  * `text` - to only find label errors based on a single column of text in your dataset.
-  * `tabular` - to find data and label issues based on any subset of the column features.
-  * `image` - to find label errors in your image dataset.
+* For `Id column: `, enter the name of the column in your dataset that contains the unique identifier for each row.
 
-* For `Id column: `, please enter the string name of of the column in your dataset that contains the unique identifier for each row.
+Make sure to inspect the schema. If any [data/feature types](#data-types-and-feature-types) are not inferred correctly, you can edit the schema manually.
 
-* For `filepath column: ` (only for image modality), please enter the string name of the column in your dataset that contains the relative path to each image.
+You can validate a schema with `cleanlab dataset schema validate`. You can also validate a schema with respect to a dataset by specifying the `-d [dataset filepath]` option.
 
-
-To validate an existing schema, i.e. check that it is complete, well-formatted, and
-has <a href="#data-types-and-feature-types">data types with sensible feature types</a>:
-
-`cleanlab dataset schema validate -s [schema filepath]`
-
-You may then wish to inspect the generated schema to check that the fields and metadata are correct.
-
-### Download clean labels
-
-To download clean labels (i.e. labels that have been fixed through the Cleanlab Studio interface):
-
-`cleanlab cleanset download --id [cleanset ID]`
-
-To download clean labels and combine them with your local dataset:
-
-`cleanlab cleanset download --id [cleanset ID] -f [dataset filepath]`
-
-## Commands
-
-**`cleanlab login` authenticates you**
-
-Authenticates you when uploading datasets to Cleanlab Studio. Pass in your API key using `--key [API key]`. Your API key
-can be accessed at [https://app.cleanlab.ai/upload](https://app.cleanlab.ai/upload).
-
-**`cleanlab dataset schema generate` generates dataset schemas**
-
-Generates a schema based on your dataset. Specify your target dataset with `--filepath [dataset filepath]`. You will be
-prompted to save the generated schema JSON and to specify a save location. This can be specified
-using `--output [output filepath]`.
-
-**`cleanlab dataset schema validate` validates a schema JSON file**
-
-Validates a schema JSON file, checking that a schema is complete, well-formatted, and
-has <a href="#data_types_and_feature_types">data types with sensible feature types</a>. Specify your target schema
-with `--schema [schema filepath]`.
-
-You may also validate an existing schema with respect to a dataset (`-d [dataset filepath]`), i.e. all previously
-mentioned checks and the additional check that all fields in the schema are present in the dataset.
-
-**`cleanlab dataset upload` uploads your dataset**
-
-Uploads your dataset to Cleanlab Studio. Specify your target dataset with `--filepath [dataset filepath]`. You will be
-prompted for further details about the dataset's modality and ID column. These may be supplied to the command
-with `--modality [modality]`, `--id-column [name of ID column]`, and you may also specify a custom dataset name
-with`--name [custom dataset name]`.
-
-After uploading your dataset, you will be prompted to save the list of dataset issues (if any) encountered during the
-upload process. These issues include missing IDs, duplicate IDs, missing values, and values whose types do not match the
-schema. You may specify the save location with `--output [output filepath]`.
-
-**`cleanlab cleanset download` downloads Cleanlab columns from your cleanset**
-
-Cleansets are initialized through the Cleanlab Studio interface. In a cleanset, users can inspect their dataset and
-verify their labels. Clean labels are the labels after this set of manual fixes have been applied.
-
-This command downloads the clean labels and saves them locally as a .csv, .xls/.xlsx, or .json, with columns `id`
-and `clean_label`. Include the `--filepath [dataset filepath]` to combine the clean labels with the original dataset as
-a new column `clean_label`, which will be outputted to `--output [output filepath]`. Include the `--all` flag to
-include **all** Cleanlab columns, i.e. issue, label quality, suggested label, clean label, instead of only the clean
-label column.
-
-## Dataset format
+### Dataset format
 
 Cleanlab currently only supports text, tabular, and image dataset modalities.
 (If your data contains both text and numeric/categorical columns, treat it as tabular.)
 
 The accepted dataset file types are: `.csv`, `.json`, and `.xls/.xlsx`.
 
-Each entry (i.e. row) should correspond to a different example in the dataset, independent and identically distributed with the other examples.
-
-Check below for instructions of formatting different dataset modalities.
+Each entry (i.e. row) should correspond to a different example in the dataset.
 
 #### Tabular dataset format
+
 - dataset must have an **ID column** (`flower_id` in the example below) - a column containing identifiers that uniquely identify each row.
 - dataset must have a **label column** (`species` in the example below) which you either want to train models to predict or simply find erroneous values in.
 - Apart from the reserved column name: `clean_label`, you are free to name the columns in your dataset in any way you want. There can be some subset of the columns used as features to predict the label, based upon which Cleanlab Studio identifies label issues, and other columns with extra metadata, that will be ignored when modeling the labels.
@@ -351,7 +386,6 @@ The `datetime` type should be used for datetime strings, e.g. "2015-02-24 11:35:
 will be integers or floats). Datetime values must be parsable
 by [pandas.to_datetime()](https://pandas.pydata.org/docs/reference/api/pandas.to_datetime.html).
 
-`version` indicates the version of the Cleanlab CLI package version used to generate the schema. The current Cleanlab
-schema version is `0.1.15`.
+`version` indicates the version of the Cleanlab CLI package version used to generate the schema.
 
 [PyPI]: https://pypi.org/project/cleanlab-studio/
