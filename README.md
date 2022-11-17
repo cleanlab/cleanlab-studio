@@ -64,7 +64,7 @@ To generate a dataset schema (prior to uploading your dataset):
   * `tabular` - to find data and label issues based on any subset of the column features.
   * `image` - to find label errors in your image dataset.
 
-* For `Id column: `, please enter the string name of the column in your dataset that contains the id of each row.
+* For `Id column: `, please enter the string name of of the column in your dataset that contains the unique identifier for each row.
 
 * For `filepath column: ` (only for image modality), please enter the string name of the column in your dataset that contains the relative path to each image.
 
@@ -133,15 +133,17 @@ label column.
 ## Dataset format
 
 Cleanlab currently only supports text, tabular, and image dataset modalities.
-(If your dataset contains both text and tabular data, treat it as tabular.)
+(If your data contains both text and numeric/categorical columns, treat it as tabular.)
 
 The accepted dataset file types are: `.csv`, `.json`, and `.xls/.xlsx`.
+
+Each entry (i.e. row) should correspond to a different example in the dataset, independent and identically distributed with the other examples.
 
 Check below for instructions of formatting different dataset modalities.
 
 #### Tabular dataset format
 - dataset must have an **ID column** (`flower_id` in the example below) - a column containing identifiers that uniquely identify each row.
-- dataset must have a **label column** (`species` in the example below) for the prediction task.
+- dataset must have a **label column** (`species` in the example below) which you either want to train models to predict or simply find erroneous values in.
 - Apart from the reserved column name: `clean_label`, you are free to name the columns in your dataset in any way you want. There can be some subset of the columns used as features to predict the label, based upon which Cleanlab Studio identifies label issues, and other columns with extra metadata, that will be ignored when modeling the labels.
 
 ###### .csv, .xls/.xlsx
@@ -178,8 +180,8 @@ Check below for instructions of formatting different dataset modalities.
 #### Text dataset format
 
 - dataset must have an **ID column** (`review_id` in the example below) - a column containing identifiers that uniquely identify each row.
-- dataset must have a **text column** (`review` in the example below) that serves as the input set for the prediction task.
-- dataset must have a **label column** (`sentiment` in the example below) that serves as the output for the prediction task.
+- dataset must have a **text column** (`review` in the example below) that serves as the sole predictive feature for modeling the label and identifying label issues.
+- dataset must have a **label column** (`sentiment` in the example below) which you either want to train models to predict or simply find erroneous values in.
 - Apart from the reserved column name: `clean_label`, you are free to name the columns in your dataset in any way you want.
 
 ###### .csv, .xls/.xlsx
@@ -210,15 +212,15 @@ Check below for instructions of formatting different dataset modalities.
 <br />
 
 #### Image dataset format
-- Image Datasets have 2 components:
-  - **Set of images.**
-  - **Labels file** - A mapping from each image to a label. This mapping can be supplied either in a .csv, .xls/.xlsx, or json format.
+- Image datasets have two components:
+  - **Collection of image files.**
+  - **Labels file** - A mapping from each image filepath to a class label. This mapping can be supplied either in a .csv, .xls/.xlsx, or .json format.
 
 ###### Labels file format
 - must have an **ID column** (`vizzy_id` in the example below) - a column containing identifiers that uniquely identify each row.
 - must have a **filepath column** (`vizzy_path` in the example below) that contains relative path to the image file.
 - must have a **label column** (`label` in the example below) that contains the label for the corresponding image file.
-- may have any number of metadata columns. Apart from the reserved column name: `clean_label`, you are free to name these columns any way you want.
+- may have any number of extra metadata columns that will not be used to model labels and identify label issues. Apart from the reserved column name: `clean_label`, you are free to name these columns any way you want.
 
 ###### Dataset format
 
