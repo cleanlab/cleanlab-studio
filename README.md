@@ -22,13 +22,15 @@ pip install --upgrade cleanlab-studio
 
 ## Quickstart
 
-1. If this is your first time using the Cleanlab CLI, authenticate with `cleanlab login`. You can find your API key at <https://app.cleanlab.ai/upload>.
+1. If this is your first time using the Cleanlab CLI, authenticate with `cleanlab login`. You can find your API key at <https://app.cleanlab.ai/upload>, by clicking on "Upload via Command Line".
 
 2. Upload your dataset ([image](#upload-an-image-dataset), [text](#upload-a-text-dataset), or [tabular](#upload-a-tabular-dataset)) using `cleanlab dataset upload`.
 
-3. Create a project in Cleanlab Studio and improve your dataset (e.g., correct some labels).
+3. Create a project in Cleanlab Studio.
 
-4. [Download corrected data](#download-corrected-data) with `cleanlab cleanset download`.
+4. Improve your dataset in Cleanlab Studio (e.g., correct some labels).
+
+5. [Download your cleanset](#download-cleanset) with `cleanlab cleanset download`.
 
 ### Upload a dataset
 
@@ -46,15 +48,7 @@ An image dataset consists of a collection of image files (organized in any way, 
 - labels.csv
 ```
 
-The metadata file, `labels.csv`, must contain at least three columns:
-
-- an ID column (with unique identifiers for each datapoint)
-- a path column (with relative paths to image files)
-- a label column (with categorical labels)
-
-The metadata file is allowed to have extra columns with various types of metadata.
-
-For example:
+An example `labels.csv` looks like this:
 
 ```
 id,path,label
@@ -64,6 +58,14 @@ id,path,label
 4,fred.png,human
 ```
 
+The metadata file, `labels.csv`, must contain at least three columns:
+
+- an ID column (with unique identifiers for each datapoint)
+- a path column (with relative paths to image files)
+- a label column (with categorical labels)
+
+The metadata file is also allowed to have extra columns with various types of metadata.
+
 Image datasets can be uploaded with:
 
 ```bash
@@ -72,7 +74,7 @@ cleanlab dataset upload --modality image [metadata file]
 
 Follow the prompts to specify the ID column and path column.
 
-If you have a dataset with metadata columns where this package isn't able to correctly guess the data/feature types, see the [reference](#reference) on dataset schemas.
+If you have a dataset with metadata columns where this package isn't able to correctly infer the data/feature types, see the [reference](#reference) on dataset schemas.
 
 #### Upload a text dataset
 
@@ -90,7 +92,7 @@ Text datasets can be uploaded with:
 cleanlab dataset upload --modality text [dataset]
 ```
 
-If you have a dataset with columns where this package isn't able to correctly guess the data/feature types, see the [reference](#reference) on dataset schemas.
+If you have a dataset with columns where this package isn't able to correctly infer the data/feature types, see the [reference](#reference) on dataset schemas.
 
 #### Upload a tabular dataset
 
@@ -107,9 +109,9 @@ Tabular datasets can be uploaded with:
 cleanlab dataset upload --modality tabular [dataset]
 ```
 
-If you have a dataset with columns where this package isn't able to correctly guess the data/feature types, see the [reference](#reference) on dataset schemas.
+If you have a dataset with columns where this package isn't able to correctly infer the data/feature types, see the [reference](#reference) on dataset schemas.
 
-### Download corrected data
+### Download Cleanset
 
 To download clean labels (i.e., labels that have been fixed through the Cleanlab Studio interface), first find the ID of the cleanset. You can find this by clicking the "Export Cleanset" button in the top right of a project page.
 
@@ -160,7 +162,7 @@ To generate a dataset schema (prior to uploading your dataset):
 
 * For `Id column: `, enter the name of the column in your dataset that contains the unique identifier for each row.
 
-Make sure to inspect the schema. If any [data/feature types](#data-types-and-feature-types) are not guessed correctly, you can edit the schema manually.
+Make sure to inspect the schema. If any [data/feature types](#data-types-and-feature-types) are not inferred correctly, you can edit the schema manually.
 
 You can validate a schema with `cleanlab dataset schema validate`. You can also validate a schema with respect to a dataset by specifying the `-d [dataset filepath]` option.
 
