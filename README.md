@@ -41,7 +41,7 @@ You will be asked to `"Specify your dataset modality (text, tabular, image):"`.
 
 * Enter `text` to only find label errors based on a single column of text in your dataset.
 * Enter `tabular` to find data and label issues based on any subset of the column features.
-* Enter `image` to find label errors in your image dataset.
+* Enter `image` to find data and label issues in your image dataset.
 
 To upload a dataset with a schema:
 
@@ -64,9 +64,9 @@ To generate a dataset schema (prior to uploading your dataset):
   * `tabular` - to find data and label issues based on any subset of the column features.
   * `image` - to find label errors in your image dataset.
 
-* For `Id column: `, please enter the string name of of the column in your dataset that contains the id of each row.
+* For `Id column: `, please enter the string name of the column in your dataset that contains the id of each row.
 
-* For `filepath column: ` (only for image modality), please enter the string name of of the column in your dataset that contains the path to each image.
+* For `filepath column: ` (only for image modality), please enter the string name of the column in your dataset that contains the relative path to each image.
 
 
 To validate an existing schema, i.e. check that it is complete, well-formatted, and
@@ -142,7 +142,7 @@ Check below for instructions of formatting different dataset modalities.
 #### Tabular dataset format
 - dataset must have an **ID column** (`flower_id` in the example below) - a column containing identifiers that uniquely identify each row.
 - dataset must have a **label column** (`species` in the example below) for the prediction task.
-- Apart from the reserved column name: `clean_label`, you are free to name the columns in your dataset in any way you want.
+- Apart from the reserved column name: `clean_label`, you are free to name the columns in your dataset in any way you want. There can be some subset of the columns used as features to predict the label, based upon which Cleanlab Studio identifies label issues, and other columns with extra metadata, that will be ignored when modeling the labels.
 
 ###### .csv, .xls/.xlsx
 
@@ -216,7 +216,7 @@ Check below for instructions of formatting different dataset modalities.
 
 ###### Labels file format
 - must have an **ID column** (`vizzy_id` in the example below) - a column containing identifiers that uniquely identify each row.
-- must have a **filepath column** (`vizzy_path` in the example below) that contains path to the image file.
+- must have a **filepath column** (`vizzy_path` in the example below) that contains relative path to the image file.
 - must have a **label column** (`label` in the example below) that contains the label for the corresponding image file.
 - may have any number of metadata columns. Apart from the reserved column name: `clean_label`, you are free to name these columns any way you want.
 
@@ -257,7 +257,7 @@ Check below for instructions of formatting different dataset modalities.
       "label": "dog"
     }
   ]
-} 
+}
 ```
 <br />
 
