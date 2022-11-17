@@ -44,7 +44,7 @@ def _find_best_matching_column(target_column: str, columns: List[str]) -> Option
     for c in columns:
         if c.lower() == target_column:
             return c
-        elif any(re.findall(regex, target_column, re.IGNORECASE)):
+        elif any(re.findall(regex, c, re.IGNORECASE)):
             poss.append(c)
 
     if len(poss) > 0:  # pick first possibility
