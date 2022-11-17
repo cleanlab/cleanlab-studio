@@ -191,24 +191,22 @@ Each entry (i.e. row) should correspond to a different example in the dataset.
 ###### .json
 
 ```json
-{
-  "rows": [
-    {
-      "flower_id": "flower_01",
-      "width": 4,
-      "length": 3,
-      "color": "red",
-      "species": "rose"
-    },
-    {
-      "flower_id": "flower_02",
-      "width": 7,
-      "length": 2,
-      "color": "white",
-      "species": "lily"
-    }
-  ]
-}
+[
+  {
+    "flower_id": "flower_01",
+    "width": 4,
+    "length": 3,
+    "color": "red",
+    "species": "rose"
+  },
+  {
+    "flower_id": "flower_02",
+    "width": 7,
+    "length": 2,
+    "color": "white",
+    "species": "lily"
+  }
+]
 ```
 <br />
 
@@ -229,20 +227,18 @@ Each entry (i.e. row) should correspond to a different example in the dataset.
 ###### .json
 
 ```json
-{
-  "rows": [
-    {
-      "review_id": "review_1",
-      "review": "The sales rep was fantastic!",
-      "label": "positive"
-    },
-    {
-      "review_id": "review_2",
-      "review": "He was a bit wishy-washy.",
-      "label": "negative"
-    }
-  ]
-}
+[
+  {
+    "review_id": "review_1",
+    "review": "The sales rep was fantastic!",
+    "label": "positive"
+  },
+  {
+    "review_id": "review_2",
+    "review": "He was a bit wishy-washy.",
+    "label": "negative"
+  }
+]
 ```
 <br />
 
@@ -271,30 +267,28 @@ Each entry (i.e. row) should correspond to a different example in the dataset.
 ###### .json
 
 ```json
-{
-  "rows": [
-    {
-      "vizzy_id": "1",
-      "vizzy_path": "Dataset/scruppy.jpeg",
-      "label": "cat"
-    },
-    {
-      "vizzy_id": "2",
-      "vizzy_path": "Dataset/tuffy/fluffy.png",
-      "label": "cat"
-    },
-    {
-      "vizzy_id": "3",
-      "vizzy_path": "oreo.jpeg",
-      "label": "dog"
-    },
-    {
-      "vizzy_id": "4",
-      "vizzy_path": "Dataset/mocha/mocha.jpeg",
-      "label": "dog"
-    }
-  ]
-}
+[
+  {
+    "vizzy_id": "1",
+    "vizzy_path": "Dataset/scruppy.jpeg",
+    "label": "cat"
+  },
+  {
+    "vizzy_id": "2",
+    "vizzy_path": "Dataset/tuffy/fluffy.png",
+    "label": "cat"
+  },
+  {
+    "vizzy_id": "3",
+    "vizzy_path": "oreo.jpeg",
+    "label": "dog"
+  },
+  {
+    "vizzy_id": "4",
+    "vizzy_path": "Dataset/mocha/mocha.jpeg",
+    "label": "dog"
+  }
+]
 ```
 <br />
 
