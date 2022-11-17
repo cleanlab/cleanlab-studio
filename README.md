@@ -35,10 +35,13 @@ suggest one for you):
 
 `cleanlab dataset upload -f [dataset filepath]`
 
-You will be asked to `"Specify your dataset modality (text, tabular):"`.
+**Note:** For image datasets, `[dataset filepath]` refers to the path of the labels file. <a href="#dataset-format">Learn more about the labels file.</a>
+
+You will be asked to `"Specify your dataset modality (text, tabular, image):"`.
 
 * Enter `text` to only find label errors based on a single column of text in your dataset.
 * Enter `tabular` to find data and label issues based on any subset of the column features.
+* Enter `image` to find data and label issues in your image dataset.
 
 To upload a dataset with a schema:
 
@@ -48,8 +51,7 @@ To **resume uploading** a dataset whose upload was interrupted:
 
 `cleanlab dataset upload -f [dataset filepath] --id [dataset ID]`
 
-A dataset ID is generated and printed to the terminal the first time the dataset is uploaded. It can also be accessed by
-visiting https://app.cleanlab.ai/datasets and selecting 'Resume' for the relevant dataset.
+A dataset ID is generated and printed to the terminal the first time the dataset is uploaded. It can also be accessed from the Datasets section of the Cleanlab Studio dashboard by visiting https://app.cleanlab.ai/ and selecting 'Resume' for the relevant dataset.
 
 #### Generate dataset schema
 
@@ -57,9 +59,15 @@ To generate a dataset schema (prior to uploading your dataset):
 
 `cleanlab dataset schema generate -f [dataset filepath]`
 
-* For `Id column: `, please enter the string name of of the column in your dataset that contains the id of each row.
-* For `Modality (text, tabular): `, please enter `text` to only find label errors based on a single column of text,
-  otherwise enter `tabular` to find data and label issues based on any subset of the column features.
+* For `Modality (text, tabular, image): ` enter one of the following:
+  * `text` - to only find label errors based on a single column of text in your dataset.
+  * `tabular` - to find data and label issues based on any subset of the column features.
+  * `image` - to find label errors in your image dataset.
+
+* For `Id column: `, please enter the string name of of the column in your dataset that contains the unique identifier for each row.
+
+* For `filepath column: ` (only for image modality), please enter the string name of the column in your dataset that contains the relative path to each image.
+
 
 To validate an existing schema, i.e. check that it is complete, well-formatted, and
 has <a href="#data-types-and-feature-types">data types with sensible feature types</a>:
@@ -124,32 +132,28 @@ label column.
 
 ## Dataset format
 
-Cleanlab currently only supports text and tabular dataset modalities.
-(If your dataset contains both text and tabular data, treat it as tabular.)
+Cleanlab currently only supports text, tabular, and image dataset modalities.
+(If your data contains both text and numeric/categorical columns, treat it as tabular.)
+
 The accepted dataset file types are: `.csv`, `.json`, and `.xls/.xlsx`.
 
-Below are some examples of how to format your dataset depending on modality and file type.
+Each entry (i.e. row) should correspond to a different example in the dataset, independent and identically distributed with the other examples.
 
-Every dataset must have an **ID column** (i.e. a column containing identifiers that uniquely identify each row) and a
-**label column** (for the prediction task).
+Check below for instructions of formatting different dataset modalities.
 
-Apart from the reserved column name: `clean_label`, You are free to name the columns in your dataset in any way you
-want.
+#### Tabular dataset format
+- dataset must have an **ID column** (`flower_id` in the example below) - a column containing identifiers that uniquely identify each row.
+- dataset must have a **label column** (`species` in the example below) which you either want to train models to predict or simply find erroneous values in.
+- Apart from the reserved column name: `clean_label`, you are free to name the columns in your dataset in any way you want. There can be some subset of the columns used as features to predict the label, based upon which Cleanlab Studio identifies label issues, and other columns with extra metadata, that will be ignored when modeling the labels.
 
-<details>
-<summary>Tabular</summary>
-<br />
-<details>
-<summary>.csv, .xls/.xlsx</summary>
+###### .csv, .xls/.xlsx
 
 | flower_id | width | length | color | species |
 |:----------|:------|--------|-------|---------|
 | flower_01 | 4     | 3      | red   | rose    |
 | flower_02 | 7     | 2      | white | lily    |
 
-</details>
-<details>
-<summary>.json</summary>
+###### .json
 
 ```json
 {
@@ -171,25 +175,23 @@ want.
   ]
 }
 ```
-
-</details>
-</details>
-
-<details>
-<summary>Text</summary>
 <br />
-<details>
-<summary>.csv, .xls/.xlsx</summary>
+
+#### Text dataset format
+
+- dataset must have an **ID column** (`review_id` in the example below) - a column containing identifiers that uniquely identify each row.
+- dataset must have a **text column** (`review` in the example below) that serves as the sole predictive feature for modeling the label and identifying label issues.
+- dataset must have a **label column** (`sentiment` in the example below) which you either want to train models to predict or simply find erroneous values in.
+- Apart from the reserved column name: `clean_label`, you are free to name the columns in your dataset in any way you want.
+
+###### .csv, .xls/.xlsx
 
 | review_id | review | sentiment |
 |:----------|:-------|-----------|
 | review_1  | The sales rep was fantastic!     | positive  |
 | review_2  | He was a bit wishy-washy.     | negative  |
 
-</details>
-
-<details>
-<summary>.json</summary>
+###### .json
 
 ```json
 {
@@ -207,9 +209,59 @@ want.
   ]
 }
 ```
+<br />
 
-</details>
-</details>
+#### Image dataset format
+- Image datasets have two components:
+  - **Collection of image files.**
+  - **Labels file** - A mapping from each image filepath to a class label. This mapping can be supplied either in a .csv, .xls/.xlsx, or .json format.
+
+###### Labels file format
+- must have an **ID column** (`vizzy_id` in the example below) - a column containing identifiers that uniquely identify each row.
+- must have a **filepath column** (`vizzy_path` in the example below) that contains relative path to the image file.
+- must have a **label column** (`label` in the example below) that contains the label for the corresponding image file.
+- may have any number of extra metadata columns that will not be used to model labels and identify label issues. Apart from the reserved column name: `clean_label`, you are free to name these columns any way you want.
+
+###### Dataset format
+
+###### .csv, .xls/.xlsx
+
+| vizzy_id | vizzy_path | label |
+|:----------|:-------|-----------|
+| 1  | Dataset/scruppy.jpeg    | cat  |
+| 2  | Dataset/tuffy/fluffy.png    | cat  |
+| 3  | oreo.jpeg    | dog  |
+| 4  | Dataset/mocha/mocha.jpeg    | dog  |
+
+###### .json
+
+```json
+{
+  "rows": [
+    {
+      "vizzy_id": "1",
+      "vizzy_path": "Dataset/scruppy.jpeg",
+      "label": "cat"
+    },
+    {
+      "vizzy_id": "2",
+      "vizzy_path": "Dataset/tuffy/fluffy.png",
+      "label": "cat"
+    },
+    {
+      "vizzy_id": "3",
+      "vizzy_path": "oreo.jpeg",
+      "label": "dog"
+    },
+    {
+      "vizzy_id": "4",
+      "vizzy_path": "Dataset/mocha/mocha.jpeg",
+      "label": "dog"
+    }
+  ]
+}
+```
+<br />
 
 ## Schema
 
@@ -283,16 +335,17 @@ as whether it is:
 - a boolean value
 - text
 - an identifier — a string / integer that identifies some entity
+- a filepath value (only valid for image datasets)
 
 Some feature types can only correspond to specific data types. The list of possible feature types for each data type is
 shown below
 
-| Data type  | Feature type                               |
-|:-----------|:-------------------------------------------|
-| string     | text, categorical, datetime, identifier    |
-| integer    | categorical, datetime, identifier, numeric |
-| float      | datetime, numeric                          |
-| boolean    | boolean                                    |
+| Data type  | Feature type                                         |
+|:-----------|:-----------------------------------------------------|
+| string     | text, categorical, datetime, identifier, filepath    |
+| integer    | categorical, datetime, identifier, numeric           |
+| float      | datetime, numeric                                    |
+| boolean    | boolean                                              |
 
 The `datetime` type should be used for datetime strings, e.g. "2015-02-24 11:35:52 -0800", and Unix timestamps (which
 will be integers or floats). Datetime values must be parsable
