@@ -7,6 +7,7 @@ import json
 import os
 import asyncio
 from typing import List, Any, Optional, Tuple
+import urllib.parse
 
 import aiohttp
 import requests
@@ -116,7 +117,7 @@ async def upload_rows_async(
                 # get in here, so we don't have tons of concurrently opened
                 # files
                 if not cancelled:
-                    post_data = filepath_to_post.get(original_filepath)
+                    post_data = filepath_to_post.get(urllib.parse.quote(original_filepath))
                     assert isinstance(post_data, dict)
                     presigned_post = post_data["post"]
 
