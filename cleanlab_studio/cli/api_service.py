@@ -93,6 +93,19 @@ async def upload_rows_async(
     needs_media_upload = modality in [Modality.image]
     columns = list(schema.fields.keys())
 
+    # perform rows upload
+    url = base_url + f"/datasets/{dataset_id}"
+    data = gzip.compress(
+        json.dumps(dict(rows=json.dumps(rows), columns=json.dumps(columns))).encode("utf-8")
+    )
+    headers = _construct_headers(api_key)
+    headers["Content-Encoding"] = "gzip"
+
+    async with session.post(url=url, data=data, headers=headers) as res:
+        res_text = await res.read()
+        handle_api_error_from_json(json.loads(res_text))
+
+    # perform media upload, if needed
     if needs_media_upload:
         filepath_column = schema.metadata.filepath_column
         assert filepath_column is not None
@@ -157,17 +170,6 @@ async def upload_rows_async(
                 # coroutines
                 cancelled = True
                 abort(f"Failed to upload {original_filepath}")
-
-    url = base_url + f"/datasets/{dataset_id}"
-    data = gzip.compress(
-        json.dumps(dict(rows=json.dumps(rows), columns=json.dumps(columns))).encode("utf-8")
-    )
-    headers = _construct_headers(api_key)
-    headers["Content-Encoding"] = "gzip"
-
-    async with session.post(url=url, data=data, headers=headers) as res:
-        res_text = await res.read()
-        handle_api_error_from_json(json.loads(res_text))
 
 
 def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> List[List[Any]]:
