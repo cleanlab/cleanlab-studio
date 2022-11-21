@@ -94,6 +94,11 @@ async def upload_rows_async(
     columns = list(schema.fields.keys())
 
     if needs_media_upload:
+        id_column = schema.metadata.filepath_column
+        assert id_column is not None
+        id_column_idx = columns.index(id_column)
+        row_ids = [row[id_column_idx] for row in rows]
+
         filepath_column = schema.metadata.filepath_column
         assert filepath_column is not None
         filepath_column_idx = columns.index(filepath_column)
@@ -103,7 +108,11 @@ async def upload_rows_async(
         ]
 
         filepath_to_post = get_presigned_posts(
-            api_key=api_key, dataset_id=dataset_id, filepaths=filepaths, media_type=modality.value
+            api_key=api_key,
+            dataset_id=dataset_id,
+            filepaths=filepaths,
+            row_ids=row_ids,
+            media_type=modality.value,
         )
         sem = asyncio.Semaphore(MAX_PARALLEL_UPLOADS)
         cancelled = False
@@ -134,6 +143,7 @@ async def upload_rows_async(
                                 if res.ok:
                                     return res.ok, original_filepath
                         except Exception:
+                            raise
                             pass  # ignore, will retry
                         await asyncio.sleep(wait)
                         wait *= 2
@@ -244,11 +254,11 @@ def check_dataset_limit(api_key: str, file_size: int, show_warning: bool = False
 
 
 def get_presigned_posts(
-    api_key: str, dataset_id: str, filepaths: List[str], media_type: str
+    api_key: str, dataset_id: str, filepaths: List[str], row_ids: List[str], media_type: str
 ) -> JSONDict:
     res = requests.get(
         base_url + "/media_upload/presigned_posts",
-        json=dict(dataset_id=dataset_id, filepaths=filepaths, type=media_type),
+        json=dict(dataset_id=dataset_id, filepaths=filepaths, row_ids=row_ids, type=media_type),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
