@@ -94,7 +94,7 @@ async def upload_rows_async(
     columns = list(schema.fields.keys())
 
     if needs_media_upload:
-        id_column = schema.metadata.filepath_column
+        id_column = schema.metadata.id_column
         assert id_column is not None
         id_column_idx = columns.index(id_column)
         row_ids = [row[id_column_idx] for row in rows]
