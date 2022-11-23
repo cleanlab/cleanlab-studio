@@ -594,7 +594,7 @@ def process_dataset(
     If an upload queue is provided, valid rows are put on it
     """
     for record in tqdm(
-        dataset.read_streaming_records(), total=len(dataset), initial=1, leave=True, unit=" rows"
+        dataset.read_streaming_records(), total=len(dataset), initial=0, leave=True, unit=" rows"
     ):
         row, row_id, warnings = validate_and_process_record(
             dataset, record, schema, seen_ids, existing_ids
