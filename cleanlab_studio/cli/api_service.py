@@ -143,7 +143,6 @@ async def upload_rows_async(
                                 if res.ok:
                                     return res.ok, original_filepath
                         except Exception:
-                            raise
                             pass  # ignore, will retry
                         await asyncio.sleep(wait)
                         wait *= 2
