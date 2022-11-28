@@ -69,7 +69,7 @@ The metadata file is also allowed to have extra columns with various types of me
 Image datasets can be uploaded with:
 
 ```bash
-cleanlab dataset upload --modality image [metadata file]
+cleanlab dataset upload --modality image -f [metadata file]
 ```
 
 Follow the prompts to specify the ID column and path column.
@@ -89,7 +89,7 @@ The dataset is allowed to have extra columns. This package supports `.csv`, `.js
 Text datasets can be uploaded with:
 
 ```bash
-cleanlab dataset upload --modality text [dataset]
+cleanlab dataset upload --modality text -f [dataset]
 ```
 
 If you have a dataset with columns where this package isn't able to correctly infer the data/feature types, see the [reference](#reference) on dataset schemas.
@@ -106,7 +106,7 @@ The dataset can have as many feature columns as you would like. This package sup
 Tabular datasets can be uploaded with:
 
 ```bash
-cleanlab dataset upload --modality tabular [dataset]
+cleanlab dataset upload --modality tabular -f [dataset]
 ```
 
 If you have a dataset with columns where this package isn't able to correctly infer the data/feature types, see the [reference](#reference) on dataset schemas.
