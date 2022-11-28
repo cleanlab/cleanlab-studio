@@ -88,8 +88,8 @@ def append_rows(rows: List[RecordType], filename: str) -> None:
             with pd.ExcelWriter(filename) as writer:
                 df.to_excel(writer, index=False, header=True)
         else:
-            with pd.ExcelWriter(filename) as writer:
-                df.to_excel(writer, mode="a", index=False, header=False)
+            with pd.ExcelWriter(filename, mode="a") as writer:
+                df.to_excel(writer, index=False, header=False)
 
 
 def get_dataset_chunks(
