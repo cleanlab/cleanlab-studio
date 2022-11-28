@@ -318,7 +318,7 @@ def propose_schema(
             random_idx = random.randint(0, idx)
             if random_idx < sample_size:
                 rows[random_idx] = row
-    df = pd.DataFrame(data=rows, columns=columns)
+    df = pd.DataFrame(data=rows, columns=list(columns))
 
     schema_dict = dict()
     fields_dict = dict()
