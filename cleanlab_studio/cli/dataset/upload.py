@@ -1,5 +1,8 @@
+import csv
 import json
 from typing import Optional, List
+import os
+import tempfile
 
 import click
 
@@ -17,11 +20,13 @@ from cleanlab_studio.cli.dataset.schema_helpers import (
     save_schema,
 )
 from cleanlab_studio.cli.dataset.upload_helpers import upload_dataset
+from cleanlab_studio.cli.dataset.schema_types import Schema
 from cleanlab_studio.cli.decorators import auth_config, previous_state
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.types import Modality, CommandState, MODALITIES
 from cleanlab_studio.cli.util import init_dataset_from_filepath
+from cleanlab_studio.version import SCHEMA_VERSION
 
 
 def resume_upload(api_key: str, dataset_id: str, filepath: str) -> None:
@@ -52,6 +57,67 @@ def upload_with_schema(
         f" {filepath} --id {dataset_id}"
     )
     upload_dataset(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
+
+
+def simple_image_upload(
+    api_key: str, directory: str, dataset_id: Optional[str], prev_state: PreviousState
+) -> None:
+    classes = sorted(
+        [d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))]
+    )
+    metadata = [["id", "path", "label"]]
+    for c in classes:
+        for f in os.listdir(os.path.join(directory, c)):
+            full_path = os.path.join(directory, c, f)
+            if not os.path.isfile(full_path) or f.startswith("."):
+                # TODO use better heuristics here
+                continue
+            # using absolute paths here because metadata file will be written to temp dir,
+            # and paths are interpreted as relative to that temp dir
+            id = os.path.join(c, f)
+            metadata.append([id, os.path.abspath(full_path), c])
+    # the simplest way to do this is to write metadata to a file and then reuse existing code
+    metadata_file = tempfile.NamedTemporaryFile(mode="w", suffix=".csv")
+    w = csv.writer(metadata_file)
+    w.writerows(metadata)
+    metadata_file.flush()
+    if dataset_id is not None:
+        resume_upload(api_key, dataset_id, metadata_file.name)
+    else:
+        ok = click.confirm(
+            f"Upload image dataset with {len(classes)} classes and {len(metadata)-1} images?"
+        )
+        if not ok:
+            abort("aborted")
+        constructed_schema = Schema.create(
+            metadata={
+                "id_column": "id",
+                "modality": "image",
+                "name": os.path.basename(os.path.abspath(directory)),
+                "filepath_column": "path",
+            },
+            fields={
+                "id": {"data_type": "string", "feature_type": "identifier"},
+                "path": {"data_type": "string", "feature_type": "filepath"},
+                "label": {"data_type": "string", "feature_type": "categorical"},
+            },
+            version=SCHEMA_VERSION,
+        )
+        # TODO deduplicate logic with upload_with_schema
+        progress("Initializing dataset...")
+        dataset_id = api_service.initialize_dataset(api_key, constructed_schema)
+        prev_state.update_args(dict(dataset_id=dataset_id))
+        info(f"Dataset initialized with ID: {dataset_id}")
+        info(
+            "If this upload is interrupted, you may resume it using: cleanlab dataset upload -f"
+            f" {directory} --id {dataset_id}"
+        )
+        upload_dataset(
+            api_key=api_key,
+            dataset_id=dataset_id,
+            filepath=metadata_file.name,
+            schema=constructed_schema,
+        )
 
 
 @click.command(help="upload your dataset to Cleanlab Studio")
@@ -170,6 +236,14 @@ def upload(
 
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
+
+    # image modality, simple upload
+    if os.path.isdir(filepath) and (modality is None or modality == Modality.image.value):
+        if schema is not None:
+            abort("-s/--schema is not supported in simple upload mode")
+        prev_state.update_args(dict(filepath=filepath))
+        simple_image_upload(api_key, filepath, dataset_id, prev_state)
+        return
 
     prev_state.update_args(dict(filepath=filepath))
     dataset = init_dataset_from_filepath(filepath)
