@@ -36,7 +36,32 @@ pip install --upgrade cleanlab-studio
 
 #### Upload an image dataset
 
-An image dataset consists of a collection of image files (organized in any way, in any folder hierarchy and with any file names), along with a metadata file specifying paths and labels (and optionally, other metadata). An image dataset might be organized like this:
+##### Simple upload
+
+If your dataset is organized in a particular way, you can upload it using the simple upload flow. In the simple organization, a dataset consists of folders for each class, with images in the corresponding folder. For example:
+
+```
+- animals
+  - dog
+    - scruffy.png
+    - spot.jpg
+  - cat
+    - whiskers.png
+    - yoda.jpg
+  - snake
+    - basalisk.png
+    - medusa.jpg
+```
+
+A dataset formatted in this way can be uploaded with:
+
+```bash
+cleanlab dataset upload -f [dataset directory]
+```
+
+##### With any organization, with metadata
+
+More generally, an image dataset consists of a collection of image files (organized in any way, in any folder hierarchy and with any file names), along with a metadata file specifying paths and labels (and optionally, other metadata). An image dataset might be organized like this:
 
 ```
 - dogs
