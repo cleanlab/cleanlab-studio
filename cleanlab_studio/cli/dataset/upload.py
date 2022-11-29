@@ -236,6 +236,8 @@ def upload(
 
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
+    if not os.path.exists(filepath):
+        abort(f"cannot upload '{filepath}': no such file or directory")
 
     # image modality, simple upload
     if os.path.isdir(filepath) and (modality is None or modality == Modality.image.value):
