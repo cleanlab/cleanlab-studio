@@ -37,7 +37,12 @@ def get_filename(filepath: str) -> str:
     return os.path.split(filepath)[-1]
 
 
-def get_file_size(filepath: str) -> int:
+def get_file_size(filepath: str, ignore_missing_files: bool = False) -> int:
+    if ignore_missing_files:
+        try:
+            return os.path.getsize(filepath)
+        except IOError:
+            return 0
     return os.path.getsize(filepath)
 
 

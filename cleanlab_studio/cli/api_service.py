@@ -241,10 +241,12 @@ def check_client_version() -> bool:
     return valid
 
 
-def check_dataset_limit(api_key: str, file_size: int, show_warning: bool = False) -> JSONDict:
+def check_dataset_limit(
+    api_key: str, file_size: int, image_dataset: bool = False, show_warning: bool = False
+) -> JSONDict:
     res = requests.post(
         base_url + "/check_dataset_limit",
-        json=dict(file_size=file_size),
+        json=dict(file_size=file_size, image_dataset=image_dataset),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res, show_warning=show_warning)
