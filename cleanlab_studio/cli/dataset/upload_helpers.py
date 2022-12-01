@@ -619,5 +619,8 @@ def get_image_dataset_size(dataset_filepath: str, filepath_column: str) -> int:
     """Returns total image dataset size by summing file sizes of each image"""
     dataset = init_dataset_from_filepath(dataset_filepath)
     return sum(
-        [get_file_size(record[filepath_column]) for record in dataset.read_streaming_records()]
+        [
+            get_file_size(filepath=record[filepath_column], ignore_missing_files=True)
+            for record in dataset.read_streaming_records()
+        ]
     )
