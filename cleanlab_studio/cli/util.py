@@ -41,7 +41,7 @@ def get_file_size(filepath: str, ignore_missing_files: bool = False) -> int:
     if ignore_missing_files:
         try:
             return os.path.getsize(filepath)
-        except FileNotFoundError:
+        except IOError:
             return 0
     return os.path.getsize(filepath)
 
