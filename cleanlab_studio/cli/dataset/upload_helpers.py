@@ -443,16 +443,23 @@ def upload_dataset(
     """
     log = create_warning_log()
 
-    file_size = get_file_size(filepath)
-    api_service.check_dataset_limit(api_key=api_key, file_size=file_size, show_warning=False)
-
     if schema.metadata.modality == Modality.image:
-        assert schema.metadata.filepath_column is not None
+        filepath_column = schema.metadata.filepath_column
+        assert filepath_column is not None
         check_filepath_column(
             modality=schema.metadata.modality,
             dataset_filepath=filepath,
-            filepath_column=schema.metadata.filepath_column,
+            filepath_column=filepath_column,
         )
+        image_dataset_size = get_image_dataset_size(
+            dataset_filepath=filepath, filepath_column=filepath_column
+        )
+        api_service.check_dataset_limit(
+            api_key=api_key, file_size=image_dataset_size, image_dataset=True, show_warning=False
+        )
+    else:
+        file_size = get_file_size(filepath)
+        api_service.check_dataset_limit(api_key=api_key, file_size=file_size, show_warning=False)
 
     # NOTE: makes simplifying assumption that first row size is representative of all row sizes
     row_size = getsizeof(next(init_dataset_from_filepath(filepath).read_streaming_records()))
@@ -606,3 +613,11 @@ def process_dataset(
 
         if upload_queue and row is not None:
             upload_queue.put(list(row.values()), block=True)
+
+
+def get_image_dataset_size(dataset_filepath: str, filepath_column: str) -> int:
+    """Returns total image dataset size by summing file sizes of each image"""
+    dataset = init_dataset_from_filepath(dataset_filepath)
+    return sum(
+        [get_file_size(record[filepath_column]) for record in dataset.read_streaming_records()]
+    )
