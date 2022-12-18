@@ -1,10 +1,13 @@
 import json
-from cleanlab_studio.cli.api_service import validate_api_key
+
+import click
+
+from cleanlab_studio.errors import AuthError
+from cleanlab_studio.internal.api import validate_api_key
 from cleanlab_studio.cli.click_helpers import *
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
-from cleanlab_studio.cli.settings import CleanlabSettings
+from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.cli.decorators import previous_state
-import click
 
 
 @click.command(help="authentication for Cleanlab Studio")
@@ -21,8 +24,9 @@ def login(prev_state: PreviousState, key: str) -> None:
     CleanlabSettings.init_cleanlab_dir()
 
     # validate API key
-    valid_key = validate_api_key(key)
-    if not valid_key:
+    try:
+        validate_api_key(key)
+    except AuthError:
         abort("API key is invalid. Check https://app.cleanlab.ai/upload for your current API key.")
 
     # save API key

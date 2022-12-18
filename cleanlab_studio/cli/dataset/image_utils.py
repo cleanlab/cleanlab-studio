@@ -1,10 +1,10 @@
 import os.path
 
-from cleanlab_studio.cli.types import ImageFileExtension
 from PIL import Image
 from pathlib import Path
 
 from cleanlab_studio.cli.util import get_image_file_extension
+from cleanlab_studio.internal.types import ImageFileExtension
 
 
 def get_image_filepath(image_filepath: str, dataset_filepath: str) -> str:

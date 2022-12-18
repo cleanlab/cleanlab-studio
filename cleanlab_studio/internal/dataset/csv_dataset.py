@@ -8,6 +8,10 @@ from ..types import RecordType
 
 
 class CsvDataset(Dataset):
+    def __init__(self, filepath: str):
+        super().__init__()
+        self.filepath = filepath
+
     def count_rows(self) -> int:
         with open(self.filepath, "r", encoding="utf-8", errors="ignore") as f:
             reader = csv.reader(f)

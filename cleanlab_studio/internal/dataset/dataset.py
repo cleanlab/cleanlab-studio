@@ -3,12 +3,11 @@ from typing import Optional, List, Dict, Generator, Any
 
 import pandas as pd
 
-from cleanlab_studio.cli.types import RecordType
+from cleanlab_studio.internal.types import RecordType
 
 
 class Dataset:
-    def __init__(self, filepath: str):
-        self.filepath = filepath
+    def __init__(self):
         self._num_rows: Optional[int] = None
 
     def __len__(self) -> int:

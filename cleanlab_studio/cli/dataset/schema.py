@@ -10,13 +10,14 @@ from cleanlab_studio.cli.dataset.upload_helpers import process_dataset
 from cleanlab_studio.cli.dataset.schema_helpers import (
     load_schema,
     validate_schema,
-    propose_schema,
     save_schema,
 )
+from cleanlab_studio.internal.schema import propose_schema
 from cleanlab_studio.cli.dataset import upload_helpers
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.dataset.upload_types import ValidationWarning
-from cleanlab_studio.cli.types import CommandState, MODALITIES, Modality
+from cleanlab_studio.internal.types import MODALITIES, Modality
+from cleanlab_studio.cli.types import CommandState
 from cleanlab_studio.cli.util import init_dataset_from_filepath
 from cleanlab_studio.cli.decorators import previous_state
 import json
@@ -168,7 +169,7 @@ def generate_schema_command(
     prev_state.init_state(command_state)
 
     proposed_schema = propose_schema(
-        filepath=filepath,
+        dataset=init_dataset_from_filepath(filepath),
         columns=columns,
         id_column=id_column,
         modality=modality,

@@ -27,15 +27,16 @@ import pandas as pd
 from tqdm import tqdm
 
 from cleanlab_studio.cli import api_service
+from cleanlab_studio.internal import api
 from cleanlab_studio.cli import click_helpers
-from cleanlab_studio.cli.classes.dataset import Dataset
+from cleanlab_studio.internal.dataset import Dataset
 from cleanlab_studio.cli.click_helpers import success, info, progress, abort
 from cleanlab_studio.cli.dataset.image_utils import (
     image_file_readable,
     image_file_exists,
     get_image_filepath,
 )
-from cleanlab_studio.cli.dataset.schema_types import (
+from cleanlab_studio.internal.schema import (
     PYTHON_TYPES_TO_READABLE_STRING,
     DATA_TYPES_TO_PYTHON_TYPES,
     DataType,
@@ -48,7 +49,7 @@ from cleanlab_studio.cli.dataset.upload_types import (
     RowWarningsType,
     warning_to_readable_name,
 )
-from cleanlab_studio.cli.types import (
+from cleanlab_studio.internal.types import (
     RecordType,
     Modality,
 )
@@ -102,7 +103,7 @@ def validate_and_process_record(
     fields = schema.fields
     id_column = schema.metadata.id_column
     columns = list(fields)
-    dataset_filepath = dataset.filepath
+    dataset_filepath = dataset.filepath if hasattr(dataset, 'filepath') else None # type:ignore
     row_id = record.get(id_column, None)
 
     if row_id == "" or row_id is None:
@@ -501,7 +502,7 @@ def upload_dataset(
     conclude_upload = True
     if not issues_found:
         success("\nNo issues were encountered when uploading your dataset. Nice!")
-        api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
+        api.complete_upload(api_key=api_key, dataset_id=dataset_id)
     else:
         info(f"\n{total_warnings} issues were encountered when uploading your dataset.")
         echo_log_warnings(log)
@@ -538,7 +539,7 @@ def upload_dataset(
             click_helpers.confirm_open_file("Open your issues file for viewing?", filepath=output)
 
     if conclude_upload:
-        api_service.complete_upload(api_key=api_key, dataset_id=dataset_id)
+        api.complete_upload(api_key=api_key, dataset_id=dataset_id)
         click_helpers.success(
             "Upload completed. View your uploaded dataset at https://app.cleanlab.ai"
         )

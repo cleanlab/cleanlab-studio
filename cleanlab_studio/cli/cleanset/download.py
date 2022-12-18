@@ -13,8 +13,8 @@ from cleanlab_studio.cli.click_helpers import log, progress
 from cleanlab_studio.cli.decorators import previous_state, auth_config
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
-from cleanlab_studio.cli.settings import CleanlabSettings
-from cleanlab_studio.cli.types import IDType, RecordType, DatasetFileExtension
+from cleanlab_studio.internal.settings import CleanlabSettings
+from cleanlab_studio.internal.types import IDType, RecordType, DatasetFileExtension
 
 
 @click.command(help="download Cleanlab columns")

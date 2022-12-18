@@ -4,10 +4,14 @@ import pandas as pd
 import ijson
 
 from .dataset import Dataset
-from cleanlab_studio.cli.types import RecordType
+from ..types import RecordType
 
 
 class JsonDataset(Dataset):
+    def __init__(self, filepath: str):
+        super().__init__()
+        self.filepath = filepath
+
     def read_streaming_records(self) -> Generator[RecordType, None, None]:
         with open(self.filepath, "rb") as f:
             for r in ijson.items(f, "item"):

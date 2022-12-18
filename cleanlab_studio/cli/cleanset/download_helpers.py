@@ -1,7 +1,7 @@
 import jsonstreams
 from typing import Dict
 
-from cleanlab_studio.cli.types import RecordType, DatasetFileExtension
+from cleanlab_studio.internal.types import RecordType, DatasetFileExtension
 from cleanlab_studio.cli.util import get_dataset_file_extension, get_dataset_chunks, append_rows
 
 

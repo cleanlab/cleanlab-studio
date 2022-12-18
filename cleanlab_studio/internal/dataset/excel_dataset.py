@@ -1,13 +1,17 @@
 from typing import List, Generator, Any
 
-from cleanlab_studio.cli.classes.dataset import Dataset
 import pyexcel
 import pandas as pd
 
-from cleanlab_studio.cli.types import RecordType
+from .dataset import Dataset
+from ..types import RecordType
 
 
 class ExcelDataset(Dataset):
+    def __init__(self, filepath: str):
+        super().__init__()
+        self.filepath = filepath
+
     def read_streaming_records(self) -> Generator[RecordType, None, None]:
         for r in pyexcel.iget_records(file_name=self.filepath):
             yield r
