@@ -443,6 +443,7 @@ def upload_dataset(
     """
     log = create_warning_log()
 
+    file_size = 0
     if schema.metadata.modality == Modality.image:
         filepath_column = schema.metadata.filepath_column
         assert filepath_column is not None
@@ -451,15 +452,18 @@ def upload_dataset(
             dataset_filepath=filepath,
             filepath_column=filepath_column,
         )
-        image_dataset_size = get_image_dataset_size(
+        file_size = get_image_dataset_size(
             dataset_filepath=filepath, filepath_column=filepath_column
-        )
-        api_service.check_dataset_limit(
-            api_key=api_key, file_size=image_dataset_size, image_dataset=True, show_warning=False
         )
     else:
         file_size = get_file_size(filepath)
-        api_service.check_dataset_limit(api_key=api_key, file_size=file_size, show_warning=False)
+
+    api_service.check_dataset_limit(
+        api_key=api_key,
+        file_size=file_size,
+        modality=schema.metadata.modality.value,
+        show_warning=False,
+    )
 
     # NOTE: makes simplifying assumption that first row size is representative of all row sizes
     row_size = getsizeof(next(init_dataset_from_filepath(filepath).read_streaming_records()))
@@ -493,7 +497,9 @@ def upload_dataset(
     validation_thread.join()
 
     # Check against soft quota, warn if applicable
-    api_service.check_dataset_limit(api_key=api_key, file_size=0, show_warning=True)
+    api_service.check_dataset_limit(
+        api_key=api_key, file_size=0, modality=schema.metadata.modality.value, show_warning=True
+    )
 
     total_warnings: int = sum([len(log.get(w)) for w in ValidationWarning])
     issues_found = total_warnings > 0
