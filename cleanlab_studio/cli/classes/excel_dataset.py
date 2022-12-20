@@ -17,7 +17,7 @@ class ExcelDataset(Dataset):
         stream = pyexcel.iget_array(file_name=self.filepath)
         next(stream)  # skip header row
         for r in stream:
-            yield self._preprocess_value(r)
+            yield self._preprocess_values(r)
 
     def read_file_as_dataframe(self) -> pd.DataFrame:
         return pd.read_excel(self.filepath, keep_default_na=True)
@@ -37,6 +37,14 @@ class ExcelDataset(Dataset):
             for record_key, record_value in record.items()
         }
 
+    def _preprocess_values(self, values: List[Any]) -> List[Any]:
+        """Preprocesses values.
+
+        :param values: values to preprocess
+        :return: preprocess values
+        """
+        return [self._preprocess_value(value) for value in values]
+
     def _preprocess_value(self, record_value: Any) -> Any:
         """Preprocesses record value.
         Operations performed:
@@ -46,6 +54,7 @@ class ExcelDataset(Dataset):
         :return: preprocessed record value
         """
         if isinstance(record_value, (datetime.time, datetime.datetime, pd.Timestamp)):
+            print(f"preprocessing datetime val: {record_value}")
             return record_value.isoformat()
 
         return record_value
