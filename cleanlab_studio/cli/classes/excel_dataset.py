@@ -54,7 +54,6 @@ class ExcelDataset(Dataset):
         :return: preprocessed record value
         """
         if isinstance(record_value, (datetime.time, datetime.datetime, pd.Timestamp)):
-            print(f"preprocessing datetime val: {record_value}")
             return record_value.isoformat()
 
         return record_value
