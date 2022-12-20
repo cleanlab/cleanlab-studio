@@ -103,7 +103,7 @@ def validate_and_process_record(
     fields = schema.fields
     id_column = schema.metadata.id_column
     columns = list(fields)
-    dataset_filepath = dataset.filepath if hasattr(dataset, 'filepath') else None # type:ignore
+    dataset_filepath = dataset.filepath if hasattr(dataset, "filepath") else None  # type:ignore
     row_id = record.get(id_column, None)
 
     if row_id == "" or row_id is None:

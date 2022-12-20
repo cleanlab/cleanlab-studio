@@ -20,8 +20,6 @@ from cleanlab_studio.cli.util import dump_json, get_filename, init_dataset_from_
 from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
 
-
-
 def load_schema(filepath: str) -> Schema:
     with open(filepath, "r") as f:
         schema_dict = json.load(f)
@@ -106,8 +104,6 @@ def validate_schema(schema: Schema, columns: Collection[str]) -> None:
         has_text = any(spec.feature_type == FeatureType.text for spec in schema.fields.values())
         if not has_text:
             raise ValueError("Dataset modality is text, but none of the fields is a text column.")
-
-
 
 
 def save_schema(schema: Schema, filename: Optional[str]) -> None:

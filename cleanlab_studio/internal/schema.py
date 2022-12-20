@@ -28,7 +28,7 @@ class DataType(Enum):
     def as_numpy_type(self) -> Any:
         return {
             DataType.string: str,
-            DataType.integer: np.int64, # XXX backend might use big integers
+            DataType.integer: np.int64,  # XXX backend might use big integers
             DataType.float: np.float64,
             DataType.boolean: bool,
         }[self]

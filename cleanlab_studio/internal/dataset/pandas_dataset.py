@@ -5,6 +5,7 @@ import pandas as pd
 from .dataset import Dataset
 from ..types import RecordType
 
+
 class PandasDataset(Dataset):
     def __init__(self, df: pd.DataFrame):
         super().__init__()

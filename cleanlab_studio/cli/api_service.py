@@ -16,15 +16,18 @@ from cleanlab_studio.cli.click_helpers import abort, warn, info
 from cleanlab_studio.cli.dataset.image_utils import get_image_filepath
 from cleanlab_studio.internal.schema import Schema
 from cleanlab_studio.internal.types import JSONDict, IDType, Modality
-from cleanlab_studio.internal.api import base_url, _construct_headers, handle_api_error, handle_api_error_from_json, get_presigned_posts
-
+from cleanlab_studio.internal.api import (
+    base_url,
+    _construct_headers,
+    handle_api_error,
+    handle_api_error_from_json,
+    get_presigned_posts,
+)
 
 
 MAX_PARALLEL_UPLOADS = 32  # XXX choose this dynamically?
 INITIAL_BACKOFF = 0.25  # seconds
 MAX_RETRIES = 4
-
-
 
 
 async def upload_rows_async(
