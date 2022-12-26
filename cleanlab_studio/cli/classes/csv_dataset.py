@@ -11,7 +11,13 @@ class CsvDataset(Dataset):
     def count_rows(self) -> int:
         with open(self.filepath, "r", encoding="utf-8", errors="ignore") as f:
             reader = csv.reader(f)
-            return len(list(reader)) - 1  # first row is headers
+            
+            # handle case where CSV is empty
+            return max(
+                len(list(reader)) - 1,  # first row is headers
+                0,
+            )
+
 
     def get_columns(self) -> List[str]:
         with open(self.filepath, "r", encoding="utf-8", errors="ignore") as f:
