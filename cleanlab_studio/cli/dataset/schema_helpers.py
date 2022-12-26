@@ -325,7 +325,7 @@ def propose_schema(
     try:
         df = pd.DataFrame(data=rows, columns=list(columns))
     except ValueError as e:
-        raise ColumnMismatchError(e.args[0])
+        raise ColumnMismatchError(str(e))
 
     schema_dict = dict()
     fields_dict = dict()
