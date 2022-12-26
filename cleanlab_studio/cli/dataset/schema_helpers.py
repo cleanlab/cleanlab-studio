@@ -17,6 +17,7 @@ from cleanlab_studio.cli.click_helpers import abort, info, progress, success
 from cleanlab_studio.cli.dataset.schema_types import DataType, FeatureType, Schema
 from cleanlab_studio.cli.types import Modality
 from cleanlab_studio.cli.util import dump_json, get_filename, init_dataset_from_filepath
+from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError 
 from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
 
@@ -293,6 +294,8 @@ def propose_schema(
     """
     # The arguments are intended to be required for the command-line interface, but are optional for Cleanlab Studio.
     dataset = init_dataset_from_filepath(filepath)
+    if len(dataset) < 1:
+        raise EmptyDatasetError("Cannot propose schema for empty dataset.")
 
     # fill optional arguments if necessary
     if columns is None:
@@ -318,7 +321,11 @@ def propose_schema(
             random_idx = random.randint(0, idx)
             if random_idx < sample_size:
                 rows[random_idx] = row
-    df = pd.DataFrame(data=rows, columns=list(columns))
+
+    try:
+        df = pd.DataFrame(data=rows, columns=list(columns))
+    except ValueError as e:
+        raise ColumnMismatchError(e.args[0])
 
     schema_dict = dict()
     fields_dict = dict()
