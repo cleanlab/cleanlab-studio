@@ -17,7 +17,7 @@ from cleanlab_studio.cli.click_helpers import abort, info, progress, success
 from cleanlab_studio.cli.dataset.schema_types import DataType, FeatureType, Schema
 from cleanlab_studio.cli.types import Modality
 from cleanlab_studio.cli.util import dump_json, get_filename, init_dataset_from_filepath
-from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError 
+from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError
 from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
 
