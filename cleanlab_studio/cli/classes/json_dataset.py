@@ -10,12 +10,12 @@ from cleanlab_studio.cli.types import RecordType
 class JsonDataset(Dataset):
     def read_streaming_records(self) -> Generator[RecordType, None, None]:
         with open(self.filepath, "rb") as f:
-            for r in ijson.items(f, "item"):
+            for _, r in ijson.kvitems(f, ""):
                 yield r
 
     def read_streaming_values(self) -> Generator[List[Any], None, None]:
         with open(self.filepath, "rb") as f:
-            for r in ijson.items(f, "item"):
+            for _, r in ijson.kvitems(f, ""):
                 yield r.values()
 
     def read_file_as_dataframe(self) -> pd.DataFrame:
