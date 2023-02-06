@@ -3,7 +3,7 @@ Helper functions for processing and uploading dataset rows
 """
 import asyncio
 import decimal
-import os
+import pathlib
 import queue
 import re
 import threading
@@ -81,7 +81,7 @@ def validate_and_process_record(
     schema: Schema,
     seen_ids: Set[str],
     existing_ids: Set[str],
-    base_directory: str = "",
+    base_directory: pathlib.Path = pathlib.Path(""),
 ) -> Tuple[Optional[RecordType], Optional[str], Optional[RowWarningsType]]:
     """
     Validate the row against the provided schema; generate warnings where issues are found
@@ -154,7 +154,7 @@ def validate_and_process_record(
                     )
             elif col_feature_type == FeatureType.filepath:
                 if schema.metadata.modality == Modality.image:
-                    absolute_path = os.path.join(base_directory, column_value)
+                    absolute_path = str(base_directory.joinpath(column_value))
                     if not image_file_exists(absolute_path, dataset_filepath):
                         msg, warn_type = (
                             f"{column_name}: unable to find file at specified filepath {absolute_path}. "
