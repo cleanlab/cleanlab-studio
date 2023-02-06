@@ -57,6 +57,7 @@ setup(
         "jsonstreams>=0.6.0",
         "semver>=2.13.0",
         "Pillow>=9.2.0",
+        "openpyxl==3.0.10",
     ],
     entry_points="""
         [console_scripts]
