@@ -3,6 +3,7 @@ Helper functions for processing and uploading dataset rows
 """
 import asyncio
 import decimal
+import pathlib
 import queue
 import re
 import threading
@@ -80,6 +81,7 @@ def validate_and_process_record(
     schema: Schema,
     seen_ids: Set[str],
     existing_ids: Set[str],
+    base_directory: pathlib.Path = pathlib.Path(""),
 ) -> Tuple[Optional[RecordType], Optional[str], Optional[RowWarningsType]]:
     """
     Validate the row against the provided schema; generate warnings where issues are found
@@ -152,18 +154,19 @@ def validate_and_process_record(
                     )
             elif col_feature_type == FeatureType.filepath:
                 if schema.metadata.modality == Modality.image:
-                    if not image_file_exists(column_value, dataset_filepath):
+                    absolute_path = str(base_directory.joinpath(column_value))
+                    if not image_file_exists(absolute_path, dataset_filepath):
                         msg, warn_type = (
-                            f"{column_name}: unable to find file at specified filepath {column_value}. "
+                            f"{column_name}: unable to find file at specified filepath {absolute_path}. "
                             f"Filepath must be absolute or relative to the directory containing your dataset file.",
                             ValidationWarning.MISSING_FILE,
                         )
                         warnings[warn_type].append(msg)
                         return None, row_id, warnings
                     else:
-                        if not image_file_readable(column_value, dataset_filepath):
+                        if not image_file_readable(absolute_path, dataset_filepath):
                             msg, warn_type = (
-                                f"{column_name}: could not open file at {column_value}.",
+                                f"{column_name}: could not open file at {absolute_path}.",
                                 ValidationWarning.UNREADABLE_FILE,
                             )
                             warnings[warn_type].append(msg)
