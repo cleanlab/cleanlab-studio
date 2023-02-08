@@ -11,14 +11,13 @@ class Dataset:
     READ_ARGS: Dict[str, str] = {}
 
     def __init__(self, filepath: Optional[str] = None, fileobj: Optional[IO] = None):
-        if filepath is not None:
-            self._filepath = filepath
-        elif fileobj is not None:
-            self._fileobj = fileobj
-        else:
+        if filepath is None and fileobj is None:
             raise ValueError(
                 "One of `filepath` or `fileobj` must be provided to initialize `Dataset`."
             )
+
+        self._filepath = filepath
+        self._fileobj = fileobj
 
         self._num_rows: Optional[int] = None
 

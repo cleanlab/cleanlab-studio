@@ -17,12 +17,13 @@ class JsonDataset(Dataset):
 
     def read_streaming_values(self) -> Generator[List[Any], None, None]:
         with self.fileobj() as f:
+            breakpoint()
             for r in ijson.items(f, "item"):
                 yield r.values()
 
     def read_file_as_dataframe(self) -> pd.DataFrame:
         with self.fileobj() as f:
-            df = pd.read_json(f, convert_axes=False, convert_dates=False).T
+            df = pd.read_json(f, orient="records", convert_axes=False, convert_dates=False)
 
         df.index = df.index.astype("str")
         df["id"] = df.index
