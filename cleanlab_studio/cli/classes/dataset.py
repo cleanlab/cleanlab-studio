@@ -16,7 +16,9 @@ class Dataset:
         elif fileobj is not None:
             self._fileobj = fileobj
         else:
-            raise ValueError("One of `filepath` or `fileobj` must be provided to initialize `Dataset`.")
+            raise ValueError(
+                "One of `filepath` or `fileobj` must be provided to initialize `Dataset`."
+            )
 
         self._num_rows: Optional[int] = None
 

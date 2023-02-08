@@ -5,7 +5,7 @@ from PIL import Image
 
 def get_image_filepath(base_directory: pathlib.Path, image_filepath: pathlib.Path) -> pathlib.Path:
     """Joins base directory with relative or absolute image filepath.
-    
+
     Note
     ----
     if column_value (image filepath) is an absolute path, base directory will be ignored

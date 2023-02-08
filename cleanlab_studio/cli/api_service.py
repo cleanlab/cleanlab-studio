@@ -155,7 +155,7 @@ async def upload_rows_async(
 
         for coro in asyncio.as_completed(
             [
-                post_file(original_filepath, absolute_filepath)
+                post_file(original_filepath, str(absolute_filepath))
                 for original_filepath, absolute_filepath in zip(filepaths, absolute_filepaths)
             ]
         ):

@@ -408,14 +408,18 @@ def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_co
                 click.echo("Non-existent filepaths:\n")
                 click.echo(
                     "\n".join(
-                        str(get_image_filepath(dataset_dir, pathlib.Path(f))) for f in nonexistent_filepaths
+                        str(get_image_filepath(dataset_dir, pathlib.Path(f)))
+                        for f in nonexistent_filepaths
                     )
                 )
                 click.echo("\n")
             if num_unreadable_filepaths > 0:
                 click.echo("Filepaths that could not be read:\n")
                 click.echo(
-                    "\n".join(str(get_image_filepath(dataset_dir, pathlib.Path(f))) for f in unreadable_filepaths)
+                    "\n".join(
+                        str(get_image_filepath(dataset_dir, pathlib.Path(f)))
+                        for f in unreadable_filepaths
+                    )
                 )
                 click.echo("\n")
 
