@@ -9,6 +9,7 @@ from cleanlab_studio.cli.dataset.helpers import (
 )
 from cleanlab_studio.cli.dataset.upload_helpers import process_dataset
 from cleanlab_studio.cli.dataset.schema_helpers import (
+    get_filename,
     load_schema,
     validate_schema,
     propose_schema,
@@ -174,12 +175,12 @@ def generate_schema_command(
     prev_state.init_state(command_state)
 
     proposed_schema = propose_schema(
-        filepath=filepath,
+        dataset=dataset,
+        name=name or get_filename(filepath),
         columns=columns,
         id_column=id_column,
         modality=modality,
         filepath_column=filepath_column,
-        name=name,
     )
     click.echo(json.dumps(proposed_schema.to_dict(), indent=2))
 

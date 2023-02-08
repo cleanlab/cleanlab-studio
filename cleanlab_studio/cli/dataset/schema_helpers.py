@@ -13,6 +13,7 @@ import pandas as pd
 import semver
 from pandas import NaT
 
+from cleanlab_studio.cli.classes.dataset import Dataset
 from cleanlab_studio.cli.click_helpers import abort, info, progress, success
 from cleanlab_studio.cli.dataset.schema_types import DataType, FeatureType, Schema
 from cleanlab_studio.cli.types import Modality
@@ -267,12 +268,12 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
 
 
 def propose_schema(
-    filepath: str,
+    dataset: Dataset,
+    name: str,
     columns: Optional[Collection[str]] = None,
     id_column: Optional[str] = None,
     modality: Optional[str] = None,
     filepath_column: Optional[str] = None,
-    name: Optional[str] = None,
     sample_size: int = 10000,
     max_rows_checked: int = 200000,
 ) -> Schema:
@@ -281,10 +282,10 @@ def propose_schema(
 
     Dataset columns with no name will not be included in the schema.
 
-    :param filepath:
+    :param dataset:
+    :param name: name of dataset
     :param columns: columns to generate a schema for
     :param id_column: ID column name
-    :param name: name of dataset
     :param filepath_column: filepath column name, i.e. name of column holding media filepaths (needed if modality is image)
     :param modality: data modality
     :param sample_size: default of 1000
@@ -293,16 +294,12 @@ def propose_schema(
 
     """
     # The arguments are intended to be required for the command-line interface, but are optional for Cleanlab Studio.
-    dataset = init_dataset_from_filepath(filepath)
     if len(dataset) < 1:
         raise EmptyDatasetError("Cannot propose schema for empty dataset.")
 
     # fill optional arguments if necessary
     if columns is None:
         columns = dataset.get_columns()
-
-    if name is None:
-        name = get_filename(filepath)
 
     if modality is None:
         if len(columns) > 5:

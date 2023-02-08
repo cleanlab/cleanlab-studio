@@ -14,6 +14,7 @@ from cleanlab_studio.cli.dataset.helpers import (
     get_filepath_column_if_undefined,
 )
 from cleanlab_studio.cli.dataset.schema_helpers import (
+    get_filename,
     load_schema,
     validate_schema,
     propose_schema,
@@ -281,12 +282,12 @@ def upload(
 
     ### Propose schema
     proposed_schema = propose_schema(
-        filepath=filepath,
+        dataset=dataset,
+        name=name or get_filename(filepath),
         columns=columns,
         id_column=id_column,
         modality=modality,
         filepath_column=filepath_column,
-        name=name,
     )
     log(json.dumps(proposed_schema.to_dict(), indent=2))
     info(f"No schema was provided. We propose the above schema based on your dataset.")
