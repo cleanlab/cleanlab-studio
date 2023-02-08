@@ -104,7 +104,6 @@ def validate_and_process_record(
     fields = schema.fields
     id_column = schema.metadata.id_column
     columns = list(fields)
-    dataset_filepath = dataset.filepath
     row_id = record.get(id_column, None)
 
     if row_id == "" or row_id is None:
@@ -154,19 +153,19 @@ def validate_and_process_record(
                     )
             elif col_feature_type == FeatureType.filepath:
                 if schema.metadata.modality == Modality.image:
-                    absolute_path = str(base_directory.joinpath(column_value))
-                    if not image_file_exists(absolute_path, dataset_filepath):
+                    image_filepath = get_image_filepath(base_directory, column_value)
+                    if not image_file_exists(image_filepath):
                         msg, warn_type = (
-                            f"{column_name}: unable to find file at specified filepath {absolute_path}. "
+                            f"{column_name}: unable to find file at specified filepath {image_filepath}. "
                             f"Filepath must be absolute or relative to the directory containing your dataset file.",
                             ValidationWarning.MISSING_FILE,
                         )
                         warnings[warn_type].append(msg)
                         return None, row_id, warnings
                     else:
-                        if not image_file_readable(absolute_path, dataset_filepath):
+                        if not image_file_readable(image_filepath):
                             msg, warn_type = (
-                                f"{column_name}: could not open file at {absolute_path}.",
+                                f"{column_name}: could not open file at {image_filepath}.",
                                 ValidationWarning.UNREADABLE_FILE,
                             )
                             warnings[warn_type].append(msg)
@@ -298,6 +297,7 @@ def validate_rows(
         existing_ids=existing_ids,
         log=log,
         upload_queue=upload_queue,
+        dataset_dir=pathlib.Path(dataset_filepath).parent,
     )
     upload_queue.put(None, block=True)
 
@@ -377,6 +377,8 @@ def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_co
     outputting filepaths to console.
     """
     dataset = init_dataset_from_filepath(dataset_filepath)
+    dataset_dir = pathlib.Path(dataset_filepath).parent
+
     if filepath_column not in dataset.get_columns():
         raise ValueError(
             f"No filepath column '{filepath_column}' found in dataset at {dataset_filepath}."
@@ -385,9 +387,9 @@ def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_co
     unreadable_filepaths = []
     for record in dataset.read_streaming_records():
         filepath_value = record[filepath_column]
-        if not image_file_exists(filepath_value, dataset_filepath):
+        if not image_file_exists(get_image_filepath(dataset_dir, filepath_value)):
             nonexistent_filepaths.append(filepath_value)
-        elif not image_file_readable(filepath_value, dataset_filepath):
+        elif not image_file_readable(get_image_filepath(dataset_dir, filepath_value)):
             unreadable_filepaths.append(filepath_value)
 
     num_nonexistent_filepaths = len(nonexistent_filepaths)
@@ -406,14 +408,14 @@ def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_co
                 click.echo("Non-existent filepaths:\n")
                 click.echo(
                     "\n".join(
-                        get_image_filepath(f, dataset_filepath) for f in nonexistent_filepaths
+                        str(get_image_filepath(dataset_dir, pathlib.Path(f))) for f in nonexistent_filepaths
                     )
                 )
                 click.echo("\n")
             if num_unreadable_filepaths > 0:
                 click.echo("Filepaths that could not be read:\n")
                 click.echo(
-                    "\n".join(get_image_filepath(f, dataset_filepath) for f in unreadable_filepaths)
+                    "\n".join(str(get_image_filepath(dataset_dir, pathlib.Path(f))) for f in unreadable_filepaths)
                 )
                 click.echo("\n")
 
@@ -603,6 +605,7 @@ def process_dataset(
     seen_ids: Set[str],
     existing_ids: Set[str],
     log: WarningLog,
+    dataset_dir: pathlib.Path,
     upload_queue: Optional["queue.Queue[Optional[List[Any]]]"] = None,
 ) -> None:
     """
@@ -613,7 +616,7 @@ def process_dataset(
         dataset.read_streaming_records(), total=len(dataset), initial=0, leave=True, unit=" rows"
     ):
         row, row_id, warnings = validate_and_process_record(
-            dataset, record, schema, seen_ids, existing_ids
+            dataset, record, schema, seen_ids, existing_ids, base_directory=dataset_dir
         )
         update_log_with_warnings(log, row_id, warnings)
         # row and row ID both present, i.e. row will be uploaded

@@ -5,6 +5,7 @@ Methods for interacting with the command line server API
 import gzip
 import json
 import os
+import pathlib
 import asyncio
 from typing import List, Any, Optional, Tuple
 
@@ -93,6 +94,8 @@ async def upload_rows_async(
     needs_media_upload = modality in [Modality.image]
     columns = list(schema.fields.keys())
 
+    dataset_dir: pathlib.Path = pathlib.Path(dataset_filepath).parent
+
     if needs_media_upload:
         id_column = schema.metadata.id_column
         assert id_column is not None
@@ -104,7 +107,7 @@ async def upload_rows_async(
         filepath_column_idx = columns.index(filepath_column)
         filepaths = [row[filepath_column_idx] for row in rows]
         absolute_filepaths = [
-            get_image_filepath(row[filepath_column_idx], dataset_filepath) for row in rows
+            get_image_filepath(dataset_dir, row[filepath_column_idx]) for row in rows
         ]
 
         filepath_to_post = get_presigned_posts(

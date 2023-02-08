@@ -70,9 +70,11 @@ def init_dataset_from_filepath(filepath: str) -> Dataset:
     if ext == DatasetFileExtension.csv:
         return CsvDataset(filepath)
     elif ext == DatasetFileExtension.xls or ext == DatasetFileExtension.xlsx:
-        return ExcelDataset(filepath)
-    else:  # ext == ".json":
+        return ExcelDataset(filepath, file_type=pathlib.Path(filepath).suffix[1:])
+    elif ext == DatasetFileExtension.json:
         return JsonDataset(filepath)
+
+    raise ValueError(f"filepath {filepath} does not have supported extension.")
 
 
 def dump_json(filepath: str, obj: object) -> None:

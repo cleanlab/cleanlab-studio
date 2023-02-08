@@ -1,3 +1,4 @@
+import pathlib
 from typing import Optional, Set, List, Sized, Iterable, cast
 
 import click
@@ -81,7 +82,12 @@ def check_dataset_command(
     existing_ids: Set[str] = set()
 
     process_dataset(
-        dataset=dataset, schema=loaded_schema, seen_ids=seen_ids, existing_ids=existing_ids, log=log
+        dataset=dataset,
+        schema=loaded_schema,
+        seen_ids=seen_ids,
+        existing_ids=existing_ids,
+        log=log,
+        dataset_dir=pathlib.Path(filepath).parent,
     )
 
     total_warnings = sum([len(log.get(warning_type)) for warning_type in ValidationWarning])
