@@ -17,7 +17,6 @@ class JsonDataset(Dataset):
 
     def read_streaming_values(self) -> Generator[List[Any], None, None]:
         with self.fileobj() as f:
-            breakpoint()
             for r in ijson.items(f, "item"):
                 yield r.values()
 

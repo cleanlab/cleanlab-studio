@@ -48,7 +48,7 @@ def test_json_dataset_from_fileobj_matches_expected(json_filepath: pathlib.Path,
     - read_file_as_dataframe
     """
     # load jsonDataset from object 
-    with open(json_filepath, "rb") as json_file:
+    with open(json_filepath, **JsonDataset.READ_ARGS) as json_file:
         json_dataset = JsonDataset(fileobj=json_file)
 
         # check that methods match values read by pandas

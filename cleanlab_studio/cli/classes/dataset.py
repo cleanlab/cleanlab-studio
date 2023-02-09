@@ -29,8 +29,10 @@ class Dataset:
                 yield dataset_file
 
         elif self._fileobj is not None:
-            yield self._fileobj
-            self._fileobj.seek(0)
+            try:
+                yield self._fileobj
+            finally:
+                self._fileobj.seek(0)
 
         else:
             raise ValueError("Cannot return file object -- no filepath or fileobj available.")
