@@ -83,7 +83,7 @@ def init_dataset_from_fileobj(
 ) -> Union[Dataset[IO[str]], Dataset[IO[bytes]]]:
     """Initializes dataset from file object."""
     if ext == DatasetFileExtension.csv:
-        assert isinstance(fileobj, io.TextIOWrapper)
+        assert isinstance(fileobj, io.TextIOBase)
         return CsvDataset(fileobj=fileobj)
     elif ext in [DatasetFileExtension.xls, DatasetFileExtension.xlsx]:
         assert isinstance(fileobj, io.BytesIO)
