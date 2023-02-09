@@ -13,6 +13,7 @@ from sys import getsizeof
 from typing import (
     Optional,
     Dict,
+    IO,
     List,
     Collection,
     Set,
@@ -76,7 +77,7 @@ def convert_to_python_type(val: Any, data_type: DataType) -> Any:
 
 
 def validate_and_process_record(
-    dataset: Dataset,
+    dataset: Union[Dataset[IO[str]], Dataset[IO[bytes]]],
     record: RecordType,
     schema: Schema,
     seen_ids: Set[str],
@@ -604,7 +605,7 @@ def extract_float_string(column_value: str) -> str:
 
 
 def process_dataset(
-    dataset: Dataset,
+    dataset: Union[Dataset[IO[str]], Dataset[IO[bytes]]],
     schema: Schema,
     seen_ids: Set[str],
     existing_ids: Set[str],

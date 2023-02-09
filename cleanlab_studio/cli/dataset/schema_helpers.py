@@ -7,7 +7,7 @@ import os.path
 import pathlib
 import random
 import re
-from typing import Any, Collection, Dict, List, Optional, Sized, Tuple
+from typing import Any, Collection, Dict, List, Optional, Sized, Tuple, IO, Union
 
 import pandas as pd
 import semver
@@ -268,7 +268,7 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
 
 
 def propose_schema(
-    dataset: Dataset,
+    dataset: Union[Dataset[IO[str]], Dataset[IO[bytes]]],
     name: str,
     columns: Optional[Collection[str]] = None,
     id_column: Optional[str] = None,

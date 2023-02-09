@@ -1,16 +1,16 @@
 from abc import abstractmethod
 import contextlib
-from typing import Optional, List, IO, Generator, Any, Iterator, Dict, Union
+from typing import Optional, List, IO, Generator, Any, Iterator, Dict, Generic, TypeVar, Union
 
 import pandas as pd
 
 from cleanlab_studio.cli.types import RecordType
 
 
-FileObj = Union[IO[str], IO[bytes]]
+FileObj = TypeVar("FileObj", bound=Union[IO[str], IO[bytes]])
 
 
-class Dataset:
+class Dataset(Generic[FileObj]):
     READ_ARGS: Dict[str, str] = {}
 
     def __init__(self, filepath: Optional[str] = None, fileobj: Optional[FileObj] = None):

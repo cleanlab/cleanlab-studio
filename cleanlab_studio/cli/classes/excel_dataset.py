@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Generator, Any, Dict
+from typing import List, Generator, Any, Dict, IO
 
 from cleanlab_studio.cli.classes.dataset import Dataset
 import pyexcel
@@ -8,7 +8,7 @@ import pandas as pd
 from cleanlab_studio.cli.types import RecordType
 
 
-class ExcelDataset(Dataset):
+class ExcelDataset(Dataset[IO[bytes]]):
     READ_ARGS: Dict[str, str] = {"mode": "rb"}
 
     def __init__(self, *args: Any, file_type: str, **kwargs: Any):

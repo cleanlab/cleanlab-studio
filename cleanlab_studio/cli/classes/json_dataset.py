@@ -1,4 +1,4 @@
-from typing import Generator, List, Any, Dict
+from typing import Generator, List, Any, Dict, IO
 
 import pandas as pd
 import ijson
@@ -7,7 +7,7 @@ from .dataset import Dataset
 from cleanlab_studio.cli.types import RecordType
 
 
-class JsonDataset(Dataset):
+class JsonDataset(Dataset[IO[bytes]]):
     READ_ARGS: Dict[str, str] = {"mode": "rb"}
 
     def read_streaming_records(self) -> Generator[RecordType, None, None]:

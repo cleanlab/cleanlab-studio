@@ -1,14 +1,15 @@
 """
 Contains utility functions for interacting with dataset files
 """
+import io
 import json
 import os
 import pathlib
 import pandas as pd
-from typing import Dict, IO, List, Generator
+from typing import Dict, List, Generator, IO, Union
 
 from cleanlab_studio.cli.classes import CsvDataset, JsonDataset, ExcelDataset
-from cleanlab_studio.cli.classes.dataset import Dataset, FileObj
+from cleanlab_studio.cli.classes.dataset import Dataset
 from cleanlab_studio.cli.types import (
     RecordType,
     DatasetFileExtension,
@@ -65,7 +66,8 @@ def is_null_value(val: str) -> bool:
     return val is None or val == "" or pd.isna(val)
 
 
-def init_dataset_from_filepath(filepath: str) -> Dataset:
+
+def init_dataset_from_filepath(filepath: str) -> Union[Dataset[IO[str]], Dataset[IO[bytes]]]:
     ext = get_dataset_file_extension(filepath)
     if ext == DatasetFileExtension.csv:
         return CsvDataset(filepath)
@@ -77,13 +79,18 @@ def init_dataset_from_filepath(filepath: str) -> Dataset:
     raise ValueError(f"filepath {filepath} does not have supported extension.")
 
 
-def init_dataset_from_fileobj(fileobj: FileObj, ext: DatasetFileExtension) -> Dataset:
+def init_dataset_from_fileobj(
+    fileobj: Union[IO[str], IO[bytes]], ext: DatasetFileExtension
+) -> Union[Dataset[IO[str]], Dataset[IO[bytes]]]:
     """Initializes dataset from file object."""
     if ext == DatasetFileExtension.csv:
+        assert isinstance(fileobj, io.TextIOWrapper)
         return CsvDataset(fileobj=fileobj)
     elif ext in [DatasetFileExtension.xls, DatasetFileExtension.xlsx]:
+        assert isinstance(fileobj, io.BytesIO)
         return ExcelDataset(fileobj=fileobj, file_type=ext.value[1:])
     elif ext == DatasetFileExtension.json:
+        assert isinstance(fileobj, io.BytesIO)
         return JsonDataset(fileobj=fileobj)
 
     raise ValueError(f"Extension {ext.value} is not supported.")
