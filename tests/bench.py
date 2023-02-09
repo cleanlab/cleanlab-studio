@@ -44,6 +44,6 @@ def test_generate_schema(benchmark, format, filesize):
         filepath = dataset_url_or_filepath
 
     dataset = init_dataset_from_filepath(filepath)
-    benchmark(lambda: propose_schema(
-        dataset, name="benchmark", id_column="tweet_id", modality="text"
-    ))
+    benchmark(
+        lambda: propose_schema(dataset, name="benchmark", id_column="tweet_id", modality="text")
+    )

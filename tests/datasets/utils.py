@@ -29,7 +29,9 @@ def json_filepath_to_dataframe(json_filepath: pathlib.Path) -> pd.DataFrame:
         return pd.read_json(json_file, orient="records", convert_axes=False, convert_dates=False)
 
 
-def assert_dataset_matches_dataframe(dataset: Dataset, dataframe: pd.DataFrame, ignore_id: bool = False) -> None:
+def assert_dataset_matches_dataframe(
+    dataset: Dataset, dataframe: pd.DataFrame, ignore_id: bool = False
+) -> None:
     """Asserts that Cleanlab Studio Dataset object matches dataframe loaded by Pandas.
 
     Checks:
@@ -41,9 +43,13 @@ def assert_dataset_matches_dataframe(dataset: Dataset, dataframe: pd.DataFrame, 
     """
     assert len(dataset) == dataframe.shape[0], "Dataset length does not match dataframe length"
 
-    assert np.all(dataset.get_columns() == dataframe.columns.values), "Dataset columns do not match dataframe columns"
+    assert np.all(
+        dataset.get_columns() == dataframe.columns.values
+    ), "Dataset columns do not match dataframe columns"
 
-    for dataset_row, (_, dataframe_row) in zip(dataset.read_streaming_records(), dataframe.iterrows()):
+    for dataset_row, (_, dataframe_row) in zip(
+        dataset.read_streaming_records(), dataframe.iterrows()
+    ):
         for dataset_val, dataframe_val in zip(dataset_row.values(), dataframe_row.values):
             assert_dataset_val_matches_dataframe_val(
                 dataset_val,
@@ -51,7 +57,9 @@ def assert_dataset_matches_dataframe(dataset: Dataset, dataframe: pd.DataFrame, 
                 assert_msg="Dataset read_streaming_records does not match dataframe values.",
             )
 
-    for dataset_row, (_, dataframe_row) in zip(dataset.read_streaming_values(), dataframe.iterrows()):
+    for dataset_row, (_, dataframe_row) in zip(
+        dataset.read_streaming_values(), dataframe.iterrows()
+    ):
         for dataset_val, dataframe_val in zip(dataset_row, dataframe_row.values):
             assert_dataset_val_matches_dataframe_val(
                 dataset_val,
@@ -62,15 +70,17 @@ def assert_dataset_matches_dataframe(dataset: Dataset, dataframe: pd.DataFrame, 
     dataset_dataframe = dataset.read_file_as_dataframe()
     if ignore_id:
         dataset_dataframe = dataset_dataframe.drop(columns=["id"])
-    
-    assert (
-        dataset_dataframe.reset_index(drop=True).equals(dataframe.reset_index(drop=True))
+
+    assert dataset_dataframe.reset_index(drop=True).equals(
+        dataframe.reset_index(drop=True)
     ), "Dataset read as dataframe does not match dataframe"
 
 
-def assert_dataset_val_matches_dataframe_val(dataset_val: Any, dataframe_val: Any, assert_msg: str) -> None:
+def assert_dataset_val_matches_dataframe_val(
+    dataset_val: Any, dataframe_val: Any, assert_msg: str
+) -> None:
     """Asserts that dataset value matches dataframe value.
-    
+
     Ignores nans.
     If dataset val is int and dataframe val is float, converts dataframe val to int.
     If dataset val is Decimal and dataframe val is float, converts dataset val to float (and round both).
