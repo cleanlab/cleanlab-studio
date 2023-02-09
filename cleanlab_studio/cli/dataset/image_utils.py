@@ -1,32 +1,29 @@
-import os.path
+import pathlib
 
-from cleanlab_studio.cli.types import ImageFileExtension
 from PIL import Image
-from pathlib import Path
-
-from cleanlab_studio.cli.util import get_image_file_extension
 
 
-def get_image_filepath(image_filepath: str, dataset_filepath: str) -> str:
-    if os.path.isabs(image_filepath):
-        return image_filepath
-    else:
-        dataset_path = Path(dataset_filepath)
-        directory_path = dataset_path.parent.absolute()
-        return os.path.join(directory_path, image_filepath)
+def get_image_filepath(base_directory: pathlib.Path, image_filepath: pathlib.Path) -> pathlib.Path:
+    """Joins base directory with relative or absolute image filepath.
+
+    Note
+    ----
+    if column_value (image filepath) is an absolute path, base directory will be ignored
+    """
+    return base_directory.joinpath(image_filepath)
 
 
-def image_file_exists(image_filepath: str, dataset_filepath: str) -> bool:
-    return os.path.exists(get_image_filepath(image_filepath, dataset_filepath))
+def image_file_exists(image_filepath: pathlib.Path) -> bool:
+    return image_filepath.exists()
 
 
-def image_file_readable(image_filepath: str, dataset_filepath: str) -> bool:
+def image_file_readable(image_filepath: pathlib.Path) -> bool:
     """
     readable == image file can be opened by Pillow
     """
     try:
-        image_filepath = get_image_filepath(image_filepath, dataset_filepath)
         Image.open(image_filepath)
+        return True
+
     except IOError:
         return False
-    return True

@@ -1,4 +1,4 @@
-from cleanlab_studio.cli.dataset.schema_helpers import propose_schema, validate_schema
+from cleanlab_studio.cli.dataset.schema_helpers import propose_schema, init_dataset_from_filepath
 import requests
 import pytest
 from cleanlab_studio.cli.util import get_filename
@@ -42,4 +42,8 @@ def test_generate_schema(benchmark, format, filesize):
         filepath = get_filename(dataset_url_or_filepath)
     else:
         filepath = dataset_url_or_filepath
-    benchmark(lambda: propose_schema(filepath, id_column="tweet_id", modality="text"))
+
+    dataset = init_dataset_from_filepath(filepath)
+    benchmark(
+        lambda: propose_schema(dataset, name="benchmark", id_column="tweet_id", modality="text")
+    )

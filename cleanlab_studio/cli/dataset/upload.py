@@ -25,7 +25,7 @@ from cleanlab_studio.cli.decorators import auth_config, previous_state
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.types import Modality, CommandState, MODALITIES
-from cleanlab_studio.cli.util import init_dataset_from_filepath
+from cleanlab_studio.cli.util import get_filename, init_dataset_from_filepath
 from cleanlab_studio.version import SCHEMA_VERSION
 
 
@@ -281,12 +281,12 @@ def upload(
 
     ### Propose schema
     proposed_schema = propose_schema(
-        filepath=filepath,
+        dataset=dataset,
+        name=name or get_filename(filepath),
         columns=columns,
         id_column=id_column,
         modality=modality,
         filepath_column=filepath_column,
-        name=name,
     )
     log(json.dumps(proposed_schema.to_dict(), indent=2))
     info(f"No schema was provided. We propose the above schema based on your dataset.")
