@@ -85,7 +85,4 @@ def assert_dataset_val_matches_dataframe_val(dataset_val: Any, dataframe_val: An
             dataset_val = round(float(dataset_val), ndigits=5)
             dataframe_val = round(dataframe_val, ndigits=5)
 
-    try:
-        assert str(dataset_val) == str(dataframe_val), assert_msg
-    except:
-        breakpoint()
+    assert str(dataset_val) == str(dataframe_val), assert_msg
