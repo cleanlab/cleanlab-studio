@@ -83,6 +83,7 @@ def assert_dataset_val_matches_dataframe_val(
 
     Ignores nans.
     If dataset val is int and dataframe val is float, converts dataframe val to int.
+    If dataset val is float and dataframe val is int, converts dataset val to int.
     If dataset val is Decimal and dataframe val is float, converts dataset val to float (and round both).
     """
     if pd.isnull(dataframe_val):
@@ -94,5 +95,9 @@ def assert_dataset_val_matches_dataframe_val(
         elif isinstance(dataset_val, Decimal):
             dataset_val = round(float(dataset_val), ndigits=5)
             dataframe_val = round(dataframe_val, ndigits=5)
+
+    elif isinstance(dataframe_val, int):
+        if isinstance(dataset_val, float):
+            dataset_val = int(dataset_val)
 
     assert str(dataset_val) == str(dataframe_val), assert_msg
