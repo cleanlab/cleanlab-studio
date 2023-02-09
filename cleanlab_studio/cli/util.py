@@ -82,7 +82,7 @@ def init_dataset_from_fileobj(fileobj: IO, ext: DatasetFileExtension) -> Dataset
     if ext == DatasetFileExtension.csv:
         return CsvDataset(fileobj=fileobj)
     elif ext in [DatasetFileExtension.xls, DatasetFileExtension.xlsx]:
-        return ExcelDataset(fileobj=fileobj, file_type=DatasetFileExtension.value[1:])
+        return ExcelDataset(fileobj=fileobj, file_type=ext.value[1:])
     if ext == DatasetFileExtension.json:
         return JsonDataset(fileobj=fileobj)
 
