@@ -52,7 +52,7 @@ def test_csv_dataset_from_fileobj_matches_expected(
     - read_file_as_dataframe
     """
     # load CsvDataset from object
-    with open(csv_filepath, "r") as csv_file:
+    with open(csv_filepath, **CsvDataset.READ_ARGS) as csv_file:
         csv_dataset = CsvDataset(fileobj=csv_file)
 
         # check that methods match values read by pandas

@@ -58,7 +58,7 @@ def test_excel_dataset_from_fileobj_matches_expected(
     - read_file_as_dataframe
     """
     # load excelDataset from object
-    with open(excel_filepath, "rb") as excel_file:
+    with open(excel_filepath, **ExcelDataset.READ_ARGS) as excel_file:
         excel_dataset = ExcelDataset(fileobj=excel_file, file_type="xlsx")
 
         # check that methods match values read by pandas
