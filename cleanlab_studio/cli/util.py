@@ -86,10 +86,10 @@ def init_dataset_from_fileobj(
         assert isinstance(fileobj, io.TextIOBase)
         return CsvDataset(fileobj=fileobj)
     elif ext in [DatasetFileExtension.xls, DatasetFileExtension.xlsx]:
-        assert isinstance(fileobj, io.BytesIO)
+        assert isinstance(fileobj, io.BufferedIOBase)
         return ExcelDataset(fileobj=fileobj, file_type=ext.value[1:])
     elif ext == DatasetFileExtension.json:
-        assert isinstance(fileobj, io.BytesIO)
+        assert isinstance(fileobj, io.BufferedIOBase)
         return JsonDataset(fileobj=fileobj)
 
     raise ValueError(f"Extension {ext.value} is not supported.")
