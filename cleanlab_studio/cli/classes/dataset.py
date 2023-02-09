@@ -25,7 +25,7 @@ class Dataset:
     def fileobj(self) -> Iterator[IO]:
         """Yields open IO object to dataset file."""
         if self._filepath is not None:
-            with open(self._filepath, **self.READ_ARGS) as dataset_file:
+            with open(self._filepath, **self.READ_ARGS) as dataset_file:    # type: ignore
                 yield dataset_file
 
         elif self._fileobj is not None:
