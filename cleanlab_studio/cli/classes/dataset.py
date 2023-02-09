@@ -1,13 +1,13 @@
 from abc import abstractmethod
 import contextlib
-from typing import Optional, List, IO, Generator, Any, Iterator, Dict, AnyStr
+from typing import Optional, List, IO, Generator, Any, Iterator, Dict, Union
 
 import pandas as pd
 
 from cleanlab_studio.cli.types import RecordType
 
 
-FileObj = IO[str] | IO[bytes]
+FileObj = Union[IO[str], IO[bytes]]
 
 
 class Dataset:
