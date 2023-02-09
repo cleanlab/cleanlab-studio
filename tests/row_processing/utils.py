@@ -22,7 +22,6 @@ def process_record_with_fields(
     record[ID_COLUMN] = "id"
     schema = initialize_schema_from_fields(fields)
     row, row_id, warnings = validate_and_process_record(
-        dataset=Dataset(filepath="dummy_filepath.csv"),
         schema=schema,
         record=record,
         seen_ids=set(),
