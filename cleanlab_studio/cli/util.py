@@ -5,7 +5,7 @@ import json
 import os
 import pathlib
 import pandas as pd
-from typing import Optional, Dict, Any, List, Generator
+from typing import Dict, IO, List, Generator
 
 from cleanlab_studio.cli.classes import CsvDataset, JsonDataset, ExcelDataset
 from cleanlab_studio.cli.classes.dataset import Dataset
@@ -75,6 +75,18 @@ def init_dataset_from_filepath(filepath: str) -> Dataset:
         return JsonDataset(filepath)
 
     raise ValueError(f"filepath {filepath} does not have supported extension.")
+
+
+def init_dataset_from_fileobj(fileobj: IO, ext: DatasetFileExtension) -> Dataset:
+    """Initializes dataset from file object."""
+    if ext == DatasetFileExtension.csv:
+        return CsvDataset(fileobj=fileobj)
+    elif ext in [DatasetFileExtension.xls, DatasetFileExtension.xlsx]:
+        return ExcelDataset(fileobj=fileobj, file_type=DatasetFileExtension.value[1:])
+    if ext == DatasetFileExtension.json:
+        return JsonDataset(fileobj=fileobj)
+
+    raise ValueError(f"Extension {ext.value} is not supported.")
 
 
 def dump_json(filepath: str, obj: object) -> None:
