@@ -14,7 +14,6 @@ from cleanlab_studio.cli.dataset.helpers import (
     get_filepath_column_if_undefined,
 )
 from cleanlab_studio.cli.dataset.schema_helpers import (
-    get_filename,
     load_schema,
     validate_schema,
     propose_schema,
@@ -26,7 +25,7 @@ from cleanlab_studio.cli.decorators import auth_config, previous_state
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.types import Modality, CommandState, MODALITIES
-from cleanlab_studio.cli.util import init_dataset_from_filepath
+from cleanlab_studio.cli.util import get_filename, init_dataset_from_filepath
 from cleanlab_studio.version import SCHEMA_VERSION
 
 

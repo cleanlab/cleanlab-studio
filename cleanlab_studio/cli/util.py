@@ -8,7 +8,7 @@ import pandas as pd
 from typing import Dict, IO, List, Generator
 
 from cleanlab_studio.cli.classes import CsvDataset, JsonDataset, ExcelDataset
-from cleanlab_studio.cli.classes.dataset import Dataset
+from cleanlab_studio.cli.classes.dataset import Dataset, FileObj
 from cleanlab_studio.cli.types import (
     RecordType,
     DatasetFileExtension,
@@ -77,7 +77,7 @@ def init_dataset_from_filepath(filepath: str) -> Dataset:
     raise ValueError(f"filepath {filepath} does not have supported extension.")
 
 
-def init_dataset_from_fileobj(fileobj: IO, ext: DatasetFileExtension) -> Dataset:
+def init_dataset_from_fileobj(fileobj: FileObj, ext: DatasetFileExtension) -> Dataset:
     """Initializes dataset from file object."""
     if ext == DatasetFileExtension.csv:
         return CsvDataset(fileobj=fileobj)

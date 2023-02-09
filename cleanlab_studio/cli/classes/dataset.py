@@ -1,28 +1,31 @@
 from abc import abstractmethod
 import contextlib
-from typing import Optional, List, IO, Generator, Any, Iterator, Dict
+from typing import Optional, List, IO, Generator, Any, Iterator, Dict, AnyStr
 
 import pandas as pd
 
 from cleanlab_studio.cli.types import RecordType
 
 
+FileObj = IO[str] | IO[bytes]
+
+
 class Dataset:
     READ_ARGS: Dict[str, str] = {}
 
-    def __init__(self, filepath: Optional[str] = None, fileobj: Optional[IO] = None):
+    def __init__(self, filepath: Optional[str] = None, fileobj: Optional[FileObj] = None):
         if filepath is None and fileobj is None:
             raise ValueError(
                 "One of `filepath` or `fileobj` must be provided to initialize `Dataset`."
             )
 
-        self._filepath = filepath
-        self._fileobj = fileobj
+        self._filepath: Optional[str] = filepath
+        self._fileobj: Optional[FileObj] = fileobj
 
         self._num_rows: Optional[int] = None
 
     @contextlib.contextmanager
-    def fileobj(self) -> Iterator[IO]:
+    def fileobj(self) -> Iterator[FileObj]:
         """Yields open IO object to dataset file."""
         if self._filepath is not None:
             with open(self._filepath, **self.READ_ARGS) as dataset_file:  # type: ignore

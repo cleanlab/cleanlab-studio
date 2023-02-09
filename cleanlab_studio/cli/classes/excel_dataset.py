@@ -11,7 +11,7 @@ from cleanlab_studio.cli.types import RecordType
 class ExcelDataset(Dataset):
     READ_ARGS: Dict[str, str] = {"mode": "rb"}
 
-    def __init__(self, *args, file_type: str, **kwargs):
+    def __init__(self, *args: Any, file_type: str, **kwargs: Any):
         self._file_type = file_type
         super().__init__(*args, **kwargs)
 

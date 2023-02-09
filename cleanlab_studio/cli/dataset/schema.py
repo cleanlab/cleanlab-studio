@@ -9,7 +9,6 @@ from cleanlab_studio.cli.dataset.helpers import (
 )
 from cleanlab_studio.cli.dataset.upload_helpers import process_dataset
 from cleanlab_studio.cli.dataset.schema_helpers import (
-    get_filename,
     load_schema,
     validate_schema,
     propose_schema,
@@ -19,7 +18,7 @@ from cleanlab_studio.cli.dataset import upload_helpers
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.dataset.upload_types import ValidationWarning
 from cleanlab_studio.cli.types import CommandState, MODALITIES, Modality
-from cleanlab_studio.cli.util import init_dataset_from_filepath
+from cleanlab_studio.cli.util import get_filename, init_dataset_from_filepath
 from cleanlab_studio.cli.decorators import previous_state
 import json
 from cleanlab_studio.cli.click_helpers import abort, info, success
