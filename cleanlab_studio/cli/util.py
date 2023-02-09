@@ -66,7 +66,6 @@ def is_null_value(val: str) -> bool:
     return val is None or val == "" or pd.isna(val)
 
 
-
 def init_dataset_from_filepath(filepath: str) -> Union[Dataset[IO[str]], Dataset[IO[bytes]]]:
     ext = get_dataset_file_extension(filepath)
     if ext == DatasetFileExtension.csv:
