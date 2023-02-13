@@ -82,7 +82,7 @@ def validate_and_process_record(
     seen_ids: Set[str],
     existing_ids: Set[str],
     base_directory: pathlib.Path = pathlib.Path(""),
-    disable_file_existence_check: bool = False,
+    disable_filepath_checks: bool = False,
 ) -> Tuple[Optional[RecordType], Optional[str], Optional[RowWarningsType]]:
     """
     Validate the row against the provided schema; generate warnings where issues are found
@@ -153,7 +153,7 @@ def validate_and_process_record(
                         ValidationWarning.TYPE_MISMATCH,
                     )
             elif col_feature_type == FeatureType.filepath:
-                if schema.metadata.modality == Modality.image and not disable_file_existence_check:
+                if schema.metadata.modality == Modality.image and not disable_filepath_checks:
                     image_filepath = get_image_filepath(base_directory, column_value)
                     if not image_file_exists(image_filepath):
                         msg, warn_type = (
