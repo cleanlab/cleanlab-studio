@@ -13,6 +13,7 @@ class DataType(Enum):
     integer = "integer"
     float = "float"
     boolean = "boolean"
+    media = "media"
 
 
 class FeatureType(Enum):
@@ -22,7 +23,7 @@ class FeatureType(Enum):
     text = "text"
     boolean = "boolean"
     datetime = "datetime"
-    filepath = "filepath"
+    image = "image"
 
 
 DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
@@ -31,7 +32,6 @@ DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
         FeatureType.categorical,
         FeatureType.datetime,
         FeatureType.identifier,
-        FeatureType.filepath,
     },
     DataType.integer: {
         FeatureType.categorical,
@@ -41,6 +41,7 @@ DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
     },
     DataType.float: {FeatureType.datetime, FeatureType.numeric},
     DataType.boolean: {FeatureType.boolean},
+    DataType.media: {FeatureType.image},
 }
 
 
@@ -70,17 +71,13 @@ class SchemaMetadata:
     id_column: str
     modality: Modality
     name: str
-    filepath_column: Optional[str]
 
     @staticmethod
-    def create(
-        id_column: str, modality: str, name: str, filepath_column: Optional[str] = None
-    ) -> "SchemaMetadata":
+    def create(id_column: str, modality: str, name: str) -> "SchemaMetadata":
         return SchemaMetadata(
             id_column=id_column,
             modality=Modality(modality),
             name=name,
-            filepath_column=filepath_column,
         )
 
     def to_dict(self) -> SchemaMetadataDictType:
@@ -88,7 +85,6 @@ class SchemaMetadata:
             id_column=self.id_column,
             modality=self.modality.value,
             name=self.name,
-            filepath_column=self.filepath_column,
         )
 
 
@@ -123,10 +119,11 @@ class Schema:
         assert id_column is not None
         assert modality is not None
         assert name is not None
-        filepath_column: Optional[str] = metadata.get("filepath_column", None)
         return Schema(
             metadata=SchemaMetadata.create(
-                id_column=id_column, modality=modality, name=name, filepath_column=filepath_column
+                id_column=id_column,
+                modality=modality,
+                name=name,
             ),
             fields=fields_,
             version=version,
@@ -164,4 +161,5 @@ DATA_TYPES_TO_PYTHON_TYPES: Dict[DataType, type] = {
     DataType.float: float,
     DataType.integer: int,
     DataType.boolean: bool,
+    DataType.media: str,
 }

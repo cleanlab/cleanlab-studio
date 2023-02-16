@@ -8,8 +8,10 @@ import pathlib
 import random
 import re
 from typing import Any, Collection, Dict, List, Optional, Sized, Tuple, IO, Union
+from urllib.parse import urlparse
 
 import pandas as pd
+import requests
 import semver
 from pandas import NaT
 
@@ -17,7 +19,7 @@ from cleanlab_studio.cli.classes.dataset import Dataset
 from cleanlab_studio.cli.click_helpers import abort, info, progress, success
 from cleanlab_studio.cli.dataset.schema_types import DataType, FeatureType, Schema
 from cleanlab_studio.cli.types import Modality
-from cleanlab_studio.cli.util import dump_json, get_filename, init_dataset_from_filepath
+from cleanlab_studio.cli.util import dump_json, init_dataset_from_filepath
 from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError
 from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
@@ -148,8 +150,16 @@ def multiple_separate_words_detected(values: Collection[Any]) -> bool:
 
 def is_filepath(string: str, check_existing: bool = False) -> bool:
     if check_existing:
-        return os.path.exists(string)
+        return pathlib.Path(string).exists()
     return pathlib.Path(string).suffix != "" and " " not in string
+
+
+def is_url(string: str) -> bool:
+    try:
+        requests.head(string)
+        return True
+    except:
+        return False
 
 
 def get_validation_sample_size(values: Sized) -> int:
@@ -190,12 +200,17 @@ def string_values_are_floats(values: Collection[Any]) -> bool:
     return True
 
 
-def _values_are_filepaths(values: Collection[Any]) -> bool:
+def values_are_filepaths(values: Collection[Any]) -> bool:
     val_sample = random.sample(list(values), get_validation_sample_size(values))
     for s in val_sample:
         if not is_filepath(s):
             return False
     return True
+
+
+def values_are_urls(values: Collection[Any]) -> bool:
+    val_sample = random.sample(list(values), get_validation_sample_size(values))
+    return all(is_url(s) for s in val_sample)
 
 
 def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
@@ -244,8 +259,8 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
             if multiple_separate_words_detected(values):
                 return DataType.string, FeatureType.text
             else:
-                if _values_are_filepaths(values):
-                    return DataType.string, FeatureType.filepath
+                if values_are_urls(values) or values_are_filepaths(values):
+                    return DataType.media, FeatureType.image
                 return DataType.string, FeatureType.identifier
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
             return DataType.string, FeatureType.categorical
@@ -273,7 +288,6 @@ def propose_schema(
     columns: Optional[Collection[str]] = None,
     id_column: Optional[str] = None,
     modality: Optional[str] = None,
-    filepath_column: Optional[str] = None,
     sample_size: int = 10000,
     max_rows_checked: int = 200000,
 ) -> Schema:
@@ -342,6 +356,8 @@ def propose_schema(
         fields_dict[column_name] = dict(
             data_type=col_data_type.value, feature_type=col_feature_type.value
         )
+        if col_data_type == DataType.media:
+            modality = col_feature_type.value
 
     schema_dict["fields"] = fields_dict
 
@@ -360,9 +376,7 @@ def propose_schema(
 
     assert id_column is not None
 
-    metadata: Dict[str, Optional[str]] = dict(
-        id_column=id_column, modality=modality, name=name, filepath_column=filepath_column
-    )
+    metadata: Dict[str, Optional[str]] = dict(id_column=id_column, modality=modality, name=name)
     return Schema.create(metadata=metadata, fields=fields_dict, version=SCHEMA_VERSION)
 
 
@@ -381,3 +395,19 @@ def save_schema(schema: Schema, filename: Optional[str]) -> None:
         success("Saved.")
     else:
         info("Schema was not saved.")
+
+
+def get_dataset_filepath_columns(
+    dataset: Union[Dataset[IO[bytes]], Dataset[IO[str]]], schema: Schema
+) -> List[str]:
+    media_columns = [
+        field_name
+        for field_name, field_spec in schema.fields.items()
+        if field_spec.data_type == DataType.media
+    ]
+    df = dataset.read_file_as_dataframe()
+    return [
+        col
+        for col in media_columns
+        if not values_are_urls(df[col]) and values_are_filepaths(df[col])
+    ]

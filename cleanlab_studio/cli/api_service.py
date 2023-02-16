@@ -15,6 +15,7 @@ import requests
 from cleanlab_studio.version import __version__
 from cleanlab_studio.cli.click_helpers import abort, warn, info
 from cleanlab_studio.cli.dataset.image_utils import get_image_filepath
+from cleanlab_studio.cli.dataset.schema_helpers import get_dataset_filepath_columns
 from cleanlab_studio.cli.dataset.schema_types import Schema
 from cleanlab_studio.cli.types import JSONDict, IDType, Modality
 
@@ -91,7 +92,8 @@ async def upload_rows_async(
     rows: List[Any],
 ) -> None:
     modality = schema.metadata.modality
-    needs_media_upload = modality in [Modality.image]
+    filepath_columns = get_dataset_filepath_columns(dataset_filepath, schema)
+    needs_media_upload = modality in [Modality.image] and filepath_columns
     columns = list(schema.fields.keys())
 
     dataset_dir: pathlib.Path = pathlib.Path(dataset_filepath).parent
@@ -102,26 +104,11 @@ async def upload_rows_async(
         id_column_idx = columns.index(id_column)
         row_ids = [row[id_column_idx] for row in rows]
 
-        filepath_column = schema.metadata.filepath_column
-        assert filepath_column is not None
-        filepath_column_idx = columns.index(filepath_column)
-        filepaths = [row[filepath_column_idx] for row in rows]
-        absolute_filepaths = [
-            get_image_filepath(dataset_dir, row[filepath_column_idx]) for row in rows
-        ]
-
-        filepath_to_post = get_presigned_posts(
-            api_key=api_key,
-            dataset_id=dataset_id,
-            filepaths=filepaths,
-            row_ids=row_ids,
-            media_type=modality.value,
-        )
         sem = asyncio.Semaphore(MAX_PARALLEL_UPLOADS)
         cancelled = False
 
         async def post_file(
-            original_filepath: str, absolute_filepath: str
+            original_filepath: str, absolute_filepath: str, filepath_to_post: JSONDict
         ) -> Tuple[Optional[bool], str]:
             async with sem:
                 # note: we pass in the path and we don't open the file until we
@@ -153,22 +140,38 @@ async def upload_rows_async(
                     return False, original_filepath
             return None, original_filepath
 
-        for coro in asyncio.as_completed(
-            [
-                post_file(original_filepath, str(absolute_filepath))
-                for original_filepath, absolute_filepath in zip(filepaths, absolute_filepaths)
+        async def upload_files_for_filepath_column(filepath_column: str) -> None:
+            filepath_column_idx = columns.index(filepath_column)
+            filepaths = [row[filepath_column_idx] for row in rows]
+            absolute_filepaths = [
+                str(get_image_filepath(dataset_dir, row[filepath_column_idx])) for row in rows
             ]
-        ):
-            ok, original_filepath = await coro
-            if ok:
-                info(f"Uploaded {original_filepath}")
-            else:
-                # cancel tasks we don't need anymore, to give us flexibility to
-                # not abort() later but to throw an exception and keep the
-                # Python interpreter running without a bunch of leaked
-                # coroutines
-                cancelled = True
-                abort(f"Failed to upload {original_filepath}")
+            filepath_to_post = get_presigned_posts(
+                api_key=api_key,
+                dataset_id=dataset_id,
+                filepaths=filepaths,
+                row_ids=row_ids,
+                media_type=modality.value,
+            )
+            for coro in asyncio.as_completed(
+                [
+                    post_file(original_filepath, absolute_filepath, filepath_to_post)
+                    for original_filepath, absolute_filepath in zip(filepaths, absolute_filepaths)
+                ]
+            ):
+                ok, original_filepath = await coro
+                if ok:
+                    info(f"Uploaded {original_filepath}")
+                else:
+                    # cancel tasks we don't need anymore, to give us flexibility to
+                    # not abort() later but to throw an exception and keep the
+                    # Python interpreter running without a bunch of leaked
+                    # coroutines
+                    cancelled = True
+                    abort(f"Failed to upload {original_filepath}")
+
+        upload_tasks = [upload_files_for_filepath_column(col) for col in filepath_columns]
+        await asyncio.gather(*upload_tasks)
 
     url = base_url + f"/datasets/{dataset_id}"
     data = gzip.compress(
