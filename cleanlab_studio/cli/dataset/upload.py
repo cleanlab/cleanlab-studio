@@ -1,8 +1,8 @@
 import csv
+import io
 import json
-from typing import Optional, List
+from typing import IO, Optional, List, Union
 import os
-import tempfile
 
 import click
 
@@ -19,23 +19,50 @@ from cleanlab_studio.cli.dataset.schema_helpers import (
     propose_schema,
     save_schema,
 )
-from cleanlab_studio.cli.dataset.upload_helpers import upload_dataset
+from cleanlab_studio.cli.dataset.upload_helpers import (
+    upload_dataset_from_filename,
+    upload_dataset_from_stream,
+)
 from cleanlab_studio.cli.dataset.schema_types import Schema
 from cleanlab_studio.cli.decorators import auth_config, previous_state
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
-from cleanlab_studio.cli.types import Modality, CommandState, MODALITIES
+from cleanlab_studio.cli.types import DatasetFileExtension, CommandState, Modality, MODALITIES
 from cleanlab_studio.cli.util import get_filename, init_dataset_from_filepath
 from cleanlab_studio.version import SCHEMA_VERSION
 
 
-def resume_upload(api_key: str, dataset_id: str, filepath: str) -> None:
+def resume_upload(
+    api_key: str,
+    dataset_id: str,
+    filepath: Optional[str] = None,
+    fileobj: Optional[Union[IO[str], IO[bytes]]] = None,
+    dataset_file_extension: Optional[DatasetFileExtension] = None,
+) -> None:
     complete = api_service.get_completion_status(api_key, dataset_id)
     if complete:
         abort("Dataset is already fully uploaded.")
     saved_schema = api_service.get_dataset_schema(api_key, dataset_id)
     existing_ids = {str(x) for x in api_service.get_existing_ids(api_key, dataset_id)}
-    upload_dataset(api_key, dataset_id, filepath, saved_schema, existing_ids)
+    if filepath is not None:
+        upload_dataset_from_filename(
+            api_key=api_key,
+            dataset_id=dataset_id,
+            filepath=filepath,
+            schema=saved_schema,
+            existing_ids=existing_ids,
+        )
+    elif fileobj is not None and dataset_file_extension is not None:
+        upload_dataset_from_stream(
+            api_key=api_key,
+            dataset_id=dataset_id,
+            fileobj=fileobj,
+            schema=saved_schema,
+            existing_ids=existing_ids,
+            dataset_file_extension=dataset_file_extension,
+        )
+    else:
+        raise ValueError("Must provide filepath or fileobj")
 
 
 def upload_with_schema(
@@ -56,7 +83,9 @@ def upload_with_schema(
         "If this upload is interrupted, you may resume it using: cleanlab dataset upload -f"
         f" {filepath} --id {dataset_id}"
     )
-    upload_dataset(api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema)
+    upload_dataset_from_filename(
+        api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=loaded_schema
+    )
 
 
 def simple_image_upload(
@@ -77,12 +106,18 @@ def simple_image_upload(
             id = os.path.join(c, f)
             metadata.append([id, os.path.abspath(full_path), c])
     # the simplest way to do this is to write metadata to a file and then reuse existing code
-    metadata_file = tempfile.NamedTemporaryFile(mode="w", suffix=".csv")
+    metadata_file = io.StringIO()
     w = csv.writer(metadata_file)
     w.writerows(metadata)
     metadata_file.flush()
+    metadata_file.seek(0)
     if dataset_id is not None:
-        resume_upload(api_key, dataset_id, metadata_file.name)
+        resume_upload(
+            api_key,
+            dataset_id,
+            fileobj=metadata_file,
+            dataset_file_extension=DatasetFileExtension.csv,
+        )
     else:
         ok = click.confirm(
             f"Upload image dataset with {len(classes)} classes and {len(metadata)-1} images?"
@@ -112,11 +147,12 @@ def simple_image_upload(
             "If this upload is interrupted, you may resume it using: cleanlab dataset upload -f"
             f" {directory} --id {dataset_id}"
         )
-        upload_dataset(
+        upload_dataset_from_stream(
             api_key=api_key,
             dataset_id=dataset_id,
-            filepath=metadata_file.name,
+            fileobj=metadata_file,
             schema=constructed_schema,
+            dataset_file_extension=DatasetFileExtension.csv,
         )
 
 
@@ -311,6 +347,6 @@ def upload(
         dataset_id = api_service.initialize_dataset(api_key, proposed_schema)
         info(f"Dataset initialized with ID: {dataset_id}")
         prev_state.update_args(dict(dataset_id=dataset_id))
-        upload_dataset(
+        upload_dataset_from_filename(
             api_key=api_key, dataset_id=dataset_id, filepath=filepath, schema=proposed_schema
         )
