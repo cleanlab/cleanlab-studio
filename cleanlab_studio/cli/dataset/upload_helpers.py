@@ -273,7 +273,7 @@ def echo_log_warnings(log: WarningLog) -> None:
 
 
 def validate_rows(
-    dataset: Dataset,
+    dataset: Union[Dataset[IO[bytes]], Dataset[IO[str]]],
     dataset_filepath: str,
     schema: Schema,
     log: WarningLog,
@@ -373,7 +373,10 @@ async def upload_rows(
 
 
 def check_filepath_column(
-    dataset: Dataset, modality: Modality, dataset_filepath: str, filepath_column: str
+    dataset: Union[Dataset[IO[bytes]], Dataset[IO[str]]],
+    modality: Modality,
+    dataset_filepath: str,
+    filepath_column: str,
 ) -> None:
     """
     Check the filepath column of a dataset to see if any of the filepaths are invalid.
@@ -480,12 +483,12 @@ def upload_dataset_from_filename(
 def upload_dataset(
     api_key: str,
     dataset_id: str,
-    dataset: Dataset,
+    dataset: Union[Dataset[IO[bytes]], Dataset[IO[str]]],
     schema: Schema,
     existing_ids: Optional[Collection[str]] = None,
     output: Optional[str] = None,
     payload_size: float = 10,
-    filepath: Optional[str] = "",
+    filepath: str = "",
 ) -> None:
     """
 
@@ -679,7 +682,9 @@ def process_dataset(
             upload_queue.put(list(row.values()), block=True)
 
 
-def get_image_dataset_size(dataset: Dataset, filepath_column: str) -> int:
+def get_image_dataset_size(
+    dataset: Union[Dataset[IO[bytes]], Dataset[IO[str]]], filepath_column: str
+) -> int:
     """Returns total image dataset size by summing file sizes of each image"""
     return sum(
         [
