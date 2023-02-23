@@ -51,13 +51,15 @@ from cleanlab_studio.cli.dataset.upload_types import (
     warning_to_readable_name,
 )
 from cleanlab_studio.cli.types import (
-    RecordType,
+    DatasetFileExtension,
     Modality,
+    RecordType,
 )
 from cleanlab_studio.cli.util import (
     is_null_value,
     dump_json,
     init_dataset_from_filepath,
+    init_dataset_from_fileobj,
     get_file_size,
 )
 
@@ -271,6 +273,7 @@ def echo_log_warnings(log: WarningLog) -> None:
 
 
 def validate_rows(
+    dataset: Dataset,
     dataset_filepath: str,
     schema: Schema,
     log: WarningLog,
@@ -288,8 +291,6 @@ def validate_rows(
     """
     existing_ids = set() if existing_ids is None else set([str(x) for x in existing_ids])
     seen_ids: Set[str] = set()
-
-    dataset = init_dataset_from_filepath(dataset_filepath)
 
     process_dataset(
         dataset=dataset,
@@ -371,13 +372,14 @@ async def upload_rows(
         await asyncio.gather(*upload_tasks)
 
 
-def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_column: str) -> None:
+def check_filepath_column(
+    dataset: Dataset, modality: Modality, dataset_filepath: str, filepath_column: str
+) -> None:
     """
     Check the filepath column of a dataset to see if any of the filepaths are invalid.
     If >0 filepaths are invalid, print the number of invalid filepaths and prompt user for confirmation about
     outputting filepaths to console.
     """
-    dataset = init_dataset_from_filepath(dataset_filepath)
     dataset_dir = pathlib.Path(dataset_filepath).parent
 
     if filepath_column not in dataset.get_columns():
@@ -431,7 +433,29 @@ def check_filepath_column(modality: Modality, dataset_filepath: str, filepath_co
             abort("Dataset upload aborted.")
 
 
-def upload_dataset(
+def upload_dataset_from_stream(
+    api_key: str,
+    dataset_id: str,
+    fileobj: Union[IO[str], IO[bytes]],
+    schema: Schema,
+    dataset_file_extension: DatasetFileExtension,
+    existing_ids: Optional[Collection[str]] = None,
+    output: Optional[str] = None,
+    payload_size: float = 10,
+) -> None:
+    dataset = init_dataset_from_fileobj(fileobj, dataset_file_extension)
+    upload_dataset(
+        api_key=api_key,
+        dataset_id=dataset_id,
+        dataset=dataset,
+        schema=schema,
+        existing_ids=existing_ids,
+        output=output,
+        payload_size=payload_size,
+    )
+
+
+def upload_dataset_from_filename(
     api_key: str,
     dataset_id: str,
     filepath: str,
@@ -439,6 +463,29 @@ def upload_dataset(
     existing_ids: Optional[Collection[str]] = None,
     output: Optional[str] = None,
     payload_size: float = 10,
+) -> None:
+    dataset = init_dataset_from_filepath(filepath)
+    upload_dataset(
+        api_key=api_key,
+        dataset_id=dataset_id,
+        dataset=dataset,
+        schema=schema,
+        existing_ids=existing_ids,
+        output=output,
+        payload_size=payload_size,
+        filepath=filepath,
+    )
+
+
+def upload_dataset(
+    api_key: str,
+    dataset_id: str,
+    dataset: Dataset,
+    schema: Schema,
+    existing_ids: Optional[Collection[str]] = None,
+    output: Optional[str] = None,
+    payload_size: float = 10,
+    filepath: Optional[str] = "",
 ) -> None:
     """
 
@@ -458,13 +505,12 @@ def upload_dataset(
         filepath_column = schema.metadata.filepath_column
         assert filepath_column is not None
         check_filepath_column(
+            dataset=dataset,
             modality=schema.metadata.modality,
             dataset_filepath=filepath,
             filepath_column=filepath_column,
         )
-        file_size = get_image_dataset_size(
-            dataset_filepath=filepath, filepath_column=filepath_column
-        )
+        file_size = get_image_dataset_size(dataset=dataset, filepath_column=filepath_column)
     else:
         file_size = get_file_size(filepath)
 
@@ -476,7 +522,7 @@ def upload_dataset(
     )
 
     # NOTE: makes simplifying assumption that first row size is representative of all row sizes
-    row_size = getsizeof(next(init_dataset_from_filepath(filepath).read_streaming_records()))
+    row_size = getsizeof(next(dataset.read_streaming_records()))
     rows_per_payload = int(payload_size * 1e6 / row_size)
     upload_queue: queue.Queue[Optional[List[Any]]] = queue.Queue(maxsize=2 * rows_per_payload)
 
@@ -484,6 +530,7 @@ def upload_dataset(
     validation_thread = threading.Thread(
         target=validate_rows,
         kwargs={
+            "dataset": dataset,
             "dataset_filepath": filepath,
             "schema": schema,
             "log": log,
@@ -632,9 +679,8 @@ def process_dataset(
             upload_queue.put(list(row.values()), block=True)
 
 
-def get_image_dataset_size(dataset_filepath: str, filepath_column: str) -> int:
+def get_image_dataset_size(dataset: Dataset, filepath_column: str) -> int:
     """Returns total image dataset size by summing file sizes of each image"""
-    dataset = init_dataset_from_filepath(dataset_filepath)
     return sum(
         [
             get_file_size(filepath=record[filepath_column], ignore_missing_files=True)
