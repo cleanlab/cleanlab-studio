@@ -443,7 +443,6 @@ def upload_dataset_from_stream(
     output: Optional[str] = None,
     payload_size: float = 10,
 ) -> None:
-    print(dataset_file_extension)
     dataset = init_dataset_from_fileobj(fileobj, dataset_file_extension)
     upload_dataset(
         api_key=api_key,
