@@ -146,6 +146,17 @@ def validate_schema(schema: Schema, columns: Collection[str]) -> None:
         if not has_text:
             raise ValueError("Dataset modality is text, but none of the fields is a text column.")
 
+    elif modality == Modality.image:
+        image_columns = [
+            col for col, spec in schema.fields.items() if spec.feature_type == FeatureType.image
+        ]
+        if not image_columns:
+            raise ValueError(
+                "Dataset modality is image, but none of the fields is an image column."
+            )
+        if len(image_columns) > 1:
+            raise ValueError("More than one image column in a dataset is not currently supported.")
+
 
 def multiple_separate_words_detected(values: Collection[Any]) -> bool:
     avg_num_words = sum([len(str(v).split()) for v in values]) / len(values)
