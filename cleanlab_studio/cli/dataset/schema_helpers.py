@@ -3,21 +3,25 @@ Helper functions for working with schemas
 """
 import decimal
 import json
-import os.path
 import pathlib
 import random
 import re
 from typing import Any, Collection, Dict, List, Optional, Sized, Tuple, IO, Union
-from urllib.parse import urlparse
 
 import pandas as pd
 import requests
 import semver
+import validators
 from pandas import NaT
 
 from cleanlab_studio.cli.classes.dataset import Dataset
 from cleanlab_studio.cli.click_helpers import abort, info, progress, success
-from cleanlab_studio.cli.dataset.schema_types import DataType, FeatureType, Schema
+from cleanlab_studio.cli.dataset.schema_types import (
+    DataType,
+    FeatureType,
+    MEDIA_FEATURE_TYPES,
+    Schema,
+)
 from cleanlab_studio.cli.types import Modality
 from cleanlab_studio.cli.util import dump_json, init_dataset_from_filepath
 from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError
@@ -154,10 +158,14 @@ def is_filepath(string: str, check_existing: bool = False) -> bool:
     return pathlib.Path(string).suffix != "" and " " not in string
 
 
-def is_url(string: str) -> bool:
+def is_url(string: str, check_existing: bool = False) -> bool:
     try:
-        requests.head(string)
-        return True
+        if check_existing:
+            requests.head(string)
+            return True
+        res = validators.url(string)
+        assert isinstance(res, bool)
+        return res
     except:
         return False
 
@@ -260,7 +268,7 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
                 return DataType.string, FeatureType.text
             else:
                 if values_are_urls(values) or values_are_filepaths(values):
-                    return DataType.media, FeatureType.image
+                    return DataType.string, FeatureType.image
                 return DataType.string, FeatureType.identifier
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
             return DataType.string, FeatureType.categorical
@@ -356,7 +364,7 @@ def propose_schema(
         fields_dict[column_name] = dict(
             data_type=col_data_type.value, feature_type=col_feature_type.value
         )
-        if col_data_type == DataType.media:
+        if col_feature_type in MEDIA_FEATURE_TYPES:
             modality = col_feature_type.value
 
     schema_dict["fields"] = fields_dict
@@ -403,7 +411,7 @@ def get_dataset_filepath_columns(
     media_columns = [
         field_name
         for field_name, field_spec in schema.fields.items()
-        if field_spec.data_type == DataType.media
+        if field_spec.feature_type in MEDIA_FEATURE_TYPES
     ]
     df = dataset.read_file_as_dataframe()
     return [

@@ -153,8 +153,6 @@ def validate_and_process_record(
                         " parsable by pandas.Timestamp()",
                         ValidationWarning.TYPE_MISMATCH,
                     )
-            elif col_type == DataType.media:
-                row[column_name] = str(column_value)
             else:
                 if col_type == DataType.string:
                     row[column_name] = str(column_value)  # type coercion

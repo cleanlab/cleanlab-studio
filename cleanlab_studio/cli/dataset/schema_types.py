@@ -1,6 +1,7 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Set, Optional, Union, Any
+from typing import Dict, List, Set, Optional, Any
 
 from cleanlab_studio.cli.types import Modality
 
@@ -13,7 +14,6 @@ class DataType(Enum):
     integer = "integer"
     float = "float"
     boolean = "boolean"
-    media = "media"
 
 
 class FeatureType(Enum):
@@ -32,6 +32,7 @@ DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
         FeatureType.categorical,
         FeatureType.datetime,
         FeatureType.identifier,
+        FeatureType.image,
     },
     DataType.integer: {
         FeatureType.categorical,
@@ -41,8 +42,10 @@ DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
     },
     DataType.float: {FeatureType.datetime, FeatureType.numeric},
     DataType.boolean: {FeatureType.boolean},
-    DataType.media: {FeatureType.image},
 }
+
+
+MEDIA_FEATURE_TYPES: List[FeatureType] = [FeatureType.image]
 
 
 @dataclass
@@ -51,7 +54,7 @@ class FieldSpecification:
     feature_type: FeatureType
 
     @staticmethod
-    def create(data_type: str, feature_type: str) -> "FieldSpecification":
+    def create(data_type: str, feature_type: str) -> FieldSpecification:
         data_type_ = DataType(data_type)
         feature_type_ = FeatureType(feature_type)
 
@@ -73,7 +76,7 @@ class SchemaMetadata:
     name: str
 
     @staticmethod
-    def create(id_column: str, modality: str, name: str) -> "SchemaMetadata":
+    def create(id_column: str, modality: str, name: str) -> SchemaMetadata:
         return SchemaMetadata(
             id_column=id_column,
             modality=Modality(modality),
@@ -97,7 +100,7 @@ class Schema:
     @staticmethod
     def create(
         metadata: SchemaMetadataDictType, fields: Dict[str, Dict[str, str]], version: str
-    ) -> "Schema":
+    ) -> Schema:
         fields_ = dict()
         for field, field_spec in fields.items():
             if not isinstance(field, str):
@@ -141,7 +144,7 @@ class Schema:
         return retval
 
     @classmethod
-    def from_dict(cls, schema_dict: Dict[str, Any]) -> "Schema":
+    def from_dict(cls, schema_dict: Dict[str, Any]) -> Schema:
         return Schema.create(
             metadata=schema_dict["metadata"],
             fields=schema_dict["fields"],
@@ -161,5 +164,4 @@ DATA_TYPES_TO_PYTHON_TYPES: Dict[DataType, type] = {
     DataType.float: float,
     DataType.integer: int,
     DataType.boolean: bool,
-    DataType.media: str,
 }
