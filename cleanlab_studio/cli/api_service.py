@@ -18,6 +18,7 @@ from cleanlab_studio.cli.dataset.image_utils import get_image_filepath
 from cleanlab_studio.cli.dataset.schema_helpers import get_dataset_filepath_columns
 from cleanlab_studio.cli.dataset.schema_types import Schema
 from cleanlab_studio.cli.types import JSONDict, IDType, Modality
+from cleanlab_studio.cli.util import init_dataset_from_filepath
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
 
@@ -92,7 +93,8 @@ async def upload_rows_async(
     rows: List[Any],
 ) -> None:
     modality = schema.metadata.modality
-    filepath_columns = get_dataset_filepath_columns(dataset_filepath, schema)
+    dataset = init_dataset_from_filepath(dataset_filepath)
+    filepath_columns = get_dataset_filepath_columns(dataset, schema)
     needs_media_upload = modality in [Modality.image] and filepath_columns
     columns = list(schema.fields.keys())
 
