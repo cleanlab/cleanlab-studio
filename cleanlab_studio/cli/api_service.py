@@ -209,7 +209,7 @@ async def post_file(
     session: aiohttp.ClientSession,
     original_filepath: str,
     absolute_filepath: str,
-    post_data: Any,
+    post_data: JSONDict,
     sem: asyncio.Semaphore,
     cancelled: asyncio.Event,
 ) -> Tuple[Optional[bool], str]:
@@ -224,7 +224,6 @@ async def post_file(
     :cancelled: event that signals if upload should be cancelled
     """
     async with sem:
-        assert isinstance(post_data, dict)
         presigned_post = post_data["post"]
         # note: we pass in the path and we don't open the file until we
         # get in here, so we don't have tons of concurrently opened

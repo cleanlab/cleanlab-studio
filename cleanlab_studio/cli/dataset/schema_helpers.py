@@ -172,16 +172,17 @@ def is_filepath(string: str, check_existing: bool = False) -> bool:
 
 
 def is_url(string: str, check_existing: bool = False) -> bool:
+    if not validators.url(string):
+        return False
+
     try:
-        validators.url(string)
         if check_existing:
             requests.head(string)
             return True
-        return True
-    except validators.ValidationFailure:
-        return False
     except requests.RequestException:
         return False
+
+    return True
 
 
 def get_validation_sample_size(values: Sized) -> int:
