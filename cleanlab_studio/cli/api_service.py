@@ -7,16 +7,14 @@ import json
 import os
 import pathlib
 import asyncio
-from typing import IO, List, Any, Optional, Tuple, Union
+from typing import List, Any, Optional, Tuple
 
 import aiohttp
 import requests
 
 from cleanlab_studio.version import __version__
-from cleanlab_studio.cli.classes.dataset import Dataset
 from cleanlab_studio.cli.click_helpers import abort, warn, info
 from cleanlab_studio.cli.dataset.image_utils import get_image_filepath
-from cleanlab_studio.cli.dataset.schema_helpers import get_dataset_filepath_columns
 from cleanlab_studio.cli.dataset.schema_types import Schema
 from cleanlab_studio.cli.types import JSONDict, IDType, MEDIA_MODALITIES
 

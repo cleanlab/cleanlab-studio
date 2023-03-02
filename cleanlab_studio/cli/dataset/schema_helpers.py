@@ -23,7 +23,7 @@ from cleanlab_studio.cli.dataset.schema_types import (
     Schema,
 )
 from cleanlab_studio.cli.types import Modality
-from cleanlab_studio.cli.util import dump_json, init_dataset_from_filepath
+from cleanlab_studio.cli.util import dump_json
 from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError
 from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
@@ -173,13 +173,14 @@ def is_filepath(string: str, check_existing: bool = False) -> bool:
 
 def is_url(string: str, check_existing: bool = False) -> bool:
     try:
-        is_valid = validators.url(string)
-        assert isinstance(is_valid, bool)
+        validators.url(string)
         if check_existing:
             requests.head(string)
             return True
-        return is_valid
-    except:
+        return True
+    except validators.ValidationFailure:
+        return False
+    except requests.RequestException:
         return False
 
 

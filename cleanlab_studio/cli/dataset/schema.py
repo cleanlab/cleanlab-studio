@@ -86,7 +86,6 @@ def check_dataset_command(
         seen_ids=seen_ids,
         existing_ids=existing_ids,
         log=log,
-        dataset_dir=pathlib.Path(filepath).parent,
     )
 
     total_warnings = sum([len(log.get(warning_type)) for warning_type in ValidationWarning])

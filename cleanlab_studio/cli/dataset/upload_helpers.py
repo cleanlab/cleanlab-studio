@@ -253,7 +253,6 @@ def echo_log_warnings(log: WarningLog) -> None:
 
 def validate_rows(
     dataset: Union[Dataset[IO[bytes]], Dataset[IO[str]]],
-    dataset_filepath: str,
     schema: Schema,
     log: WarningLog,
     upload_queue: "queue.Queue[Optional[List[Any]]]",
@@ -278,7 +277,6 @@ def validate_rows(
         existing_ids=existing_ids,
         log=log,
         upload_queue=upload_queue,
-        dataset_dir=pathlib.Path(dataset_filepath).parent,
     )
     upload_queue.put(None, block=True)
 
@@ -510,7 +508,6 @@ def upload_dataset(
         target=validate_rows,
         kwargs={
             "dataset": dataset,
-            "dataset_filepath": filepath,
             "schema": schema,
             "log": log,
             "upload_queue": upload_queue,
@@ -639,7 +636,6 @@ def process_dataset(
     seen_ids: Set[str],
     existing_ids: Set[str],
     log: WarningLog,
-    dataset_dir: pathlib.Path,
     upload_queue: Optional["queue.Queue[Optional[List[Any]]]"] = None,
 ) -> None:
     """
