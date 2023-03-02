@@ -168,7 +168,7 @@ async def upload_files_for_filepath_column(
     sem = asyncio.Semaphore(MAX_PARALLEL_UPLOADS)
     cancelled = asyncio.Event()
     filepath_column_idx = columns.index(filepath_column)
-    filepaths = [row[filepath_column_idx] for row in rows]
+    filepaths: List[str] = [row[filepath_column_idx] for row in rows]
     dataset_dir: pathlib.Path = pathlib.Path(dataset_filepath).parent
     absolute_filepaths = [
         str(get_image_filepath(dataset_dir, row[filepath_column_idx])) for row in rows
@@ -186,7 +186,7 @@ async def upload_files_for_filepath_column(
                 session,
                 original_filepath,
                 absolute_filepath,
-                filepath_to_posts.get(original_filepath),
+                dict(filepath_to_posts[original_filepath]),
                 sem,
                 cancelled,
             )
