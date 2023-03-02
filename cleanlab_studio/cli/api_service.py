@@ -7,18 +7,18 @@ import json
 import os
 import pathlib
 import asyncio
-from typing import List, Any, Optional, Tuple
+from typing import IO, List, Any, Optional, Tuple, Union
 
 import aiohttp
 import requests
 
 from cleanlab_studio.version import __version__
+from cleanlab_studio.cli.classes.dataset import Dataset
 from cleanlab_studio.cli.click_helpers import abort, warn, info
 from cleanlab_studio.cli.dataset.image_utils import get_image_filepath
 from cleanlab_studio.cli.dataset.schema_helpers import get_dataset_filepath_columns
 from cleanlab_studio.cli.dataset.schema_types import Schema
-from cleanlab_studio.cli.types import JSONDict, IDType, Modality
-from cleanlab_studio.cli.util import init_dataset_from_filepath
+from cleanlab_studio.cli.types import JSONDict, IDType, MEDIA_MODALITIES
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
 
@@ -91,14 +91,23 @@ async def upload_rows_async(
     dataset_filepath: str,
     schema: Schema,
     rows: List[Any],
+    filepath_columns: List[str],
 ) -> None:
-    modality = schema.metadata.modality
-    dataset = init_dataset_from_filepath(dataset_filepath)
-    filepath_columns = get_dataset_filepath_columns(dataset, schema)
-    needs_media_upload = modality in [Modality.image] and filepath_columns
-    columns = list(schema.fields.keys())
+    """
+    Upload rows of dataset
 
-    dataset_dir: pathlib.Path = pathlib.Path(dataset_filepath).parent
+    :param session: client session for making http requests
+    :param api_key: api key for getting presigned posts
+    :param dataset_id: id of dataset to upload files for
+    :param dataset_filepath: filepath of dataset to upload files for (can be empty string for simple image upload)
+    :param schema: schema of dataset to upload
+    :param rows: rows of dataset to upload
+    :param filepath_columns: names of any columns containing paths of files that should be uploaded to S3
+    """
+    modality = schema.metadata.modality
+    assert len(filepath_columns) == 0 or modality in MEDIA_MODALITIES
+    needs_media_upload = modality in MEDIA_MODALITIES and filepath_columns
+    columns = list(schema.fields.keys())
 
     if needs_media_upload:
         id_column = schema.metadata.id_column
@@ -106,73 +115,20 @@ async def upload_rows_async(
         id_column_idx = columns.index(id_column)
         row_ids = [row[id_column_idx] for row in rows]
 
-        sem = asyncio.Semaphore(MAX_PARALLEL_UPLOADS)
-        cancelled = False
-
-        async def post_file(
-            original_filepath: str, absolute_filepath: str, filepath_to_post: JSONDict
-        ) -> Tuple[Optional[bool], str]:
-            async with sem:
-                # note: we pass in the path and we don't open the file until we
-                # get in here, so we don't have tons of concurrently opened
-                # files
-                if not cancelled:
-                    post_data = filepath_to_post.get(original_filepath)
-                    assert isinstance(post_data, dict)
-                    presigned_post = post_data["post"]
-
-                    retries = MAX_RETRIES
-                    wait = INITIAL_BACKOFF
-                    while retries:
-                        try:
-                            async with session.post(
-                                url=presigned_post["url"],
-                                data={
-                                    **presigned_post["fields"],
-                                    "file": open(absolute_filepath, "rb"),
-                                },
-                            ) as res:
-                                if res.ok:
-                                    return res.ok, original_filepath
-                        except Exception:
-                            pass  # ignore, will retry
-                        await asyncio.sleep(wait)
-                        wait *= 2
-                        retries -= 1
-                    return False, original_filepath
-            return None, original_filepath
-
-        async def upload_files_for_filepath_column(filepath_column: str) -> None:
-            filepath_column_idx = columns.index(filepath_column)
-            filepaths = [row[filepath_column_idx] for row in rows]
-            absolute_filepaths = [
-                str(get_image_filepath(dataset_dir, row[filepath_column_idx])) for row in rows
-            ]
-            filepath_to_post = get_presigned_posts(
+        upload_tasks = [
+            upload_files_for_filepath_column(
+                session=session,
                 api_key=api_key,
                 dataset_id=dataset_id,
-                filepaths=filepaths,
+                dataset_filepath=dataset_filepath,
+                rows=rows,
                 row_ids=row_ids,
+                columns=columns,
+                filepath_column=col,
                 media_type=modality.value,
             )
-            for coro in asyncio.as_completed(
-                [
-                    post_file(original_filepath, absolute_filepath, filepath_to_post)
-                    for original_filepath, absolute_filepath in zip(filepaths, absolute_filepaths)
-                ]
-            ):
-                ok, original_filepath = await coro
-                if ok:
-                    info(f"Uploaded {original_filepath}")
-                else:
-                    # cancel tasks we don't need anymore, to give us flexibility to
-                    # not abort() later but to throw an exception and keep the
-                    # Python interpreter running without a bunch of leaked
-                    # coroutines
-                    cancelled = True
-                    abort(f"Failed to upload {original_filepath}")
-
-        upload_tasks = [upload_files_for_filepath_column(col) for col in filepath_columns]
+            for col in filepath_columns
+        ]
         await asyncio.gather(*upload_tasks)
 
     url = base_url + f"/datasets/{dataset_id}"
@@ -185,6 +141,117 @@ async def upload_rows_async(
     async with session.post(url=url, data=data, headers=headers) as res:
         res_text = await res.read()
         handle_api_error_from_json(json.loads(res_text))
+
+
+async def upload_files_for_filepath_column(
+    session: aiohttp.ClientSession,
+    api_key: str,
+    dataset_id: str,
+    dataset_filepath: str,
+    rows: List[List[Any]],
+    row_ids: List[Any],
+    columns: List[str],
+    filepath_column: str,
+    media_type: str,
+) -> None:
+    """
+    Uploads all files in a filepath column to S3
+
+    :param session: client session for making http requests
+    :param api_key: api key for getting presigned posts
+    :param dataset_id: id of dataset to upload files for
+    :param dataset_filepath: filepath of dataset to upload files for (can be empty string for simple image upload)
+    :param rows: dataset rows
+    :param row_ids: ids of dataset rows
+    :param columns: dataset column names
+    :param filepath_column: name of the column to upload files for
+    :param media_type: type of media to upload
+    """
+    sem = asyncio.Semaphore(MAX_PARALLEL_UPLOADS)
+    cancelled = asyncio.Event()
+    filepath_column_idx = columns.index(filepath_column)
+    filepaths = [row[filepath_column_idx] for row in rows]
+    dataset_dir: pathlib.Path = pathlib.Path(dataset_filepath).parent
+    absolute_filepaths = [
+        str(get_image_filepath(dataset_dir, row[filepath_column_idx])) for row in rows
+    ]
+    filepath_to_posts = get_presigned_posts(
+        api_key=api_key,
+        dataset_id=dataset_id,
+        filepaths=filepaths,
+        row_ids=row_ids,
+        media_type=media_type,
+    )
+    for coro in asyncio.as_completed(
+        [
+            post_file(
+                session,
+                original_filepath,
+                absolute_filepath,
+                filepath_to_posts.get(original_filepath),
+                sem,
+                cancelled,
+            )
+            for original_filepath, absolute_filepath in zip(filepaths, absolute_filepaths)
+        ]
+    ):
+        ok, original_filepath = await coro
+        if ok:
+            info(f"Uploaded {original_filepath}")
+        else:
+            # cancel tasks we don't need anymore, to give us flexibility to
+            # not abort() later but to throw an exception and keep the
+            # Python interpreter running without a bunch of leaked
+            # coroutines
+            cancelled.set()
+            abort(f"Failed to upload {original_filepath}")
+
+
+async def post_file(
+    session: aiohttp.ClientSession,
+    original_filepath: str,
+    absolute_filepath: str,
+    post_data: Any,
+    sem: asyncio.Semaphore,
+    cancelled: asyncio.Event,
+) -> Tuple[Optional[bool], str]:
+    """
+    Upload a single file using a presigned post
+
+    :param session: client session for making http requests
+    :original_filepath: the original filepath that appears in the dataset
+    :absolute_filepath: the absolute path to the file
+    :presigned_post: presigned post to use to upload the file to S3
+    :sem: semaphore for parallel uploads
+    :cancelled: event that signals if upload should be cancelled
+    """
+    async with sem:
+        assert isinstance(post_data, dict)
+        presigned_post = post_data["post"]
+        # note: we pass in the path and we don't open the file until we
+        # get in here, so we don't have tons of concurrently opened
+        # files
+        if not cancelled.is_set():
+            retries = MAX_RETRIES
+            wait = INITIAL_BACKOFF
+            while retries:
+                try:
+                    async with session.post(
+                        url=presigned_post["url"],
+                        data={
+                            **presigned_post["fields"],
+                            "file": open(absolute_filepath, "rb"),
+                        },
+                    ) as res:
+                        if res.ok:
+                            return res.ok, original_filepath
+                except Exception:
+                    pass  # ignore, will retry
+                await asyncio.sleep(wait)
+                wait *= 2
+                retries -= 1
+            return False, original_filepath
+    return None, original_filepath
 
 
 def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> List[List[Any]]:

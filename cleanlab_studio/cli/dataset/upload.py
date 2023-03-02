@@ -132,7 +132,7 @@ def simple_image_upload(
             },
             fields={
                 "id": {"data_type": "string", "feature_type": "identifier"},
-                "path": {"data_type": "media", "feature_type": "image"},
+                "path": {"data_type": "string", "feature_type": "image"},
                 "label": {"data_type": "string", "feature_type": "categorical"},
             },
             version=SCHEMA_VERSION,

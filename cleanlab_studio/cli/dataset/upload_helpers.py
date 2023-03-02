@@ -290,6 +290,7 @@ async def upload_rows(
     schema: Schema,
     upload_queue: "queue.Queue[Optional[List[Any]]]",
     rows_per_payload: int,
+    filepath_columns: List[str],
 ) -> None:
     """Gets rows from upload queue and uploads to API.
 
@@ -320,6 +321,7 @@ async def upload_rows(
                             dataset_filepath=dataset_filepath,
                             schema=schema,
                             rows=payload,
+                            filepath_columns=filepath_columns,
                         )
                     )
                 )
@@ -345,6 +347,7 @@ async def upload_rows(
                     dataset_filepath=dataset_filepath,
                     schema=schema,
                     rows=payload,
+                    filepath_columns=filepath_columns,
                 )
             )
 
@@ -484,7 +487,9 @@ def upload_dataset(
 
     file_size = 0
     if schema.metadata.modality == Modality.image:
-        file_size = get_image_dataset_size(dataset=dataset, schema=schema) + get_file_size(filepath)
+        file_size = get_image_dataset_size(dataset=dataset, schema=schema)
+        if filepath:
+            get_file_size(filepath)
     else:
         file_size = get_file_size(filepath)
 
@@ -513,6 +518,8 @@ def upload_dataset(
         },
     )
 
+    filepath_columns = get_dataset_filepath_columns(dataset, schema)
+
     # start and join processes
     validation_thread.start()
     asyncio.run(
@@ -523,6 +530,7 @@ def upload_dataset(
             schema=schema,
             upload_queue=upload_queue,
             rows_per_payload=rows_per_payload,
+            filepath_columns=filepath_columns,
         )
     )
     validation_thread.join()
