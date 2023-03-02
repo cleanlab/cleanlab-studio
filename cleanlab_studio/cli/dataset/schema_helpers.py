@@ -337,6 +337,7 @@ def propose_schema(
         columns = dataset.get_columns()
 
     if modality is None:
+        # suggested modality can be set to a media modality on line 382
         if len(columns) > 5:
             modality = Modality.tabular.value
         else:
