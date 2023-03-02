@@ -164,19 +164,21 @@ def multiple_separate_words_detected(values: Collection[Any]) -> bool:
 
 
 def is_filepath(string: str, check_existing: bool = False) -> bool:
+    if pathlib.Path(string).suffix == "" or " " in string:
+        return False
     if check_existing:
         return pathlib.Path(string).exists()
-    return pathlib.Path(string).suffix != "" and " " not in string
+    return True
 
 
 def is_url(string: str, check_existing: bool = False) -> bool:
     try:
+        is_valid = validators.url(string)
+        assert isinstance(is_valid, bool)
         if check_existing:
             requests.head(string)
             return True
-        res = validators.url(string)
-        assert isinstance(res, bool)
-        return res
+        return is_valid
     except:
         return False
 
