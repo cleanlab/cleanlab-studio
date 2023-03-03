@@ -129,11 +129,10 @@ def simple_image_upload(
                 "id_column": "id",
                 "modality": "image",
                 "name": os.path.basename(os.path.abspath(directory)),
-                "filepath_column": "path",
             },
             fields={
                 "id": {"data_type": "string", "feature_type": "identifier"},
-                "path": {"data_type": "string", "feature_type": "filepath"},
+                "path": {"data_type": "string", "feature_type": "image"},
                 "label": {"data_type": "string", "feature_type": "categorical"},
             },
             version=SCHEMA_VERSION,
@@ -186,11 +185,6 @@ def simple_image_upload(
     help=f"If uploading a new dataset without a schema, specify data modality: {', '.join(MODALITIES)}",
 )
 @click.option(
-    "--filepath-column",
-    type=str,
-    help=f"If uploading an image dataset, specify the column containing the image filepaths.",
-)
-@click.option(
     "--name",
     "-n",
     type=str,
@@ -212,7 +206,6 @@ def upload(
     schema: Optional[str],
     id_column: Optional[str],
     modality: Optional[str],
-    filepath_column: Optional[str],
     name: Optional[str],
     output: Optional[str],
     resume: Optional[bool],
@@ -306,13 +299,12 @@ def upload(
             modality = click.prompt(f"Specify your dataset modality ({', '.join(MODALITIES)})")
 
     id_column = get_id_column_if_undefined(id_column=id_column, columns=columns)
-    if modality == Modality.image.value:
-        filepath_column = get_filepath_column_if_undefined(
-            modality=modality, filepath_column=filepath_column, columns=columns
-        )
 
     prev_state.update_args(
-        dict(modality=modality, id_column=id_column, filepath_column=filepath_column)
+        dict(
+            modality=modality,
+            id_column=id_column,
+        )
     )
 
     ### Propose schema
@@ -322,7 +314,6 @@ def upload(
         columns=columns,
         id_column=id_column,
         modality=modality,
-        filepath_column=filepath_column,
     )
     log(json.dumps(proposed_schema.to_dict(), indent=2))
     info(f"No schema was provided. We propose the above schema based on your dataset.")

@@ -1,6 +1,7 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Set, Optional, Union, Any
+from typing import Dict, List, Set, Optional, Any
 
 from cleanlab_studio.cli.types import Modality
 
@@ -22,7 +23,7 @@ class FeatureType(Enum):
     text = "text"
     boolean = "boolean"
     datetime = "datetime"
-    filepath = "filepath"
+    image = "image"
 
 
 DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
@@ -31,7 +32,7 @@ DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
         FeatureType.categorical,
         FeatureType.datetime,
         FeatureType.identifier,
-        FeatureType.filepath,
+        FeatureType.image,
     },
     DataType.integer: {
         FeatureType.categorical,
@@ -44,13 +45,16 @@ DATA_TYPES_TO_FEATURE_TYPES: Dict[DataType, Set[FeatureType]] = {
 }
 
 
+MEDIA_FEATURE_TYPES: List[FeatureType] = [FeatureType.image]
+
+
 @dataclass
 class FieldSpecification:
     data_type: DataType
     feature_type: FeatureType
 
     @staticmethod
-    def create(data_type: str, feature_type: str) -> "FieldSpecification":
+    def create(data_type: str, feature_type: str) -> FieldSpecification:
         data_type_ = DataType(data_type)
         feature_type_ = FeatureType(feature_type)
 
@@ -70,17 +74,13 @@ class SchemaMetadata:
     id_column: str
     modality: Modality
     name: str
-    filepath_column: Optional[str]
 
     @staticmethod
-    def create(
-        id_column: str, modality: str, name: str, filepath_column: Optional[str] = None
-    ) -> "SchemaMetadata":
+    def create(id_column: str, modality: str, name: str) -> SchemaMetadata:
         return SchemaMetadata(
             id_column=id_column,
             modality=Modality(modality),
             name=name,
-            filepath_column=filepath_column,
         )
 
     def to_dict(self) -> SchemaMetadataDictType:
@@ -88,7 +88,6 @@ class SchemaMetadata:
             id_column=self.id_column,
             modality=self.modality.value,
             name=self.name,
-            filepath_column=self.filepath_column,
         )
 
 
@@ -101,7 +100,7 @@ class Schema:
     @staticmethod
     def create(
         metadata: SchemaMetadataDictType, fields: Dict[str, Dict[str, str]], version: str
-    ) -> "Schema":
+    ) -> Schema:
         fields_ = dict()
         for field, field_spec in fields.items():
             if not isinstance(field, str):
@@ -123,10 +122,11 @@ class Schema:
         assert id_column is not None
         assert modality is not None
         assert name is not None
-        filepath_column: Optional[str] = metadata.get("filepath_column", None)
         return Schema(
             metadata=SchemaMetadata.create(
-                id_column=id_column, modality=modality, name=name, filepath_column=filepath_column
+                id_column=id_column,
+                modality=modality,
+                name=name,
             ),
             fields=fields_,
             version=version,
@@ -144,7 +144,7 @@ class Schema:
         return retval
 
     @classmethod
-    def from_dict(cls, schema_dict: Dict[str, Any]) -> "Schema":
+    def from_dict(cls, schema_dict: Dict[str, Any]) -> Schema:
         return Schema.create(
             metadata=schema_dict["metadata"],
             fields=schema_dict["fields"],

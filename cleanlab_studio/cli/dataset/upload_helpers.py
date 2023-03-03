@@ -37,6 +37,7 @@ from cleanlab_studio.cli.dataset.image_utils import (
     image_file_exists,
     get_image_filepath,
 )
+from cleanlab_studio.cli.dataset.schema_helpers import get_dataset_filepath_columns
 from cleanlab_studio.cli.dataset.schema_types import (
     PYTHON_TYPES_TO_READABLE_STRING,
     DATA_TYPES_TO_PYTHON_TYPES,
@@ -83,8 +84,6 @@ def validate_and_process_record(
     schema: Schema,
     seen_ids: Set[str],
     existing_ids: Set[str],
-    base_directory: pathlib.Path = pathlib.Path(""),
-    disable_filepath_checks: bool = False,
 ) -> Tuple[Optional[RecordType], Optional[str], Optional[RowWarningsType]]:
     """
     Validate the row against the provided schema; generate warnings where issues are found
@@ -154,26 +153,6 @@ def validate_and_process_record(
                         " parsable by pandas.Timestamp()",
                         ValidationWarning.TYPE_MISMATCH,
                     )
-            elif col_feature_type == FeatureType.filepath:
-                if schema.metadata.modality == Modality.image and not disable_filepath_checks:
-                    image_filepath = get_image_filepath(base_directory, column_value)
-                    if not image_file_exists(image_filepath):
-                        msg, warn_type = (
-                            f"{column_name}: unable to find file at specified filepath {image_filepath}. "
-                            f"Filepath must be absolute or relative to the directory containing your dataset file.",
-                            ValidationWarning.MISSING_FILE,
-                        )
-                        warnings[warn_type].append(msg)
-                        return None, row_id, warnings
-                    else:
-                        if not image_file_readable(image_filepath):
-                            msg, warn_type = (
-                                f"{column_name}: could not open file at {image_filepath}.",
-                                ValidationWarning.UNREADABLE_FILE,
-                            )
-                            warnings[warn_type].append(msg)
-                            return None, row_id, warnings
-
             else:
                 if col_type == DataType.string:
                     row[column_name] = str(column_value)  # type coercion
@@ -274,7 +253,6 @@ def echo_log_warnings(log: WarningLog) -> None:
 
 def validate_rows(
     dataset: Union[Dataset[IO[bytes]], Dataset[IO[str]]],
-    dataset_filepath: str,
     schema: Schema,
     log: WarningLog,
     upload_queue: "queue.Queue[Optional[List[Any]]]",
@@ -299,7 +277,6 @@ def validate_rows(
         existing_ids=existing_ids,
         log=log,
         upload_queue=upload_queue,
-        dataset_dir=pathlib.Path(dataset_filepath).parent,
     )
     upload_queue.put(None, block=True)
 
@@ -311,6 +288,7 @@ async def upload_rows(
     schema: Schema,
     upload_queue: "queue.Queue[Optional[List[Any]]]",
     rows_per_payload: int,
+    filepath_columns: List[str],
 ) -> None:
     """Gets rows from upload queue and uploads to API.
 
@@ -341,6 +319,7 @@ async def upload_rows(
                             dataset_filepath=dataset_filepath,
                             schema=schema,
                             rows=payload,
+                            filepath_columns=filepath_columns,
                         )
                     )
                 )
@@ -366,6 +345,7 @@ async def upload_rows(
                     dataset_filepath=dataset_filepath,
                     schema=schema,
                     rows=payload,
+                    filepath_columns=filepath_columns,
                 )
             )
 
@@ -505,15 +485,9 @@ def upload_dataset(
 
     file_size = 0
     if schema.metadata.modality == Modality.image:
-        filepath_column = schema.metadata.filepath_column
-        assert filepath_column is not None
-        check_filepath_column(
-            dataset=dataset,
-            modality=schema.metadata.modality,
-            dataset_filepath=filepath,
-            filepath_column=filepath_column,
-        )
-        file_size = get_image_dataset_size(dataset=dataset, filepath_column=filepath_column)
+        file_size = get_image_dataset_size(dataset=dataset, schema=schema)
+        if filepath:
+            get_file_size(filepath)
     else:
         file_size = get_file_size(filepath)
 
@@ -534,13 +508,14 @@ def upload_dataset(
         target=validate_rows,
         kwargs={
             "dataset": dataset,
-            "dataset_filepath": filepath,
             "schema": schema,
             "log": log,
             "upload_queue": upload_queue,
             "existing_ids": existing_ids,
         },
     )
+
+    filepath_columns = get_dataset_filepath_columns(dataset, schema)
 
     # start and join processes
     validation_thread.start()
@@ -552,6 +527,7 @@ def upload_dataset(
             schema=schema,
             upload_queue=upload_queue,
             rows_per_payload=rows_per_payload,
+            filepath_columns=filepath_columns,
         )
     )
     validation_thread.join()
@@ -660,7 +636,6 @@ def process_dataset(
     seen_ids: Set[str],
     existing_ids: Set[str],
     log: WarningLog,
-    dataset_dir: pathlib.Path,
     upload_queue: Optional["queue.Queue[Optional[List[Any]]]"] = None,
 ) -> None:
     """
@@ -670,9 +645,7 @@ def process_dataset(
     for record in tqdm(
         dataset.read_streaming_records(), total=len(dataset), initial=0, leave=True, unit=" rows"
     ):
-        row, row_id, warnings = validate_and_process_record(
-            record, schema, seen_ids, existing_ids, base_directory=dataset_dir
-        )
+        row, row_id, warnings = validate_and_process_record(record, schema, seen_ids, existing_ids)
         update_log_with_warnings(log, row_id, warnings)
         # row and row ID both present, i.e. row will be uploaded
         if row_id:
@@ -683,12 +656,16 @@ def process_dataset(
 
 
 def get_image_dataset_size(
-    dataset: Union[Dataset[IO[bytes]], Dataset[IO[str]]], filepath_column: str
+    dataset: Union[Dataset[IO[bytes]], Dataset[IO[str]]], schema: Schema
 ) -> int:
     """Returns total image dataset size by summing file sizes of each image"""
+    filepath_columns = get_dataset_filepath_columns(dataset, schema)
     return sum(
-        [
-            get_file_size(filepath=record[filepath_column], ignore_missing_files=True)
-            for record in dataset.read_streaming_records()
-        ]
+        sum(
+            [
+                get_file_size(filepath=record[filepath_column], ignore_missing_files=True)
+                for record in dataset.read_streaming_records()
+            ]
+        )
+        for filepath_column in filepath_columns
     )

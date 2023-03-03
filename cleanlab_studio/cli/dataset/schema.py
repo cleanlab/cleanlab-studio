@@ -1,11 +1,10 @@
 import pathlib
-from typing import Optional, Set, List, Sized, Iterable, cast
+from typing import Optional, Set
 
 import click
 
 from cleanlab_studio.cli.dataset.helpers import (
     get_id_column_if_undefined,
-    get_filepath_column_if_undefined,
 )
 from cleanlab_studio.cli.dataset.upload_helpers import process_dataset
 from cleanlab_studio.cli.dataset.schema_helpers import (
@@ -17,7 +16,7 @@ from cleanlab_studio.cli.dataset.schema_helpers import (
 from cleanlab_studio.cli.dataset import upload_helpers
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.dataset.upload_types import ValidationWarning
-from cleanlab_studio.cli.types import CommandState, MODALITIES, Modality
+from cleanlab_studio.cli.types import CommandState, MODALITIES
 from cleanlab_studio.cli.util import get_filename, init_dataset_from_filepath
 from cleanlab_studio.cli.decorators import previous_state
 import json
@@ -87,7 +86,6 @@ def check_dataset_command(
         seen_ids=seen_ids,
         existing_ids=existing_ids,
         log=log,
-        dataset_dir=pathlib.Path(filepath).parent,
     )
 
     total_warnings = sum([len(log.get(warning_type)) for warning_type in ValidationWarning])
@@ -130,11 +128,6 @@ def check_dataset_command(
     help=f"Dataset modality: {', '.join(MODALITIES)}",
 )
 @click.option(
-    "--filepath-column",
-    type=str,
-    help=f"If uploading an image dataset, specify the column containing the image filepaths.",
-)
-@click.option(
     "--name",
     type=str,
     help="Custom name for dataset",
@@ -146,7 +139,6 @@ def generate_schema_command(
     output: Optional[str],
     id_column: Optional[str],
     modality: Optional[str],
-    filepath_column: Optional[str],
     name: Optional[str],
 ) -> None:
     if filepath is None:
@@ -155,10 +147,6 @@ def generate_schema_command(
     dataset = init_dataset_from_filepath(filepath)
     columns = dataset.get_columns()
     id_column = get_id_column_if_undefined(id_column=id_column, columns=columns)
-    if modality == Modality.image.value:
-        filepath_column = get_filepath_column_if_undefined(
-            modality=modality, filepath_column=filepath_column, columns=columns
-        )
 
     command_state: CommandState = dict(
         command="generate schema",
@@ -167,7 +155,6 @@ def generate_schema_command(
             output=output,
             id_column=id_column,
             modality=modality,
-            filepath_column=filepath_column,
             name=name,
         ),
     )
@@ -179,7 +166,6 @@ def generate_schema_command(
         columns=columns,
         id_column=id_column,
         modality=modality,
-        filepath_column=filepath_column,
     )
     click.echo(json.dumps(proposed_schema.to_dict(), indent=2))
 

@@ -12,6 +12,7 @@ class Modality(Enum):
 
 
 MODALITIES = [m.value for m in Modality]
+MEDIA_MODALITIES = [Modality.image]
 
 
 class DatasetFileExtension(Enum):

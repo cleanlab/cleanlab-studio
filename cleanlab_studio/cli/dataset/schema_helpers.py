@@ -3,21 +3,27 @@ Helper functions for working with schemas
 """
 import decimal
 import json
-import os.path
 import pathlib
 import random
 import re
 from typing import Any, Collection, Dict, List, Optional, Sized, Tuple, IO, Union
 
 import pandas as pd
+import requests
 import semver
+import validators
 from pandas import NaT
 
 from cleanlab_studio.cli.classes.dataset import Dataset
 from cleanlab_studio.cli.click_helpers import abort, info, progress, success
-from cleanlab_studio.cli.dataset.schema_types import DataType, FeatureType, Schema
+from cleanlab_studio.cli.dataset.schema_types import (
+    DataType,
+    FeatureType,
+    MEDIA_FEATURE_TYPES,
+    Schema,
+)
 from cleanlab_studio.cli.types import Modality
-from cleanlab_studio.cli.util import dump_json, get_filename, init_dataset_from_filepath
+from cleanlab_studio.cli.util import dump_json
 from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError
 from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
@@ -140,6 +146,17 @@ def validate_schema(schema: Schema, columns: Collection[str]) -> None:
         if not has_text:
             raise ValueError("Dataset modality is text, but none of the fields is a text column.")
 
+    elif modality == Modality.image:
+        image_columns = [
+            col for col, spec in schema.fields.items() if spec.feature_type == FeatureType.image
+        ]
+        if not image_columns:
+            raise ValueError(
+                "Dataset modality is image, but none of the fields is an image column."
+            )
+        if len(image_columns) > 1:
+            raise ValueError("More than one image column in a dataset is not currently supported.")
+
 
 def multiple_separate_words_detected(values: Collection[Any]) -> bool:
     avg_num_words = sum([len(str(v).split()) for v in values]) / len(values)
@@ -147,9 +164,25 @@ def multiple_separate_words_detected(values: Collection[Any]) -> bool:
 
 
 def is_filepath(string: str, check_existing: bool = False) -> bool:
+    if pathlib.Path(string).suffix == "" or " " in string:
+        return False
     if check_existing:
-        return os.path.exists(string)
-    return pathlib.Path(string).suffix != "" and " " not in string
+        return pathlib.Path(string).exists()
+    return True
+
+
+def is_url(string: str, check_existing: bool = False) -> bool:
+    if not validators.url(string):
+        return False
+
+    try:
+        if check_existing:
+            requests.head(string)
+            return True
+    except requests.RequestException:
+        return False
+
+    return True
 
 
 def get_validation_sample_size(values: Sized) -> int:
@@ -190,12 +223,17 @@ def string_values_are_floats(values: Collection[Any]) -> bool:
     return True
 
 
-def _values_are_filepaths(values: Collection[Any]) -> bool:
+def values_are_filepaths(values: Collection[Any]) -> bool:
     val_sample = random.sample(list(values), get_validation_sample_size(values))
     for s in val_sample:
         if not is_filepath(s):
             return False
     return True
+
+
+def values_are_urls(values: Collection[Any]) -> bool:
+    val_sample = random.sample(list(values), get_validation_sample_size(values))
+    return all(is_url(s) for s in val_sample)
 
 
 def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
@@ -244,8 +282,8 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
             if multiple_separate_words_detected(values):
                 return DataType.string, FeatureType.text
             else:
-                if _values_are_filepaths(values):
-                    return DataType.string, FeatureType.filepath
+                if values_are_urls(values) or values_are_filepaths(values):
+                    return DataType.string, FeatureType.image
                 return DataType.string, FeatureType.identifier
         elif ratio_unique <= CATEGORICAL_RATIO_THRESHOLD:
             return DataType.string, FeatureType.categorical
@@ -273,7 +311,6 @@ def propose_schema(
     columns: Optional[Collection[str]] = None,
     id_column: Optional[str] = None,
     modality: Optional[str] = None,
-    filepath_column: Optional[str] = None,
     sample_size: int = 10000,
     max_rows_checked: int = 200000,
 ) -> Schema:
@@ -302,6 +339,7 @@ def propose_schema(
         columns = dataset.get_columns()
 
     if modality is None:
+        # suggested modality can be set to a media modality on line 382
         if len(columns) > 5:
             modality = Modality.tabular.value
         else:
@@ -342,6 +380,8 @@ def propose_schema(
         fields_dict[column_name] = dict(
             data_type=col_data_type.value, feature_type=col_feature_type.value
         )
+        if col_feature_type in MEDIA_FEATURE_TYPES:
+            modality = col_feature_type.value
 
     schema_dict["fields"] = fields_dict
 
@@ -360,9 +400,7 @@ def propose_schema(
 
     assert id_column is not None
 
-    metadata: Dict[str, Optional[str]] = dict(
-        id_column=id_column, modality=modality, name=name, filepath_column=filepath_column
-    )
+    metadata: Dict[str, Optional[str]] = dict(id_column=id_column, modality=modality, name=name)
     return Schema.create(metadata=metadata, fields=fields_dict, version=SCHEMA_VERSION)
 
 
@@ -381,3 +419,19 @@ def save_schema(schema: Schema, filename: Optional[str]) -> None:
         success("Saved.")
     else:
         info("Schema was not saved.")
+
+
+def get_dataset_filepath_columns(
+    dataset: Union[Dataset[IO[bytes]], Dataset[IO[str]]], schema: Schema
+) -> List[str]:
+    media_columns = [
+        field_name
+        for field_name, field_spec in schema.fields.items()
+        if field_spec.feature_type in MEDIA_FEATURE_TYPES
+    ]
+    df = dataset.read_file_as_dataframe()
+    return [
+        col
+        for col in media_columns
+        if not values_are_urls(df[col]) and values_are_filepaths(df[col])
+    ]
