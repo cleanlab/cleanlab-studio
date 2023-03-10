@@ -107,10 +107,6 @@ class Schema:
                 raise ValueError(
                     f"All schema columns must be strings. Found non-string column: {field}"
                 )
-            if field == "":
-                raise ValueError(
-                    "Found empty string for schema column name. Schema columns cannot be empty strings."
-                )
             fields_[field] = FieldSpecification.create(
                 data_type=field_spec["data_type"], feature_type=field_spec["feature_type"]
             )

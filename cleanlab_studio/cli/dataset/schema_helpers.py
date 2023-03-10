@@ -365,8 +365,6 @@ def propose_schema(
     schema_dict = dict()
     fields_dict = dict()
     for column_name in columns:
-        if column_name == "":
-            continue
         column_values = list(df[column_name][~df[column_name].isna()])
         column_values = [v for v in column_values if v != ""]
 
