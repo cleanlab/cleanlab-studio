@@ -18,7 +18,7 @@ from cleanlab_studio.cli.types import (
 
 
 def get_dataset_file_extension(filename: str) -> DatasetFileExtension:
-    file_extension = pathlib.Path(filename).suffix
+    file_extension = pathlib.Path(filename).suffix.lower()
     return DatasetFileExtension(file_extension)
 
 
