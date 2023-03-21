@@ -90,6 +90,7 @@ async def upload_rows_async(
     schema: Schema,
     rows: List[Any],
     filepath_columns: List[str],
+    upload_sem: asyncio.Semaphore,
 ) -> None:
     """
     Upload rows of dataset
@@ -101,44 +102,46 @@ async def upload_rows_async(
     :param schema: schema of dataset to upload
     :param rows: rows of dataset to upload
     :param filepath_columns: names of any columns containing paths of files that should be uploaded to S3
+    :param upload_sem: sempahore to bound number of parallel uploadsb
     """
     modality = schema.metadata.modality
     assert len(filepath_columns) == 0 or modality in MEDIA_MODALITIES
     needs_media_upload = modality in MEDIA_MODALITIES and filepath_columns
     columns = list(schema.fields.keys())
 
-    if needs_media_upload:
-        id_column = schema.metadata.id_column
-        assert id_column is not None
-        id_column_idx = columns.index(id_column)
-        row_ids = [row[id_column_idx] for row in rows]
+    async with upload_sem:
+        if needs_media_upload:
+            id_column = schema.metadata.id_column
+            assert id_column is not None
+            id_column_idx = columns.index(id_column)
+            row_ids = [row[id_column_idx] for row in rows]
 
-        upload_tasks = [
-            upload_files_for_filepath_column(
-                session=session,
-                api_key=api_key,
-                dataset_id=dataset_id,
-                dataset_filepath=dataset_filepath,
-                rows=rows,
-                row_ids=row_ids,
-                columns=columns,
-                filepath_column=col,
-                media_type=modality.value,
-            )
-            for col in filepath_columns
-        ]
-        await asyncio.gather(*upload_tasks)
+            upload_tasks = [
+                upload_files_for_filepath_column(
+                    session=session,
+                    api_key=api_key,
+                    dataset_id=dataset_id,
+                    dataset_filepath=dataset_filepath,
+                    rows=rows,
+                    row_ids=row_ids,
+                    columns=columns,
+                    filepath_column=col,
+                    media_type=modality.value,
+                )
+                for col in filepath_columns
+            ]
+            await asyncio.gather(*upload_tasks)
 
-    url = base_url + f"/datasets/{dataset_id}"
-    data = gzip.compress(
-        json.dumps(dict(rows=json.dumps(rows), columns=json.dumps(columns))).encode("utf-8")
-    )
-    headers = _construct_headers(api_key)
-    headers["Content-Encoding"] = "gzip"
+        url = base_url + f"/datasets/{dataset_id}"
+        data = gzip.compress(
+            json.dumps(dict(rows=json.dumps(rows), columns=json.dumps(columns))).encode("utf-8")
+        )
+        headers = _construct_headers(api_key)
+        headers["Content-Encoding"] = "gzip"
 
-    async with session.post(url=url, data=data, headers=headers) as res:
-        res_text = await res.read()
-        handle_api_error_from_json(json.loads(res_text))
+        async with session.post(url=url, data=data, headers=headers) as res:
+            res_text = await res.read()
+            handle_api_error_from_json(json.loads(res_text))
 
 
 async def upload_files_for_filepath_column(
