@@ -349,6 +349,7 @@ async def upload_rows(
                     schema=schema,
                     rows=payload,
                     filepath_columns=filepath_columns,
+                    upload_sem=upload_sem,
                 )
             )
 
