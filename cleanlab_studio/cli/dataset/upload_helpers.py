@@ -299,6 +299,8 @@ async def upload_rows(
     :param upload_queue: queue to get validated rows from
     :param rows_per_payload: number of rows to upload per payload/chunk
     """
+    NUM_PARALLEL_UPLOADS: int = 5
+    upload_sem = asyncio.Semaphore(NUM_PARALLEL_UPLOADS)
 
     async with aiohttp.ClientSession() as session:
         payload = []
@@ -320,6 +322,7 @@ async def upload_rows(
                             schema=schema,
                             rows=payload,
                             filepath_columns=filepath_columns,
+                            upload_sem=upload_sem,
                         )
                     )
                 )
