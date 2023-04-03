@@ -3,6 +3,8 @@ Helper functions for processing and uploading dataset rows
 """
 import asyncio
 import decimal
+from io import BytesIO, IOBase
+import json
 import pathlib
 import queue
 import re
@@ -22,9 +24,11 @@ from typing import (
     Coroutine,
     Union,
 )
+import functools
 
 import aiohttp
 import click
+from multidict import CIMultiDictProxy
 import pandas as pd
 from tqdm import tqdm
 
@@ -53,6 +57,7 @@ from cleanlab_studio.cli.dataset.upload_types import (
 )
 from cleanlab_studio.cli.types import (
     DatasetFileExtension,
+    JSONDict,
     Modality,
     RecordType,
 )
@@ -77,6 +82,57 @@ def convert_to_python_type(val: Any, data_type: DataType) -> Any:
         if data_type == DataType.integer:
             return int(float(val))
     return DATA_TYPES_TO_PYTHON_TYPES[data_type](val)
+
+
+async def _upload_file_chunk_async(
+    session: aiohttp.ClientSession,
+    chunk: bytes,
+    presigned_post: str,
+) -> CIMultiDictProxy[str]:
+    async with session.put(presigned_post, data=chunk) as response:
+        if response.status == 200:
+            return response.headers
+
+
+def _get_file_chunks(filepath: str, chunk_sizes: List[int]) -> List[bytes]:
+    with open(filepath, "rb") as f:
+        return [f.read(chunk_size) for chunk_size in chunk_sizes]
+
+
+async def upload_file_parts_async(
+    filepath: pathlib.Path, part_sizes: List[int], presigned_posts: List[str]
+) -> List[JSONDict]:
+    tasks = []
+    chunks = _get_file_chunks(filepath, part_sizes)
+    async with aiohttp.ClientSession() as session:
+        for chunk, presigned_post in zip(chunks, presigned_posts):
+            tasks.append(
+                asyncio.create_task(_upload_file_chunk_async(session, chunk, presigned_post))
+            )
+        task_results = await asyncio.gather(*tasks)
+    return [
+        {"ETag": json.loads(res.get("etag")), "PartNumber": i + 1}
+        for i, res in enumerate(task_results)
+    ]
+
+
+def upload_dataset_file(api_key: str, filepath: pathlib.Path) -> str:
+    filename = filepath.name
+    file_size = filepath.stat().st_size
+    upload_id, part_sizes, presigned_posts = api_service.initialize_upload(
+        api_key, filename, file_size
+    )
+    upload_parts = asyncio.run(upload_file_parts_async(filepath, part_sizes, presigned_posts))
+    return api_service.complete_file_upload(api_key, upload_id, upload_parts)
+
+
+def get_proposed_schema(api_key: str, upload_id: str) -> Schema:
+    res = api_service.poll_progress(
+        upload_id,
+        functools.partial(api_service.get_proposed_schema, api_key),
+        "Generating schema...",
+    )
+    return Schema.from_dict(res["schema"])
 
 
 def validate_and_process_record(

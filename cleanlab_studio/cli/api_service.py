@@ -7,7 +7,9 @@ import json
 import os
 import pathlib
 import asyncio
-from typing import List, Any, Optional, Tuple
+import time
+from typing import Callable, List, Any, Optional, Tuple
+from tqdm import tqdm
 
 import aiohttp
 import requests
@@ -19,6 +21,7 @@ from cleanlab_studio.cli.dataset.schema_types import Schema
 from cleanlab_studio.cli.types import JSONDict, IDType, MEDIA_MODALITIES
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
+base_url_v1 = os.environ.get("CLEANLAB_API_BASE_URL_V1", "https://api.cleanlab.ai/api/cli/v1")
 
 
 MAX_PARALLEL_UPLOADS = 32  # XXX choose this dynamically?
@@ -50,6 +53,37 @@ def handle_api_error_from_json(res_json: JSONDict, show_warning: bool = False) -
             abort(res_json["description"])
     if res_json.get("error", None) is not None:
         abort(res_json["error"])
+
+
+def initialize_upload(
+    api_key: str, filename: str, file_size: str
+) -> Tuple[str, List[int], List[str]]:
+    res = requests.get(
+        f"{base_url_v1}/upload/initialize?size_in_bytes={file_size}&filename={filename}",
+        headers=_construct_headers(api_key),
+    )
+    upload_id: str = res.json()["upload_id"]
+    part_sizes: List[int] = res.json()["part_sizes"]
+    presigned_posts: List[str] = res.json()["presigned_posts"]
+    return upload_id, part_sizes, presigned_posts
+
+
+def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDict]) -> Any:
+    request_json = dict(upload_id=upload_id, upload_parts=upload_parts)
+    res = requests.post(
+        f"{base_url_v1}/upload/complete", json=request_json, headers=_construct_headers(api_key)
+    )
+    handle_api_error(res)
+    upload_id: str = res.json()["id"]
+    return upload_id
+
+
+def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
+    res = requests.get(
+        f"{base_url_v1}/proposed_schema?upload_id={upload_id}", headers=_construct_headers(api_key)
+    )
+    handle_api_error(res)
+    return res.json()
 
 
 def initialize_dataset(api_key: str, schema: Schema) -> str:
@@ -340,3 +374,16 @@ def get_presigned_posts(
     handle_api_error(res)
     res_json: JSONDict = res.json()
     return res_json
+
+
+def poll_progress(
+    progress_id: str, request_function: Callable[[str], JSONDict], description: str
+) -> JSONDict:
+    with tqdm(total=1) as pbar:
+        res = request_function(progress_id)
+        while res["status"] != "complete":
+            pbar.update(float(res["progress"]) - pbar.n)
+            time.sleep(0.5)
+            res = request_function(progress_id)
+        pbar.update(float(1))
+    return res

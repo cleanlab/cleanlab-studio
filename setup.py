@@ -44,6 +44,7 @@ setup(
     py_modules=["main"],
     python_requires=">=3.8",
     install_requires=[
+        "aiofiles>=22.1.0",
         "aiohttp>=3.8.1",
         "Click>=8.1.0",
         "colorama>=0.4.4",
