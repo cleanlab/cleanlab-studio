@@ -69,14 +69,12 @@ def initialize_upload(
     return upload_id, part_sizes, presigned_posts
 
 
-def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDict]) -> Any:
+def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDict]) -> None:
     request_json = dict(upload_id=upload_id, upload_parts=upload_parts)
     res = requests.post(
         f"{base_url_v1}/upload/complete", json=request_json, headers=_construct_headers(api_key)
     )
     handle_api_error(res)
-    upload_id: str = res.json()["id"]
-    return upload_id
 
 
 def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
@@ -84,7 +82,8 @@ def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
         f"{base_url_v1}/proposed_schema?upload_id={upload_id}", headers=_construct_headers(api_key)
     )
     handle_api_error(res)
-    return res.json()
+    res_json: JSONDict = res.json()
+    return res_json
 
 
 def initialize_dataset(api_key: str, schema: Schema) -> str:
@@ -131,7 +130,8 @@ def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
-    return res.json()
+    res_json: JSONDict = res.json()
+    return res_json
 
 
 def get_upload_id_for_dataset(api_key: str, dataset_id: str) -> str:
@@ -139,7 +139,8 @@ def get_upload_id_for_dataset(api_key: str, dataset_id: str) -> str:
         base_url_v1 + f"/datasets/{dataset_id}/upload_id", headers=_construct_headers(api_key)
     )
     handle_api_error(res)
-    return res.json()["upload_id"]
+    upload_id: str = res.json()["upload_id"]
+    return upload_id
 
 
 async def upload_rows_async(

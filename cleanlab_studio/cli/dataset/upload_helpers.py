@@ -90,8 +90,7 @@ async def _upload_file_chunk_async(
     presigned_post: str,
 ) -> CIMultiDictProxy[str]:
     async with session.put(presigned_post, data=chunk) as response:
-        if response.status == 200:
-            return response.headers
+        return response.headers
 
 
 def _get_file_chunks(filepath: pathlib.Path, chunk_sizes: List[int]) -> List[bytes]:
@@ -123,7 +122,8 @@ def upload_dataset_file(api_key: str, filepath: pathlib.Path) -> str:
         api_key, filename, file_size
     )
     upload_parts = asyncio.run(upload_file_parts_async(filepath, part_sizes, presigned_posts))
-    return api_service.complete_file_upload(api_key, upload_id, upload_parts)
+    api_service.complete_file_upload(api_key, upload_id, upload_parts)
+    return upload_id
 
 
 def get_proposed_schema(api_key: str, upload_id: str) -> Optional[Schema]:
@@ -486,7 +486,8 @@ def get_ingestion_result(
         functools.partial(api_service.get_ingestion_status, api_key),
         "Generating schema...",
     )
-    return res["dataset_id"]
+    dataset_id: str = res["dataset_id"]
+    return dataset_id
 
 
 def upload_dataset_from_stream(

@@ -56,7 +56,7 @@ setup(
         "tqdm>=4.64.0",
         "ijson>=3.1.4",
         "jsonstreams>=0.6.0",
-        "semver>=2.13.0",
+        "semver>=2.13.0,<3.0.0",
         "Pillow>=9.2.0",
         "openpyxl==3.0.10",
         "validators>=0.20.0",
