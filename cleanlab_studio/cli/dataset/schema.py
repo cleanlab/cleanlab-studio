@@ -43,13 +43,8 @@ def validate_schema_command(
     )
     prev_state.init_state(command_state)
     loaded_schema = load_schema(schema)
-    if filepath:
-        dataset = init_dataset_from_filepath(filepath)
-        cols = dataset.get_columns()
-    else:
-        cols = list(loaded_schema.fields)
     try:
-        validate_schema(loaded_schema, cols)
+        validate_schema(loaded_schema)
     except ValueError as e:
         abort(str(e))
     success("Provided schema is valid!")

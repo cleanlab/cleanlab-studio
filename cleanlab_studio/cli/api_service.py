@@ -56,7 +56,7 @@ def handle_api_error_from_json(res_json: JSONDict, show_warning: bool = False) -
 
 
 def initialize_upload(
-    api_key: str, filename: str, file_size: str
+    api_key: str, filename: str, file_size: int
 ) -> Tuple[str, List[int], List[str]]:
     res = requests.get(
         f"{base_url_v1}/upload/initialize?size_in_bytes={file_size}&filename={filename}",

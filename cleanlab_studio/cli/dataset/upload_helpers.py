@@ -94,7 +94,7 @@ async def _upload_file_chunk_async(
             return response.headers
 
 
-def _get_file_chunks(filepath: str, chunk_sizes: List[int]) -> List[bytes]:
+def _get_file_chunks(filepath: pathlib.Path, chunk_sizes: List[int]) -> List[bytes]:
     with open(filepath, "rb") as f:
         return [f.read(chunk_size) for chunk_size in chunk_sizes]
 
