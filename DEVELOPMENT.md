@@ -8,8 +8,8 @@ https://cleanlab.github.io/cleanlab-studio/dev/bench/
    directory. Changes to the code are reflected automatically in the CLI.
 2. `Makefile` contains sample commands for quick installation and testing, though you will have to specify filepaths and
    API keys manually.
-3. Run `export CLEANLAB_API_BASE_URL="http://localhost:8500/api/cli/v0"` so that API requests are made on your local
-   machine
+3. Run `export CLEANLAB_API_BASE_URL="http://localhost:8500/api/cli/v0"` and `export CLEANLAB_API_BASE_URL_V1="http://localhost:8500/api/cli/v1"` so that API requests are made on your
+   local machine
 
 ## Formatting
 
@@ -62,20 +62,20 @@ References:
 
 To upload to TestPyPi:
 
-1. twine upload -r testpypi dist/*
+1. twine upload -r testpypi dist/\*
 2. pip install -i https://test.pypi.org/simple/ cleanlab-studio
 
 This last step may fail if test versions of some required packages are not available.
 
 To upload to PyPi:
 
-1. twine upload dist/*
+1. twine upload dist/\*
 
 ## Versioning
 
-For *users*, there is only one version number to keep track of: the CLI package version.
+For _users_, there is only one version number to keep track of: the CLI package version.
 
-For *developers*, there are four version numbers to keep track of:
+For _developers_, there are four version numbers to keep track of:
 
 1. The CLI package version
 2. Cleanlab Studio CLI API version (currently v0)
@@ -128,7 +128,7 @@ interfaces with the settings or schema.
 - CLI adds new functionality for interfacing with Cleanlab Studio CLI API, but no new behavior is introduced for
   interfacing with settings / schema
 
-----
+---
 
 Whenever the **CLI API is updated**, update the minimum supported CLI version when there is a change in the API, which
 changes the interface between API and CLI in a way that breaks compatibility. Every endpoint in the CLI API is used by
