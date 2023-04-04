@@ -126,13 +126,14 @@ def upload_dataset_file(api_key: str, filepath: pathlib.Path) -> str:
     return api_service.complete_file_upload(api_key, upload_id, upload_parts)
 
 
-def get_proposed_schema(api_key: str, upload_id: str) -> Schema:
+def get_proposed_schema(api_key: str, upload_id: str) -> Optional[Schema]:
     res = api_service.poll_progress(
         upload_id,
         functools.partial(api_service.get_proposed_schema, api_key),
         "Generating schema...",
     )
-    return Schema.from_dict(res["schema"])
+    schema = res.get("schema")
+    return None if schema is None else Schema.from_dict(res["schema"])
 
 
 def validate_and_process_record(
@@ -474,6 +475,18 @@ def check_filepath_column(
         )
         if not continue_with_upload:
             abort("Dataset upload aborted.")
+
+
+def get_ingestion_result(
+    api_key: str,
+    upload_id: str,
+) -> str:
+    res = api_service.poll_progress(
+        upload_id,
+        functools.partial(api_service.get_ingestion_status, api_key),
+        "Generating schema...",
+    )
+    return res["dataset_id"]
 
 
 def upload_dataset_from_stream(

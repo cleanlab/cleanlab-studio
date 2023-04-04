@@ -62,6 +62,7 @@ def initialize_upload(
         f"{base_url_v1}/upload/initialize?size_in_bytes={file_size}&filename={filename}",
         headers=_construct_headers(api_key),
     )
+    handle_api_error(res)
     upload_id: str = res.json()["upload_id"]
     part_sizes: List[int] = res.json()["part_sizes"]
     presigned_posts: List[str] = res.json()["presigned_posts"]
@@ -114,6 +115,31 @@ def get_dataset_schema(api_key: str, dataset_id: str) -> Schema:
     handle_api_error(res)
     schema = Schema.from_dict(res.json()["schema"])
     return schema
+
+
+def confirm_schema(api_key: str, schema: Optional[Schema], upload_id: str) -> None:
+    request_json = dict(schema=None if schema is None else schema.to_dict(), upload_id=upload_id)
+    res = requests.post(
+        base_url_v1 + "/confirm_schema", json=request_json, headers=_construct_headers(api_key)
+    )
+    handle_api_error(res)
+
+
+def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
+    res = requests.get(
+        base_url_v1 + f"/ingestion_status?upload_id={upload_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return res.json()
+
+
+def get_upload_id_for_dataset(api_key: str, dataset_id: str) -> str:
+    res = requests.get(
+        base_url_v1 + f"/datasets/{dataset_id}/upload_id", headers=_construct_headers(api_key)
+    )
+    handle_api_error(res)
+    return res.json()["upload_id"]
 
 
 async def upload_rows_async(
@@ -382,6 +408,8 @@ def poll_progress(
     with tqdm(total=1) as pbar:
         res = request_function(progress_id)
         while res["status"] != "complete":
+            if res["status"] == "error":
+                abort(res["error_message"])
             pbar.update(float(res["progress"]) - pbar.n)
             time.sleep(0.5)
             res = request_function(progress_id)
