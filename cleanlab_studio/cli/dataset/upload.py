@@ -55,11 +55,6 @@ def upload_with_schema(
     help="If uploading with a schema, specify the JSON schema filepath.",
 )
 @click.option(
-    "--id-column",
-    type=str,
-    help="If uploading a new dataset without a schema, specify the ID column.",
-)
-@click.option(
     "--modality",
     "-m",
     type=click.Choice(MODALITIES),
@@ -70,7 +65,6 @@ def upload(
     config: AuthConfig,
     filepath: Optional[str],
     schema: Optional[str],
-    id_column: Optional[str],
     modality: Optional[str],
 ) -> None:
     api_key = config.get_api_key()
@@ -95,9 +89,6 @@ def upload(
     if modality is None:
         while modality not in MODALITIES:
             modality = click.prompt(f"Specify your dataset modality ({', '.join(MODALITIES)})")
-
-    if id_column is None:
-        id_column = click.prompt("Specify the name of the ID column in your dataset")
 
     ### Propose schema
     proposed_schema = get_proposed_schema(api_key, upload_id)
