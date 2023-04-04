@@ -18,9 +18,10 @@ from cleanlab_studio.cli.dataset.upload_helpers import (
     get_proposed_schema,
     get_ingestion_result,
 )
-from cleanlab_studio.cli.decorators import auth_config
+from cleanlab_studio.cli.decorators import auth_config, previous_state
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
-from cleanlab_studio.cli.types import MODALITIES
+from cleanlab_studio.cli.decorators.previous_state import PreviousState
+from cleanlab_studio.cli.types import CommandState, MODALITIES
 
 
 def upload_with_schema(
@@ -78,10 +79,7 @@ def upload(
 
     # Check if uploading with schema
     if schema is not None:
-        if pathlib.Path(filepath).suffix == ".zip":
-            upload_with_schema(api_key, schema, upload_id)
-        else:
-            upload_with_schema(api_key, schema, upload_id)
+        upload_with_schema(api_key, schema, upload_id)
         return
 
     ## No schema, propose and confirm a schema
