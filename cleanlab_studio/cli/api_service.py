@@ -56,10 +56,10 @@ def handle_api_error_from_json(res_json: JSONDict, show_warning: bool = False) -
 
 
 def initialize_upload(
-    api_key: str, filename: str, file_size: int
+    api_key: str, filename: str, file_type: str, file_size: int
 ) -> Tuple[str, List[int], List[str]]:
     res = requests.get(
-        f"{base_url_v1}/upload/initialize?size_in_bytes={file_size}&filename={filename}",
+        f"{base_url_v1}/upload/initialize?size_in_bytes={file_size}&filename={filename}&file_type={file_type}",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -406,7 +406,7 @@ def get_presigned_posts(
 def poll_progress(
     progress_id: str, request_function: Callable[[str], JSONDict], description: str
 ) -> JSONDict:
-    with tqdm(total=1) as pbar:
+    with tqdm(total=1, desc=description) as pbar:
         res = request_function(progress_id)
         while res["status"] != "complete":
             if res["status"] == "error":

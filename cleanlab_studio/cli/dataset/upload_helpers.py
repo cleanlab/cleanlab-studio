@@ -3,8 +3,8 @@ Helper functions for processing and uploading dataset rows
 """
 import asyncio
 import decimal
-from io import BytesIO, IOBase
 import json
+import mimetypes
 import pathlib
 import queue
 import re
@@ -118,8 +118,9 @@ async def upload_file_parts_async(
 def upload_dataset_file(api_key: str, filepath: pathlib.Path) -> str:
     filename = filepath.name
     file_size = filepath.stat().st_size
+    file_type = mimetypes.guess_type(filename)
     upload_id, part_sizes, presigned_posts = api_service.initialize_upload(
-        api_key, filename, file_size
+        api_key, filename, file_type, file_size
     )
     upload_parts = asyncio.run(upload_file_parts_async(filepath, part_sizes, presigned_posts))
     api_service.complete_file_upload(api_key, upload_id, upload_parts)
@@ -484,7 +485,7 @@ def get_ingestion_result(
     res = api_service.poll_progress(
         upload_id,
         functools.partial(api_service.get_ingestion_status, api_key),
-        "Generating schema...",
+        "Ingesting Dataset...",
     )
     dataset_id: str = res["dataset_id"]
     return dataset_id
