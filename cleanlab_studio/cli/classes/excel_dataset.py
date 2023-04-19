@@ -64,7 +64,7 @@ class ExcelDataset(Dataset[IO[bytes]]):
         :param record_value: record value to preprocess
         :return: preprocessed record value
         """
-        if isinstance(record_value, (datetime.time, datetime.datetime, pd.Timestamp)):
+        if isinstance(record_value, (datetime.date, datetime.time, datetime.datetime, pd.Timestamp)):
             return record_value.isoformat()
 
         return record_value
