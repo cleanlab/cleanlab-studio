@@ -18,10 +18,10 @@ from cleanlab_studio.cli.dataset.schema_helpers import (
     validate_schema,
     save_schema,
 )
-from cleanlab_studio.cli.decorators import auth_config, previous_state
+from cleanlab_studio.cli.decorators import auth_config
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.internal import api
-from cleanlab_studio.internal.types import MODALITIES
+from cleanlab_studio.internal.dataset_source import FilepathDatasetSource
 
 
 def upload_with_schema(
@@ -69,7 +69,8 @@ def upload(
     if not os.path.exists(filepath):
         abort(f"cannot upload '{filepath}': no such file or directory")
 
-    upload_id = upload_dataset_file(api_key, pathlib.Path(filepath))
+    dataset_source = FilepathDatasetSource(filepath=pathlib.Path(filepath))
+    upload_id = upload_dataset_file(api_key, dataset_source)
 
     # Check if uploading with schema
     if schema is not None:

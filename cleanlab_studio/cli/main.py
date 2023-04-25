@@ -7,7 +7,7 @@ from cleanlab_studio.cli.click_helpers import abort
 from cleanlab_studio.cli.dataset.commands import dataset
 from cleanlab_studio.cli.cleanset.commands import cleanset
 from cleanlab_studio.cli.login.login import login
-from cleanlab_studio.cli.settings import CleanlabSettings
+from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.version import __version__
 
 

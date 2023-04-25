@@ -9,13 +9,9 @@ import aiohttp
 from multidict import CIMultiDictProxy
 
 from .api import api
+from .dataset_source import DatasetSource
 from .schema import Schema
 from .types import JSONDict
-
-
-def _get_file_chunks(filepath: pathlib.Path, chunk_sizes: List[int]) -> List[bytes]:
-    with open(filepath, "rb") as f:
-        return [f.read(chunk_size) for chunk_size in chunk_sizes]
 
 
 async def _upload_file_chunk_async(
@@ -28,10 +24,10 @@ async def _upload_file_chunk_async(
 
 
 async def upload_file_parts_async(
-    filepath: pathlib.Path, part_sizes: List[int], presigned_posts: List[str]
+    dataset_source: DatasetSource, part_sizes: List[int], presigned_posts: List[str]
 ) -> List[JSONDict]:
     tasks = []
-    chunks = _get_file_chunks(filepath, part_sizes)
+    chunks = dataset_source.get_chunks(part_sizes)
     async with aiohttp.ClientSession() as session:
         for chunk, presigned_post in zip(chunks, presigned_posts):
             tasks.append(
@@ -44,14 +40,11 @@ async def upload_file_parts_async(
     ]
 
 
-def upload_dataset_file(api_key: str, filepath: pathlib.Path) -> str:
-    filename = filepath.name
-    file_size = filepath.stat().st_size
-    file_type = mimetypes.guess_type(filename)
+def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
     upload_id, part_sizes, presigned_posts = api.initialize_upload(
-        api_key, filename, file_type, file_size
+        api_key, dataset_source.name, dataset_source.file_type, dataset_source.file_size
     )
-    upload_parts = asyncio.run(upload_file_parts_async(filepath, part_sizes, presigned_posts))
+    upload_parts = asyncio.run(upload_file_parts_async(dataset_source, part_sizes, presigned_posts))
     api.complete_file_upload(api_key, upload_id, upload_parts)
     return upload_id
 
