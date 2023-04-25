@@ -1,16 +1,18 @@
-from abc import abstractmethod
 import contextlib
 import pathlib
 from typing import Optional, List, IO, Generator, Iterator
 
 
 class DatasetSource:
+    name: str
+    file_size: int
+    file_type: str
+    _fileobj: Optional[IO[bytes]]
+    _filepath: Optional[pathlib.Path]
+
     def __init__(self):
-        self.name: Optional[str] = None
-        self.file_size: Optional[int] = None
-        self.file_type: Optional[str] = None
-        self._fileobj: Optional[IO[bytes]] = None
-        self._filepath: Optional[pathlib.Path] = None
+        self._filepath = None
+        self._fileobj = None
 
     @contextlib.contextmanager
     def fileobj(self) -> Iterator[IO[bytes]]:

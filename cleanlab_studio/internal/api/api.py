@@ -41,6 +41,15 @@ def handle_api_error_from_json(res_json: JSONDict) -> None:
         raise APIError(res_json["error"])
 
 
+def validate_api_key(api_key: str) -> bool:
+    res = requests.get(
+        base_url + "/validate", json=dict(api_key=api_key), headers=_construct_headers(api_key)
+    )
+    handle_api_error(res)
+    valid: bool = res.json()["valid"]
+    return valid
+
+
 def check_client_version() -> bool:
     res = requests.post(base_url + "/check_client_version", json=dict(version=__version__))
     handle_api_error(res)

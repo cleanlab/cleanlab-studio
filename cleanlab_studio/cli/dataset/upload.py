@@ -15,13 +15,13 @@ from cleanlab_studio.cli import click_helpers
 from cleanlab_studio.cli.click_helpers import progress, success, abort, info, log
 from cleanlab_studio.cli.dataset.schema_helpers import (
     load_schema,
-    validate_schema,
     save_schema,
 )
 from cleanlab_studio.cli.decorators import auth_config
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.internal import api
 from cleanlab_studio.internal.dataset_source import FilepathDatasetSource
+from cleanlab_studio.internal.schema import Schema
 
 
 def upload_with_schema(
@@ -32,7 +32,7 @@ def upload_with_schema(
     progress("Validating provided schema...")
     loaded_schema = load_schema(schema)
     try:
-        validate_schema(loaded_schema)
+        loaded_schema.validate()
     except ValueError as e:
         abort(str(e))
     success("Provided schema is valid!")
@@ -51,7 +51,7 @@ def upload_with_schema(
     help="Dataset filepath",
 )
 @click.option(
-    "--schema",
+    "--schema_path",
     "-s",
     type=click.Path(),
     help="If uploading with a schema, specify the JSON schema filepath.",
@@ -60,7 +60,7 @@ def upload_with_schema(
 def upload(
     config: AuthConfig,
     filepath: Optional[str],
-    schema: Optional[str],
+    schema_path: Optional[str],
 ) -> None:
     api_key = config.get_api_key()
 
@@ -72,36 +72,43 @@ def upload(
     dataset_source = FilepathDatasetSource(filepath=pathlib.Path(filepath))
     upload_id = upload_dataset_file(api_key, dataset_source)
 
+    schema: Optional[Schema]
+
     # Check if uploading with schema
-    if schema is not None:
-        upload_with_schema(api_key, schema, upload_id)
-        return
+    if schema_path is not None:
+        schema = load_schema(schema_path)
+        try:
+            schema.validate()
+        except ValueError as e:
+            abort(str(e))
+        proceed_upload = True
 
     ### Propose schema
-    proposed_schema = get_proposed_schema(api_key, upload_id)
-    proceed_upload = None
-    if proposed_schema is not None:
-        log(json.dumps(proposed_schema.to_dict(), indent=2))
-        info(f"No schema was provided. We propose the above schema based on your dataset.")
+    else:
+        schema = get_proposed_schema(api_key, upload_id)
+        proceed_upload = None
+        if schema is not None:
+            log(json.dumps(schema.to_dict(), indent=2))
+            info(f"No schema was provided. We propose the above schema based on your dataset.")
 
-        proceed_upload = click.confirm("\nUse this schema?", default=None)
-        if not proceed_upload:
-            info(
-                "Proposed schema rejected. Please submit your own schema using --schema.\n",
+            proceed_upload = click.confirm("\nUse this schema?", default=None)
+            if not proceed_upload:
+                info(
+                    "Proposed schema rejected. Please submit your own schema using --schema.\n",
+                )
+
+            save_filepath = click_helpers.confirm_save_prompt_filepath(
+                save_message="Save the generated schema?",
+                save_default=None,
+                prompt_message="Specify a filename for the schema. Leave this blank to use default",
+                prompt_default="schema.json",
+                no_save_message="Schema was not saved.",
             )
+            if save_filepath:
+                save_schema(schema, save_filepath)
 
-        save_filepath = click_helpers.confirm_save_prompt_filepath(
-            save_message="Save the generated schema?",
-            save_default=None,
-            prompt_message="Specify a filename for the schema. Leave this blank to use default",
-            prompt_default="schema.json",
-            no_save_message="Schema was not saved.",
-        )
-        if save_filepath:
-            save_schema(proposed_schema, save_filepath)
-
-    if proceed_upload or proposed_schema is None:
-        api.confirm_schema(api_key, proposed_schema, upload_id)
+    if proceed_upload or schema is None:
+        api.confirm_schema(api_key, schema, upload_id)
         dataset_id = get_ingestion_result(api_key, upload_id)
         log(f"Successfully uploaded dataset with ID: {dataset_id}")
         click_helpers.success(

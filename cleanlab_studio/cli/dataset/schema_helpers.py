@@ -17,14 +17,16 @@ from pandas import NaT
 from cleanlab_studio.cli.classes.dataset import Dataset
 from cleanlab_studio.cli.click_helpers import abort, info, progress, success
 from cleanlab_studio.cli.dataset.schema_types import (
-    DataType,
-    FeatureType,
     MEDIA_FEATURE_TYPES,
-    Schema,
 )
 from cleanlab_studio.cli.types import Modality
 from cleanlab_studio.cli.util import dump_json
 from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError
+from cleanlab_studio.internal.schema import (
+    DataType,
+    FeatureType,
+    Schema,
+)
 from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
 
