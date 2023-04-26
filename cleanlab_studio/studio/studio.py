@@ -1,9 +1,8 @@
-from typing import Any, Optional
-
+from typing import Optional
 
 from . import upload
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import init_dataset_source
+from cleanlab_studio.internal.util import DatasetSourceType, init_dataset_source
 from cleanlab_studio.internal.schema import Schema
 from cleanlab_studio.internal.settings import CleanlabSettings
 
@@ -27,22 +26,9 @@ class Studio:
 
     def upload_dataset(
         self,
-        dataset: Any,  # for now, a spark.DataFrame; in the future, we will support more
+        dataset: DatasetSourceType,
         dataset_name: Optional[str] = None,
         schema: Optional[Schema] = None,
     ) -> str:
         ds = init_dataset_source(dataset, dataset_name)
         return upload.upload_tabular_dataset(self._api_key, ds, schema)
-
-    # def upload_image_dataset(
-    #     self,
-    #     dataset: Any,  # spark.DataFrame
-    #     id_column: str,
-    #     path_column: str,
-    #     content_column: str,
-    #     label_column: str,
-    #     *,
-    #     dataset_name: Optional[str] = None,
-    #     id: Optional[str] = None,  # for resuming upload
-    # ) -> str:
-    #     pass
