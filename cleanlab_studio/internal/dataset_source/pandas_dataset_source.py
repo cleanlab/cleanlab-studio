@@ -1,31 +1,13 @@
 import io
-import os
-import pathlib
-import tempfile
-from typing import IO, Any
+from typing import IO
 import pandas as pd
 
-from .dataset_source import DatasetSource
+from .dataframe_dataset_source import DataFrameDatasetSource
 
 
-class PandasDatasetSource(DatasetSource):
-    def __init__(self, *args: Any, df: pd.DataFrame, dataset_name: str, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.dataset_name = dataset_name
-        self._fileobj = self._init_fileobj_from_df(df)
-        self.file_size = self._get_size_in_bytes()
-        self.file_type = "text/csv"
-
+class PandasDatasetSource(DataFrameDatasetSource[pd.DataFrame]):
     def _init_fileobj_from_df(self, df: pd.DataFrame) -> IO[bytes]:
-        fileobj = tempfile.NamedTemporaryFile(delete=False)
+        fileobj = io.BytesIO()
         df.to_csv(fileobj)
         fileobj.seek(0)
         return fileobj
-
-    def _get_size_in_bytes(self) -> int:
-        with self.fileobj() as dataset_file:
-            dataset_file.seek(0, os.SEEK_END)
-            return dataset_file.tell()
-
-    def get_filename(self) -> str:
-        return str(pathlib.Path(self.dataset_name).with_suffix(".csv"))

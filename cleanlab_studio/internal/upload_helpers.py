@@ -5,6 +5,7 @@ from typing import List, Optional
 
 import aiohttp
 from multidict import CIMultiDictProxy
+import requests
 
 from .api import api
 from .dataset_source import DatasetSource
@@ -38,11 +39,24 @@ async def upload_file_parts_async(
     ]
 
 
+def upload_file_parts(
+    dataset_source: DatasetSource, part_sizes: List[int], presigned_posts: List[str]
+) -> List[JSONDict]:
+    responses = [
+        requests.put(presigned_post, data=chunk)
+        for chunk, presigned_post in zip(dataset_source.get_chunks(part_sizes), presigned_posts)
+    ]
+    return [
+        {"ETag": json.loads(res.headers.get("etag")), "PartNumber": i + 1}
+        for i, res in enumerate(responses)
+    ]
+
+
 def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
     upload_id, part_sizes, presigned_posts = api.initialize_upload(
         api_key, dataset_source.get_filename(), dataset_source.file_type, dataset_source.file_size
     )
-    upload_parts = asyncio.run(upload_file_parts_async(dataset_source, part_sizes, presigned_posts))
+    upload_parts = upload_file_parts(dataset_source, part_sizes, presigned_posts)
     api.complete_file_upload(api_key, upload_id, upload_parts)
     return upload_id
 

@@ -16,4 +16,5 @@ class FilepathDatasetSource(DatasetSource):
         self._filepath = filepath
 
     def get_filename(self) -> str:
+        assert self._filepath is not None
         return self._filepath.name

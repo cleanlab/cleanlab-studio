@@ -1,3 +1,4 @@
 from .dataset_source import DatasetSource as DatasetSource
 from .filepath_dataset_source import FilepathDatasetSource as FilepathDatasetSource
 from .pandas_dataset_source import PandasDatasetSource as PandasDatasetSource
+from .pyspark_dataset_source import PySparkDatasetSource as PySparkDatasetSource
