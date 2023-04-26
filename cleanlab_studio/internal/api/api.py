@@ -61,7 +61,8 @@ def initialize_upload(
     api_key: str, filename: str, file_type: str, file_size: int
 ) -> Tuple[str, List[int], List[str]]:
     res = requests.get(
-        f"{upload_base_url}/initialize?size_in_bytes={file_size}&filename={filename}&file_type={file_type}",
+        f"{upload_base_url}/initialize",
+        params=dict(size_in_bytes=file_size, filename=filename, file_type=file_type),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -81,7 +82,8 @@ def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDi
 
 def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
     res = requests.get(
-        f"{upload_base_url}/proposed_schema?upload_id={upload_id}",
+        f"{upload_base_url}/proposed_schema",
+        params=dict(upload_id=upload_id),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -99,7 +101,8 @@ def confirm_schema(api_key: str, schema: Optional[Schema], upload_id: str) -> No
 
 def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
     res = requests.get(
-        f"{upload_base_url}/ingestion_status?upload_id={upload_id}",
+        f"{upload_base_url}/ingestion_status",
+        params=dict(upload_id=upload_id),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -109,7 +112,9 @@ def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
 
 def get_dataset_id(api_key: str, upload_id: str) -> JSONDict:
     res = requests.get(
-        f"{upload_base_url}/dataset_id?upload_id={upload_id}", headers=_construct_headers(api_key)
+        f"{upload_base_url}/dataset_id",
+        params=dict(upload_id=upload_id),
+        headers=_construct_headers(api_key),
     )
     handle_api_error(res)
     res_json: JSONDict = res.json()
