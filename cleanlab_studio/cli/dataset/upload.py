@@ -14,14 +14,12 @@ import click
 from cleanlab_studio.cli import click_helpers
 from cleanlab_studio.cli.click_helpers import progress, success, abort, info, log
 from cleanlab_studio.cli.dataset.schema_helpers import (
-    load_schema,
     save_schema,
 )
 from cleanlab_studio.cli.decorators import auth_config
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.internal import api
 from cleanlab_studio.internal.dataset_source import FilepathDatasetSource
-from cleanlab_studio.internal.schema import Schema
 
 
 def upload_with_schema(
@@ -30,11 +28,6 @@ def upload_with_schema(
     upload_id: str,
 ) -> None:
     progress("Validating provided schema...")
-    loaded_schema = load_schema(schema)
-    try:
-        loaded_schema.validate()
-    except ValueError as e:
-        abort(str(e))
     success("Provided schema is valid!")
     progress("Initializing dataset...")
     api.confirm_schema(api_key, loaded_schema, upload_id)
