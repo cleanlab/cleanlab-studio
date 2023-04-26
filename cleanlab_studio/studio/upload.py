@@ -15,6 +15,7 @@ def upload_tabular_dataset(api_key: str, dataset_source: DatasetSource, schema: 
         schema.validate()
     else:
         schema = get_proposed_schema(api_key, upload_id)
+        schema.metadata.name = dataset_source.dataset_name
     api.confirm_schema(api_key, schema, upload_id)
     dataset_id = get_ingestion_result(api_key, upload_id)
     return dataset_id

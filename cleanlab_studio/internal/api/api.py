@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 from cleanlab_studio.errors import APIError
 
 import requests
@@ -91,7 +91,11 @@ def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
     return res_json
 
 
-def confirm_schema(api_key: str, schema: Optional[Schema], upload_id: str) -> None:
+def confirm_schema(
+    api_key: str,
+    schema: Optional[Schema],
+    upload_id: str,
+) -> None:
     request_json = dict(schema=None if schema is None else schema.to_dict(), upload_id=upload_id)
     res = requests.post(
         f"{upload_base_url}/confirm_schema", json=request_json, headers=_construct_headers(api_key)

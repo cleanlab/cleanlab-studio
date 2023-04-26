@@ -1,8 +1,6 @@
 import asyncio
 import functools
 import json
-import mimetypes
-import pathlib
 from typing import List, Optional
 
 import aiohttp
@@ -42,7 +40,7 @@ async def upload_file_parts_async(
 
 def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
     upload_id, part_sizes, presigned_posts = api.initialize_upload(
-        api_key, dataset_source.name, dataset_source.file_type, dataset_source.file_size
+        api_key, dataset_source.get_filename(), dataset_source.file_type, dataset_source.file_size
     )
     upload_parts = asyncio.run(upload_file_parts_async(dataset_source, part_sizes, presigned_posts))
     api.complete_file_upload(api_key, upload_id, upload_parts)

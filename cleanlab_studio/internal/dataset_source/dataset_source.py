@@ -1,10 +1,11 @@
+from abc import abstractmethod
 import contextlib
 import pathlib
 from typing import Optional, List, IO, Generator, Iterator
 
 
 class DatasetSource:
-    name: str
+    dataset_name: str
     file_size: int
     file_type: str
     _fileobj: Optional[IO[bytes]]
@@ -33,3 +34,7 @@ class DatasetSource:
     def get_chunks(self, chunk_sizes: List[int]) -> Iterator[bytes]:
         with self.fileobj() as f:
             return [f.read(chunk_size) for chunk_size in chunk_sizes]
+
+    @abstractmethod
+    def get_filename(self) -> str:
+        pass
