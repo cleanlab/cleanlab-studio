@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Optional
 
 from . import upload
 from cleanlab_studio.internal.api import api

@@ -12,28 +12,16 @@ from cleanlab_studio.internal.upload_helpers import (
 import click
 
 from cleanlab_studio.cli import click_helpers
-from cleanlab_studio.cli.click_helpers import progress, success, abort, info, log
+from cleanlab_studio.cli.click_helpers import abort, info, log
 from cleanlab_studio.cli.dataset.schema_helpers import (
+    load_schema,
     save_schema,
 )
 from cleanlab_studio.cli.decorators import auth_config
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.internal import api
 from cleanlab_studio.internal.dataset_source import FilepathDatasetSource
-
-
-def upload_with_schema(
-    api_key: str,
-    schema: str,
-    upload_id: str,
-) -> None:
-    progress("Validating provided schema...")
-    success("Provided schema is valid!")
-    progress("Initializing dataset...")
-    api.confirm_schema(api_key, loaded_schema, upload_id)
-    dataset_id = get_ingestion_result(api_key, upload_id)
-    log(f"Successfully uploaded dataset with ID: {dataset_id}")
-    click_helpers.success("Upload completed. View your uploaded dataset at https://app.cleanla.ai")
+from cleanlab_studio.internal.types import JSONDict
 
 
 @click.command(help="upload your dataset to Cleanlab Studio")
@@ -65,15 +53,11 @@ def upload(
     dataset_source = FilepathDatasetSource(filepath=pathlib.Path(filepath))
     upload_id = upload_dataset_file(api_key, dataset_source)
 
-    schema: Optional[Schema]
+    schema: Optional[JSONDict]
 
     # Check if uploading with schema
     if schema_path is not None:
         schema = load_schema(schema_path)
-        try:
-            schema.validate()
-        except ValueError as e:
-            abort(str(e))
         proceed_upload = True
 
     ### Propose schema
@@ -81,7 +65,7 @@ def upload(
         schema = get_proposed_schema(api_key, upload_id)
         proceed_upload = None
         if schema is not None:
-            log(json.dumps(schema.to_dict(), indent=2))
+            log(json.dumps(schema, indent=2))
             info(f"No schema was provided. We propose the above schema based on your dataset.")
 
             proceed_upload = click.confirm("\nUse this schema?", default=None)

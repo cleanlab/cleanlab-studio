@@ -17,16 +17,15 @@ from pandas import NaT
 from cleanlab_studio.cli.classes.dataset import Dataset
 from cleanlab_studio.cli.click_helpers import abort, info, progress, success
 from cleanlab_studio.cli.dataset.schema_types import (
+    DataType,
+    FeatureType,
     MEDIA_FEATURE_TYPES,
+    Schema,
 )
 from cleanlab_studio.cli.types import Modality
 from cleanlab_studio.cli.util import dump_json
 from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError
-from cleanlab_studio.internal.schema import (
-    DataType,
-    FeatureType,
-    Schema,
-)
+from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
 
@@ -63,15 +62,9 @@ def _find_best_matching_column(target_column: str, columns: List[str]) -> Option
         return columns[0]
 
 
-def load_schema(filepath: str) -> Schema:
+def load_schema(filepath: str) -> JSONDict:
     with open(filepath, "r") as f:
-        schema_dict = json.load(f)
-        schema: Schema = Schema.create(
-            metadata=schema_dict["metadata"],
-            fields=schema_dict["fields"],
-            version=schema_dict["version"],
-        )
-        return schema
+        return json.load(f)
 
 
 def validate_schema(schema: Schema) -> None:
@@ -396,7 +389,7 @@ def propose_schema(
     return Schema.create(metadata=metadata, fields=fields_dict, version=SCHEMA_VERSION)
 
 
-def save_schema(schema: Schema, filename: Optional[str]) -> None:
+def save_schema(schema: JSONDict, filename: Optional[str]) -> None:
     """
 
     :param schema:
@@ -407,7 +400,7 @@ def save_schema(schema: Schema, filename: Optional[str]) -> None:
         filename = "schema.json"
     if filename:
         progress(f"Writing schema to {filename}...")
-        dump_json(filename, schema.to_dict())
+        dump_json(filename, schema)
         success("Saved.")
     else:
         info("Schema was not saved.")

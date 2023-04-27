@@ -59,10 +59,10 @@ setup(
         "Pillow>=9.2.0",
         "openpyxl==3.0.10",
         "validators>=0.20.0",
-        "pyspark>=3.1.1",
+        "pyspark>=3.1.0",
     ],
     entry_points="""
-        [console_scripts]python
+        [console_scripts]
         cleanlab=cleanlab_studio.cli:main
     """,
 )

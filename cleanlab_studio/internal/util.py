@@ -20,7 +20,6 @@ DatasetSourceType = TypeVar(
 def init_dataset_source(
     dataset_source: DatasetSourceType, dataset_name: Optional[str] = None
 ) -> DatasetSource:
-    print(type(dataset_source))
     if isinstance(dataset_source, pd.DataFrame):
         return PandasDatasetSource(df=dataset_source, dataset_name=dataset_name)
     elif isinstance(dataset_source, pyspark.sql.DataFrame):
