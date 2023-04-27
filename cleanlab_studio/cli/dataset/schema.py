@@ -1,4 +1,3 @@
-import pathlib
 from typing import Optional, Set
 
 import click
@@ -15,6 +14,7 @@ from cleanlab_studio.cli.dataset.schema_helpers import (
 )
 from cleanlab_studio.cli.dataset import upload_helpers
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
+from cleanlab_studio.cli.dataset.schema_types import Schema
 from cleanlab_studio.cli.dataset.upload_types import ValidationWarning
 from cleanlab_studio.cli.types import CommandState, MODALITIES
 from cleanlab_studio.cli.util import get_filename, init_dataset_from_filepath
@@ -31,25 +31,15 @@ def schema() -> None:
 
 @schema.command(name="validate", help="validate an existing schema")
 @click.option("--schema", "-s", type=click.Path(), help="Schema filepath")
-@click.option("--filepath", "-f", type=click.Path(), help="Dataset filepath")
 @previous_state
-def validate_schema_command(
-    prev_state: PreviousState, schema: Optional[str], filepath: Optional[str]
-) -> None:
+def validate_schema_command(prev_state: PreviousState, schema: Optional[str]) -> None:
     if schema is None:
         schema = click_helpers.prompt_for_filepath("Specify your schema filepath")
-    command_state: CommandState = dict(
-        command="validate schema", args=dict(schema=schema, filepath=filepath)
-    )
+    command_state: CommandState = dict(command="validate schema", args=dict(schema=schema))
     prev_state.init_state(command_state)
-    loaded_schema = load_schema(schema)
-    if filepath:
-        dataset = init_dataset_from_filepath(filepath)
-        cols = dataset.get_columns()
-    else:
-        cols = list(loaded_schema.fields)
+    loaded_schema = Schema.from_dict(load_schema(schema))
     try:
-        validate_schema(loaded_schema, cols)
+        validate_schema(loaded_schema)
     except ValueError as e:
         abort(str(e))
     success("Provided schema is valid!")
@@ -75,7 +65,7 @@ def check_dataset_command(
     prev_state.init_state(command_state)
 
     dataset = init_dataset_from_filepath(filepath)
-    loaded_schema = load_schema(schema)
+    loaded_schema = Schema.from_dict(load_schema(schema))
     log = upload_helpers.create_warning_log()
     seen_ids: Set[str] = set()
     existing_ids: Set[str] = set()
@@ -180,5 +170,5 @@ def generate_schema_command(
         if output is None:
             return
 
-    save_schema(proposed_schema, output)
+    save_schema(proposed_schema.to_dict(), output)
     click_helpers.confirm_open_file(message="Open your schema file?", filepath=output)

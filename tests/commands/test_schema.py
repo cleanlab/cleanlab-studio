@@ -57,22 +57,13 @@ def test_generate() -> None:
 
 
 def test_validate() -> None:
-    dataset = init_dataset_from_filepath(sample_csv)
-    df = dataset.read_file_as_dataframe()
     runner = CliRunner()
     with runner.isolated_filesystem():
-        filename = "sample"
-
-        df.to_csv(filename + ".csv")
-        df.to_excel(filename + ".xlsx", index=False)
-        # df.to_json(filename + ".json", orient="table", index=False)
-
-        for ext in [".csv", ".xlsx"]:
-            result = runner.invoke(
-                validate_schema_command,
-                ["--schema", sample_schema, "--filepath", filename + ext],
-            )
-            assert_success_else_error_output("Schema validation", result)
+        result = runner.invoke(
+            validate_schema_command,
+            ["--schema", sample_schema],
+        )
+        assert_success_else_error_output("Schema validation", result)
 
 
 def test_check_dataset() -> None:
