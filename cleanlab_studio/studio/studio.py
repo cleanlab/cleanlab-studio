@@ -1,10 +1,10 @@
-from typing import Optional
+from typing import Dict, Optional
 
 from . import upload
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import DatasetSourceType, init_dataset_source
-from cleanlab_studio.internal.schema import Schema
 from cleanlab_studio.internal.settings import CleanlabSettings
+from cleanlab_studio.internal.types import FieldSchemaDict
 
 
 class Studio:
@@ -28,7 +28,16 @@ class Studio:
         self,
         dataset: DatasetSourceType,
         dataset_name: Optional[str] = None,
-        schema: Optional[Schema] = None,
+        *,
+        schema_overrides: Optional[FieldSchemaDict] = None,
+        modality: Optional[str] = None,
+        id_column: Optional[str] = None,
     ) -> str:
         ds = init_dataset_source(dataset, dataset_name)
-        return upload.upload_tabular_dataset(self._api_key, ds, schema)
+        return upload.upload_dataset(
+            self._api_key,
+            ds,
+            schema_overrides=schema_overrides,
+            modality=modality,
+            id_column=id_column,
+        )

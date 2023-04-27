@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional, TypedDict
 
 
 JSONDict = Dict[str, Any]
+FieldSchemaDict = Dict[str, Dict[str, Any]]
 
 
 class Modality(Enum):

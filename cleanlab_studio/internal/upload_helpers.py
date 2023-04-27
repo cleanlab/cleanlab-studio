@@ -9,7 +9,6 @@ import requests
 
 from .api import api
 from .dataset_source import DatasetSource
-from .schema import Schema
 from .types import JSONDict
 
 
@@ -61,14 +60,14 @@ def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
     return upload_id
 
 
-def get_proposed_schema(api_key: str, upload_id: str) -> Optional[Schema]:
+def get_proposed_schema(api_key: str, upload_id: str) -> Optional[JSONDict]:
     res = api.poll_progress(
         upload_id,
         functools.partial(api.get_proposed_schema, api_key),
         "Generating schema...",
     )
     schema = res.get("schema")
-    return None if schema is None else Schema.from_dict(res["schema"])
+    return schema
 
 
 def get_ingestion_result(

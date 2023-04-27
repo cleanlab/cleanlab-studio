@@ -6,7 +6,6 @@ from cleanlab_studio.errors import APIError
 import requests
 from tqdm import tqdm
 
-from ..schema import Schema
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
 
@@ -93,10 +92,10 @@ def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
 
 def confirm_schema(
     api_key: str,
-    schema: Optional[Schema],
+    schema: JSONDict,
     upload_id: str,
 ) -> None:
-    request_json = dict(schema=None if schema is None else schema.to_dict(), upload_id=upload_id)
+    request_json = dict(schema=schema, upload_id=upload_id)
     res = requests.post(
         f"{upload_base_url}/confirm_schema", json=request_json, headers=_construct_headers(api_key)
     )
