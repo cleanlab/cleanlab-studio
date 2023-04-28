@@ -2,6 +2,7 @@ import asyncio
 import functools
 import json
 from typing import List, Optional
+from tqdm import tqdm
 
 import aiohttp
 from multidict import CIMultiDictProxy
@@ -41,10 +42,14 @@ async def upload_file_parts_async(
 def upload_file_parts(
     dataset_source: DatasetSource, part_sizes: List[int], presigned_posts: List[str]
 ) -> List[JSONDict]:
-    responses = [
-        requests.put(presigned_post, data=chunk)
-        for chunk, presigned_post in zip(dataset_source.get_chunks(part_sizes), presigned_posts)
-    ]
+    responses = tqdm(
+        [
+            requests.put(presigned_post, data=chunk)
+            for chunk, presigned_post in zip(dataset_source.get_chunks(part_sizes), presigned_posts)
+        ],
+        desc="Uploading dataset...",
+        bar_format="{desc}: {percentage:3.0f}%|{bar}|",
+    )
     return [
         {"ETag": json.loads(res.headers.get("etag")), "PartNumber": i + 1}
         for i, res in enumerate(responses)

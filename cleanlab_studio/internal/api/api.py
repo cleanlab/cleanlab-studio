@@ -127,7 +127,7 @@ def get_dataset_id(api_key: str, upload_id: str) -> JSONDict:
 def poll_progress(
     progress_id: str, request_function: Callable[[str], JSONDict], description: str
 ) -> JSONDict:
-    with tqdm(total=1, desc=description) as pbar:
+    with tqdm(total=1, desc=description, bar_format="{desc}: {percentage:3.0f}%|{bar}|") as pbar:
         res = request_function(progress_id)
         while res["status"] != "complete":
             if res["status"] == "error":
@@ -135,5 +135,5 @@ def poll_progress(
             pbar.update(float(res["progress"]) - pbar.n)
             time.sleep(0.5)
             res = request_function(progress_id)
-        pbar.update(float(1))
+        pbar.update(float(1) - pbar.n)
     return res
