@@ -1,6 +1,5 @@
-import os
 import pathlib
-from typing import Any, Optional, TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 import pandas as pd
 import pyspark.sql
@@ -13,7 +12,7 @@ from .dataset_source import (
 
 
 DatasetSourceType = TypeVar(
-    "DatasetSourceType", bound=Union[str, os.PathLike[Any], pd.DataFrame, pyspark.sql.DataFrame]
+    "DatasetSourceType", bound=Union[str, pathlib.Path, pd.DataFrame, pyspark.sql.DataFrame]
 )
 
 
