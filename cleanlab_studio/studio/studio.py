@@ -35,8 +35,6 @@ class Studio:
         id_column: Optional[str] = None,
     ) -> str:
         ds = init_dataset_source(dataset, dataset_name)
-        if isinstance(ds, DataFrameDatasetSource) and dataset_name is None:
-            raise ValueError("Must provide dataset name if uploading from a DataFrame")
         return upload.upload_dataset(
             self._api_key,
             ds,

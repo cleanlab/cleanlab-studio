@@ -51,7 +51,7 @@ def upload_file_parts(
         )
     ]
     return [
-        {"ETag": json.loads(res.headers.get("etag")), "PartNumber": i + 1}
+        {"ETag": json.loads(res.headers["etag"]), "PartNumber": i + 1}
         for i, res in enumerate(responses)
     ]
 

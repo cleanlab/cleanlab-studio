@@ -20,10 +20,12 @@ def init_dataset_source(
     dataset_source: DatasetSourceType, dataset_name: Optional[str] = None
 ) -> DatasetSource:
     if isinstance(dataset_source, pd.DataFrame):
-        assert dataset_name is not None
+        if dataset_name is None:
+            raise ValueError("Must provide dataset name if uploading from a DataFrame")
         return PandasDatasetSource(df=dataset_source, dataset_name=dataset_name)
     elif isinstance(dataset_source, pyspark.sql.DataFrame):
-        assert dataset_name is not None
+        if dataset_name is None:
+            raise ValueError("Must provide dataset name if uploading from a DataFrame")
         return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     elif isinstance(dataset_source, pathlib.Path):
         return FilepathDatasetSource(filepath=dataset_source, dataset_name=dataset_name)
