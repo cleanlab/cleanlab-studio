@@ -1,5 +1,4 @@
 import click
-from cleanlab_studio.cli.dataset.schema import schema
 from cleanlab_studio.cli.dataset.upload import upload
 
 
@@ -8,5 +7,4 @@ def dataset() -> None:
     pass
 
 
-dataset.add_command(schema)
 dataset.add_command(upload)
