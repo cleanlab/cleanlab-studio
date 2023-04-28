@@ -20,6 +20,7 @@ def upload_dataset(
 ):
     upload_id = upload_dataset_file(api_key, dataset_source)
     schema = get_proposed_schema(api_key, upload_id)
+    schema["metadata"]["name"] = dataset_source.dataset_name
     if schema_overrides is not None:
         for field in schema_overrides:
             schema["fields"][field] = schema_overrides[field]

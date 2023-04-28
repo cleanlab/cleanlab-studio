@@ -2,6 +2,7 @@ from typing import Optional
 
 from . import upload
 from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.dataset_source import DataFrameDatasetSource
 from cleanlab_studio.internal.util import DatasetSourceType, init_dataset_source
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
@@ -34,6 +35,8 @@ class Studio:
         id_column: Optional[str] = None,
     ) -> str:
         ds = init_dataset_source(dataset, dataset_name)
+        if isinstance(ds, DataFrameDatasetSource) and dataset_name is None:
+            raise ValueError("Must provide dataset name if uploading from a DataFrame")
         return upload.upload_dataset(
             self._api_key,
             ds,
