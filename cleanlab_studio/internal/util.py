@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 import pandas as pd
 import pyspark.sql
@@ -13,7 +13,7 @@ from .dataset_source import (
 
 
 DatasetSourceType = TypeVar(
-    "DatasetSourceType", bound=Union[str, os.PathLike, pd.DataFrame, pyspark.sql.DataFrame]
+    "DatasetSourceType", bound=Union[str, os.PathLike[Any], pd.DataFrame, pyspark.sql.DataFrame]
 )
 
 
@@ -21,8 +21,10 @@ def init_dataset_source(
     dataset_source: DatasetSourceType, dataset_name: Optional[str] = None
 ) -> DatasetSource:
     if isinstance(dataset_source, pd.DataFrame):
+        assert dataset_name is not None
         return PandasDatasetSource(df=dataset_source, dataset_name=dataset_name)
     elif isinstance(dataset_source, pyspark.sql.DataFrame):
+        assert dataset_name is not None
         return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     elif isinstance(dataset_source, pathlib.Path):
         return FilepathDatasetSource(filepath=dataset_source, dataset_name=dataset_name)

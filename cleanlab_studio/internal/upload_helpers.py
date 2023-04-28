@@ -85,4 +85,4 @@ def get_ingestion_result(
         "Ingesting Dataset...",
     )
     res = api.get_dataset_id(api_key, upload_id)
-    return res["dataset_id"]
+    return str(res["dataset_id"])

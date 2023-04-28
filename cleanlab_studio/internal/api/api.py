@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 from cleanlab_studio.errors import APIError
 
 import requests
@@ -61,7 +61,7 @@ def initialize_upload(
 ) -> Tuple[str, List[int], List[str]]:
     res = requests.get(
         f"{upload_base_url}/initialize",
-        params=dict(size_in_bytes=file_size, filename=filename, file_type=file_type),
+        params=dict(size_in_bytes=str(file_size), filename=filename, file_type=file_type),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -92,7 +92,7 @@ def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
 
 def confirm_schema(
     api_key: str,
-    schema: JSONDict,
+    schema: Optional[JSONDict],
     upload_id: str,
 ) -> None:
     request_json = dict(schema=schema, upload_id=upload_id)

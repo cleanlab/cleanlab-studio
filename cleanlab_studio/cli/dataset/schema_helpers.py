@@ -64,7 +64,8 @@ def _find_best_matching_column(target_column: str, columns: List[str]) -> Option
 
 def load_schema(filepath: str) -> JSONDict:
     with open(filepath, "r") as f:
-        return json.load(f)
+        schema_dict: JSONDict = json.load(f)
+        return schema_dict
 
 
 def validate_schema(schema: Schema) -> None:
