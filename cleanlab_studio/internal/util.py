@@ -36,20 +36,11 @@ def init_dataset_source(
         return FilepathDatasetSource(
             filepath=pathlib.Path(dataset_source), dataset_name=dataset_name
         )
+    elif pyspark_exists and isinstance(dataset_source, pyspark.sql.DataFrame):
+        from .dataset_source import PySparkDatasetSource
+
+        if dataset_name is None:
+            raise ValueError("Must provide dataset name if uploading from a DataFrame")
+        return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     else:
-        try:
-            if isinstance(dataset_source, pyspark.sql.DataFrame):
-                if not pyspark_exists:
-                    raise ImportError(
-                        'Must install pyspark to upload from pyspark dataframe. Use "pip install pyspark"'
-                    )
-
-                from .dataset_source import PySparkDatasetSource
-
-                if dataset_name is None:
-                    raise ValueError("Must provide dataset name if uploading from a DataFrame")
-                return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
-        except NameError:
-            pass
-        finally:
-            raise ValueError("Invalid dataset source provided")
+        raise ValueError("Invalid dataset source provided")
