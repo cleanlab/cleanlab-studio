@@ -128,8 +128,8 @@ class Studio:
             id_col = api.get_id_column(self._api_key, cleanset_id)
             cl_cols = self._download_cleanlab_columns(cleanset_id, project_id, label_column)
 
-            joined_ds = dataset.join(cl_cols, on=id_col)
-            joined_ds["__cleanlab_final_label"] = cl_cols[label_column].where(cl_cols[label_column].notna(), dataset[label_column])
+            joined_ds = dataset.join(cl_cols, on=id_col, rsuffix="clean")
+            joined_ds["__cleanlab_final_label"] = cl_cols["cleanlab_clean_label"].where(cl_cols["cleanlab_clean_label"] != "None", dataset[label_column])
 
             dataset[label_column] = joined_ds["__cleanlab_final_label"]
             return dataset
