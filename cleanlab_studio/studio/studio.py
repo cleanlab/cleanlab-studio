@@ -2,6 +2,7 @@ from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
+
 try:
     import pyspark.sql
 
@@ -129,7 +130,9 @@ class Studio:
             cl_cols = self._download_cleanlab_columns(cleanset_id, project_id, label_column)
 
             joined_ds = dataset.join(cl_cols, on=id_col, rsuffix="clean")
-            joined_ds["__cleanlab_final_label"] = cl_cols["cleanlab_clean_label"].where(cl_cols["cleanlab_clean_label"] != "None", dataset[label_column])
+            joined_ds["__cleanlab_final_label"] = cl_cols["cleanlab_clean_label"].where(
+                cl_cols["cleanlab_clean_label"] != "None", dataset[label_column]
+            )
 
             dataset[label_column] = joined_ds["__cleanlab_final_label"]
             return dataset
