@@ -2,7 +2,13 @@ import io
 from typing import IO
 
 import pandas as pd
-import pyspark.sql
+
+try:
+    import pyspark.sql
+except ImportError:
+    raise ImportError(
+        'Must install pyspark to upload from pyspark dataframe. Use "pip install pyspark"'
+    )
 
 from .dataframe_dataset_source import DataFrameDatasetSource
 
