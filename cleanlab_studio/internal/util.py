@@ -1,5 +1,5 @@
 import pathlib
-from typing import Optional, TypeVar, Union, TYPE_CHECKING
+from typing import Optional, TypeVar, Union
 
 import pandas as pd
 

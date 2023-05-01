@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Any, Optional
 
 from . import upload
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import DatasetSourceType, init_dataset_source
+from cleanlab_studio.internal.util import init_dataset_source
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
 
@@ -26,7 +26,7 @@ class Studio:
 
     def upload_dataset(
         self,
-        dataset: DatasetSourceType,
+        dataset: Any,
         dataset_name: Optional[str] = None,
         *,
         schema_overrides: Optional[FieldSchemaDict] = None,
