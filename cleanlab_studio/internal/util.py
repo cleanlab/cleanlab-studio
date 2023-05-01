@@ -1,6 +1,7 @@
 import pathlib
-from typing import Optional, TypeVar
+from typing import Any, Optional, TypeVar
 
+import numpy as np
 import pandas as pd
 
 try:
@@ -44,3 +45,12 @@ def init_dataset_source(
         return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     else:
         raise ValueError("Invalid dataset source provided")
+
+
+def as_numpy_type(field_type: str) -> Any:
+    return {
+        "string": str,
+        "integer": np.int64,  # XXX backend might use big integers
+        "float": np.float64,
+        "boolean": bool,
+    }[field_type]

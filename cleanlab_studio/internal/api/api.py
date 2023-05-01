@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 from cleanlab_studio.errors import APIError
 
 import requests
@@ -122,6 +122,74 @@ def get_dataset_id(api_key: str, upload_id: str) -> JSONDict:
     handle_api_error(res)
     res_json: JSONDict = res.json()
     return res_json
+
+
+def get_project_of_cleanset(api_key: str, cleanset_id: str) -> str:
+    res = requests.get(
+        base_url + f"/cleansets/{cleanset_id}/project",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    project_id: str = res.json()["project_id"]
+    return project_id
+
+
+def get_label_column_of_project(api_key: str, project_id: str) -> str:
+    res = requests.get(
+        base_url + f"/projects/{project_id}/label_column",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    label_column: str = res.json()["label_column"]
+    return label_column
+
+
+def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> List[List[Any]]:
+    """
+    Download all rows from specified Cleanlab columns
+
+    :param api_key:
+    :param cleanset_id:
+    :param all: whether to download all Cleanlab columns or just the clean_label column
+    :return: return (rows, id_column)
+    """
+    res = requests.get(
+        base_url + f"/cleansets/{cleanset_id}/columns?all={all}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    rows: List[List[Any]] = res.json()["rows"]
+    return rows
+
+
+def get_id_column(api_key: str, cleanset_id: str) -> str:
+    res = requests.get(
+        base_url + f"/cleansets/{cleanset_id}/id_column",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    id_column: str = res.json()["id_column"]
+    return id_column
+
+
+def get_dataset_of_project(api_key: str, project_id: str) -> str:
+    res = requests.get(
+        base_url + f"/projects/{project_id}/dataset",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    dataset_id: str = res.json()["dataset_id"]
+    return dataset_id
+
+
+def get_dataset_schema(api_key: str, dataset_id: str) -> JSONDict:
+    res = requests.get(
+        base_url + f"/datasets/{dataset_id}/schema",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    schema: JSONDict = res.json()["schema"]
+    return schema
 
 
 def poll_progress(
