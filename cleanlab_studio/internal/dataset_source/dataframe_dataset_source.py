@@ -4,11 +4,19 @@ import pathlib
 from typing import IO, Any, Generic, TypeVar, Union
 
 import pandas as pd
-import pyspark.sql
+
+try:
+    import pyspark.sql
+
+    pyspark_exists = True
+except ImportError:
+    pyspark_exists = False
 
 from .dataset_source import DatasetSource
 
-DataFrame = TypeVar("DataFrame", bound=Union[pd.DataFrame, pyspark.sql.DataFrame])
+df_type_bound = Union[pd.DataFrame, pyspark.sql.DataFrame] if pyspark_exists else pd.DataFrame
+
+DataFrame = TypeVar("DataFrame", bound=df_type_bound)
 
 
 class DataFrameDatasetSource(DatasetSource, Generic[DataFrame]):
