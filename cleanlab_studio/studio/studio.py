@@ -97,9 +97,8 @@ class Studio:
             spark = dataset.sparkSession
             project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
             label_column = api.get_label_column_of_project(self._api_key, project_id)
-            id_col_name = api.get_id_column(self._api_key, cleanset_id)
+            id_col = api.get_id_column(self._api_key, cleanset_id)
             cl_cols = self._download_cleanlab_columns(cleanset_id, project_id, label_column)
-            id_col = cl_cols[id_col_name]
             cl_cols_df = spark.createDataFrame(cl_cols)
             # XXX this does not handle excluded columns correctly, because the API
             # returns all rows regardless and doesn't let us distinguish between
