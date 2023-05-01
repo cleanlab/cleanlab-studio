@@ -2,7 +2,6 @@ from typing import Optional
 
 from . import upload
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.dataset_source import DataFrameDatasetSource
 from cleanlab_studio.internal.util import DatasetSourceType, init_dataset_source
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict

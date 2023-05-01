@@ -1,5 +1,5 @@
 import pathlib
-from typing import Optional, TypeVar
+from typing import Optional, TypeVar, Union, TYPE_CHECKING
 
 import pandas as pd
 
@@ -16,11 +16,13 @@ from .dataset_source import (
     PandasDatasetSource,
 )
 
-dataset_source_types = [str, pathlib.Path, pd.DataFrame]
-if pyspark_exists:
-    dataset_source_types.append(pyspark.sql.DataFrame)
+dataset_source_types = (
+    Union[str, pathlib.Path, pd.DataFrame]
+    if not pyspark_exists
+    else Union[str, pathlib.Path, pd.DataFrame, pyspark.sql.DataFrame]
+)
 
-DatasetSourceType = TypeVar("DatasetSourceType", *dataset_source_types)
+DatasetSourceType = TypeVar("DatasetSourceType", bound=dataset_source_types)  # type: ignore
 
 
 def init_dataset_source(

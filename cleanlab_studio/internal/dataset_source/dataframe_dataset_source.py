@@ -16,7 +16,7 @@ from .dataset_source import DatasetSource
 
 df_type_bound = Union[pd.DataFrame, pyspark.sql.DataFrame] if pyspark_exists else pd.DataFrame
 
-DataFrame = TypeVar("DataFrame", bound=df_type_bound)
+DataFrame = TypeVar("DataFrame", bound=df_type_bound)  # type: ignore
 
 
 class DataFrameDatasetSource(DatasetSource, Generic[DataFrame]):
