@@ -1,8 +1,8 @@
 import click
 import json
 import os
-from cleanlab_studio.cli.settings import CleanlabSettings
 from cleanlab_studio.cli.types import CommandState
+from cleanlab_studio.internal.settings import CleanlabSettings
 from typing import Dict, Any, Optional
 
 FILENAME = "state.json"

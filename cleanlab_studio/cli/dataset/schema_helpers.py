@@ -25,6 +25,7 @@ from cleanlab_studio.cli.dataset.schema_types import (
 from cleanlab_studio.cli.types import Modality
 from cleanlab_studio.cli.util import dump_json
 from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError
+from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
 
@@ -61,28 +62,19 @@ def _find_best_matching_column(target_column: str, columns: List[str]) -> Option
         return columns[0]
 
 
-def load_schema(filepath: str) -> Schema:
+def load_schema(filepath: str) -> JSONDict:
     with open(filepath, "r") as f:
-        schema_dict = json.load(f)
-        schema: Schema = Schema.create(
-            metadata=schema_dict["metadata"],
-            fields=schema_dict["fields"],
-            version=schema_dict["version"],
-        )
-        return schema
+        schema_dict: JSONDict = json.load(f)
+        return schema_dict
 
 
-def validate_schema(schema: Schema, columns: Collection[str]) -> None:
+def validate_schema(schema: Schema) -> None:
     """
     Checks that:
     (1) all schema column names are strings
-    (2) all schema columns exist in the dataset columns
-    (3) all schema column types are recognized
-
+    (2) all schema column types are recognized
     Note that schema initialization already checks that all keys are present and that fields are valid.
-
     :param schema:
-    :param columns: full list of columns in dataset
     :return: raises a ValueError if any checks fail
     """
 
@@ -100,13 +92,7 @@ def validate_schema(schema: Schema, columns: Collection[str]) -> None:
             "CLI is not up to date with your schema version. Run 'pip install --upgrade cleanlab-studio'."
         )
 
-    schema_columns = set(schema.fields)
-    columns = set(columns)
     metadata = schema.metadata
-
-    ## Check that the dataset has all columns specified in the schema
-    if not schema_columns.issubset(columns):
-        raise ValueError(f"Dataset is missing schema columns: {schema_columns - columns}")
 
     # Advanced validation checks: this should be aligned with ConfirmSchema's validate() function
     ## Check that specified ID column has the feature_type 'identifier'
@@ -404,7 +390,7 @@ def propose_schema(
     return Schema.create(metadata=metadata, fields=fields_dict, version=SCHEMA_VERSION)
 
 
-def save_schema(schema: Schema, filename: Optional[str]) -> None:
+def save_schema(schema: JSONDict, filename: Optional[str]) -> None:
     """
 
     :param schema:
@@ -415,7 +401,7 @@ def save_schema(schema: Schema, filename: Optional[str]) -> None:
         filename = "schema.json"
     if filename:
         progress(f"Writing schema to {filename}...")
-        dump_json(filename, schema.to_dict())
+        dump_json(filename, schema)
         success("Saved.")
     else:
         info("Schema was not saved.")
