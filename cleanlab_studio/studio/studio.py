@@ -90,7 +90,7 @@ class Studio:
         }
         return pd.DataFrame(d)
 
-    def apply_corrections(self, cleanset_id: str, dataset):
+    def apply_corrections(self, cleanset_id: str, dataset: Any):
         if pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
