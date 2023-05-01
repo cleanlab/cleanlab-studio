@@ -17,6 +17,6 @@ class PySparkDatasetSource(DataFrameDatasetSource[pyspark.sql.DataFrame]):
     def _init_fileobj_from_df(self, df: pyspark.sql.DataFrame) -> IO[bytes]:
         fileobj = io.BytesIO()
         pd_df: pd.DataFrame = df.toPandas()
-        pd_df.to_csv(fileobj)
+        pd_df.to_csv(fileobj, index=False)
         fileobj.seek(0)
         return fileobj
