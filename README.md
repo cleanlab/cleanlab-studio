@@ -179,8 +179,8 @@ shown below
 | boolean    | boolean                                              |
 
 The `datetime` type should be used for datetime strings, e.g. "2015-02-24 11:35:52 -0800", and Unix timestamps (which
-will be integers or floats). Datetime values must be parsable
-by [pandas.to_datetime()](https://pandas.pydata.org/docs/reference/api/pandas.to_datetime.html).
+will be integers or floats). Datetime values must be parseable
+by [polars.from_epoch](https://pola-rs.github.io/polars/py-polars/html/reference/expressions/api/polars.from_epoch.html) for integer/floats or [polars.Expr.str.strptime](https://pola-rs.github.io/polars/py-polars/html/reference/expressions/api/polars.Expr.str.strptime.html) for strings.
 
 `version` indicates the version of the Cleanlab CLI package version used to generate the schema.
 
