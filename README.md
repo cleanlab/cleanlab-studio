@@ -24,7 +24,7 @@ pip install --upgrade cleanlab-studio
 
 ### Python API
 
-You can find your API key at
+You can find your API key at https://app.cleanlab.ai/account.
 ```python
 import cleanlab_studio
 
@@ -37,8 +37,7 @@ dataset_id: str = studio.upload_dataset(<your dataset>, <your dataset name>)
 # navigate to Cleanlab Studio, create a project, and improve your labels
 
 # download your cleanset or apply corrections to your local Pandas or PySpark dataset!
-# @ANISH !!! how do we want to tell users to find their cleanset ID?
-# I think we should either: Add the cleanset ID to the version history page or display it somewhere obvious on the project page
+# you can find your cleanset ID by clicking on the Export Cleanset button in your project
 cleanset = studio.download_cleanlab_columns(<your cleanset id>)
 corrected_dataset = studio.apply_corrections(<your dataset>, <your cleanset id>)
 ```
