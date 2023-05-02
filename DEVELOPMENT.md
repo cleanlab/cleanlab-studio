@@ -8,7 +8,7 @@ https://cleanlab.github.io/cleanlab-studio/dev/bench/
    directory. Changes to the code are reflected automatically in the CLI.
 2. `Makefile` contains sample commands for quick installation and testing, though you will have to specify filepaths and
    API keys manually.
-3. Run `export CLEANLAB_API_BASE_URL="http://localhost:8500/api/cli/v0"` and `export CLEANLAB_API_UPLOAD_BASE_URL="http://localhost:8500/api/upload/v0"` so that API requests are made on your local
+3. Run `export CLEANLAB_API_BASE_URL="http://localhost:8500/api"` so that API requests are made on your local
    machine
 
 ## Formatting
