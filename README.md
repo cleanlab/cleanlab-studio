@@ -4,7 +4,7 @@ Command line and Python library interface to [Cleanlab Studio](https://cleanlab.
 
 - [Installation](#installation)
 - [Quickstart](#quickstart)
-- [Reference](#reference)
+- [Advanced Usage](#advanced-usage)
 
 ## Installation
 
@@ -29,7 +29,7 @@ You can find your API key at
 import cleanlab_studio
 
 # create your Cleanlab Studio API client with your API key, found here: https://app.cleanlab.ai/account
-studio = Studio(<your API key>)
+studio = Studio(<your api key>)
 
 # upload your dataset via a filepath, Pandas DataFrame, or PySpark DataFrame!
 dataset_id: str = studio.upload_dataset(<your dataset>, <your dataset name>)
@@ -39,8 +39,8 @@ dataset_id: str = studio.upload_dataset(<your dataset>, <your dataset name>)
 # download your cleanset or apply corrections to your local Pandas or PySpark dataset!
 # @ANISH !!! how do we want to tell users to find their cleanset ID?
 # I think we should either: Add the cleanset ID to the version history page or display it somewhere obvious on the project page
-cleanset = studio.download_cleanlab_columns(<your cleanset ID>)
-corrected_dataset = studio.apply_corrections(<your_dataset>, <your cleanset ID>)
+cleanset = studio.download_cleanlab_columns(<your cleanset id>)
+corrected_dataset = studio.apply_corrections(<your dataset>, <your cleanset id>)
 ```
 
 ### CLI
@@ -67,16 +67,19 @@ Cleanlab Studio supports the following upload types:
   - PySpark DataFrame (external media) *(Python library only)*
   - Simple ZIP upload
   - Metadata ZIP upload
+  - more to come!
 
 Information on dataset structuring can be found by clicking the tutorial on https://app.cleanlab.ai/upload!
-## Schema
-### Python API
+
+## Advanced Usage
+### Schema
+#### Python API
 All schema information will be inferred by default when uploading a dataset through the Python API. We provide some options to override the inferred schema if necessary:
 - To override the dataset modality, supply a `modality` kwarg to `studio.upload_dataset()`. Supported modalities include "text", "tabular", and "image"
 - To override the ID column, supply an `id_column` kwarg to `studio.upload_dataset()`
 - To override column types in your dataset, supply a `schema_overrides` kwarg to `studio.upload_dataset()`
   - The `schema_overrides` kwarg should have the following format:
-  
+
     ```
     {
       <name_of_column_to_override>: {
@@ -88,13 +91,13 @@ All schema information will be inferred by default when uploading a dataset thro
     ```
     Include entries for all the columns you'd like to override
 
-### CLI
+#### CLI
 To specify the column types in your dataset, create a JSON file named `schema.json`. If you would like to edit an inferred schema (rather than starting from scratch) follow these steps:
 1. Kick off a dataset upload using: `cleanlab dataset upload`
 2. Once schema generation is complete, you'll be asked whether you'd like to use our inferred schema. Enter `n` to decline
 3. You'll then be asked whether you'd like to save the inferred schema. Enter `y` to accept. Then enter the filename you'd like to save to (`schema.json` by default)
 4. Edit the schema file as you wish
-5. Kick off a dataset upload again using: `cleanlab dataset upload --schema_path [path to schema file]` 
+5. Kick off a dataset upload again using: `cleanlab dataset upload --schema_path [path to schema file]`
 
 Your schema file should be formatted as follows:
 
@@ -143,7 +146,7 @@ This is the schema of a hypothetical dataset `Tweets.csv` that contains tweets, 
 unique identifier for each record. Each column in the dataset is specified under `fields` with its data type and feature
 type.
 
-### Data types and Feature types
+#### Data types and Feature types
 
 **Data type** refers to the type of the field's values: string, integer, float, or boolean.
 
