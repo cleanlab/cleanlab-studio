@@ -128,7 +128,7 @@ def get_dataset_id(api_key: str, upload_id: str) -> JSONDict:
 
 def get_project_of_cleanset(api_key: str, cleanset_id: str) -> str:
     res = requests.get(
-        cleanset_base_url + f"/{cleanset_id}/project",
+        cleanset_base_url + f"/{cleanset_id}/project_id",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
