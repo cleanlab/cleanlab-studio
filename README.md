@@ -76,19 +76,16 @@ Information on dataset structuring can be found by clicking the tutorial on http
 All schema information will be inferred by default when uploading a dataset through the Python API. We provide some options to override the inferred schema if necessary:
 - To override the dataset modality, supply a `modality` kwarg to `studio.upload_dataset()`. Supported modalities include "text", "tabular", and "image"
 - To override the ID column, supply an `id_column` kwarg to `studio.upload_dataset()`
-- To override column types in your dataset, supply a `schema_overrides` kwarg to `studio.upload_dataset()`
-  - The `schema_overrides` kwarg should have the following format:
-
-    ```
-    {
-      <name_of_column_to_override>: {
-        "data_type": <desired_data_type>,
-        "feature_type": <desired_feature_type>,
-      },
-      ...
-    }
-    ```
-    Include entries for all the columns you'd like to override
+- To override column types in your dataset, supply a `schema_overrides` kwarg to `studio.upload_dataset()` in the following format:
+```
+{
+  <name_of_column_to_override>: {
+    "data_type": <desired_data_type>,
+    "feature_type": <desired_feature_type>,
+  },
+  ...
+}
+```
 
 #### CLI
 To specify the column types in your dataset, create a JSON file named `schema.json`. If you would like to edit an inferred schema (rather than starting from scratch) follow these steps:
