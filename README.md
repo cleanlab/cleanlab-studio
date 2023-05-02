@@ -70,8 +70,12 @@ Cleanlab Studio supports the following upload types:
 
 Information on dataset structuring can be found by clicking the tutorial on https://app.cleanlab.ai/upload!
 ## Schema
-
-@angela TODO!
+To specify the column types in your dataset, create a JSON file named `schema.json`. If you would like to edit an inferred schema (rather than starting from scratch) follow these steps:
+1. Kick off a dataset upload using: `cleanlab dataset upload`
+2. Once schema generation is complete, you'll be asked whether you'd like to use our inferred schema. Enter `n` to decline
+3. You'll then be asked whether you'd like to save the inferred schema. Enter `y` to accept. Then enter the filename you'd like to save to (`schema.json` by default)
+4. Edit the schema file as you wish
+5. Kick off a dataset upload again using: `cleanlab dataset upload --schema_path [path to schema file]` 
 
 Your schema file should be formatted as follows:
 
