@@ -3,7 +3,7 @@ name: Tag and release new PyPi package
 on:
   push:
     tags:
-      - v0.*
+      - v*
 
 jobs:
   build-and-release-pypi-package:
