@@ -109,7 +109,7 @@ class Studio:
             # XXX this does not handle excluded columns correctly, because the API
             # returns all rows regardless and doesn't let us distinguish between
             # excluded and non-excluded rows
-            both = cl_cols_df.select([id_col, "cleanlab_clean_label"]).join(
+            both = cl_cols_df.select([id_col, "action", "cleanlab_clean_label"]).join(
                 dataset.select([id_col, label_column]),
                 on=id_col,
                 how="left",
@@ -123,11 +123,15 @@ class Studio:
                     "cleanlab_clean_label",
                 ),
             )
-            new_labels = final.select([id_col, "__cleanlab_final_label"]).withColumnRenamed(
-                "__cleanlab_final_label", label_column
+            new_labels = final.select(
+                [id_col, "action", "__cleanlab_final_label"]
+            ).withColumnRenamed("__cleanlab_final_label", label_column)
+            corrected_df = (
+                dataset.drop(label_column)
+                .join(new_labels, on=id_col, how="right")
+                .where(new_labels["action"] != "exclude")
+                .drop("action")
             )
-            corrected_df = dataset.drop(label_column).join(new_labels, on=id_col, how="right")
-            corrected_df = corrected_df[corrected_df["action"] != "exclude"]
             return corrected_df
 
         elif isinstance(dataset, pd.DataFrame):
