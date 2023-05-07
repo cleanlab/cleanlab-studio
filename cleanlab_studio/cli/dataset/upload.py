@@ -64,7 +64,9 @@ def upload(
     else:
         schema = get_proposed_schema(api_key, upload_id)
         proceed_upload = None
-        if schema is not None:
+        if schema is None or schema.get("immutable", False):
+            proceed_upload = True
+        else:
             log(json.dumps(schema, indent=2))
             info(f"No schema was provided. We propose the above schema based on your dataset.")
 
