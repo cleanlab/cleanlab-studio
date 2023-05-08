@@ -58,7 +58,7 @@ class Studio:
         return self._download_cleanlab_columns(cleanset_id, project_id, label_column)
 
     def _download_cleanlab_columns(
-        self, cleanset_id: str, project_id: str, label_column: str
+        self, cleanset_id: str, project_id: str, label_column: str, include_action: bool = False
     ) -> pd.DataFrame:
         rows = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
         id_col = api.get_id_column(self._api_key, cleanset_id)
@@ -71,6 +71,8 @@ class Studio:
             "cleanlab_suggested_label",
             "cleanlab_clean_label",
         ]
+        if include_action:
+            headers.append("action")
         dataset_id = api.get_dataset_of_project(self._api_key, project_id)
         schema = api.get_dataset_schema(self._api_key, dataset_id)
         col_types = {
@@ -80,6 +82,8 @@ class Studio:
             "cleanlab_suggested_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
             "cleanlab_clean_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
         }
+        if include_action:
+            col_types["action"] = str
 
         # convert to dict/column-major format
         d = {
@@ -91,19 +95,21 @@ class Studio:
         return pd.DataFrame(d)
 
     def apply_corrections(self, cleanset_id: str, dataset: Any) -> Any:
+        project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
+        label_column = api.get_label_column_of_project(self._api_key, project_id)
+        id_col = api.get_id_column(self._api_key, cleanset_id)
+        cl_cols = self._download_cleanlab_columns(
+            cleanset_id, project_id, label_column, include_action=True
+        )
         if pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
             spark = dataset.sparkSession
-            project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
-            label_column = api.get_label_column_of_project(self._api_key, project_id)
-            id_col = api.get_id_column(self._api_key, cleanset_id)
-            cl_cols = self._download_cleanlab_columns(cleanset_id, project_id, label_column)
             cl_cols_df = spark.createDataFrame(cl_cols)
             # XXX this does not handle excluded columns correctly, because the API
             # returns all rows regardless and doesn't let us distinguish between
             # excluded and non-excluded rows
-            both = cl_cols_df.select([id_col, "cleanlab_clean_label"]).join(
+            both = cl_cols_df.select([id_col, "action", "cleanlab_clean_label"]).join(
                 dataset.select([id_col, label_column]),
                 on=id_col,
                 how="left",
@@ -117,18 +123,18 @@ class Studio:
                     "cleanlab_clean_label",
                 ),
             )
-            new_labels = final.select([id_col, "__cleanlab_final_label"]).withColumnRenamed(
-                "__cleanlab_final_label", label_column
+            new_labels = final.select(
+                [id_col, "action", "__cleanlab_final_label"]
+            ).withColumnRenamed("__cleanlab_final_label", label_column)
+            corrected_df = (
+                dataset.drop(label_column)
+                .join(new_labels, on=id_col, how="right")
+                .where(new_labels["action"] != "exclude")
+                .drop("action")
             )
-            corrected_df = dataset.drop(label_column).join(new_labels, on=id_col, how="right")
             return corrected_df
 
         elif isinstance(dataset, pd.DataFrame):
-            project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
-            label_column = api.get_label_column_of_project(self._api_key, project_id)
-            id_col = api.get_id_column(self._api_key, cleanset_id)
-            cl_cols = self._download_cleanlab_columns(cleanset_id, project_id, label_column)
-
             joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
             joined_ds["__cleanlab_final_label"] = joined_ds["cleanlab_clean_label"].where(
                 joined_ds["cleanlab_clean_label"] != "None", dataset[label_column]
@@ -136,4 +142,5 @@ class Studio:
 
             corrected_ds = dataset.copy()
             corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
+            corrected_ds = corrected_ds[joined_ds["action"] != "exclude"]
             return corrected_ds
