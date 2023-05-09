@@ -169,7 +169,7 @@ class Studio:
                     f"Invalid label column: {label_column}. Label column must have categorical feature type"
                 )
         else:
-            label_column = dataset_details["label_column_guess"]
+            label_column: str = dataset_details["label_column_guess"]
             print(f"Label column not supplied. Using best guess {label_column}")
 
         if feature_columns is not None and modality != "tabular":
@@ -178,8 +178,6 @@ class Studio:
             if modality == "tabular":
                 feature_columns = dataset_details["distinct_columns"]
                 print(f"Feature columns not supplied. Using all columns")
-            else:
-                feature_columns = []
 
         if text_column is not None:
             if modality != "text":
@@ -200,6 +198,6 @@ class Studio:
             modality=modality,
             modeltype=modeltype,
             label_column=label_column,
-            feature_columns=feature_columns,
+            feature_columns=feature_columns if feature_columns is not None else [],
             text_column=text_column,
         )

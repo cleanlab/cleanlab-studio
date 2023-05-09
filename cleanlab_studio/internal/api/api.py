@@ -211,7 +211,7 @@ def clean_dataset(
     modeltype: str,
     label_column: str,
     feature_columns: List[str],
-    text_column: str,
+    text_column: Optional[str],
 ) -> str:
     request_json = dict(
         name=project_name,
