@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -144,3 +144,62 @@ class Studio:
             corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
             corrected_ds = corrected_ds[joined_ds["action"] != "exclude"]
             return corrected_ds
+
+    def create_project(
+        self,
+        dataset_id: str,
+        project_name: str,
+        *,
+        tasktype: Optional[str] = "multi-class",
+        modality: Optional[str] = None,
+        modeltype: Optional[str] = "regular",
+        label_column: Optional[str] = None,
+        feature_columns: Optional[List[str]] = None,
+        text_column: Optional[str] = None,
+    ) -> str:
+        dataset_details = api.get_dataset_details(self._api_key, dataset_id)
+
+        if modality is None:
+            print("Modality not supplied. Using dataset modality")
+            modality = dataset_details["modality"]
+
+        if label_column is not None:
+            if label_column not in dataset_details["label_columns"]:
+                raise ValueError(
+                    f"Invalid label column: {label_column}. Label column must have categorical feature type"
+                )
+        else:
+            label_column = dataset_details["label_column_guess"]
+            print(f"Label column not supplied. Using best guess {label_column}")
+
+        if feature_columns is not None and modality != "tabular":
+            print("Project modality is not tabular. Ignoring feature columns")
+        if feature_columns is None:
+            if modality == "tabular":
+                feature_columns = dataset_details["distinct_columns"]
+                print(f"Feature columns not supplied. Using all columns")
+            else:
+                feature_columns = []
+
+        if text_column is not None:
+            if modality != "text":
+                print("Project modality is not text. Ignoring text column")
+            elif text_column not in dataset_details["text_columns"]:
+                raise ValueError(
+                    f"Invalid text column: {text_column}. Column must have text feature type"
+                )
+        if text_column is None and modality == "text":
+            text_column = dataset_details["text_column_guess"]
+            print(f"Text column not supplied. Using best guess {text_column}")
+
+        return api.clean_dataset(
+            api_key=self._api_key,
+            dataset_id=dataset_id,
+            project_name=project_name,
+            tasktype=tasktype,
+            modality=modality,
+            modeltype=modeltype,
+            label_column=label_column,
+            feature_columns=feature_columns,
+            text_column=text_column,
+        )
