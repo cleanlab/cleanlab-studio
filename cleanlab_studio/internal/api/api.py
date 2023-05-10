@@ -50,7 +50,7 @@ def validate_api_key(api_key: str) -> bool:
     return valid
 
 
-def check_client_version() -> bool:
+def is_valid_client_version() -> bool:
     res = requests.post(cli_base_url + "/check_client_version", json=dict(version=__version__))
     handle_api_error(res)
     valid: bool = res.json()["valid"]

@@ -21,7 +21,7 @@ class Studio:
     _api_key: str
 
     def __init__(self, api_key: Optional[str]):
-        if not api.check_client_version():
+        if not api.is_valid_client_version():
             raise ValueError(
                 "CLI is out of date and must be updated. Run 'pip install --upgrade cleanlab-studio'."
             )
