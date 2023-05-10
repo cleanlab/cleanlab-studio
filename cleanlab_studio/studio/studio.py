@@ -149,19 +149,29 @@ class Studio:
         self,
         dataset_id: str,
         project_name: str,
+        modality: str,
         *,
         tasktype: str = "multi-class",
-        modality: Optional[str] = None,
         modeltype: str = "regular",
         label_column: Optional[str] = None,
         feature_columns: Optional[List[str]] = None,
         text_column: Optional[str] = None,
     ) -> str:
-        dataset_details = api.get_dataset_details(self._api_key, dataset_id)
+        """
+        Creates a Cleanlab Studio project
 
-        if modality is None:
-            print("Modality not supplied. Using dataset modality")
-            modality = dataset_details["modality"]
+        :param dataset_id: ID of dataset to create project for
+        :param project_name: name for resulting project
+        :param modality: modality of project (i.e. text, tabular, image)
+        :keyword tasktype: type of classification to perform (i.e. multi-class, multi-label)
+        :keyword modeltype: type of model to train (i.e. fast, regular)
+        :keyword label_column: name of column in dataset containing labels (if not supplied, we'll make our best guess)
+        :keyword feature_columns: list of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns)
+        :keyword text_column: name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess)
+
+        :return: ID of project
+        """
+        dataset_details = api.get_dataset_details(self._api_key, dataset_id)
 
         if label_column is not None:
             if label_column not in dataset_details["label_columns"]:
@@ -173,15 +183,15 @@ class Studio:
             print(f"Label column not supplied. Using best guess {label_column}")
 
         if feature_columns is not None and modality != "tabular":
-            print("Project modality is not tabular. Ignoring feature columns")
+            raise ValueError("Feature columns supplied, but project modality is not tabular")
         if feature_columns is None:
             if modality == "tabular":
                 feature_columns = dataset_details["distinct_columns"]
-                print(f"Feature columns not supplied. Using all columns")
+                print(f"Feature columns not supplied. Using all valid feature columns")
 
         if text_column is not None:
             if modality != "text":
-                print("Project modality is not text. Ignoring text column")
+                raise ValueError("Text column supplied, but project modality is not text")
             elif text_column not in dataset_details["text_columns"]:
                 raise ValueError(
                     f"Invalid text column: {text_column}. Column must have text feature type"
