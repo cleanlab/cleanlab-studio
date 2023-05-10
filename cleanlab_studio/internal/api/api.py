@@ -199,7 +199,8 @@ def get_dataset_details(api_key: str, dataset_id: str) -> JSONDict:
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
-    return res.json()
+    dataset_details: JSONDict = res.json()
+    return dataset_details
 
 
 def clean_dataset(
