@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -149,10 +149,10 @@ class Studio:
         self,
         dataset_id: str,
         project_name: str,
-        modality: str,
+        modality: Literal["text", "tabular", "image"],
         *,
-        tasktype: str = "multi-class",
-        modeltype: str = "regular",
+        tasktype: Literal["multi-class", "multi-label"] = "multi-class",
+        modeltype: Literal["fast", "regular"] = "regular",
         label_column: Optional[str] = None,
         feature_columns: Optional[List[str]] = None,
         text_column: Optional[str] = None,
