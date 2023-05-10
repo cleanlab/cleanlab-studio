@@ -18,7 +18,8 @@ from cleanlab_studio.cli.dataset.image_utils import get_image_filepath
 from cleanlab_studio.cli.dataset.schema_types import Schema
 from cleanlab_studio.cli.types import JSONDict, IDType, MEDIA_MODALITIES
 
-base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
+base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
+cli_base_url = f"{base_url}/cli/v0"
 
 
 MAX_PARALLEL_UPLOADS = 32  # XXX choose this dynamically?
@@ -55,7 +56,7 @@ def handle_api_error_from_json(res_json: JSONDict, show_warning: bool = False) -
 def initialize_dataset(api_key: str, schema: Schema) -> str:
     request_json = dict(schema=schema.to_dict())
     res = requests.post(
-        base_url + "/datasets", json=request_json, headers=_construct_headers(api_key)
+        cli_base_url + "/datasets", json=request_json, headers=_construct_headers(api_key)
     )
     handle_api_error(res)
     dataset_id: str = res.json()["dataset_id"]
@@ -64,7 +65,7 @@ def initialize_dataset(api_key: str, schema: Schema) -> str:
 
 def get_existing_ids(api_key: str, dataset_id: str) -> List[IDType]:
     res = requests.get(
-        base_url + f"/datasets/{dataset_id}/ids",
+        cli_base_url + f"/datasets/{dataset_id}/ids",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -74,7 +75,7 @@ def get_existing_ids(api_key: str, dataset_id: str) -> List[IDType]:
 
 def get_dataset_schema(api_key: str, dataset_id: str) -> Schema:
     res = requests.get(
-        base_url + f"/datasets/{dataset_id}/schema",
+        cli_base_url + f"/datasets/{dataset_id}/schema",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -132,7 +133,7 @@ async def upload_rows_async(
             ]
             await asyncio.gather(*upload_tasks)
 
-        url = base_url + f"/datasets/{dataset_id}"
+        url = cli_base_url + f"/datasets/{dataset_id}"
         data = gzip.compress(
             json.dumps(dict(rows=json.dumps(rows), columns=json.dumps(columns))).encode("utf-8")
         )
@@ -264,7 +265,7 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
     :return: return (rows, id_column)
     """
     res = requests.get(
-        base_url + f"/cleansets/{cleanset_id}/columns?all={all}",
+        cli_base_url + f"/cleansets/{cleanset_id}/columns?all={all}",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -274,7 +275,7 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
 
 def get_completion_status(api_key: str, dataset_id: str) -> bool:
     res = requests.get(
-        base_url + f"/datasets/{dataset_id}/complete",
+        cli_base_url + f"/datasets/{dataset_id}/complete",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -284,7 +285,7 @@ def get_completion_status(api_key: str, dataset_id: str) -> bool:
 
 def complete_upload(api_key: str, dataset_id: str) -> None:
     res = requests.patch(
-        base_url + f"/datasets/{dataset_id}/complete",
+        cli_base_url + f"/datasets/{dataset_id}/complete",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -292,7 +293,7 @@ def complete_upload(api_key: str, dataset_id: str) -> None:
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:
     res = requests.get(
-        base_url + f"/cleansets/{cleanset_id}/id_column",
+        cli_base_url + f"/cleansets/{cleanset_id}/id_column",
         headers={"Authorization": f"bearer {api_key}"},
     )
     handle_api_error(res)
@@ -302,7 +303,7 @@ def get_id_column(api_key: str, cleanset_id: str) -> str:
 
 def validate_api_key(api_key: str) -> bool:
     res = requests.get(
-        base_url + "/validate", json=dict(api_key=api_key), headers=_construct_headers(api_key)
+        cli_base_url + "/validate", json=dict(api_key=api_key), headers=_construct_headers(api_key)
     )
     handle_api_error(res)
     valid: bool = res.json()["valid"]
@@ -310,7 +311,7 @@ def validate_api_key(api_key: str) -> bool:
 
 
 def check_client_version() -> bool:
-    res = requests.post(base_url + "/check_client_version", json=dict(version=__version__))
+    res = requests.post(cli_base_url + "/check_client_version", json=dict(version=__version__))
     handle_api_error(res)
     valid: bool = res.json()["valid"]
     return valid
@@ -320,7 +321,7 @@ def check_dataset_limit(
     api_key: str, file_size: int, modality: str, show_warning: bool = False
 ) -> JSONDict:
     res = requests.post(
-        base_url + "/check_dataset_limit",
+        cli_base_url + "/check_dataset_limit",
         json=dict(file_size=file_size, modality=modality),
         headers=_construct_headers(api_key),
     )
@@ -333,7 +334,7 @@ def get_presigned_posts(
     api_key: str, dataset_id: str, filepaths: List[str], row_ids: List[str], media_type: str
 ) -> JSONDict:
     res = requests.get(
-        base_url + "/media_upload/presigned_posts",
+        cli_base_url + "/media_upload/presigned_posts",
         json=dict(dataset_id=dataset_id, filepaths=filepaths, row_ids=row_ids, type=media_type),
         headers=_construct_headers(api_key),
     )

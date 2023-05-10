@@ -2,7 +2,7 @@ import click
 import os
 import subprocess
 
-from cleanlab_studio.cli import api_service
+from cleanlab_studio.internal.api import api
 from cleanlab_studio.cli.click_helpers import abort
 from cleanlab_studio.cli.dataset.commands import dataset
 from cleanlab_studio.cli.cleanset.commands import cleanset
@@ -17,7 +17,7 @@ def cli(ctx: click.Context) -> None:
     if ctx.invoked_subcommand == "version":
         return  # avoid RTT / dependence on API to get client version
     CleanlabSettings.init_cleanlab_settings()
-    valid_version = api_service.check_client_version()
+    valid_version = api.is_valid_client_version()
     if not valid_version:
         abort(
             "CLI is out of date and must be updated. Run 'pip install --upgrade cleanlab-studio'."
