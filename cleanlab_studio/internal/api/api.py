@@ -9,10 +9,11 @@ from tqdm import tqdm
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
 
-base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api/cli/v0")
-upload_base_url = os.environ.get(
-    "CLEANLAB_API_UPLOAD_BASE_URL", "https://api.cleanlab.ai/api/upload/v0"
-)
+base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
+cli_base_url = f"{base_url}/cli/v0"
+upload_base_url = f"{base_url}/upload/v0"
+dataset_base_url = f"{base_url}/datasets"
+project_base_url = f"{base_url}/projects"
 
 
 def _construct_headers(
@@ -42,7 +43,7 @@ def handle_api_error_from_json(res_json: JSONDict) -> None:
 
 def validate_api_key(api_key: str) -> bool:
     res = requests.get(
-        base_url + "/validate", json=dict(api_key=api_key), headers=_construct_headers(api_key)
+        cli_base_url + "/validate", json=dict(api_key=api_key), headers=_construct_headers(api_key)
     )
     handle_api_error(res)
     valid: bool = res.json()["valid"]
@@ -50,7 +51,7 @@ def validate_api_key(api_key: str) -> bool:
 
 
 def check_client_version() -> bool:
-    res = requests.post(base_url + "/check_client_version", json=dict(version=__version__))
+    res = requests.post(cli_base_url + "/check_client_version", json=dict(version=__version__))
     handle_api_error(res)
     valid: bool = res.json()["valid"]
     return valid
@@ -126,7 +127,7 @@ def get_dataset_id(api_key: str, upload_id: str) -> JSONDict:
 
 def get_project_of_cleanset(api_key: str, cleanset_id: str) -> str:
     res = requests.get(
-        base_url + f"/cleansets/{cleanset_id}/project",
+        cli_base_url + f"/cleansets/{cleanset_id}/project",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -136,7 +137,7 @@ def get_project_of_cleanset(api_key: str, cleanset_id: str) -> str:
 
 def get_label_column_of_project(api_key: str, project_id: str) -> str:
     res = requests.get(
-        base_url + f"/projects/{project_id}/label_column",
+        cli_base_url + f"/projects/{project_id}/label_column",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -154,7 +155,7 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
     :return: return (rows, id_column)
     """
     res = requests.get(
-        base_url + f"/cleansets/{cleanset_id}/columns?all={all}",
+        cli_base_url + f"/cleansets/{cleanset_id}/columns?all={all}",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -164,7 +165,7 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:
     res = requests.get(
-        base_url + f"/cleansets/{cleanset_id}/id_column",
+        cli_base_url + f"/cleansets/{cleanset_id}/id_column",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -174,7 +175,7 @@ def get_id_column(api_key: str, cleanset_id: str) -> str:
 
 def get_dataset_of_project(api_key: str, project_id: str) -> str:
     res = requests.get(
-        base_url + f"/projects/{project_id}/dataset",
+        cli_base_url + f"/projects/{project_id}/dataset",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -184,12 +185,51 @@ def get_dataset_of_project(api_key: str, project_id: str) -> str:
 
 def get_dataset_schema(api_key: str, dataset_id: str) -> JSONDict:
     res = requests.get(
-        base_url + f"/datasets/{dataset_id}/schema",
+        cli_base_url + f"/datasets/{dataset_id}/schema",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
     schema: JSONDict = res.json()["schema"]
     return schema
+
+
+def get_dataset_details(api_key: str, dataset_id: str) -> JSONDict:
+    res = requests.get(
+        dataset_base_url + f"/details/{dataset_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    dataset_details: JSONDict = res.json()
+    return dataset_details
+
+
+def clean_dataset(
+    api_key: str,
+    dataset_id: str,
+    project_name: str,
+    tasktype: str,
+    modality: str,
+    modeltype: str,
+    label_column: str,
+    feature_columns: List[str],
+    text_column: Optional[str],
+) -> str:
+    request_json = dict(
+        name=project_name,
+        dataset_id=dataset_id,
+        tasktype=tasktype,
+        modality=modality,
+        model_type=modeltype,
+        label_column=label_column,
+        feature_columns=feature_columns,
+        text_column=text_column,
+    )
+    res = requests.post(
+        project_base_url + f"/clean", headers=_construct_headers(api_key), json=request_json
+    )
+    handle_api_error(res)
+    project_id = res.json()["project_id"]
+    return str(project_id)
 
 
 def poll_progress(
