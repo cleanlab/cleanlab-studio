@@ -150,9 +150,9 @@ class Studio:
         dataset_id: str,
         project_name: str,
         *,
-        tasktype: Optional[str] = "multi-class",
+        tasktype: str = "multi-class",
         modality: Optional[str] = None,
-        modeltype: Optional[str] = "regular",
+        modeltype: str = "regular",
         label_column: Optional[str] = None,
         feature_columns: Optional[List[str]] = None,
         text_column: Optional[str] = None,
@@ -169,7 +169,7 @@ class Studio:
                     f"Invalid label column: {label_column}. Label column must have categorical feature type"
                 )
         else:
-            label_column: str = dataset_details["label_column_guess"]
+            label_column = str(dataset_details["label_column_guess"])
             print(f"Label column not supplied. Using best guess {label_column}")
 
         if feature_columns is not None and modality != "tabular":
