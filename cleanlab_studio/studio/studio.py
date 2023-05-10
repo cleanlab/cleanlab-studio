@@ -186,10 +186,13 @@ class Studio:
             print(f"Label column not supplied. Using best guess {label_column}")
 
         if feature_columns is not None and modality != "tabular":
+            if label_column in feature_columns:
+                raise ValueError("Label column cannot be included in feature columns")
             raise ValueError("Feature columns supplied, but project modality is not tabular")
         if feature_columns is None:
             if modality == "tabular":
                 feature_columns = dataset_details["distinct_columns"]
+                feature_columns.remove(label_column)
                 print(f"Feature columns not supplied. Using all valid feature columns")
 
         if text_column is not None:
