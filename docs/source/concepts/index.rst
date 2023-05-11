@@ -1,10 +1,10 @@
-Guide
-*****
+Concepts
+********
 
 Datasets
 ========
 
-.. _guide_dataset_modalities:
+.. _concepts_dataset_modalities:
 
 Modalities
 ----------
@@ -14,7 +14,7 @@ Cleanlab Studio supports datasets of the following modalities:
 * Text
 * Image
 
-.. _guide_dataset_formats:
+.. _concepts_dataset_formats:
 
 Formats
 -------

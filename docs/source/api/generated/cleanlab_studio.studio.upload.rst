@@ -1,4 +1,4 @@
-cleanlab\_studio.studio.upload
+﻿cleanlab\_studio.studio.upload
 ==============================
 
 .. automodule:: cleanlab_studio.studio.upload

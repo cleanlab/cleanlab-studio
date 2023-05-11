@@ -1,4 +1,4 @@
-.. _usage_python_api:
+.. _quick_ref_python_api:
 
 Python API
 **********
@@ -8,7 +8,7 @@ Upload Dataset
 
 Upload File
 -----------
-If you have a dataset saved to your filesystem in one of Cleanlab Studio's :ref:`supported formats<guide_dataset_formats>`, you can upload it from a filepath.
+If you have a dataset saved to your filesystem in one of Cleanlab Studio's :ref:`supported formats<concepts_dataset_formats>`, you can upload it from a filepath.
 
 .. code-block:: python
 
