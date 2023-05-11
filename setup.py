@@ -64,7 +64,7 @@ setup(
         "docs": [
             "sphinx==6.2.1",
             "sphinx_toolbox==3.4.0",
-            "furo==2023.3.27",
+            "furo==2022.6.21",
         ],
     },
     entry_points="""
