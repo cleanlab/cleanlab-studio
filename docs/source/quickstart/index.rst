@@ -7,7 +7,7 @@ Following this guide requires the following:
 #. A `Cleanlab Studio account <https://app.cleanlab.ai/>`_
 
 Note that this guide utilizes the Python API for `cleanlab-studio`.
-Usage of the command line interface can be found at :ref:`quickref_cli_api`.
+Usage of the command line interface can be found at :ref:`guide_cli_api`.
 
 Installation
 ------------

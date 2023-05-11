@@ -1,4 +1,4 @@
-.. _quickref_python_api:
+.. _guide_python_api:
 
 Python API
 **********
