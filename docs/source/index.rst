@@ -3,15 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Cleanlab Studio's documentation!
-===========================================
+Cleanlab Studio
+===============
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
 
-   api
-
+   Quickstart <quickstart/index>
+   Usage <usage/index>
+   Guide <guide/index>
+   API Reference <api/index>
+..   FAQ <faq/index> commented out since not yet using
 
 
 Indices and tables

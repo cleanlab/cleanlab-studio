@@ -17,6 +17,7 @@ release = "v1.0.2"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx_toolbox.collapse",
     "sphinx_rtd_theme",
 ]
 
