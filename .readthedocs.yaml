@@ -1,0 +1,4 @@
+python:
+  install:
+    - method: pip -r
+      path: requirements-dev.txt
