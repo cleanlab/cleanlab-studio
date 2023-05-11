@@ -14,6 +14,7 @@ cli_base_url = f"{base_url}/cli/v0"
 upload_base_url = f"{base_url}/upload/v0"
 dataset_base_url = f"{base_url}/datasets"
 project_base_url = f"{base_url}/projects"
+cleanset_base_url = f"{base_url}/cleansets"
 
 
 def _construct_headers(
@@ -207,9 +208,9 @@ def clean_dataset(
     api_key: str,
     dataset_id: str,
     project_name: str,
-    tasktype: str,
+    task_type: str,
     modality: str,
-    modeltype: str,
+    model_type: str,
     label_column: str,
     feature_columns: List[str],
     text_column: Optional[str],
@@ -217,9 +218,9 @@ def clean_dataset(
     request_json = dict(
         name=project_name,
         dataset_id=dataset_id,
-        tasktype=tasktype,
+        tasktype=task_type,
         modality=modality,
-        model_type=modeltype,
+        model_type=model_type,
         label_column=label_column,
         feature_columns=feature_columns,
         text_column=text_column,
@@ -230,6 +231,25 @@ def clean_dataset(
     handle_api_error(res)
     project_id = res.json()["project_id"]
     return str(project_id)
+
+
+def get_latest_cleanset_id(api_key: str, project_id: str) -> str:
+    res = requests.get(
+        cleanset_base_url + f"/project/{project_id}/latest_cleanset_id",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    cleanset_id = res.json()["cleanset_id"]
+    return str(cleanset_id)
+
+
+def get_project_status(api_key: str, project_id: str) -> str:
+    res = requests.get(
+        project_base_url + f"/status/{project_id}", headers=_construct_headers(api_key)
+    )
+    handle_api_error(res)
+    status = res.json()["status"]
+    return str(status)
 
 
 def poll_progress(
