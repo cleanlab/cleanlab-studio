@@ -63,8 +63,8 @@ setup(
     extras_require={
         "docs": [
             "sphinx==6.2.1",
-            "sphinx-rtd-theme==1.2.0",
             "sphinx_toolbox==3.4.0",
+            "furo==2023.3.27",
         ],
     },
     entry_points="""
