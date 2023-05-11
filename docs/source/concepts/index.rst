@@ -210,13 +210,13 @@ Modality
 --------
 Cleanlab Studio supports the following project modalities:
 
-* Text
-* Tabular
-* Image
+* Text -- run a project using the text column for analysis
+* Tabular -- run a project using a set of feature columns for analysis
+* Image -- run a project using the image column for analysis
 
 Model Type
 ----------
 Cleanlab Studio supports the following model types:
 
-* fast
-* regular
+* fast -- trains faster but less accurate ML models for issue detection
+* regular -- trains more accurate ML models for issue detection
