@@ -5,4 +5,4 @@ API
    :recursive:
    :toctree: generated
 
-    cleanlab_studio
+    cleanlab_studio.studio
