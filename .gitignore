@@ -29,7 +29,7 @@ MANIFEST
 
 # sphinx build dir and autogen
 docs/build/
-docs/source/generated/
+docs/source/api/generated/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
