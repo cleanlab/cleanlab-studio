@@ -1,6 +1,8 @@
-# cleanlab-studio [![Build Status](https://github.com/cleanlab/cleanlab-studio/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-studio/actions?query=workflow%3ACI) [![PyPI](https://img.shields.io/pypi/v/cleanlab-studio.svg)][PyPI]
+# cleanlab-studio [![Build Status](https://github.com/cleanlab/cleanlab-studio/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-studio/actions?query=workflow%3ACI) [![PyPI](https://img.shields.io/pypi/v/cleanlab-studio.svg)][PyPI] ![ReadTheDocs](https://readthedocs.org/projects/cleanlab-studio/badge/?version=latest)
 
 Command line and Python library interface to [Cleanlab Studio](https://cleanlab.ai/studio/). Upload datasets and download cleansets (cleaned datasets) from Cleanlab Studio in a single line of code!
+
+Comprehensive docs can be found [here](https://cleanlab-studio.readthedocs.io/en/latest/index.html).
 
 - [Installation](#installation)
 - [Quickstart](#quickstart)
