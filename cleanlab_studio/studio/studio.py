@@ -224,7 +224,7 @@ class Studio:
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
         """
-        Polls for cleanset status until cleanset is ready, there is a cleanset error, or `timeout` is exceeded
+        Polls for cleanset status. Blocks until cleanset is ready, there is a cleanset error, or `timeout` is exceeded
 
         :return: True if cleanset is ready, False otherwise
         """

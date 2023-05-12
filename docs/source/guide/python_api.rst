@@ -58,6 +58,7 @@ You can create a project for a dataset given the dataset ID returned from the up
 
 Get Cleanset ID
 ---------------
+In order to export your cleanlab results, you need the cleanset ID for your project.
 You can get the ID of the latest cleanset for your project given the project ID returned from the create project step.
 
 .. code-block:: python

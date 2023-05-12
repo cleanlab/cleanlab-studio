@@ -8,6 +8,8 @@ from cleanlab_studio.internal.api import api
 def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[int] = None) -> bool:
     start_time = time.time()
     res = api.get_cleanset_status(api_key, cleanset_id)
+    spinner = "|/-\\"
+    spinner_idx = 0
 
     with tqdm(
         total=res["total_steps"],
@@ -15,9 +17,12 @@ def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[int] 
         bar_format="{desc} Step {n_fmt}/{total_fmt}{postfix}",
     ) as pbar:
         while not res["is_ready"] and not res["has_error"]:
-            for c in "|/-\\":
+            for _ in range(50):
                 time.sleep(0.1)
-                pbar.set_description_str(f"Cleanset Progress: {c}")
+                pbar.set_description_str(f"Cleanset Progress: {spinner[spinner_idx]}")
+                spinner_idx += 1
+                spinner_idx %= 4
+
             pbar.set_postfix_str(res["step_description"])
             pbar.update(int(res["step"]) - pbar.n)
             if timeout is not None and time.time() - start_time > timeout:
