@@ -4,30 +4,30 @@ from tqdm import tqdm
 
 from cleanlab_studio.internal.api import api
 
-READY_STATUS = "6"
-ERROR_STATUS = "-1"
-FOLD_STATUS = "2"
 
+def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[int] = None) -> bool:
+    start_time = time.time()
+    res = api.get_cleanset_status(api_key, cleanset_id)
 
-def get_latest_cleanset_id_when_ready(api_key: str, project_id: str) -> Optional[str]:
-    status = api.get_project_status(api_key, project_id)
-    if status != READY_STATUS:
-        with tqdm(
-            total=int(READY_STATUS) - 1,
-            desc="Cleanset Progress: \\",
-            bar_format="{desc} Step {n_fmt}/{total_fmt}",
-        ) as pbar:
-            while status != READY_STATUS:
-                if status == ERROR_STATUS:
-                    print("Cleanset Error")
-                    return None
-                if status.startswith("FOLD"):
-                    pbar.update(int(FOLD_STATUS) - pbar.n)
-                else:
-                    pbar.update(int(status) - pbar.n)
-                for c in "|/-\\":
-                    time.sleep(0.1)
-                    pbar.set_description_str(f"Cleanset Progress: {c}")
-                status = api.get_project_status(api_key, project_id)
+    with tqdm(
+        total=res["total_steps"],
+        desc="Cleanset Progress: \\",
+        bar_format="{desc} Step {n_fmt}/{total_fmt}{postfix}",
+    ) as pbar:
+        while not res["is_ready"] and not res["has_error"]:
+            for c in "|/-\\":
+                time.sleep(0.1)
+                pbar.set_description_str(f"Cleanset Progress: {c}")
+            pbar.set_postfix_str(res["step_description"])
+            pbar.update(int(res["step"]) - pbar.n)
+            if timeout is not None and time.time() - start_time > timeout:
+                return False
+            res = api.get_cleanset_status(api_key, cleanset_id)
+
+        if res["is_ready"]:
             pbar.update(pbar.total - pbar.n)
-    return api.get_latest_cleanset_id(api_key, project_id)
+            pbar.set_postfix_str(res["step_description"])
+            return True
+        if res["has_error"]:
+            pbar.set_postfix_str(res["step_description"])
+            return False

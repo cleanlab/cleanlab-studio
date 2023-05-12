@@ -44,7 +44,9 @@ def handle_api_error_from_json(res_json: JSONDict) -> None:
 
 def validate_api_key(api_key: str) -> bool:
     res = requests.get(
-        cli_base_url + "/validate", json=dict(api_key=api_key), headers=_construct_headers(api_key)
+        cli_base_url + "/validate",
+        json=dict(api_key=api_key),
+        headers=_construct_headers(api_key),
     )
     handle_api_error(res)
     valid: bool = res.json()["valid"]
@@ -76,7 +78,9 @@ def initialize_upload(
 def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDict]) -> None:
     request_json = dict(upload_id=upload_id, upload_parts=upload_parts)
     res = requests.post(
-        f"{upload_base_url}/complete", json=request_json, headers=_construct_headers(api_key)
+        f"{upload_base_url}/complete",
+        json=request_json,
+        headers=_construct_headers(api_key),
     )
     handle_api_error(res)
 
@@ -99,7 +103,9 @@ def confirm_schema(
 ) -> None:
     request_json = dict(schema=schema, upload_id=upload_id)
     res = requests.post(
-        f"{upload_base_url}/confirm_schema", json=request_json, headers=_construct_headers(api_key)
+        f"{upload_base_url}/confirm_schema",
+        json=request_json,
+        headers=_construct_headers(api_key),
     )
     handle_api_error(res)
 
@@ -226,7 +232,9 @@ def clean_dataset(
         text_column=text_column,
     )
     res = requests.post(
-        project_base_url + f"/clean", headers=_construct_headers(api_key), json=request_json
+        project_base_url + f"/clean",
+        headers=_construct_headers(api_key),
+        json=request_json,
     )
     handle_api_error(res)
     project_id = res.json()["project_id"]
@@ -243,13 +251,14 @@ def get_latest_cleanset_id(api_key: str, project_id: str) -> str:
     return str(cleanset_id)
 
 
-def get_project_status(api_key: str, project_id: str) -> str:
+def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
     res = requests.get(
-        project_base_url + f"/status/{project_id}", headers=_construct_headers(api_key)
+        cleanset_base_url + f"/{cleanset_id}/status",
+        headers=_construct_headers(api_key),
     )
     handle_api_error(res)
-    status = res.json()["status"]
-    return str(status)
+    status: JSONDict = res.json()
+    return status
 
 
 def poll_progress(

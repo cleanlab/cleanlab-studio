@@ -56,8 +56,43 @@ You can create a project for a dataset given the dataset ID returned from the up
     >>> studio.create_project(dataset_id, project_name, modality)
     <project ID>
 
+Get Cleanset ID
+---------------
+You can get the ID of the latest cleanset for your project given the project ID returned from the create project step.
+
+.. code-block:: python
+
+    >>> import cleanlab_studio
+    >>>
+    >>> api_key: str = <your API key>
+    >>> studio = cleanlab_studio.Studio(api_key)
+    >>> project_id = <your project ID>
+    >>>
+    >>> studio.get_latest_cleanset_id(project_id)
+    <cleanset ID>
+
+
+Get Cleanset Status
+-------------------
+You won't be able to export your cleanset or make any corrections to your project until the cleanset is ready.
+You can poll for your cleanset status using your cleanset ID. This function will block until the cleanset is ready or there is an error.
+You can optionally specify a :code:`timeout` parameter to define the number of seconds to block before returning.
+The function will return :code:`True` if the cleanset is ready and :code:`False` if there was a cleanset error or :code:`timeout` expired.
+
+.. code-block:: python
+
+    >>> import cleanlab_studio
+    >>>
+    >>> api_key: str = <your API key>
+    >>> studio = cleanlab_studio.Studio(api_key)
+    >>> cleanset_id = <your cleanset ID>
+    >>>
+    >>> studio.poll_cleanset_status(cleanset_id)
+    Cleanset Progress: | Step 0/5, Initializing...
+
 Export
 ======
+Once your cleanset is ready, there are a couple ways you can export it.
 
 Download Cleanlab Columns
 -------------------------

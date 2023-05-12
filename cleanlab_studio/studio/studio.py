@@ -61,7 +61,11 @@ class Studio:
         return self._download_cleanlab_columns(cleanset_id, project_id, label_column)
 
     def _download_cleanlab_columns(
-        self, cleanset_id: str, project_id: str, label_column: str, include_action: bool = False
+        self,
+        cleanset_id: str,
+        project_id: str,
+        label_column: str,
+        include_action: bool = False,
     ) -> pd.DataFrame:
         rows = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
         id_col = api.get_id_column(self._api_key, cleanset_id)
@@ -218,10 +222,14 @@ class Studio:
             text_column=text_column,
         )
 
-    def get_latest_cleanset_id(self, project_id: str) -> Optional[str]:
+    def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
         """
-        Gets latest cleanset ID for a project when cleanset is ready
+        Polls for cleanset status until cleanset is ready, there is a cleanset error, or `timeout` is exceeded
 
-        :return: ID of latest cleanset for a project or None if an error occurred during training
+        :return: True if cleanset is ready, False otherwise
         """
-        return clean.get_latest_cleanset_id_when_ready(self._api_key, project_id)
+        return clean.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+
+    def get_latest_cleanset_id(self, project_id: str) -> str:
+        """Gets latest cleanset ID for a project"""
+        return api.get_latest_cleanset_id(self._api_key, project_id)
