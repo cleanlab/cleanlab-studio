@@ -26,7 +26,7 @@ Text and tabular datasets can be uploaded in the following formats:
 CSV
 """
 CSV is a standard format for text/tabular data, and most tools that process tabular data can export it as a CSV.
-You should make sure your CSV file should be formatted as a standard CSV (e.g., use :code:`,` as the delimiter and :code:`"` as the quote character), which is usually the default.
+You should make sure your CSV file is formatted as a standard CSV (e.g., use :code:`,` as the delimiter and :code:`"` as the quote character), which is usually the default.
 
 The first row should contain headers naming all of the columns.
 Furthermore, Cleanlab Studio requires that tabular data is non-jagged: each row should contain the same number of columns.
@@ -47,7 +47,7 @@ JSON
 """"
 
 JSON is a standard data interchange format.
-Cleanlab Studio expects text/tabular data encoded as a JSON array of JSON objects, where each object has the same set of keys.
+Cleanlab Studio expects text/tabular data encoded as a JSON array of JSON objects.
 Values must be primitives: Cleanlab Studio doesn’t support nested JSON structures, you must flatten them.
 
 All objects in your dataset must contain the same set of keys; if a value is missing from one of your rows of data, map it to :code:`null`.
@@ -194,6 +194,9 @@ The format of schema overrides are as follows:
         },
         ...
     }
+
+In the Python API, you can provide a partial schema override -- specifying your desired data and feature types for a subset of columns.
+However, in the CLI, you must provide a full schema containing every column you wish to include from your dataset.
 
 Projects
 ========

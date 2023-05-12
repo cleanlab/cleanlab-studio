@@ -78,7 +78,7 @@ This will return a dataframe containing per-row information computed on your dat
 
 Apply Corrections
 -----------------
-You can apply the corrections from your project given a copy of your dataset in dataframe form and the cleanset ID.
+After making corrections to your dataset in Cleanlab Studio, you can apply them to a local copy of your dataset in dataframe form, given the cleanset ID.
 This will yield a dataframe of the corrections applied to your dataset.
 
 .. code-block:: python
