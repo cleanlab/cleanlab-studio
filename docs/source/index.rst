@@ -22,4 +22,3 @@ Cleanlab Studio automatically finds and fixes errors in your dataset to turn unr
 This package provides a Python API and CLI to interact with the Cleanlab Studio app.
 
 .. include:: /quickstart/index.rst
-.. include:: /tutorials/index.rst

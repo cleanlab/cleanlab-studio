@@ -134,7 +134,6 @@ dmypy.json
 
 .idea
 *.ipynb
-!cleanlab_studio/examples/*.ipynb
 schema.json
 *.csv
 *.xls
