@@ -60,6 +60,13 @@ setup(
         "openpyxl==3.0.10",
         "validators>=0.20.0",
     ],
+    extras_require={
+        "docs": [
+            "sphinx==6.2.1",
+            "sphinx_toolbox==3.4.0",
+            "furo==2022.12.07",
+        ],
+    },
     entry_points="""
         [console_scripts]
         cleanlab=cleanlab_studio.cli:main
