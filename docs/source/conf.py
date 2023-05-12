@@ -21,6 +21,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_toolbox.collapse",
     "sphinx_rtd_theme",
+    "nbsphinx",
 ]
 
 templates_path = ["_templates"]

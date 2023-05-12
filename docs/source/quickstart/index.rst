@@ -125,8 +125,17 @@ Results can either be exported by:
   * applies corrections made in your project to a local instance of your dataset
   * allows for training new models with your dataset
 
-To export your results, you must first obtain the cleanset ID for your project.
-Your cleanset ID can be found by clicking `Export Cleanset` on your cleanset page then `Export Using API`.
+To export your results, you must first obtain the cleanset ID for your project:
+
+.. code-block:: python
+
+    >>> import cleanlab_studio
+    >>>
+    >>> api_key = <your API key>
+    >>> studio = cleanlab_studio.Studio(api_key)
+    >>>
+    >>> project_id = <your project ID>
+    >>> cleanset_id = studio.get_latest_cleanset_id(project_id)
 
 Using your cleanset ID, you can export your results as follows:
 

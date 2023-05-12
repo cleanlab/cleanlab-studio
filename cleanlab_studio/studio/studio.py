@@ -10,7 +10,7 @@ try:
 except ImportError:
     pyspark_exists = False
 
-from . import upload
+from . import clean, upload
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import init_dataset_source, as_numpy_type
 from cleanlab_studio.internal.settings import CleanlabSettings
@@ -61,7 +61,11 @@ class Studio:
         return self._download_cleanlab_columns(cleanset_id, project_id, label_column)
 
     def _download_cleanlab_columns(
-        self, cleanset_id: str, project_id: str, label_column: str, include_action: bool = False
+        self,
+        cleanset_id: str,
+        project_id: str,
+        label_column: str,
+        include_action: bool = False,
     ) -> pd.DataFrame:
         rows = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
         id_col = api.get_id_column(self._api_key, cleanset_id)
@@ -154,8 +158,8 @@ class Studio:
         project_name: str,
         modality: Literal["text", "tabular", "image"],
         *,
-        tasktype: Literal["multi-class", "multi-label"] = "multi-class",
-        modeltype: Literal["fast", "regular"] = "regular",
+        task_type: Literal["multi-class", "multi-label"] = "multi-class",
+        model_type: Literal["fast", "regular"] = "regular",
         label_column: Optional[str] = None,
         feature_columns: Optional[List[str]] = None,
         text_column: Optional[str] = None,
@@ -166,8 +170,8 @@ class Studio:
         :param dataset_id: ID of dataset to create project for
         :param project_name: name for resulting project
         :param modality: modality of project (i.e. text, tabular, image)
-        :keyword tasktype: type of classification to perform (i.e. multi-class, multi-label)
-        :keyword modeltype: type of model to train (i.e. fast, regular)
+        :keyword task_type: type of classification to perform (i.e. multi-class, multi-label)
+        :keyword model_type: type of model to train (i.e. fast, regular)
         :keyword label_column: name of column in dataset containing labels (if not supplied, we'll make our best guess)
         :keyword feature_columns: list of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns)
         :keyword text_column: name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess)
@@ -210,10 +214,22 @@ class Studio:
             api_key=self._api_key,
             dataset_id=dataset_id,
             project_name=project_name,
-            tasktype=tasktype,
+            task_type=task_type,
             modality=modality,
-            modeltype=modeltype,
+            model_type=model_type,
             label_column=label_column,
             feature_columns=feature_columns if feature_columns is not None else [],
             text_column=text_column,
         )
+
+    def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
+        """
+        Polls for cleanset status. Blocks until cleanset is ready, there is a cleanset error, or `timeout` is exceeded
+
+        :return: True if cleanset is ready, False otherwise
+        """
+        return clean.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+
+    def get_latest_cleanset_id(self, project_id: str) -> str:
+        """Gets latest cleanset ID for a project"""
+        return api.get_latest_cleanset_id(self._api_key, project_id)

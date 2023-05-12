@@ -7,12 +7,13 @@ Cleanlab Studio
 ***************
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
    Quickstart <quickstart/index>
    Guide <guide/index>
    Concepts <concepts/index>
+   Tutorials <tutorials/index>
 ..   API Reference <api/index> commented out since not yet useful (no docstrings)
 ..   FAQ <faq/index> commented out since not yet using
 
