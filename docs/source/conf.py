@@ -11,7 +11,7 @@ from cleanlab_studio.version import __version__
 project = "Cleanlab Studio"
 copyright = "2023, cleanlab"
 author = "cleanlab"
-release = __version__
+release = f"v{__version__}"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
