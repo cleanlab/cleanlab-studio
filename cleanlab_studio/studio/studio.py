@@ -69,18 +69,18 @@ class Studio:
     ) -> pd.DataFrame:
         rows = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
         id_col = api.get_id_column(self._api_key, cleanset_id)
-        # TODO actually get _all_ the columns incl e.g., cleanlab_top_labels
-        # and have the API give the column headers rather than this library hard-coding it
+
+        rows = np.asarray(rows).T
+
         headers = [
             id_col,
             "cleanlab_issue",
             "cleanlab_label_quality",
             "cleanlab_suggested_label",
             "cleanlab_clean_label",
+            "action",
             "cleanlab_outlier",
         ]
-        if include_action:
-            headers.append("action")
         dataset_id = api.get_dataset_of_project(self._api_key, project_id)
         schema = api.get_dataset_schema(self._api_key, dataset_id)
         col_types = {
@@ -89,19 +89,16 @@ class Studio:
             "cleanlab_label_quality": np.float64,
             "cleanlab_suggested_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
             "cleanlab_clean_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
+            "action": str,
             "cleanlab_outlier": bool,
         }
-        if include_action:
-            col_types["action"] = str
 
-        # convert to dict/column-major format
-        d = {
-            headers[j]: np.array(
-                [rows[i][j] for i in range(len(rows))], dtype=col_types[headers[j]]
-            )
-            for j in range(len(headers))
-        }
-        return pd.DataFrame(d)
+        rows_df = pd.DataFrame(rows, columns=headers, dtypes=col_types)
+
+        if not include_action:
+            rows_df.drop("action", inplace=True)
+
+        return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any) -> Any:
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
