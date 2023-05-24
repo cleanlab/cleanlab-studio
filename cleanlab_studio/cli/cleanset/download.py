@@ -71,6 +71,7 @@ def download(
             "label_quality",
             "suggested_label",
             "clean_label",
+            "action",
             "outlier",
         ]
     else:

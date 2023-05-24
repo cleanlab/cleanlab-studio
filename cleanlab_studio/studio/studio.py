@@ -70,8 +70,6 @@ class Studio:
         rows = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
         id_col = api.get_id_column(self._api_key, cleanset_id)
 
-        rows = np.asarray(rows).T
-
         headers = [
             id_col,
             "cleanlab_issue",
@@ -93,7 +91,7 @@ class Studio:
             "cleanlab_outlier": bool,
         }
 
-        rows_df = pd.DataFrame(rows, columns=headers, dtypes=col_types)
+        rows_df = pd.DataFrame(rows, columns=headers, dtype=col_types)
 
         if not include_action:
             rows_df.drop("action", inplace=True)
