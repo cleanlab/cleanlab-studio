@@ -77,6 +77,7 @@ class Studio:
             "cleanlab_label_quality",
             "cleanlab_suggested_label",
             "cleanlab_clean_label",
+            "cleanlab_outlier",
         ]
         if include_action:
             headers.append("action")
@@ -88,6 +89,7 @@ class Studio:
             "cleanlab_label_quality": np.float64,
             "cleanlab_suggested_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
             "cleanlab_clean_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
+            "cleanlab_outlier": bool,
         }
         if include_action:
             col_types["action"] = str

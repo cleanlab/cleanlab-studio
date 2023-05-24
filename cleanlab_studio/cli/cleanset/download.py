@@ -65,7 +65,7 @@ def download(
     rows = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all)
 
     if all:
-        clean_df_columns = ["id", "issue", "label_quality", "suggested_label", "clean_label"]
+        clean_df_columns = ["id", "issue", "label_quality", "suggested_label", "clean_label", "outlier"]
     else:
         clean_df_columns = ["id", "clean_label"]
 
