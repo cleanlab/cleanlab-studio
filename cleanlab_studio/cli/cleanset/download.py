@@ -116,6 +116,7 @@ def download(
         clean_df.to_csv(output, index=False)
         click_helpers.success(f"Saved to {output}")
 
+
 def drop_action_col(dataframe: pd.DataFrame) -> pd.DataFrame:
     if "action" in dataframe.columns:
         return dataframe.drop("action", axis=1)
