@@ -96,6 +96,7 @@ def download(
                 output = None
 
         clean_df = pd.DataFrame(rows, columns=clean_df_columns).set_index("id")
+        clean_df = drop_action_col(clean_df)
 
         ids_to_fields_to_values: Dict[str, RecordType] = defaultdict(dict)
         for row_id, row in clean_df.iterrows():
@@ -111,5 +112,11 @@ def download(
                 default=f"clean_labels.csv",
             )
         clean_df = pd.DataFrame(rows, columns=clean_df_columns)
+        clean_df = drop_action_col(clean_df)
         clean_df.to_csv(output, index=False)
         click_helpers.success(f"Saved to {output}")
+
+def drop_action_col(dataframe: pd.DataFrame) -> pd.DataFrame:
+    if "action" in dataframe.columns:
+        return dataframe.drop("action", axis=1)
+    return dataframe
