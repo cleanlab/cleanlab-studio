@@ -233,3 +233,8 @@ class Studio:
     def get_latest_cleanset_id(self, project_id: str) -> str:
         """Gets latest cleanset ID for a project"""
         return api.get_latest_cleanset_id(self._api_key, project_id)
+
+    def delete_project(self, project_id: str) -> None:
+        """Deletes project with given ID"""
+        api.delete_project(self._api_key, project_id)
+        print(f"Successfully deleted project: {project_id}")
