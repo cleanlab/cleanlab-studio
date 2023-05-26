@@ -95,9 +95,7 @@ class Studio:
 
         rows_np: npt.NDArray[Any] = np.asarray(rows).T
 
-        rows_data = {
-            headers[j]: row.astype(col_types[headers[j]]) for j, row in enumerate(rows_np)
-        }
+        rows_data = {headers[j]: row.astype(col_types[headers[j]]) for j, row in enumerate(rows_np)}
 
         rows_df = pd.DataFrame(rows_data)
         if not include_action:
