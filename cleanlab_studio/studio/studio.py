@@ -1,6 +1,7 @@
 from typing import Any, List, Literal, Optional
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 try:
@@ -79,10 +80,26 @@ class Studio:
             "action",
             "cleanlab_outlier",
         ]
+
         dataset_id = api.get_dataset_of_project(self._api_key, project_id)
         schema = api.get_dataset_schema(self._api_key, dataset_id)
+        col_types = {
+            id_col: as_numpy_type(schema["fields"][id_col]["data_type"]),
+            "cleanlab_issue": bool,
+            "cleanlab_label_quality": np.float64,
+            "cleanlab_suggested_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
+            "cleanlab_clean_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
+            "action": str,
+            "cleanlab_outlier": bool,
+        }
 
-        rows_df = pd.DataFrame(rows, columns=headers)
+        rows_np: npt.NDArray[Any] = np.asarray(rows).T
+
+        rows_data = {
+            headers[j]: row.astype(col_types[headers[j]]) for j, row in enumerate(rows_np)
+        }
+
+        rows_df = pd.DataFrame(rows_data)
         if not include_action:
             rows_df.drop("action", inplace=True, axis=1)
 
