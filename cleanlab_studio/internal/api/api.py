@@ -261,6 +261,11 @@ def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
     return status
 
 
+def delete_project(api_key: str, project_id: str) -> None:
+    res = requests.delete(project_base_url + f"/{project_id}", headers=_construct_headers(api_key))
+    handle_api_error(res)
+
+
 def poll_progress(
     progress_id: str, request_function: Callable[[str], JSONDict], description: str
 ) -> JSONDict:
