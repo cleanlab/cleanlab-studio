@@ -1,4 +1,4 @@
-..concepts_projects:
+.. _concepts_projects:
 
 Projects
 ********

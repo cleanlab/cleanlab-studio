@@ -1,4 +1,4 @@
-..concepts_cl_columns:
+.. _concepts_cl_columns:
 
 Cleanlab Columns
 ****************
