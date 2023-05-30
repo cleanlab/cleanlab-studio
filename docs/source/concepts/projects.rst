@@ -8,7 +8,7 @@ Machine Learning Tasks
 Cleanlab Studio supports the following ML tasks:
 
 * Multi-class classification (:code:`multi-class`)
-* Multi-label classification (:code:`multi-label`) **ALERT: make sure this is released before the docs**
+* Multi-label classification (:code:`multi-label`)
 
 
 Modality
