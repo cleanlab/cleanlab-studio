@@ -9,7 +9,7 @@ Introduction
 Cleanlab Studio will run a number of analyses on your dataset to help identify potential data issues. Currently we look for the following issues in datasets:
 - Label issues
 - Outliers
-We will also continue to add new analyses soon. The raw outputs of each analysis will be available to download as Cleanlab columns by calling ``studio.download_cleanlab_columns()``.
+New analyses are being continuously added to Cleanlab Studio. The raw outputs of each analysis will be available to download as Cleanlab columns by calling ``studio.download_cleanlab_columns()``.
 
 For each analysis we will often expose two columns, one being a numeric score between 0 and 1 indicating the quality of a sample for that analysis (lower score means lower quality), and the other being a boolean, which indicates whether the sample is likely to have an issue or not. The different analyses are run separately, and hence they should be independently. For example, samples with label issues are not neccessarily outliers, and vice versa, and it is possible to have a sample with label issue marked as ``False``, but outlier marked as ``True``.
 
