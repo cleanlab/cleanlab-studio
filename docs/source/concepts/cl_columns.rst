@@ -18,21 +18,21 @@ We give more details on the different Cleanlab columns below.
 Label Issues
 ============
 
-Label quality
+Cleanlab Label quality
 -------------
-The ``label_quality`` column contains a score bounded between 0 and 1. The score is calculated using confident learning. The lower the score of a sample, the more likely it has a label issue.
+The ``cleanlab_label_quality`` column contains a score bounded between 0 and 1. The score is calculated using confident learning. The lower the score of a sample, the more likely it has a label issue.
 
-Issue
+Cleanlab Issue
 -----
-The ``issue`` column contains a boolean value, with ``True`` indicating that the sample is likely to have a label issue. The value is obtained by thresholding the ``label_quality`` score with confident learning.
+The ``cleanlab_issue`` column contains a boolean value, with ``True`` indicating that the sample is likely to have a label issue. The value is obtained by thresholding the ``label_quality`` score with confident learning.
 
-Suggested label
+Cleanlab Suggested label
 ---------------
-The ``suggested_label`` column contains the suggested label for the sample. If the sample is not a label issue (``issue == False``), the suggested label will be empty. For samples with label issues, the suggested label is computed by Cleanlab studio.
+The ``cleanlab_suggested_label`` column contains the suggested label for the sample. If the sample is not a label issue (``issue == False``), the suggested label will be empty. For samples with label issues, the suggested label is computed by Cleanlab studio.
 
 Outliers
 ========
 
-Outlier
+Cleanlab Outlier
 -------
-The ``outlier`` column contains a boolean value, with ``True`` indicating that the sample is likely to be an outlier.
+The ``cleanlab_outlier`` column contains a boolean value, with ``True`` indicating that the sample is likely to be an outlier.
