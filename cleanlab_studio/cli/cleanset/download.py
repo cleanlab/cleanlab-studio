@@ -15,6 +15,8 @@ from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.types import RecordType, DatasetFileExtension
 from cleanlab_studio.internal.settings import CleanlabSettings
+from cleanlab_studio.internal.api import api
+from cleanlab_studio.utils import get_cl_column_names
 
 
 @click.command(help="download Cleanlab columns")
@@ -63,22 +65,14 @@ def download(
     api_key = config.get_api_key()
     progress("Downloading Cleanlab columns...")
     rows = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all)
+    id_col = api.get_id_column(api_key, id)
 
     if all:
-        clean_df_columns = [
-            "id",
-            "issue",
-            "label_quality",
-            "suggested_label",
-            "clean_label",
-            "action",
-            "outlier",
-        ]
+        clean_df_columns = get_cl_column_names(id_col)
     else:
-        clean_df_columns = ["id", "clean_label"]
+        clean_df_columns = [id_col, "clean_label"]
 
     if filepath:
-        id_column = api_service.get_id_column(api_key, cleanset_id=id)
         if not os.path.exists(filepath):
             log(f"Specified file {filepath} could not be found.")
             filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
@@ -95,7 +89,7 @@ def download(
                 )
                 output = None
 
-        clean_df = pd.DataFrame(rows, columns=clean_df_columns).set_index("id")
+        clean_df = pd.DataFrame(rows, columns=clean_df_columns).set_index(id_col)
         clean_df = drop_action_col(clean_df)
 
         ids_to_fields_to_values: Dict[str, RecordType] = defaultdict(dict)
@@ -103,7 +97,7 @@ def download(
             fields_to_values = dict(row)
             ids_to_fields_to_values[str(row_id)] = fields_to_values
 
-        combine_fields_with_dataset(filepath, id_column, ids_to_fields_to_values, output)
+        combine_fields_with_dataset(filepath, id_col, ids_to_fields_to_values, output)
         click_helpers.success(f"Saved to {output}")
     else:
         while output is None or util.get_dataset_file_extension(output) != DatasetFileExtension.csv:
