@@ -255,7 +255,9 @@ async def post_file(
     return None, original_filepath
 
 
-def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> List[List[Any]]:
+def download_cleanlab_columns(
+    api_key: str, cleanset_id: str, all: bool = False
+) -> Tuple[List[List[Any]], List[str]]:
     """
     Download all rows from specified Cleanlab columns
 
@@ -270,7 +272,8 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
     )
     handle_api_error(res)
     rows: List[List[Any]] = res.json()["rows"]
-    return rows
+    columns: List[str] = res.json()["columns"]
+    return rows, columns
 
 
 def get_completion_status(api_key: str, dataset_id: str) -> bool:

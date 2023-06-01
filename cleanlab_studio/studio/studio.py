@@ -16,7 +16,6 @@ from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import init_dataset_source, as_numpy_type
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
-from cleanlab_studio.utils import get_cl_column_names
 
 
 class Studio:
@@ -69,10 +68,8 @@ class Studio:
         label_column: str,
         include_action: bool = False,
     ) -> pd.DataFrame:
-        rows = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
+        rows, headers = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
         id_col = api.get_id_column(self._api_key, cleanset_id)
-
-        headers = get_cl_column_names(id_col)
 
         dataset_id = api.get_dataset_of_project(self._api_key, project_id)
         schema = api.get_dataset_schema(self._api_key, dataset_id)
