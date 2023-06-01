@@ -64,7 +64,10 @@ class Studio:
         cleanset_id: str,
         include_action: bool = False,
     ) -> pd.DataFrame:
-        rows, headers, col_types = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
+        rows, headers, col_types = api.download_cleanlab_columns(
+            self._api_key, cleanset_id, all=True
+        )
+        col_types = [as_numpy_type(t) for t in col_types]
 
         rows_np: npt.NDArray[Any] = np.asarray(rows).T
 
@@ -80,9 +83,7 @@ class Studio:
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
-        cl_cols = self._download_cleanlab_columns(
-            cleanset_id, project_id, label_column, include_action=True
-        )
+        cl_cols = self._download_cleanlab_columns(cleanset_id, include_action=True)
         if pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
