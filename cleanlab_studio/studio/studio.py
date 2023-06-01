@@ -57,31 +57,14 @@ class Studio:
         )
 
     def download_cleanlab_columns(self, cleanset_id: str) -> pd.DataFrame:
-        project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
-        label_column = api.get_label_column_of_project(self._api_key, project_id)
-        return self._download_cleanlab_columns(cleanset_id, project_id, label_column)
+        return self._download_cleanlab_columns(cleanset_id)
 
     def _download_cleanlab_columns(
         self,
         cleanset_id: str,
-        project_id: str,
-        label_column: str,
         include_action: bool = False,
     ) -> pd.DataFrame:
-        rows, headers = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
-        id_col = api.get_id_column(self._api_key, cleanset_id)
-
-        dataset_id = api.get_dataset_of_project(self._api_key, project_id)
-        schema = api.get_dataset_schema(self._api_key, dataset_id)
-        col_types = {
-            id_col: as_numpy_type(schema["fields"][id_col]["data_type"]),
-            "cleanlab_issue": bool,
-            "cleanlab_label_quality": np.float64,
-            "cleanlab_suggested_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
-            "cleanlab_clean_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
-            "action": str,
-            "cleanlab_outlier": bool,
-        }
+        rows, headers, col_types = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
 
         rows_np: npt.NDArray[Any] = np.asarray(rows).T
 

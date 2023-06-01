@@ -154,7 +154,7 @@ def get_label_column_of_project(api_key: str, project_id: str) -> str:
 
 def download_cleanlab_columns(
     api_key: str, cleanset_id: str, all: bool = False
-) -> Tuple[List[List[Any]], List[str]]:
+) -> Tuple[List[List[Any]], List[str], List[Any]]:
     """
     Download all rows from specified Cleanlab columns
 
@@ -170,7 +170,8 @@ def download_cleanlab_columns(
     handle_api_error(res)
     rows: List[List[Any]] = res.json()["rows"]
     columns: List[str] = res.json()["columns"]
-    return rows, columns
+    column_types: List[Any] = res.json()["column_types"]
+    return rows, columns, column_types
 
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:
