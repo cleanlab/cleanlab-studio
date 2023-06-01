@@ -56,10 +56,7 @@ class Studio:
             id_column=id_column,
         )
 
-    def download_cleanlab_columns(self, cleanset_id: str) -> pd.DataFrame:
-        return self._download_cleanlab_columns(cleanset_id)
-
-    def _download_cleanlab_columns(
+    def download_cleanlab_columns(
         self,
         cleanset_id: str,
         include_action: bool = False,
@@ -71,7 +68,7 @@ class Studio:
 
         rows_np: npt.NDArray[Any] = np.asarray(rows).T
 
-        rows_data = {headers[j]: row.astype(col_types[headers[j]]) for j, row in enumerate(rows_np)}
+        rows_data = {headers[j]: row.astype(col_types[j]) for j, row in enumerate(rows_np)}
 
         rows_df = pd.DataFrame(rows_data)
         if not include_action:
@@ -83,7 +80,7 @@ class Studio:
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
-        cl_cols = self._download_cleanlab_columns(cleanset_id, include_action=True)
+        cl_cols = self.download_cleanlab_columns(cleanset_id, include_action=True)
         if pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
