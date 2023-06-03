@@ -163,6 +163,11 @@ class Studio:
             corrected_ds = corrected_ds[joined_ds["action"] != "exclude"]
             return corrected_ds
 
+        else:
+            raise ValueError(
+                f"Provided unsupported dataset of type: {type(dataset)}. We currently support applying corrections to pandas or pyspark dataframes"
+            )
+
     def create_project(
         self,
         dataset_id: str,
