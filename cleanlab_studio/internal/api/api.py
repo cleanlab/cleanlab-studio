@@ -5,6 +5,7 @@ from cleanlab_studio.errors import APIError
 
 import requests
 from tqdm import tqdm
+import pandas as pd
 
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
@@ -154,7 +155,7 @@ def get_label_column_of_project(api_key: str, project_id: str) -> str:
 
 def download_cleanlab_columns(
     api_key: str, cleanset_id: str, all: bool = False
-) -> Tuple[List[List[Any]], List[str], List[Any]]:
+) -> pd.DataFrame:
     """
     Download all rows from specified Cleanlab columns
 
@@ -168,10 +169,9 @@ def download_cleanlab_columns(
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
-    rows: List[List[Any]] = res.json()["rows"]
-    columns: List[str] = res.json()["columns"]
-    column_types: List[Any] = res.json()["column_types"]
-    return rows, columns, column_types
+    cleanset_json: str = res.json()["cleanset_json"]
+    cleanset_df: pd.DataFrame = pd.read_json(cleanset_json, orient="records")
+    return cleanset_df
 
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:

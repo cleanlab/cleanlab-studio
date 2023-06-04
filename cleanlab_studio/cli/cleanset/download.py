@@ -63,8 +63,9 @@ def download(
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
     progress("Downloading Cleanlab columns...")
-    rows, clean_df_columns = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all)
     id_col = api.get_id_column(api_key, id)
+    clean_df = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all).set_index(id_col)
+    clean_df = drop_action_col(clean_df)
 
     if filepath:
         if not os.path.exists(filepath):
@@ -83,9 +84,6 @@ def download(
                 )
                 output = None
 
-        clean_df = pd.DataFrame(rows, columns=clean_df_columns).set_index(id_col)
-        clean_df = drop_action_col(clean_df)
-
         ids_to_fields_to_values: Dict[str, RecordType] = defaultdict(dict)
         for row_id, row in clean_df.iterrows():
             fields_to_values = dict(row)
@@ -99,8 +97,6 @@ def download(
                 "Specify your output filepath (must be .csv). Leave blank to use default",
                 default=f"clean_labels.csv",
             )
-        clean_df = pd.DataFrame(rows, columns=clean_df_columns)
-        clean_df = drop_action_col(clean_df)
         clean_df.to_csv(output, index=False)
         click_helpers.success(f"Saved to {output}")
 
