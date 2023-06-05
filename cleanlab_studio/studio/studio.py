@@ -61,16 +61,9 @@ class Studio:
         cleanset_id: str,
         include_action: bool = False,
     ) -> pd.DataFrame:
-        rows_df = api.download_cleanlab_columns(
-            self._api_key, cleanset_id, all=True
-        )
-        #col_types = [as_numpy_type(t) for t in col_types]
+        rows_df, colum_types = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
+        rows_df = rows_df.astype(colum_types)
 
-        #rows_np: npt.NDArray[Any] = np.asarray(rows, dtype=object).T
-
-        #rows_data = {headers[j]: row.astype(col_types[j]) for j, row in enumerate(rows_np)}
-
-        #rows_df = pd.DataFrame(rows_data)
         if not include_action:
             rows_df.drop("action", inplace=True, axis=1)
 

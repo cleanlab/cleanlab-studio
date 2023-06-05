@@ -256,9 +256,7 @@ async def post_file(
     return None, original_filepath
 
 
-def download_cleanlab_columns(
-    api_key: str, cleanset_id: str, all: bool = False
-) -> pd.DataFrame:
+def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> pd.DataFrame:
     """
     Download all rows from specified Cleanlab columns
 

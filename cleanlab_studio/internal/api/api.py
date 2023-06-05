@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, Dict
 from cleanlab_studio.errors import APIError
 
 import requests
@@ -155,7 +155,7 @@ def get_label_column_of_project(api_key: str, project_id: str) -> str:
 
 def download_cleanlab_columns(
     api_key: str, cleanset_id: str, all: bool = False
-) -> pd.DataFrame:
+) -> Tuple[pd.DataFrame, Dict[str, str]]:
     """
     Download all rows from specified Cleanlab columns
 
@@ -171,7 +171,8 @@ def download_cleanlab_columns(
     handle_api_error(res)
     cleanset_json: str = res.json()["cleanset_json"]
     cleanset_df: pd.DataFrame = pd.read_json(cleanset_json, orient="records")
-    return cleanset_df
+    column_types: Dict[str, str] = res.json()["column_types"]
+    return cleanset_df, column_types
 
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:
