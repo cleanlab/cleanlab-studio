@@ -84,7 +84,7 @@ class Studio:
             # XXX this does not handle excluded columns correctly, because the API
             # returns all rows regardless and doesn't let us distinguish between
             # excluded and non-excluded rows
-            both = cl_cols_df.select([id_col, "action", "cleanlab_clean_label"]).join(
+            both = cl_cols_df.select([id_col, "action", "clean_label"]).join(
                 dataset.select([id_col, label_column]),
                 on=id_col,
                 how="left",
@@ -95,7 +95,7 @@ class Studio:
                 # instead, use original JSON, which uses null values where it's not specified
                 udf(lambda original, clean: original if clean == "None" else clean)(
                     both[label_column],
-                    "cleanlab_clean_label",
+                    "clean_label",
                 ),
             )
             new_labels = final.select(
@@ -114,8 +114,8 @@ class Studio:
                 joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
             else:
                 joined_ds = dataset.joint(cl_cols.set_index(id_col))
-            joined_ds["__cleanlab_final_label"] = joined_ds["cleanlab_clean_label"].where(
-                joined_ds["cleanlab_clean_label"] != "None", dataset[label_column]
+            joined_ds["__cleanlab_final_label"] = joined_ds["clean_label"].where(
+                joined_ds["clean_label"] != "None", dataset[label_column]
             )
 
             corrected_ds = dataset.copy()
