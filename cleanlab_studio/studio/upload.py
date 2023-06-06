@@ -24,8 +24,8 @@ def upload_dataset(
     if (schema is None or schema.get("immutable", False)) and (
         schema_overrides is not None or modality is not None or id_column is not None
     ):
-        print(
-            "Warning: schema_overrides, modality, and id_column parameters will be ignored for simple zip uploads"
+        raise ValueError(
+            "Schema_overrides, modality, and id_column parameters cannot be provided for simple zip uploads"
         )
 
     if schema is not None and not schema.get("immutable", False):

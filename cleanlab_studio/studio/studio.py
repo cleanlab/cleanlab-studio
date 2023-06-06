@@ -81,11 +81,20 @@ class Studio:
 
             spark = dataset.sparkSession
             cl_cols_df = spark.createDataFrame(cl_cols)
-            # XXX this does not handle excluded columns correctly, because the API
-            # returns all rows regardless and doesn't let us distinguish between
-            # excluded and non-excluded rows
+            corrected_ds = dataset.alias("corrected_ds")
+            if id_col not in corrected_ds.columns:
+                from pyspark.sql.functions import (
+                    row_number,
+                    monotonically_increasing_id,
+                )
+                from pyspark.sql.window import Window
+
+                corrected_ds = corrected_ds.withColumn(
+                    id_col,
+                    row_number().over(Window.orderBy(monotonically_increasing_id())) - 1,
+                )
             both = cl_cols_df.select([id_col, "action", "clean_label"]).join(
-                dataset.select([id_col, label_column]),
+                corrected_ds.select([id_col, label_column]),
                 on=id_col,
                 how="left",
             )
@@ -101,19 +110,18 @@ class Studio:
             new_labels = final.select(
                 [id_col, "action", "__cleanlab_final_label"]
             ).withColumnRenamed("__cleanlab_final_label", label_column)
-            corrected_df = (
-                dataset.drop(label_column)
+            return (
+                corrected_ds.drop(label_column)
                 .join(new_labels, on=id_col, how="right")
                 .where(new_labels["action"] != "exclude")
                 .drop("action")
             )
-            return corrected_df
-
         elif isinstance(dataset, pd.DataFrame):
+            joined_ds: pd.DataFrame
             if id_col in dataset.columns:
                 joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
             else:
-                joined_ds = dataset.joint(cl_cols.set_index(id_col))
+                joined_ds = dataset.join(cl_cols.set_index(id_col).sort_values(by=id_col))
             joined_ds["__cleanlab_final_label"] = joined_ds["clean_label"].where(
                 joined_ds["clean_label"] != "None", dataset[label_column]
             )
@@ -122,6 +130,11 @@ class Studio:
             corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
             corrected_ds = corrected_ds[joined_ds["action"] != "exclude"]
             return corrected_ds
+
+        else:
+            raise ValueError(
+                f"Provided unsupported dataset of type: {type(dataset)}. We currently support applying corrections to pandas or pyspark dataframes"
+            )
 
     def create_project(
         self,
