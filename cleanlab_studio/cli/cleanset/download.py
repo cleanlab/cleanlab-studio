@@ -62,9 +62,11 @@ def download(
     prev_state.init_state(dict(command="download labels", args=dict(id=id)))
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
+    id_column = api_service.get_id_column(api_key, cleanset_id=id)
+
     progress("Downloading Cleanlab columns...")
     clean_df = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all)
-    clean_df = clean_df.set_index(clean_df.columns[0])
+    clean_df = clean_df.set_index(id_column)
     clean_df = drop_action_col(clean_df)
 
     if filepath:
@@ -89,7 +91,7 @@ def download(
             fields_to_values = dict(row)
             ids_to_fields_to_values[str(row_id)] = fields_to_values
 
-        combine_fields_with_dataset(filepath, id_col, ids_to_fields_to_values, output)
+        combine_fields_with_dataset(filepath, id_column, ids_to_fields_to_values, output)
         click_helpers.success(f"Saved to {output}")
     else:
         while output is None or util.get_dataset_file_extension(output) != DatasetFileExtension.csv:
