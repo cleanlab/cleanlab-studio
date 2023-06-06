@@ -63,9 +63,8 @@ def download(
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
     progress("Downloading Cleanlab columns...")
-    clean_df = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all).set_index(
-        "id"
-    )
+    clean_df = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all)
+    clean_df = clean_df.set_index(clean_df.columns[0])
     clean_df = drop_action_col(clean_df)
 
     if filepath:

@@ -110,7 +110,10 @@ class Studio:
             return corrected_df
 
         elif isinstance(dataset, pd.DataFrame):
-            joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
+            if id_col in dataset.columns:
+                joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
+            else:
+                joined_ds = dataset.joint(cl_cols.set_index(id_col))
             joined_ds["__cleanlab_final_label"] = joined_ds["cleanlab_clean_label"].where(
                 joined_ds["cleanlab_clean_label"] != "None", dataset[label_column]
             )
