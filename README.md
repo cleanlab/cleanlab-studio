@@ -28,7 +28,7 @@ pip install --upgrade cleanlab-studio
 
 You can find your API key at https://app.cleanlab.ai/account.
 ```python
-import cleanlab_studio
+from cleanlab_studio import Studio
 
 # create your Cleanlab Studio API client with your API key, found here: https://app.cleanlab.ai/account
 studio = Studio(<your api key>)
