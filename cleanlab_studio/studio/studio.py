@@ -61,7 +61,7 @@ class Studio:
         cleanset_id: str,
         include_action: bool = False,
     ) -> pd.DataFrame:
-        rows_df = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
+        rows_df: pd.DataFrame = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
         if not include_action:
             rows_df.drop("action", inplace=True, axis=1)
         return rows_df

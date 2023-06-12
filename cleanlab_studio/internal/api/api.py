@@ -155,7 +155,7 @@ def get_label_column_of_project(api_key: str, project_id: str) -> str:
 
 def download_cleanlab_columns(
     api_key: str, cleanset_id: str, all: bool = False
-) -> Tuple[pd.DataFrame, Dict[str, str]]:
+) -> pd.DataFrame:
     """
     Download all rows from specified Cleanlab columns
 
