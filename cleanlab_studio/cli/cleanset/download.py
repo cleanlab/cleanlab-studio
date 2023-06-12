@@ -99,7 +99,7 @@ def download(
                 "Specify your output filepath (must be .csv). Leave blank to use default",
                 default=f"clean_labels.csv",
             )
-        clean_df.to_csv(output, index=False)
+        clean_df.to_csv(output)
         click_helpers.success(f"Saved to {output}")
 
 

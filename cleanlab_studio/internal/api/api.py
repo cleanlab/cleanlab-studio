@@ -170,9 +170,8 @@ def download_cleanlab_columns(
     )
     handle_api_error(res)
     cleanset_json: str = res.json()["cleanset_json"]
-    cleanset_df: pd.DataFrame = pd.read_json(cleanset_json, orient="records")
-    column_types: Dict[str, str] = res.json()["column_types"]
-    return cleanset_df, column_types
+    cleanset_df: pd.DataFrame = pd.read_json(cleanset_json, orient="table")
+    return cleanset_df
 
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:

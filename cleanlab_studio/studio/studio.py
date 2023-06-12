@@ -13,7 +13,7 @@ except ImportError:
 
 from . import clean, upload
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import init_dataset_source, as_numpy_type
+from cleanlab_studio.internal.util import init_dataset_source
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
 
@@ -61,14 +61,9 @@ class Studio:
         cleanset_id: str,
         include_action: bool = False,
     ) -> pd.DataFrame:
-        rows_df, column_types = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
-        for k, v in column_types.items():
-            column_types[k] = as_numpy_type(v)
-        rows_df = rows_df.astype(column_types)
-
+        rows_df = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
         if not include_action:
             rows_df.drop("action", inplace=True, axis=1)
-
         return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any) -> Any:
