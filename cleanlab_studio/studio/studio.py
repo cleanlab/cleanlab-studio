@@ -1,6 +1,7 @@
 from typing import Any, List, Literal, Optional
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 try:
@@ -12,7 +13,7 @@ except ImportError:
 
 from . import clean, upload
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import init_dataset_source, as_numpy_type
+from cleanlab_studio.internal.util import init_dataset_source
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
 
@@ -55,59 +56,21 @@ class Studio:
             id_column=id_column,
         )
 
-    def download_cleanlab_columns(self, cleanset_id: str) -> pd.DataFrame:
-        project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
-        label_column = api.get_label_column_of_project(self._api_key, project_id)
-        return self._download_cleanlab_columns(cleanset_id, project_id, label_column)
-
-    def _download_cleanlab_columns(
+    def download_cleanlab_columns(
         self,
         cleanset_id: str,
-        project_id: str,
-        label_column: str,
         include_action: bool = False,
     ) -> pd.DataFrame:
-        rows = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
-        id_col = api.get_id_column(self._api_key, cleanset_id)
-        # TODO actually get _all_ the columns incl e.g., cleanlab_top_labels
-        # and have the API give the column headers rather than this library hard-coding it
-        headers = [
-            id_col,
-            "cleanlab_issue",
-            "cleanlab_label_quality",
-            "cleanlab_suggested_label",
-            "cleanlab_clean_label",
-        ]
-        if include_action:
-            headers.append("action")
-        dataset_id = api.get_dataset_of_project(self._api_key, project_id)
-        schema = api.get_dataset_schema(self._api_key, dataset_id)
-        col_types = {
-            id_col: as_numpy_type(schema["fields"][id_col]["data_type"]),
-            "cleanlab_issue": bool,
-            "cleanlab_label_quality": np.float64,
-            "cleanlab_suggested_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
-            "cleanlab_clean_label": as_numpy_type(schema["fields"][label_column]["data_type"]),
-        }
-        if include_action:
-            col_types["action"] = str
-
-        # convert to dict/column-major format
-        d = {
-            headers[j]: np.array(
-                [rows[i][j] for i in range(len(rows))], dtype=col_types[headers[j]]
-            )
-            for j in range(len(headers))
-        }
-        return pd.DataFrame(d)
+        rows_df: pd.DataFrame = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
+        if not include_action:
+            rows_df.drop("action", inplace=True, axis=1)
+        return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any) -> Any:
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
-        cl_cols = self._download_cleanlab_columns(
-            cleanset_id, project_id, label_column, include_action=True
-        )
+        cl_cols = self.download_cleanlab_columns(cleanset_id, include_action=True)
         if pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
@@ -125,7 +88,7 @@ class Studio:
                     id_col,
                     row_number().over(Window.orderBy(monotonically_increasing_id())) - 1,
                 )
-            both = cl_cols_df.select([id_col, "action", "cleanlab_clean_label"]).join(
+            both = cl_cols_df.select([id_col, "action", "clean_label"]).join(
                 corrected_ds.select([id_col, label_column]),
                 on=id_col,
                 how="left",
@@ -136,7 +99,7 @@ class Studio:
                 # instead, use original JSON, which uses null values where it's not specified
                 udf(lambda original, clean: original if clean == "None" else clean)(
                     both[label_column],
-                    "cleanlab_clean_label",
+                    "clean_label",
                 ),
             )
             new_labels = final.select(
@@ -154,8 +117,8 @@ class Studio:
                 joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
             else:
                 joined_ds = dataset.join(cl_cols.set_index(id_col).sort_values(by=id_col))
-            joined_ds["__cleanlab_final_label"] = joined_ds["cleanlab_clean_label"].where(
-                joined_ds["cleanlab_clean_label"] != "None", dataset[label_column]
+            joined_ds["__cleanlab_final_label"] = joined_ds["clean_label"].where(
+                joined_ds["clean_label"] != "None", dataset[label_column]
             )
 
             corrected_ds = dataset.copy()

@@ -15,6 +15,7 @@ from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.types import RecordType, DatasetFileExtension
 from cleanlab_studio.internal.settings import CleanlabSettings
+from cleanlab_studio.internal.api import api
 
 
 @click.command(help="download Cleanlab columns")
@@ -61,16 +62,14 @@ def download(
     prev_state.init_state(dict(command="download labels", args=dict(id=id)))
     CleanlabSettings.init_cleanlab_dir()
     api_key = config.get_api_key()
-    progress("Downloading Cleanlab columns...")
-    rows = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all)
+    id_column = api_service.get_id_column(api_key, cleanset_id=id)
 
-    if all:
-        clean_df_columns = ["id", "issue", "label_quality", "suggested_label", "clean_label"]
-    else:
-        clean_df_columns = ["id", "clean_label"]
+    progress("Downloading Cleanlab columns...")
+    clean_df = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all)
+    clean_df = clean_df.set_index(id_column)
+    clean_df = drop_action_col(clean_df)
 
     if filepath:
-        id_column = api_service.get_id_column(api_key, cleanset_id=id)
         if not os.path.exists(filepath):
             log(f"Specified file {filepath} could not be found.")
             filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
@@ -87,8 +86,6 @@ def download(
                 )
                 output = None
 
-        clean_df = pd.DataFrame(rows, columns=clean_df_columns).set_index("id")
-
         ids_to_fields_to_values: Dict[str, RecordType] = defaultdict(dict)
         for row_id, row in clean_df.iterrows():
             fields_to_values = dict(row)
@@ -102,6 +99,11 @@ def download(
                 "Specify your output filepath (must be .csv). Leave blank to use default",
                 default=f"clean_labels.csv",
             )
-        clean_df = pd.DataFrame(rows, columns=clean_df_columns)
-        clean_df.to_csv(output, index=False)
+        clean_df.to_csv(output)
         click_helpers.success(f"Saved to {output}")
+
+
+def drop_action_col(dataframe: pd.DataFrame) -> pd.DataFrame:
+    if "action" in dataframe.columns:
+        return dataframe.drop("action", axis=1)
+    return dataframe

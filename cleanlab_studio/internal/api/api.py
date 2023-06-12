@@ -1,10 +1,11 @@
 import os
 import time
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, Dict
 from cleanlab_studio.errors import APIError
 
 import requests
 from tqdm import tqdm
+import pandas as pd
 
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
@@ -152,7 +153,7 @@ def get_label_column_of_project(api_key: str, project_id: str) -> str:
     return label_column
 
 
-def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> List[List[Any]]:
+def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> pd.DataFrame:
     """
     Download all rows from specified Cleanlab columns
 
@@ -166,8 +167,9 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
-    rows: List[List[Any]] = res.json()["rows"]
-    return rows
+    cleanset_json: str = res.json()["cleanset_json"]
+    cleanset_df: pd.DataFrame = pd.read_json(cleanset_json, orient="table")
+    return cleanset_df
 
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:

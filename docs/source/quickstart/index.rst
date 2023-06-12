@@ -150,12 +150,12 @@ Using your cleanset ID, you can export your results as follows:
     >>> cleanset_id: str = <your cleanset ID>
     >>> dcai_cleanlab_cols: pd.DataFrame = studio.download_cleanlab_columns(cleanset_id)
     >>> dcai_cleanlab_cols.head(5)
-        id  cleanlab_issue  cleanlab_label_quality cleanlab_suggested_label cleanlab_clean_label
-    0   0           False                0.781765                     None                 None
-    1   1            True                0.471000                        8                    8
-    2   2           False                0.478483                        4                    4
-    3   3           False                0.595736                     None                 None
-    4   4           False                0.797456                     None                    i
+       id  cleanlab_issue  cleanlab_label_quality cleanlab_suggested_label cleanlab_clean_label  cleanlab_outlier
+    0   0           False                0.954953                     None                 None             False
+    1   1           False                0.442153                     None                 None              True
+    2   2           False                0.752254                     None                 None             False
+    3   3           False                0.976054                     None                 None             False
+    4   4           False                0.977129                     None                 None             False
 
     >>>
     >>> corrected_dcai_dataset_df: pd.DataFrame = studio.apply_corrections(
@@ -164,8 +164,8 @@ Using your cleanset ID, you can export your results as follows:
     )
     >>> corrected_dcai_dataset_df.head(5)
        id                                                img label
-    0   0  https://s.cleanlab.ai/DCA_Competition_2023_Dat...     8
+    0   0  https://s.cleanlab.ai/DCA_Competition_2023_Dat...     c
     1   1  https://s.cleanlab.ai/DCA_Competition_2023_Dat...     h
-    2   2  https://s.cleanlab.ai/DCA_Competition_2023_Dat...     4
+    2   2  https://s.cleanlab.ai/DCA_Competition_2023_Dat...     y
     3   3  https://s.cleanlab.ai/DCA_Competition_2023_Dat...     p
-    4   4  https://s.cleanlab.ai/DCA_Competition_2023_Dat...     i
+    4   4  https://s.cleanlab.ai/DCA_Competition_2023_Dat...     j

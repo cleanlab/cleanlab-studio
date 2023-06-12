@@ -11,6 +11,7 @@ from typing import List, Any, Optional, Tuple
 
 import aiohttp
 import requests
+import pandas as pd
 
 from cleanlab_studio.version import __version__
 from cleanlab_studio.cli.click_helpers import abort, warn, info
@@ -255,7 +256,7 @@ async def post_file(
     return None, original_filepath
 
 
-def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> List[List[Any]]:
+def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> pd.DataFrame:
     """
     Download all rows from specified Cleanlab columns
 
@@ -269,8 +270,9 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
-    rows: List[List[Any]] = res.json()["rows"]
-    return rows
+    cleanset_json: str = res.json()["cleanset_json"]
+    cleanset_df: pd.DataFrame = pd.read_json(cleanset_json, orient="table")
+    return cleanset_df
 
 
 def get_completion_status(api_key: str, dataset_id: str) -> bool:
