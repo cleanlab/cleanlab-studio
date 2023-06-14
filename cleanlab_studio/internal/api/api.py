@@ -169,6 +169,8 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
     handle_api_error(res)
     cleanset_json: str = res.json()["cleanset_json"]
     cleanset_df: pd.DataFrame = pd.read_json(cleanset_json, orient="table")
+    id_col = get_id_column(api_key, cleanset_id)
+    cleanset_df.rename(columns={"id": id_col}, inplace=True)
     return cleanset_df
 
 
