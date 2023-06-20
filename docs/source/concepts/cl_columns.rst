@@ -6,9 +6,15 @@ Cleanlab Columns
 Introduction
 ============
 
-Cleanlab Studio will run a number of analyses on your dataset to help identify potential data issues. Currently we look for the following issues in datasets:
+Cleanlab Studio will run a number of analyses on your dataset to help identify potential data issues. Currently we run the following analyses:
+
 - Label issues
 - Outliers
+- Ambiguous
+- High confidence
+- Uncertain
+- Near duplicates (only for image and text datasets)
+
 New analyses are being continuously added to Cleanlab Studio. The raw outputs of each analysis will be available to download as Cleanlab columns by calling ``studio.download_cleanlab_columns()``.
 
 Most analyses produce two columns, one being a numeric score between 0 and 1 indicating the quality of a sample for that analysis (lower score means lower quality), and the other being a boolean, which indicates whether the sample is likely to have an issue or not. The different analyses are run separately, and hence they should be treated independently. For example, samples with label issues are not necessarily outliers, and vice versa, and it is possible to have a sample with label issue marked as ``False``, but outlier marked as ``True``. Furthermore, it is possible to have samples with label issue marked as ``True`` **and** outlier marked as ``True``: these are the raw results from the analyses, and you may interpret them as appropriate (e.g., if a data point is an outlier, it may be irrelevant that it's also likely a label issue).
@@ -29,6 +35,18 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
      - String
    * - :ref:`is_outlier <is_outlier>`
      - Boolean
+   * - :ref:`is_ambiguous <is_ambiguous>`
+     - Boolean
+   * - :ref:`is_high_confidence <is_high_confidence>`
+     - Boolean
+   * - :ref:`is_uncertain <is_uncertain>`
+     - Boolean
+   * - :ref:`is_near_duplicate <is_near_duplicate>`
+     - Boolean
+   * - :ref:`near_duplicate_score <near_duplicate_score>`
+     - Float
+   * - :ref:`near_duplicate_sets <near_duplicate_sets>`
+     - List of integers
 
 Label Issues
 ============
@@ -46,7 +64,7 @@ Contains a boolean value, with ``True`` indicating that the sample is likely to 
 .. _suggested_label:
 ``suggested_label``
 ---------------
-Contains the suggested label for the sample. If the sample is not a label issue (``is_label_issue == False``), the suggested label will be empty. For samples with label issues, the suggested label is computed by Cleanlab studio.
+Contains the suggested label for the sample. If the sample is not a label issue (``is_label_issue`` marked as ``False``), the suggested label will be empty. For samples with label issues, the suggested label is computed by Cleanlab studio.
 
 Outliers
 ========
@@ -55,3 +73,45 @@ Outliers
 ``is_outlier``
 -------
 Contains a boolean value, with ``True`` indicating that the sample is likely to be an outlier.
+
+Ambiguous
+=========
+
+.. _is_ambiguous:
+``is_ambiguous``
+----------
+Contains a boolean value, with ``True`` indicating that the sample is likely to be ambiguous. Ambiguous samples are those that do not obviously belong to a single class.
+
+High Confidence
+===============
+
+.. _is_high_confidence:
+``is_high_confidence``
+---------------
+Contains a boolean value, with ``True`` indicating high confidence, which means that the given label of the sample is likely to be correct, so the sample can be safely used in downstream tasks.
+
+Uncertain
+=========
+
+.. _is_uncertain:
+``is_uncertain``
+-----------
+Contains a boolean value, with ``True`` indicating uncertain. Uncertain data specifically means data that are likely to be mislabeled (they will have ``is_label_issue`` marked ``True``), but that Cleanlab is uncertain about what their correct label should be. Such data would benefit from human review.
+
+Near Duplicates
+===============
+
+.. _is_near_duplicate:
+``is_near_duplicate``
+----------------
+Contains a boolean value, with ``True`` indicating that the sample is likely to be a near duplicate of another sample. Near duplicates are two or more examples in a dataset that are extremely similar to each other, relative to the rest of the dataset. The examples flagged with this issue may be exactly duplicated, or lie atypically close together when represented as vectors (i.e. feature embeddings).
+
+.. _near_duplicate_score:
+``near_duplicate_score``
+------------------
+Contains a score bounded between 0 and 1, which is used to determine whether a sample is a near duplicate. The lower the score of a sample, the more likely it is to be a near duplicate of another sample.
+
+.. _near_duplicate_sets:
+``near_duplicate_sets``
+----------------
+Contains a list of integer indices, where for each sample, this list contains the indices of the samples that are near duplicates of it. For example, if the list for sample 0 is ``[1, 2, 3]``, then samples 1, 2, and 3 are near duplicates of sample 0. The list is empty for samples that are not near duplicates of any other sample.
