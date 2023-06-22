@@ -104,7 +104,7 @@ Near Duplicates
 .. _is_near_duplicate:
 ``is_near_duplicate``
 ----------------
-Contains a boolean value, with ``True`` indicating that the sample is likely to be a near duplicate of another sample. Near duplicates are two or more examples in a dataset that are extremely similar to each other, relative to the rest of the dataset. The examples flagged with this issue may be exactly duplicated, or lie atypically close together when represented as vectors (i.e. feature embeddings).
+Contains a boolean value, with ``True`` indicating that the sample is likely to be a near duplicate of another sample. Near duplicates are two or more examples in a dataset that are extremely similar (or identical) to each other, relative to the rest of the dataset.
 
 .. _near_duplicate_score:
 ``near_duplicate_score``
