@@ -11,7 +11,7 @@ Cleanlab Studio will run a number of analyses on your dataset to help identify p
 - Label issues
 - Outliers
 - Ambiguous examples
-- High confidence
+- High confidence examples
 - Uncertain
 - Near duplicates (only for image and text datasets)
 
