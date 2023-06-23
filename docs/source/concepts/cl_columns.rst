@@ -38,7 +38,7 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
      - Boolean
    * - :ref:`is_ambiguous <is_ambiguous>`
      - Boolean
-   * - :ref:`is_high_confidence <is_high_confidence>`
+   * - :ref:`is_given_label_correct <is_given_label_correct>`
      - Boolean
    * - :ref:`is_near_duplicate <is_near_duplicate>`
      - Boolean
@@ -84,10 +84,10 @@ Contains a boolean value, with ``True`` indicating that the sample is likely to 
 High Confidence
 ===============
 
-.. _is_high_confidence:
-``is_high_confidence``
+.. _is_given_label_correct:
+``is_given_label_correct``
 ---------------
-Contains a boolean value, with ``True`` indicating high confidence, which means that the given label of the sample is likely to be correct, so the sample can be safely used in downstream tasks.
+Contains a boolean value, with ``True`` indicating that the given label of the sample is likely to be correct, so the sample can be safely used in downstream tasks.
 
 Near Duplicates
 ===============
