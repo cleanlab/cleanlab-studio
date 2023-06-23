@@ -12,12 +12,13 @@ Cleanlab Studio will run a number of analyses on your dataset to help identify p
 - Outliers
 - Ambiguous examples
 - High confidence examples
-- Uncertain examples
 - Near duplicates (only for image and text datasets)
 
 New analyses are being continuously added to Cleanlab Studio. The raw outputs of each analysis will be available to download as Cleanlab columns by calling ``studio.download_cleanlab_columns()``.
 
-Most analyses produce two columns, one being a numeric score between 0 and 1 indicating the quality of a sample for that analysis (lower score means lower quality), and the other being a boolean, which indicates whether the sample is likely to have an issue or not. The different analyses are run separately, and hence they should be treated independently. For example, samples with label issues are not necessarily outliers, and vice versa, and it is possible to have a sample with label issue marked as ``False``, but outlier marked as ``True``. Furthermore, it is possible to have samples with label issue marked as ``True`` **and** outlier marked as ``True``: these are the raw results from the analyses, and you may interpret them as appropriate (e.g., if a data point is an outlier, it may be irrelevant that it's also likely a label issue).
+Most analyses produce two columns, one being a numeric score between 0 and 1 indicating the quality of a sample for that analysis (lower score means lower quality), and the other being a boolean, which indicates whether the sample is likely to have an issue or not. When both the score and boolean are present, the boolean is thresholded from the corresponding score, with the threshold chosen intelligently based on benchmarks on a large number of datasets.
+
+The different analyses are run separately, and hence they should be treated independently. For example, samples with label issues are not necessarily outliers, and vice versa, and it is possible to have a sample with label issue marked as ``False``, but outlier marked as ``True``. Furthermore, it is possible to have samples with label issue marked as ``True`` **and** outlier marked as ``True``: these are the raw results from the analyses, and you may interpret them as appropriate (e.g., if a data point is an outlier, it may be irrelevant that it's also likely a label issue).
 
 The Cleanlab columns are listed below in the table. Detailed explanations of each column are provided in the following sections.
 
@@ -38,8 +39,6 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
    * - :ref:`is_ambiguous <is_ambiguous>`
      - Boolean
    * - :ref:`is_high_confidence <is_high_confidence>`
-     - Boolean
-   * - :ref:`is_uncertain <is_uncertain>`
      - Boolean
    * - :ref:`is_near_duplicate <is_near_duplicate>`
      - Boolean
@@ -89,14 +88,6 @@ High Confidence
 ``is_high_confidence``
 ---------------
 Contains a boolean value, with ``True`` indicating high confidence, which means that the given label of the sample is likely to be correct, so the sample can be safely used in downstream tasks.
-
-Uncertain
-=========
-
-.. _is_uncertain:
-``is_uncertain``
------------
-Contains a boolean value, with ``True`` indicating uncertain. Uncertain data specifically means data that are likely to be mislabeled (they will have ``is_label_issue`` marked ``True``), but that Cleanlab is uncertain about what their correct label should be. Such data would benefit from human review.
 
 Near Duplicates
 ===============
