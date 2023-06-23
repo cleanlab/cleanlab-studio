@@ -44,7 +44,7 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
      - Boolean
    * - :ref:`near_duplicate_score <near_duplicate_score>`
      - Float
-   * - :ref:`near_duplicate_sets <near_duplicate_sets>`
+   * - :ref:`near_duplicate_id <near_duplicate_id>`
      - List of integers
 
 Label Issues
@@ -102,7 +102,7 @@ Contains a boolean value, with ``True`` indicating that the sample is likely to 
 ------------------
 Contains a score bounded between 0 and 1, which is used to determine whether a sample is a near duplicate. The lower the score of a sample, the more likely it is to be a near duplicate of another sample.
 
-.. _near_duplicate_sets:
-``near_duplicate_sets``
+.. _near_duplicate_id:
+``near_duplicate_id``
 ----------------
-Contains a list of integer indices, where for each sample, this list contains the indices of the samples that are near duplicates of it. For example, if the list for sample 0 is ``[1, 2, 3]``, then samples 1, 2, and 3 are near duplicates of sample 0. The list is empty for samples that are not near duplicates of any other sample.
+Contains an integer ID for each sample, where samples with the same ID are near duplicates of each other. The IDs range from 0 upwards. Samples that do not have near duplicates are assigned an ID of -1.
