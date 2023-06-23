@@ -12,7 +12,7 @@ Cleanlab Studio will run a number of analyses on your dataset to help identify p
 - Outliers
 - Ambiguous examples
 - High confidence examples
-- Uncertain
+- Uncertain examples
 - Near duplicates (only for image and text datasets)
 
 New analyses are being continuously added to Cleanlab Studio. The raw outputs of each analysis will be available to download as Cleanlab columns by calling ``studio.download_cleanlab_columns()``.
