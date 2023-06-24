@@ -13,7 +13,7 @@ except ImportError:
 
 from . import clean, upload
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import init_dataset_source
+from cleanlab_studio.internal.util import init_dataset_source, check_none, check_not_none
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
 
@@ -95,9 +95,9 @@ class Studio:
             )
             final = both.withColumn(
                 "__cleanlab_final_label",
-                # XXX hacky, relies on no labels being "None" (the string)
+                # XXX hacky, checks if label is none by hand
                 # instead, use original JSON, which uses null values where it's not specified
-                udf(lambda original, clean: original if clean == "None" else clean)(
+                udf(lambda original, clean: original if check_none(clean) else clean)(
                     both[label_column],
                     "clean_label",
                 ),
@@ -118,12 +118,13 @@ class Studio:
             else:
                 joined_ds = dataset.join(cl_cols.set_index(id_col).sort_values(by=id_col))
             joined_ds["__cleanlab_final_label"] = joined_ds["clean_label"].where(
-                joined_ds["clean_label"] != "None", dataset[label_column]
+                np.asarray(list(map(check_not_none, joined_ds["clean_label"].to_numpy()))),
+                dataset[label_column].to_numpy(),
             )
 
             corrected_ds = dataset.copy()
             corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
-            corrected_ds = corrected_ds[joined_ds["action"] != "exclude"]
+            corrected_ds = corrected_ds.loc[joined_ds["action"] != "exclude"]
             return corrected_ds
 
         else:
