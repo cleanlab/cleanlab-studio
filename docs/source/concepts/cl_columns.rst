@@ -28,16 +28,20 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
 
    * - Cleanlab Column Name
      - Value Type
-   * - :ref:`label_issue_score <label_issue_score>`
-     - Float
    * - :ref:`is_label_issue <is_label_issue>`
      - Boolean
+   * - :ref:`label_issue_score <label_issue_score>`
+     - Float
    * - :ref:`suggested_label <suggested_label>`
      - String
    * - :ref:`is_outlier <is_outlier>`
      - Boolean
+   * - :ref:`outlier_score <outlier_score>`
+     - Float
    * - :ref:`is_ambiguous <is_ambiguous>`
      - Boolean
+   * - :ref:`ambiguous_score <ambiguous_score>`
+     - Float
    * - :ref:`is_given_label_correct <is_given_label_correct>`
      - Boolean
    * - :ref:`is_near_duplicate <is_near_duplicate>`
@@ -50,15 +54,15 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
 Label Issues
 ============
 
-.. _label_issue_score:
-``label_issue_score``
--------------
-Contains a score bounded between 0 and 1. The score is calculated using confident learning. The lower the score of a sample, the more likely it has a label issue.
-
 .. _is_label_issue:
 ``is_label_issue``
 -----
 Contains a boolean value, with ``True`` indicating that the sample is likely to have a label issue. The value is obtained by thresholding the ``label_issue_score`` score with confident learning.
+
+.. _label_issue_score:
+``label_issue_score``
+-------------
+Contains a score bounded between 0 and 1. The score is calculated using confident learning. The lower the score of a sample, the more likely it has a label issue.
 
 .. _suggested_label:
 ``suggested_label``
@@ -73,6 +77,11 @@ Outliers
 -------
 Contains a boolean value, with ``True`` indicating that the sample is likely to be an outlier.
 
+.. _outlier_score:
+``outlier_score``
+-----------
+Contains a score bounded between 0 and 1, which is used to determine whether a sample is an outlier. The lower the score of a sample, the more likely it is to be an outlier.
+
 Ambiguous
 =========
 
@@ -80,6 +89,11 @@ Ambiguous
 ``is_ambiguous``
 ----------
 Contains a boolean value, with ``True`` indicating that the sample is likely to be ambiguous. Ambiguous samples are those that do not obviously belong to a single class.
+
+.. _ambiguous_score:
+``ambiguous_score``
+-------------
+Contains a score bounded between 0 and 1, which is used to determine whether a sample is ambiguous. The lower the score of a sample, the more likely it is to be ambiguous.
 
 High Confidence
 ===============
