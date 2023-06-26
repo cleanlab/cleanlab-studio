@@ -1,5 +1,6 @@
 import pathlib
 from typing import Any, Optional, TypeVar, Union
+import math
 
 import numpy as np
 import pandas as pd
@@ -47,3 +48,18 @@ def init_dataset_source(
         return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     else:
         raise ValueError("Invalid dataset source provided")
+
+
+def check_none(x: Any) -> bool:
+    if isinstance(x, str):
+        return x == "None" or x == "none" or x == "null" or x == "NULL"
+    elif isinstance(x, float):
+        return math.isnan(x)
+    elif pd.isnull(x):
+        return True
+    else:
+        return x is None
+
+
+def check_not_none(x: Any) -> bool:
+    return not check_none(x)
