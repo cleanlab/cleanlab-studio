@@ -49,7 +49,7 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
    * - :ref:`near_duplicate_score <near_duplicate_score>`
      - Float
    * - :ref:`near_duplicate_id <near_duplicate_id>`
-     - List of integers
+     - Integer
 
 Label Issues
 ============
