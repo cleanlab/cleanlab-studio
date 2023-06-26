@@ -55,3 +55,4 @@ Outliers
 ``is_outlier``
 -------
 Contains a boolean value, with ``True`` indicating that the sample is likely to be an outlier.
+Note: for tabular-mode multi-label projects, is_outlier will always be False. 
