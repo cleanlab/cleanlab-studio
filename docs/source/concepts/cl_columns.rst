@@ -42,7 +42,7 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
      - Boolean
    * - :ref:`ambiguous_score <ambiguous_score>`
      - Float
-   * - :ref:`is_given_label_correct <is_given_label_correct>`
+   * - :ref:`is_high_confidence_given_label <is_high_confidence_given_label>`
      - Boolean
    * - :ref:`is_near_duplicate <is_near_duplicate>`
      - Boolean
@@ -101,8 +101,8 @@ Contains a score bounded between 0 and 1, which is used to determine whether a s
 High Confidence
 ===============
 
-.. _is_given_label_correct:
-``is_given_label_correct``
+.. _is_high_confidence_given_label:
+``is_high_confidence_given_label``
 ---------------
 Contains a boolean value, with ``True`` indicating that the given label of the sample is likely to be correct, so the sample can be safely used in downstream tasks.
 
