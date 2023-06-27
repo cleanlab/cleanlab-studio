@@ -34,10 +34,6 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
      - Float
    * - :ref:`suggested_label <suggested_label>`
      - String
-   * - :ref:`is_outlier <is_outlier>`
-     - Boolean
-   * - :ref:`outlier_score <outlier_score>`
-     - Float
    * - :ref:`is_ambiguous <is_ambiguous>`
      - Boolean
    * - :ref:`ambiguous_score <ambiguous_score>`
@@ -50,6 +46,10 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
      - Float
    * - :ref:`near_duplicate_id <near_duplicate_id>`
      - Integer
+   * - :ref:`is_outlier <is_outlier>`
+     - Boolean
+   * - :ref:`outlier_score <outlier_score>`
+     - Float
 
 Label Issues
 ============
@@ -68,19 +68,6 @@ Contains a score bounded between 0 and 1. The score is calculated using confiden
 ``suggested_label``
 ---------------
 Contains the suggested label for the sample. If the sample is not a label issue (``is_label_issue`` marked as ``False``), the suggested label will be empty. For samples with label issues, the suggested label is computed by Cleanlab studio.
-
-Outliers
-========
-*Note: for projects on multi-label tabular datasets, outliers are currently not computed.*
-.. _is_outlier:
-``is_outlier``
--------
-Contains a boolean value, with ``True`` indicating that the sample is likely to be an outlier.
-
-.. _outlier_score:
-``outlier_score``
------------
-Contains a score bounded between 0 and 1, which is used to determine whether a sample is an outlier. The lower the score of a sample, the more likely it is to be an outlier.
 
 
 Ambiguous
@@ -121,4 +108,18 @@ Contains a score bounded between 0 and 1, which is used to determine whether a s
 ``near_duplicate_id``
 ----------------
 Contains an integer ID for each sample, where samples with the same ID are near duplicates of each other. The IDs range from 0 upwards. Samples that do not have near duplicates are assigned an ID of -1.
+
+
+Outliers
+========
+*Note: for projects on multi-label tabular datasets, outliers are currently not computed.*
+.. _is_outlier:
+``is_outlier``
+-------
+Contains a boolean value, with ``True`` indicating that the sample is likely to be an outlier.
+
+.. _outlier_score:
+``outlier_score``
+-----------
+Contains a score bounded between 0 and 1, which is used to determine whether a sample is an outlier. The lower the score of a sample, the more likely it is to be an outlier.
 
