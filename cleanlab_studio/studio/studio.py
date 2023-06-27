@@ -124,7 +124,7 @@ class Studio:
 
             corrected_ds = dataset.copy()
             corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
-            corrected_ds = corrected_ds.loc[joined_ds["action"] != "exclude"]
+            corrected_ds = corrected_ds.loc[(joined_ds["action"] != "exclude").fillna(True)]
             return corrected_ds
 
         else:
