@@ -76,6 +76,8 @@ Outliers
 ``is_outlier``
 -------
 Contains a boolean value, with ``True`` indicating that the sample is likely to be an outlier.
+Note: for tabular-mode multi-label projects, is_outlier will always be False. 
+=======
 
 .. _outlier_score:
 ``outlier_score``
@@ -120,3 +122,4 @@ Contains a score bounded between 0 and 1, which is used to determine whether a s
 ``near_duplicate_id``
 ----------------
 Contains an integer ID for each sample, where samples with the same ID are near duplicates of each other. The IDs range from 0 upwards. Samples that do not have near duplicates are assigned an ID of -1.
+
