@@ -71,19 +71,17 @@ Contains the suggested label for the sample. If the sample is not a label issue 
 
 Outliers
 ========
-
+*Note: for projects on multi-label tabular datasets, outliers are currently not computed.*
 .. _is_outlier:
 ``is_outlier``
 -------
 Contains a boolean value, with ``True`` indicating that the sample is likely to be an outlier.
 
-Note: for projects on multi-label tabular datasets, outliers are currently not computed, and ``is_outlier`` will always be False. 
-=======
-
 .. _outlier_score:
 ``outlier_score``
 -----------
 Contains a score bounded between 0 and 1, which is used to determine whether a sample is an outlier. The lower the score of a sample, the more likely it is to be an outlier.
+
 
 Ambiguous
 =========
@@ -104,11 +102,11 @@ High Confidence
 .. _is_high_confidence_given_label:
 ``is_high_confidence_given_label``
 ---------------
-Contains a boolean value, with ``True`` indicating that the given label of the sample is likely to be correct, so the sample can be safely used in downstream tasks.
+Contains a boolean value, with ``True`` indicating that the given label of the sample is highly likely to be correct, so the sample can be safely used in downstream tasks.
 
 Near Duplicates
 ===============
-
+*Note: Near-duplicates are not computed for tabular-type datasets.*
 .. _is_near_duplicate:
 ``is_near_duplicate``
 ----------------
