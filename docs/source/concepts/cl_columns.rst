@@ -107,7 +107,7 @@ Contains a score bounded between 0 and 1, which is used to determine whether a s
 .. _near_duplicate_id:
 ``near_duplicate_id``
 ----------------
-Contains an integer ID for each sample, where samples with the same ID are near duplicates of each other. The IDs range from 0 upwards. Samples that do not have near duplicates are assigned an ID of -1.
+Contains an integer ID for each sample, where samples with the same ID are near duplicates of each other. The IDs range from 0 upwards. Samples that do not have near duplicates are assigned an ID of `<NA>`.
 
 
 Outliers
