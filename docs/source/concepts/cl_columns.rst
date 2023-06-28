@@ -94,6 +94,7 @@ Contains a boolean value, with ``True`` indicating that the given label of the s
 Near Duplicates
 ===============
 *Note: Near-duplicates are not computed for tabular-type datasets.*
+
 .. _is_near_duplicate:
 ``is_near_duplicate``
 ----------------
@@ -113,6 +114,7 @@ Contains an integer ID for each sample, where samples with the same ID are near 
 Outliers
 ========
 *Note: for projects on multi-label tabular datasets, outliers are currently not computed.*
+
 .. _is_outlier:
 ``is_outlier``
 -------
