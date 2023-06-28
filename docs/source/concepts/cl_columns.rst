@@ -22,34 +22,33 @@ The different analyses are run separately, and hence they should be treated inde
 
 The Cleanlab columns are listed below in the table. Detailed explanations of each column are provided in the following sections.
 
-.. list-table:: 
-   :widths: 50 25
-   :header-rows: 1
 
-   * - Cleanlab Column Name
-     - Value Type
-   * - :ref:`is_label_issue <is_label_issue>`
-     - Boolean
-   * - :ref:`label_issue_score <label_issue_score>`
-     - Float
-   * - :ref:`suggested_label <suggested_label>`
-     - String
-   * - :ref:`is_ambiguous <is_ambiguous>`
-     - Boolean
-   * - :ref:`ambiguous_score <ambiguous_score>`
-     - Float
-   * - :ref:`is_high_confidence_given_label <is_high_confidence_given_label>`
-     - Boolean
-   * - :ref:`is_near_duplicate <is_near_duplicate>`
-     - Boolean
-   * - :ref:`near_duplicate_score <near_duplicate_score>`
-     - Float
-   * - :ref:`near_duplicate_id <near_duplicate_id>`
-     - Integer
-   * - :ref:`is_outlier <is_outlier>`
-     - Boolean
-   * - :ref:`outlier_score <outlier_score>`
-     - Float
++----------------------------+------------------------------------------------------------------------+-------------+
+| Analysis Type              | Cleanlab Column Name                                                   | Value Type  |
++============================+========================================================================+=============+
+| Label Issues               | :ref:`is_label_issue <is_label_issue>`                                 | Boolean     |
++                            +------------------------------------------------------------------------+-------------+
+|                            | :ref:`label_issue_score <label_issue_score>`                           | Float       | 
++                            +------------------------------------------------------------------------+-------------+
+|                            | :ref:`suggested_label <suggested_label>`                               | String      |
++----------------------------+------------------------------------------------------------------------+-------------+
+| Ambiguous Examples         | :ref:`is_ambiguous <is_ambiguous>`                                     | Boolean     |
++                            +------------------------------------------------------------------------+-------------+
+|                            | :ref:`ambiguous_score <ambiguous_score>`                               | Float       |
++----------------------------+------------------------------------------------------------------------+-------------+
+| High Confidence Examples   | :ref:`is_high_confidence_given_label <is_high_confidence_given_label>` | Boolean     |
++----------------------------+------------------------------------------------------------------------+-------------+
+| Near Duplicates            | :ref:`is_near_duplicate <is_near_duplicate>`                           | Boolean     |
++                            +------------------------------------------------------------------------+-------------+
+|                            | :ref:`near_duplicate_score <near_duplicate_score>`                     | Float       |
++                            +------------------------------------------------------------------------+-------------+
+|                            | :ref:`near_duplicate_id <near_duplicate_id>`                           | Integer     |
++----------------------------+------------------------------------------------------------------------+-------------+
+| Outliers                   | :ref:`is_outlier <is_outlier>`                                         | Boolean     |
++                            +------------------------------------------------------------------------+-------------+
+|                            | :ref:`outlier_score <outlier_score>`                                   | Float       |
++----------------------------+------------------------------------------------------------------------+-------------+
+
 
 Label Issues
 ============
