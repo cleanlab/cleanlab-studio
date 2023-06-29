@@ -48,7 +48,7 @@ setup(
         "aiohttp>=3.8.1",
         "Click>=8.1.0",
         "colorama>=0.4.4",
-        "pandas>=1.0.0",
+        "pandas==2.*",
         "pyexcel>=0.7.0",
         "pyexcel-xls>=0.7.0",
         "pyexcel-xlsx>=0.6.0",
