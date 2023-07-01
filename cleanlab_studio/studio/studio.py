@@ -66,7 +66,7 @@ class Studio:
             rows_df.drop("action", inplace=True, axis=1)
         return rows_df
 
-    def apply_corrections(self, cleanset_id: str, dataset: Any) -> Any:
+    def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool=False) -> Any:
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
@@ -124,7 +124,10 @@ class Studio:
 
             corrected_ds = dataset.copy()
             corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
-            corrected_ds = corrected_ds.loc[(joined_ds["action"] != "exclude").fillna(True)]
+            if not keep_excluded:
+                corrected_ds = corrected_ds.loc[(joined_ds["action"] != "exclude").fillna(True)]
+            else:
+                corrected_ds["action"] = joined_ds["action"]
             return corrected_ds
 
         else:
