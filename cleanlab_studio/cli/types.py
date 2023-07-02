@@ -20,6 +20,7 @@ class DatasetFileExtension(Enum):
     xls = ".xls"
     xlsx = ".xlsx"
     json = ".json"
+    pkl = ".pkl"
 
 
 class ImageFileExtension(Enum):

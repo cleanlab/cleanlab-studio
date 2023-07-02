@@ -66,6 +66,18 @@ class Studio:
             rows_df.drop("action", inplace=True, axis=1)
         return rows_df
 
+    def download_pred_probs(
+        self,
+        cleanset_id: str,
+    ) -> npt.NDArray[np.float_]:
+        return api.download_numpy(self._api_key, cleanset_id, "pred_probs")
+
+    def download_embeddings(
+        self,
+        cleanset_id: str,
+    ) -> npt.NDArray[np.float_]:
+        return api.download_numpy(self._api_key, cleanset_id, "embeddings")
+
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
         label_column = api.get_label_column_of_project(self._api_key, project_id)
