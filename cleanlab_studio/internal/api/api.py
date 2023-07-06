@@ -36,7 +36,7 @@ def telemetry(func):
         except Exception as err:
             _ = requests.post(
                 f"{cli_base_url}/telemetry",
-                json=json.dumps(traceback.format_exc()),
+                data=traceback.format_exc(),
             )
             raise err
 
