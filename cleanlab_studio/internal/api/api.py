@@ -1,6 +1,11 @@
 import os
 import time
 from typing import Any, Callable, List, Optional, Tuple, Dict
+import functools
+import sys
+import traceback
+import json
+
 from cleanlab_studio.errors import APIError
 
 import requests
@@ -18,6 +23,26 @@ project_base_url = f"{base_url}/projects"
 cleanset_base_url = f"{base_url}/cleansets"
 
 
+def telemetry(func):
+    """
+    Decorator to send stack trace to backend if an exception is raised
+    """
+
+    @functools.wraps(func)
+    def tracked_func(*args, **kwargs):
+        try:
+            result = func(*args, **kwargs)
+            return result
+        except Exception as err:
+            _ = requests.post(
+                f"{cli_base_url}/telemetry",
+                json=json.dumps(traceback.format_exc()),
+            )
+            raise err
+
+    return tracked_func
+
+
 def _construct_headers(
     api_key: Optional[str], content_type: Optional[str] = "application/json"
 ) -> JSONDict:
@@ -29,6 +54,7 @@ def _construct_headers(
     return retval
 
 
+@telemetry
 def handle_api_error(res: requests.Response) -> None:
     handle_api_error_from_json(res.json())
 
