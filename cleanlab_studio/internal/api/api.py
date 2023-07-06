@@ -23,7 +23,7 @@ project_base_url = f"{base_url}/projects"
 cleanset_base_url = f"{base_url}/cleansets"
 
 
-def telemetry(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
+def telemetry(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     Decorator to send stack trace to backend if an exception is raised
 
