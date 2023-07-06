@@ -26,17 +26,21 @@ cleanset_base_url = f"{base_url}/cleansets"
 def telemetry(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
     """
     Decorator to send stack trace to backend if an exception is raised
+
+    Can only use on functions whose first arg is api_key
     """
 
     @functools.wraps(func)
-    def tracked_func(*args: Any, **kwargs: Any) -> Any:
+    def tracked_func(api_key: str, *args: Any, **kwargs: Any) -> Any:
+        print("using telemetry")
         try:
-            result = func(*args, **kwargs)
+            result = func(api_key, *args, **kwargs)
             return result
         except Exception as err:
             _ = requests.post(
                 f"{cli_base_url}/telemetry",
                 data=traceback.format_exc(),
+                headers=_construct_headers(api_key)
             )
             raise err
 
@@ -54,7 +58,6 @@ def _construct_headers(
     return retval
 
 
-@telemetry
 def handle_api_error(res: requests.Response) -> None:
     handle_api_error_from_json(res.json())
 
@@ -179,6 +182,7 @@ def get_label_column_of_project(api_key: str, project_id: str) -> str:
     return label_column
 
 
+@telemetry
 def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> pd.DataFrame:
     """
     Download all rows from specified Cleanlab columns
