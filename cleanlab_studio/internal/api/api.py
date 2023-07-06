@@ -40,7 +40,7 @@ def telemetry(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
             _ = requests.post(
                 f"{cli_base_url}/telemetry",
                 data=traceback.format_exc(),
-                headers=_construct_headers(api_key)
+                headers=_construct_headers(api_key),
             )
             raise err
 
