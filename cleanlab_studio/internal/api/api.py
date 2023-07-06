@@ -23,13 +23,13 @@ project_base_url = f"{base_url}/projects"
 cleanset_base_url = f"{base_url}/cleansets"
 
 
-def telemetry(func: Callable) -> Callable:
+def telemetry(func: Callable[...]) -> Callable[...]:
     """
     Decorator to send stack trace to backend if an exception is raised
     """
 
     @functools.wraps(func)
-    def tracked_func(*args, **kwargs) -> Any:
+    def tracked_func(*args: Any, **kwargs: Any) -> Any:
         try:
             result = func(*args, **kwargs)
             return result
