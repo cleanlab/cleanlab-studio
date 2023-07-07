@@ -39,9 +39,17 @@ def telemetry(func: Callable[..., Any]) -> Callable[..., Any]:
             return result
         except Exception as err:
             with contextlib.suppress(Exception):
+                arg_list = [repr(arg) for arg in args]
+                arg_list.extend(f"{k}={v!r}" for k, v in kwargs.items())
+                arg_str = ", ".join(arg_list)
+                err_info = {
+                    "stack_trace": traceback.format_exc(),
+                    "name": func.__name__,
+                    "args": arg_str,
+                }
                 _ = requests.post(
                     f"{cli_base_url}/telemetry",
-                    data=traceback.format_exc(),
+                    json=err_info,
                     headers=_construct_headers(api_key),
                 )
             raise err
