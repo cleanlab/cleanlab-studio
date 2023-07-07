@@ -5,6 +5,7 @@ import functools
 import sys
 import traceback
 import json
+import contextlib
 
 from cleanlab_studio.errors import APIError
 
@@ -37,11 +38,12 @@ def telemetry(func: Callable[..., Any]) -> Callable[..., Any]:
             result = func(api_key, *args, **kwargs)
             return result
         except Exception as err:
-            _ = requests.post(
-                f"{cli_base_url}/telemetry",
-                data=traceback.format_exc(),
-                headers=_construct_headers(api_key),
-            )
+            with contextlib.suppress(Exception):
+                _ = requests.post(
+                    f"{cli_base_url}/telemetry",
+                    data=traceback.format_exc(),
+                    headers=_construct_headers(api_key),
+                )
             raise err
 
     return tracked_func
