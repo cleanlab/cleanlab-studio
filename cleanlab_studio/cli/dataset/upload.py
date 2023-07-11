@@ -78,7 +78,7 @@ def upload(
 
             save_filepath = click_helpers.confirm_save_prompt_filepath(
                 save_message="Save the generated schema?",
-                save_default=True,
+                save_default=None,
                 prompt_message="Specify a filename for the schema. Leave this blank to use default",
                 prompt_default="schema.json",
                 no_save_message="Schema was not saved.",
