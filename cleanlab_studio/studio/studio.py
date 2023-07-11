@@ -13,7 +13,11 @@ except ImportError:
 
 from . import clean, upload
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import init_dataset_source, check_none, check_not_none
+from cleanlab_studio.internal.util import (
+    init_dataset_source,
+    check_none,
+    check_not_none,
+)
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
 
@@ -151,16 +155,18 @@ class Studio:
         """
         Creates a Cleanlab Studio project
 
-        :param dataset_id: ID of dataset to create project for
-        :param project_name: name for resulting project
-        :param modality: modality of project (i.e. text, tabular, image)
-        :keyword task_type: type of classification to perform (i.e. multi-class, multi-label)
-        :keyword model_type: type of model to train (i.e. fast, regular)
-        :keyword label_column: name of column in dataset containing labels (if not supplied, we'll make our best guess)
-        :keyword feature_columns: list of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns)
-        :keyword text_column: name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess)
+        Args:
+            dataset_id: ID of dataset to create project for
+            project_name: name for resulting project
+            modality: modality of project (i.e. text, tabular, image)
+            task_type: type of classification to perform (i.e. multi-class, multi-label)
+            model_type: type of model to train (i.e. fast, regular)
+            label_column: name of column in dataset containing labels (if not supplied, we'll make our best guess)
+            feature_columns: list of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns)
+            text_column: name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess)
 
-        :return: ID of project
+        Returns:
+            ID of project
         """
         dataset_details = api.get_dataset_details(self._api_key, dataset_id)
 
@@ -210,7 +216,8 @@ class Studio:
         """
         Polls for cleanset status. Blocks until cleanset is ready, there is a cleanset error, or `timeout` is exceeded
 
-        :return: True if cleanset is ready, False otherwise
+        Returns:
+            `True` if cleanset is ready, `False` otherwise
         """
         return clean.poll_cleanset_status(self._api_key, cleanset_id, timeout)
 
