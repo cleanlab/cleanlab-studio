@@ -25,11 +25,11 @@ from cleanlab_studio.internal.types import JSONDict
 
 
 @click.command(help="upload your dataset to Cleanlab Studio")
-@click.option(
-    "--filepath",
-    "-f",
+@click.argument(
+    "filepath",
     type=click.Path(),
-    help="Dataset filepath",
+    required=False,
+    default=None,
 )
 @click.option(
     "--schema_path",
