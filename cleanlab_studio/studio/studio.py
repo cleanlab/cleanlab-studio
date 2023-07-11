@@ -37,6 +37,7 @@ class Studio:
                 )
         api.validate_api_key(api_key)
         self._api_key = api_key
+        self.experimental = self.Experimental(self)  # type: ignore
 
     def upload_dataset(
         self,
@@ -65,18 +66,6 @@ class Studio:
         if not include_action:
             rows_df.drop("action", inplace=True, axis=1)
         return rows_df
-
-    def download_pred_probs(
-        self,
-        cleanset_id: str,
-    ) -> npt.NDArray[np.float_]:
-        return api.download_numpy(self._api_key, cleanset_id, "pred_probs")
-
-    def download_embeddings(
-        self,
-        cleanset_id: str,
-    ) -> npt.NDArray[np.float_]:
-        return api.download_numpy(self._api_key, cleanset_id, "embeddings")
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
@@ -233,3 +222,19 @@ class Studio:
         """Deletes project with given ID"""
         api.delete_project(self._api_key, project_id)
         print(f"Successfully deleted project: {project_id}")
+
+    class Experimental:
+        def __init__(self, outer):  # type: ignore
+            self._outer = outer
+
+        def download_pred_probs(
+            self,
+            cleanset_id: str,
+        ) -> npt.NDArray[np.float_]:
+            return api.download_numpy(self._outer._api_key, cleanset_id, "pred_probs")
+
+        def download_embeddings(
+            self,
+            cleanset_id: str,
+        ) -> npt.NDArray[np.float_]:
+            return api.download_numpy(self._outer._api_key, cleanset_id, "embeddings")
