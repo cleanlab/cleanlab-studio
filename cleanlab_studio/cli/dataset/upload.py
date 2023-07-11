@@ -70,7 +70,7 @@ def upload(
             log(json.dumps(schema, indent=2))
             info(f"No schema was provided. We propose the above schema based on your dataset.")
 
-            proceed_upload = click.confirm("\nUse this schema?", default=None)
+            proceed_upload = click.confirm("\nUse this schema?", default=True)
             if not proceed_upload:
                 info(
                     "Proposed schema rejected. Please submit your own schema using --schema.\n",
@@ -78,7 +78,7 @@ def upload(
 
             save_filepath = click_helpers.confirm_save_prompt_filepath(
                 save_message="Save the generated schema?",
-                save_default=None,
+                save_default=True,
                 prompt_message="Specify a filename for the schema. Leave this blank to use default",
                 prompt_default="schema.json",
                 no_save_message="Schema was not saved.",
