@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Any, Callable, List, Optional, Tuple, Dict
+from typing import Callable, List, Optional, Tuple, Union, Any
 from cleanlab_studio.errors import APIError
 
 import requests
@@ -8,6 +8,13 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import numpy.typing as npt
+
+try:
+    import pyspark.sql
+
+    pyspark_exists = True
+except ImportError:
+    pyspark_exists = False
 
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
@@ -155,25 +162,44 @@ def get_label_column_of_project(api_key: str, project_id: str) -> str:
     return label_column
 
 
-def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> pd.DataFrame:
+def download_cleanlab_columns(
+    api_key: str,
+    cleanset_id: str,
+    all: bool = True,
+    to_spark: bool = False,
+) -> Any:
     """
     Download all rows from specified Cleanlab columns
 
     :param api_key:
     :param cleanset_id:
     :param all: whether to download all Cleanlab columns or just the clean_label column
-    :return: return (rows, id_column)
+    :return: return a dataframe, either pandas or spark. Type is Any because don't want to require spark installed
     """
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/columns?all={all}",
+        params=dict(to_spark=to_spark),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
-    cleanset_json: str = res.json()["cleanset_json"]
-    cleanset_df: pd.DataFrame = pd.read_json(cleanset_json, orient="table")
     id_col = get_id_column(api_key, cleanset_id)
-    cleanset_df.rename(columns={"id": id_col}, inplace=True)
-    return cleanset_df
+    cleanset_json: str = res.json()["cleanset_json"]
+    if to_spark:
+        if not pyspark_exists:
+            raise ImportError(
+                "pyspark is not installed. Please install pyspark to download cleanlab columns as a pyspark DataFrame."
+            )
+        from pyspark.sql import SparkSession
+
+        spark = SparkSession.builder.getOrCreate()
+        rdd = spark.sparkContext.parallelize([cleanset_json])
+        cleanset_pyspark: pyspark.sql.DataFrame = spark.read.json(rdd)
+        cleanset_pyspark = cleanset_pyspark.withColumnRenamed("id", id_col)
+        return cleanset_pyspark
+
+    cleanset_pd: pd.DataFrame = pd.read_json(cleanset_json, orient="table")
+    cleanset_pd.rename(columns={"id": id_col}, inplace=True)
+    return cleanset_pd
 
 
 def download_numpy(api_key: str, cleanset_id: str, name: str) -> npt.NDArray[np.float_]:
