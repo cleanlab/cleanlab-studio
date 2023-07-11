@@ -1,3 +1,6 @@
+"""
+Python API for Cleanlab Studio.
+"""
 from typing import Any, List, Literal, Optional
 
 import numpy as np
@@ -23,6 +26,12 @@ from cleanlab_studio.internal.types import FieldSchemaDict
 
 
 class Studio:
+    """Used to interact with Cleanlab Studio
+
+    Attributes:
+        _api_key: API key for user interacting with Cleanlab Studio
+    """
+
     _api_key: str
 
     def __init__(self, api_key: Optional[str]):
