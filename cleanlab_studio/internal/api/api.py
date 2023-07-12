@@ -1,4 +1,7 @@
 import os
+import sys
+import subprocess
+import platform
 import time
 from typing import Any, Callable, List, Optional, Tuple, Dict
 import functools
@@ -33,28 +36,70 @@ def telemetry(func: Callable[..., Any]) -> Callable[..., Any]:
 
     @functools.wraps(func)
     def tracked_func(api_key: str, *args: Any, **kwargs: Any) -> Any:
-        print("using telemetry")
+        user_info = get_basic_info()
+        user_info["func_name"] = func.__name__
         try:
             result = func(api_key, *args, **kwargs)
+            _ = requests.post(
+                f"{cli_base_url}/telemetry",
+                json=user_info,
+                headers=_construct_headers(api_key),
+            )
             return result
         except Exception as err:
             with contextlib.suppress(Exception):
-                arg_list = [repr(arg) for arg in args]
-                arg_list.extend(f"{k}={v!r}" for k, v in kwargs.items())
-                arg_str = ", ".join(arg_list)
+                stacks = traceback.format_stack()
+                # only send stack trace for cleanlab functions
+                cleanlab_traceback = [line for line in stacks if "cleanlab" in line.lower()]
                 err_info = {
-                    "stack_trace": traceback.format_exc(),
-                    "name": func.__name__,
-                    "args": arg_str,
+                    "stack_trace": "\n".join(cleanlab_traceback),
                 }
+                user_info.update(err_info)
                 _ = requests.post(
                     f"{cli_base_url}/telemetry",
-                    json=err_info,
+                    json=user_info,
                     headers=_construct_headers(api_key),
                 )
             raise err
 
     return tracked_func
+
+
+def get_basic_info() -> Dict[str, Any]:
+    user_info: Dict[str, Any] = {}
+    # get OS
+    user_info["os"] = platform.system()
+    user_info["os_release"] = platform.release()
+    # get python version
+    user_info["python_version"] = sys.version
+    # get CLI version and dependencies
+    studio_info = (
+        subprocess.check_output(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "show",
+                "cleanlab-studio",
+            ]
+        )
+        .decode("utf-8")
+        .split("\n")
+    )
+    dependencies = []
+    for line in studio_info:
+        if line.startswith("Version:"):
+            user_info["cli_version"] = line.split(" ")[1]
+        elif line.startswith("Requires:"):
+            dependencies = line.split(": ")[1].split(", ")
+    all_packages = (
+        subprocess.check_output([sys.executable, "-m", "pip", "freeze"]).decode("utf-8").split("\n")
+    )
+    package_versions = dict([package.split("==") for package in all_packages if "==" in package])
+    user_info["dependencies"] = {
+        dependency: package_versions.get(dependency) for dependency in dependencies
+    }
+    return user_info
 
 
 def _construct_headers(
