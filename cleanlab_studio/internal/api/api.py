@@ -1,8 +1,10 @@
+import io
 import os
 import time
-from typing import Callable, List, Optional, Tuple, Union, Any
+from typing import Callable, List, Optional, Tuple, Dict, Union, Any
 from cleanlab_studio.errors import APIError
 
+import aiohttp
 import requests
 from tqdm import tqdm
 import pandas as pd
@@ -25,6 +27,7 @@ upload_base_url = f"{base_url}/upload/v0"
 dataset_base_url = f"{base_url}/datasets"
 project_base_url = f"{base_url}/projects"
 cleanset_base_url = f"{base_url}/cleansets"
+model_base_url = f"{base_url}/models"
 
 
 def _construct_headers(
@@ -329,3 +332,51 @@ def poll_progress(
             res = request_function(progress_id)
         pbar.update(float(1) - pbar.n)
     return res
+
+
+async def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:
+    """Uploads prediction batch and returns query ID."""
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{model_base_url}/{model_id}/upload",
+            headers=_construct_headers(api_key),
+        ) as resp:
+            resp_json = await resp.json()
+            handle_api_error_from_json(resp_json)
+
+            query_id: str = resp_json["query_id"]
+            upload_url: str = resp_json["upload_url"]
+
+        session.put(upload_url, data=batch)
+
+    return query_id
+
+
+async def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
+    """Starts prediction for query."""
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{model_base_url}/{model_id}/predict/{query_id}",
+            headers=_construct_headers(api_key),
+        ) as resp:
+            handle_api_error_from_json(await resp.json())
+
+
+async def get_prediction_status(api_key: str, model_id: str, query_id: str) -> Dict[str, str]:
+    """Gets status of model prediction query."""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            f"{model_base_url}/{model_id}/predict/{query_id}",
+            headers=_construct_headers(api_key),
+        ) as resp:
+            resp_json = await resp.json()
+            handle_api_error_from_json(resp_json)
+
+            return resp_json
+
+
+async def download_prediction_results(result_url: str) -> io.StringIO:
+    """Downloads prediction results from presigned URL."""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(result_url) as resp:
+            return io.StringIO(await resp.text())
