@@ -25,11 +25,11 @@ from cleanlab_studio.internal.types import JSONDict
 
 
 @click.command(help="upload your dataset to Cleanlab Studio")
-@click.option(
-    "--filepath",
-    "-f",
+@click.argument(
+    "filepath",
     type=click.Path(),
-    help="Dataset filepath",
+    required=False,
+    default=None,
 )
 @click.option(
     "--schema_path",
@@ -70,7 +70,7 @@ def upload(
             log(json.dumps(schema, indent=2))
             info(f"No schema was provided. We propose the above schema based on your dataset.")
 
-            proceed_upload = click.confirm("\nUse this schema?", default=None)
+            proceed_upload = click.confirm("\nUse this schema?", default=True)
             if not proceed_upload:
                 info(
                     "Proposed schema rejected. Please submit your own schema using --schema.\n",

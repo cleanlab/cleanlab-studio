@@ -15,6 +15,8 @@ from cleanlab_studio.errors import APIError
 import requests
 from tqdm import tqdm
 import pandas as pd
+import numpy as np
+import numpy.typing as npt
 
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
@@ -257,6 +259,19 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
     id_col = get_id_column(api_key, cleanset_id)
     cleanset_df.rename(columns={"id": id_col}, inplace=True)
     return cleanset_df
+
+
+def download_numpy(api_key: str, cleanset_id: str, name: str) -> npt.NDArray[np.float_]:
+    res = requests.get(
+        cli_base_url + f"/cleansets/{cleanset_id}/{name}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    res_json: JSONDict = res.json()
+    if res_json["success"]:
+        np_data: npt.NDArray[np.float_] = np.array(res_json[name])
+        return np_data
+    raise APIError(f"{name} for cleanset {cleanset_id} not found")
 
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:
