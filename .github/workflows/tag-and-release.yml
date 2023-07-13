@@ -20,3 +20,8 @@ jobs:
         run: python3 -m build
       - name: Release package
         run: twine upload dist/* -u __token__ -p ${{ secrets.PYPI_TOKEN }} --verbose
+
+  update-docs:
+    needs: build-and-release-pypi-package
+    uses: cleanlab/cleanlab-studio-docs/.github/workflows/build_and_deploy.yml@main
+    secrets: inherit
