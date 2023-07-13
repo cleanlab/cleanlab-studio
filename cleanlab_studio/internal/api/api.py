@@ -177,8 +177,8 @@ def download_cleanlab_columns(
     :return: return a dataframe, either pandas or spark. Type is Any because don't want to require spark installed
     """
     res = requests.get(
-        cli_base_url + f"/cleansets/{cleanset_id}/columns?all={all}",
-        params=dict(to_spark=to_spark),
+        cli_base_url + f"/cleansets/{cleanset_id}/columns",
+        params=dict(to_spark=to_spark, all=all),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
