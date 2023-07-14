@@ -1,21 +1,18 @@
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Literal, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-
-try:
-    import pyspark.sql
-
-    pyspark_exists = True
-except ImportError:
-    pyspark_exists = False
 
 from . import clean, upload
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import init_dataset_source, check_none, check_not_none
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
+
+pyspark_exists = api.pyspark_exists
+if pyspark_exists:
+    import pyspark.sql
 
 
 class Studio:
@@ -61,36 +58,46 @@ class Studio:
         self,
         cleanset_id: str,
         include_action: bool = False,
-    ) -> pd.DataFrame:
-        rows_df: pd.DataFrame = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
+        to_spark: bool = False,
+    ) -> Any:
+        """
+        Returns either a pandas or pyspark DataFrame
+        Type Any because don't want to rely on pyspark being installed
+        """
+        rows_df = api.download_cleanlab_columns(
+            self._api_key, cleanset_id, all=True, to_spark=to_spark
+        )
         if not include_action:
-            rows_df.drop("action", inplace=True, axis=1)
+            if to_spark:
+                rows_df = rows_df.drop("action")
+            else:
+                rows_df.drop("action", inplace=True, axis=1)
         return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
-        cl_cols = self.download_cleanlab_columns(cleanset_id, include_action=True)
         if pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
-            spark = dataset.sparkSession
-            cl_cols_df = spark.createDataFrame(cl_cols)
-            corrected_ds = dataset.alias("corrected_ds")
-            if id_col not in corrected_ds.columns:
+            cl_cols = self.download_cleanlab_columns(
+                cleanset_id, include_action=True, to_spark=True
+            )
+            corrected_ds_spark = dataset.alias("corrected_ds")
+            if id_col not in corrected_ds_spark.columns:
                 from pyspark.sql.functions import (
                     row_number,
                     monotonically_increasing_id,
                 )
                 from pyspark.sql.window import Window
 
-                corrected_ds = corrected_ds.withColumn(
+                corrected_ds_spark = corrected_ds_spark.withColumn(
                     id_col,
                     row_number().over(Window.orderBy(monotonically_increasing_id())) - 1,
                 )
-            both = cl_cols_df.select([id_col, "action", "clean_label"]).join(
-                corrected_ds.select([id_col, label_column]),
+            both = cl_cols.select([id_col, "action", "clean_label"]).join(
+                corrected_ds_spark.select([id_col, label_column]),
                 on=id_col,
                 how="left",
             )
@@ -107,12 +114,13 @@ class Studio:
                 [id_col, "action", "__cleanlab_final_label"]
             ).withColumnRenamed("__cleanlab_final_label", label_column)
             return (
-                corrected_ds.drop(label_column)
+                corrected_ds_spark.drop(label_column)
                 .join(new_labels, on=id_col, how="right")
                 .where(new_labels["action"] != "exclude")
                 .drop("action")
             )
         elif isinstance(dataset, pd.DataFrame):
+            cl_cols = self.download_cleanlab_columns(cleanset_id, include_action=True)
             joined_ds: pd.DataFrame
             if id_col in dataset.columns:
                 joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
@@ -123,7 +131,7 @@ class Studio:
                 dataset[label_column].to_numpy(),
             )
 
-            corrected_ds = dataset.copy()
+            corrected_ds: pd.DataFrame = dataset.copy()
             corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
             if not keep_excluded:
                 corrected_ds = corrected_ds.loc[(joined_ds["action"] != "exclude").fillna(True)]
