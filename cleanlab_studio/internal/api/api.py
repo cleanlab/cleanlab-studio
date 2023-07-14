@@ -202,7 +202,9 @@ def download_cleanlab_columns(
     return cleanset_pd
 
 
-def download_numpy(api_key: str, cleanset_id: str, name: str) -> npt.NDArray[np.float_]:
+def download_array(
+    api_key: str, cleanset_id: str, name: str
+) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/{name}",
         headers=_construct_headers(api_key),
@@ -210,8 +212,11 @@ def download_numpy(api_key: str, cleanset_id: str, name: str) -> npt.NDArray[np.
     handle_api_error(res)
     res_json: JSONDict = res.json()
     if res_json["success"]:
-        np_data: npt.NDArray[np.float_] = np.array(res_json[name])
-        return np_data
+        if res_json["array_type"] == "numpy":
+            np_data: npt.NDArray[np.float_] = np.array(res_json[name])
+            return np_data
+        pd_data: pd.DataFrame = pd.read_json(res_json[name], orient="records")
+        return pd_data
     raise APIError(f"{name} for cleanset {cleanset_id} not found")
 
 

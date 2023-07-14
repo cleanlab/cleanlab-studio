@@ -238,11 +238,20 @@ class Studio:
         def download_pred_probs(
             self,
             cleanset_id: str,
-        ) -> npt.NDArray[np.float_]:
-            return api.download_numpy(self._outer._api_key, cleanset_id, "pred_probs")
+        ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
+            """
+            Downloads predicted probabilities for a cleanset
+            Old pred_probs were saved as numpy arrays, which is still compatible
+            Newer pred_probs are saved as pd.DataFrames
+            """
+            return api.download_array(self._outer._api_key, cleanset_id, "pred_probs")
 
         def download_embeddings(
             self,
             cleanset_id: str,
-        ) -> npt.NDArray[np.float_]:
-            return api.download_numpy(self._outer._api_key, cleanset_id, "embeddings")
+        ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
+            """
+            Downloads embeddings for a cleanset
+            The downloaded array will always be a numpy array, the above is just for typing purposes
+            """
+            return api.download_array(self._outer._api_key, cleanset_id, "embeddings")
