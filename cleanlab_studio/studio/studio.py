@@ -61,6 +61,19 @@ class Studio:
         modality: Optional[str] = None,
         id_column: Optional[str] = None,
     ) -> str:
+        """
+        Uploads a dataset to Cleanlab Studio
+
+        Args:
+            dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas DataFrame, a pyspark DataFrame
+            dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath)
+            schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred
+            modality: Optional parameter to override the modality of your dataset. If not provided, modality will be inferred
+            id_column: Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated
+
+        Returns:
+            ID of uploaded dataset
+        """
         ds = init_dataset_source(dataset, dataset_name)
         return upload.upload_dataset(
             self._api_key,
@@ -75,12 +88,33 @@ class Studio:
         cleanset_id: str,
         include_action: bool = False,
     ) -> pd.DataFrame:
+        """
+        Downloads Cleanlab columns for a cleanset
+
+        Args:
+            cleanset_id: ID of cleanset to download columns from
+            include_action: Whether to include a column with any actions taken on the cleanset in the downloaded columns
+
+        Returns:
+            Dataframe of downloaded columns
+        """
         rows_df: pd.DataFrame = api.download_cleanlab_columns(self._api_key, cleanset_id, all=True)
         if not include_action:
             rows_df.drop("action", inplace=True, axis=1)
         return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
+        """
+        Applies corrections from a Cleanlab Studio cleanset to your dataset. Corrections can be made by viewing your project in the Cleanlab Studio webapp
+
+        Args:
+            cleanset_id: ID of cleanset to apply corrections from
+            dataset: Dataset to apply corrections to. Supported formats include pandas DataFrame and pyspark DataFrame. Dataset should have the same number of rows as the dataset used to create the project. It should also contain a label column with the same name as the label column for the project
+            keep_excluded: Whether to retain rows with an "exclude" action. By default these rows will be removed from the dataset
+
+        Returns:
+            A copy of the dataset with corrections applied
+        """
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
@@ -175,7 +209,7 @@ class Studio:
             text_column: name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess)
 
         Returns:
-            ID of project
+            ID of created project
         """
         dataset_details = api.get_dataset_details(self._api_key, dataset_id)
 
@@ -225,17 +259,34 @@ class Studio:
         """
         Polls for cleanset status. Blocks until cleanset is ready, there is a cleanset error, or `timeout` is exceeded
 
+        Args:
+            cleanset_id: ID of cleanset to check status of
+            timeout: Optional timeout after which to stop polling for progress. If not provided, will block until cleanset is ready
+
         Returns:
             `True` if cleanset is ready, `False` otherwise
         """
         return clean.poll_cleanset_status(self._api_key, cleanset_id, timeout)
 
     def get_latest_cleanset_id(self, project_id: str) -> str:
-        """Gets latest cleanset ID for a project"""
+        """
+        Gets latest cleanset ID for a project
+
+        Args:
+            project_id: ID of project
+
+        Returns:
+            ID of latest associated cleanset
+        """
         return api.get_latest_cleanset_id(self._api_key, project_id)
 
     def delete_project(self, project_id: str) -> None:
-        """Deletes project with given ID"""
+        """
+        Deletes a project from Cleanlab Studio
+
+        Args:
+            project_id: ID of project to delete
+        """
         api.delete_project(self._api_key, project_id)
         print(f"Successfully deleted project: {project_id}")
 
