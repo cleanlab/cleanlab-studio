@@ -152,3 +152,7 @@ Every time the version number is incremented, these parts of the codebase need t
 
 1. `cleanlab_studio/version.py`
 2. `README.md`
+
+## Documentation Style Guide
+
+cleanlab-studio uses [Google style](https://google.github.io/styleguide/pyguide.html#381-docstrings) docstrings ([example](https://www.sphinx-doc.org/en/master/usage/extensions/example_google.html))
