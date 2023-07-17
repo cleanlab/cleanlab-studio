@@ -10,9 +10,9 @@ import pandas as pd
 try:
     import pyspark.sql
 
-    pyspark_exists = True
+    _pyspark_exists = True
 except ImportError:
-    pyspark_exists = False
+    _pyspark_exists = False
 
 from . import clean, upload
 from cleanlab_studio.internal.api import api
@@ -119,7 +119,7 @@ class Studio:
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
         cl_cols = self.download_cleanlab_columns(cleanset_id, include_action=True)
-        if pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
+        if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
             spark = dataset.sparkSession
