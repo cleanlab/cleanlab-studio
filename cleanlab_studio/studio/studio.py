@@ -200,13 +200,13 @@ class Studio:
 
         Args:
             dataset_id: ID of dataset to create project for.
-            project_name: name for resulting project.
-            modality: modality of project (i.e. text, tabular, image).
-            task_type: type of classification to perform (i.e. multi-class, multi-label).
-            model_type: type of model to train (i.e. fast, regular).
-            label_column: name of column in dataset containing labels (if not supplied, we'll make our best guess).
-            feature_columns: list of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns).
-            text_column: name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess).
+            project_name: Name for resulting project.
+            modality: Modality of project (i.e. text, tabular, image).
+            task_type: Type of classification to perform (i.e. multi-class, multi-label).
+            model_type: Type of model to train (i.e. fast, regular).
+            label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess).
+            feature_columns: List of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns).
+            text_column: Name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess).
 
         Returns:
             ID of created project.
