@@ -86,7 +86,7 @@ class Studio:
         Downloads Cleanlab columns for a cleanset.
 
         Args:
-            cleanset_id: ID of cleanset to download columns from.
+            cleanset_id: ID of cleanset to download columns from. To obtain cleanset ID from project ID use, [get_latest_cleanset_id](#method-get_latest_cleanset_id).
             include_action: Whether to include a column with any actions taken on the cleanset in the downloaded columns.
 
         Returns:
@@ -104,7 +104,7 @@ class Studio:
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
         """
-        Applies corrections from a Cleanlab Studio cleanset to your dataset. Corrections can be made by viewing your project in the Cleanlab Studio webapp.
+        Applies corrections from a Cleanlab Studio cleanset to your dataset. Corrections can be made by viewing your project in the Cleanlab Studio webapp (see [Cleanlab Studio web quickstart](../../guide/quickstart/web#review-the-errors)).
 
         Args:
             cleanset_id: ID of cleanset to apply corrections from.
