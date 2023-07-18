@@ -160,4 +160,4 @@ We autogenerate documentation for the `studio` module from docstrings. In order 
 ### Relative Link Formatting
 
 - To link to other functions in the `studio` module within a docstring, use the following format: `[link text](#method-function_name)`
-- To link to another page in Cleanlab Studio docs use `[link text](../../{path within cleanlab-studio-docs/docs})`
+- To link to another page in Cleanlab Studio docs use `[link text](/{path within cleanlab-studio-docs/docs})`
