@@ -182,4 +182,15 @@ by [polars.from_epoch](https://pola-rs.github.io/polars/py-polars/html/reference
 
 `version` indicates the version of the Cleanlab CLI package version used to generate the schema.
 
+## Other Resources
+
+- [Cleanlab Blog](https://cleanlab.ai/blog/) -- applications of Cleanlab Studio, case studies, feature announcements/explanations, ...
+- [Cleanlab Studio Audits](https://cleanlab.ai/blog/csa/) -- issues in famous datasets detected with Cleanlab Studio
+- [Slack Community](https://cleanlab.ai/slack/) -- ask questions, request features, discuss Data-Centric AI with others, ...
+- Need professional help? Reach out via email: team@cleanlab.ai
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/studio.png" width=80% height=80%>
+</p>
+
 [PyPI]: https://pypi.org/project/cleanlab-studio/
