@@ -1,4 +1,4 @@
-__version__ = "1.0.12"
+__version__ = "1.0.13"
 
 SCHEMA_VERSION = "0.2.0"
 MIN_SCHEMA_VERSION = "0.1.0"
