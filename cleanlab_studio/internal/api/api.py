@@ -27,7 +27,7 @@ upload_base_url = f"{base_url}/upload/v0"
 dataset_base_url = f"{base_url}/datasets"
 project_base_url = f"{base_url}/projects"
 cleanset_base_url = f"{base_url}/cleansets"
-model_base_url = f"{base_url}/models"
+model_base_url = f"{base_url}/v1/deployment"
 
 
 def _construct_headers(
@@ -344,29 +344,36 @@ async def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) 
             resp_json = await resp.json()
             handle_api_error_from_json(resp_json)
 
-            query_id: str = resp_json["query_id"]
             upload_url: str = resp_json["upload_url"]
 
-        session.put(upload_url, data=batch)
+        session.put(upload_url["url"], data=upload_url["fields"], files=batch)
 
-    return query_id
+        return upload_url["fields"]["key"]
 
 
-async def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
+async def start_prediction(api_key: str, model_id: str, s3_key: str) -> None:
     """Starts prediction for query."""
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            f"{model_base_url}/{model_id}/predict/{query_id}",
+            f"{model_base_url}/{model_id}/predict",
             headers=_construct_headers(api_key),
+            data={
+                "s3_key": s3_key,
+            }
         ) as resp:
-            handle_api_error_from_json(await resp.json())
+            resp_json = await resp.json()
+            handle_api_error_from_json(resp_json)
+
+            query_id: str = resp_json["id"]
+
+            return query_id
 
 
-async def get_prediction_status(api_key: str, model_id: str, query_id: str) -> Dict[str, str]:
+async def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     """Gets status of model prediction query."""
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            f"{model_base_url}/{model_id}/predict/{query_id}",
+            f"{model_base_url}/predict/{query_id}",
             headers=_construct_headers(api_key),
         ) as resp:
             resp_json = await resp.json()
