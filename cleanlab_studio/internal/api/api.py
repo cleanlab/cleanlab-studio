@@ -21,6 +21,8 @@ except ImportError:
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
 
+os.environ["CLEANLAB_API_BASE_URL"] = "http://localhost:8500/api"
+
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
 upload_base_url = f"{base_url}/upload/v0"
@@ -334,56 +336,59 @@ def poll_progress(
     return res
 
 
-async def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:
+def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:
     """Uploads prediction batch and returns query ID."""
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f"{model_base_url}/{model_id}/upload",
-            headers=_construct_headers(api_key),
-        ) as resp:
-            resp_json = await resp.json()
-            handle_api_error_from_json(resp_json)
+    res = requests.post(
+        f"{model_base_url}/{model_id}/upload",
+        headers=_construct_headers(api_key),
+    )
 
-            upload_url: str = resp_json["upload_url"]
+    handle_api_error(res)
+    presigned_url = res.json()["upload_url"]
 
-        session.put(upload_url["url"], data=upload_url["fields"], files=batch)
+    requests.post(presigned_url["url"], data=presigned_url["fields"], files={"file": batch})
 
-        return upload_url["fields"]["key"]
+    return presigned_url["fields"]["key"]
 
 
-async def start_prediction(api_key: str, model_id: str, s3_key: str) -> None:
+def start_prediction(api_key: str, model_id: str, s3_key: str) -> str:
     """Starts prediction for query."""
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f"{model_base_url}/{model_id}/predict",
-            headers=_construct_headers(api_key),
-            data={
-                "s3_key": s3_key,
-            }
-        ) as resp:
-            resp_json = await resp.json()
-            handle_api_error_from_json(resp_json)
+    res = requests.post(
+        f"{model_base_url}/{model_id}/predict",
+        headers=_construct_headers(api_key),
+        json={
+            "s3_key": s3_key,
+        }
+    )
 
-            query_id: str = resp_json["id"]
+    handle_api_error(res)
+    query_id: str = res.json()["id"]
 
-            return query_id
+    return query_id
 
 
-async def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
+def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     """Gets status of model prediction query."""
-    async with aiohttp.ClientSession() as session:
-        async with session.get(
-            f"{model_base_url}/predict/{query_id}",
-            headers=_construct_headers(api_key),
-        ) as resp:
-            resp_json = await resp.json()
-            handle_api_error_from_json(resp_json)
+    res = requests.get(
+        f"{model_base_url}/predict/{query_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
 
-            return resp_json
+    prediction_results = res.json()
+    status = prediction_results["status"]
+    result_url = prediction_results["results"]
+    error_msg = prediction_results["error_msg"]
+
+    if prediction_results["status"] == "COMPLETE":
+        return {"status": status, "result_url": result_url}
+    elif prediction_results["status"] == "FAILED":
+        return {"status": status, "error_msg": error_msg}
+    else:
+        return {"status": status}
 
 
-async def download_prediction_results(result_url: str) -> io.StringIO:
+def download_prediction_results(result_url: str) -> io.StringIO:
     """Downloads prediction results from presigned URL."""
-    async with aiohttp.ClientSession() as session:
-        async with session.get(result_url) as resp:
-            return io.StringIO(await resp.text())
+    res = requests.get(result_url)
+    return io.StringIO(res.text)
