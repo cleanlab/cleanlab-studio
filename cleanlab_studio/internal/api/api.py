@@ -358,7 +358,7 @@ def start_prediction(api_key: str, model_id: str, s3_key: str) -> str:
         headers=_construct_headers(api_key),
         json={
             "s3_key": s3_key,
-        }
+        },
     )
 
     handle_api_error(res)
