@@ -21,8 +21,6 @@ except ImportError:
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
 
-os.environ["CLEANLAB_API_BASE_URL"] = "http://localhost:8500/api"
-
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
 upload_base_url = f"{base_url}/upload/v0"
@@ -338,8 +336,10 @@ def poll_progress(
 
 def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:
     """Uploads prediction batch and returns query ID."""
+    url = f"{model_base_url}/{model_id}/upload"
+    print(f"upload {url=}")
     res = requests.post(
-        f"{model_base_url}/{model_id}/upload",
+        url,
         headers=_construct_headers(api_key),
     )
 
