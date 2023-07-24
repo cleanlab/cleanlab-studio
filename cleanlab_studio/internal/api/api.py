@@ -21,6 +21,7 @@ except ImportError:
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
 
+
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
 upload_base_url = f"{base_url}/upload/v0"
@@ -375,12 +376,12 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     result_url = prediction_results["results"]
     error_msg = prediction_results["error_msg"]
 
-    if prediction_results["status"] == "COMPLETE":
-        return {"status": status, "result_url": result_url}
-    elif prediction_results["status"] == "FAILED":
-        return {"status": status, "error_msg": error_msg}
+    if status == "COMPLETE":
+        return {"status": "done", "result_url": result_url}
+    elif status == "FAILED":
+        return {"status": "error", "error_msg": error_msg}
     else:
-        return {"status": status}
+        return {"status": "running"}
 
 
 def download_prediction_results(result_url: str) -> io.StringIO:

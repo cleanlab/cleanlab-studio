@@ -48,12 +48,13 @@ class Model(abc.ABC):
         query_id: str = api.upload_predict_batch(self._api_key, self._model_id, batch)
         api.start_prediction(self._api_key, self._model_id, query_id)
 
-        status: str | None = None
-        result_url: str = ""
+        resp = api.get_prediction_status(self._api_key, query_id)
+        status: str | None = resp["status"]
         while status != "done":
             resp = api.get_prediction_status(self._api_key, query_id)
             status = resp["status"]
-            result_url = resp["result_url"]
+
+        result_url = resp["result_url"]
 
         return pd.read_csv(
             api.download_prediction_results(result_url),
