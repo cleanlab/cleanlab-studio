@@ -50,15 +50,17 @@ class Model(abc.ABC):
 
         resp = api.get_prediction_status(self._api_key, query_id)
         status: str | None = resp["status"]
-        while status != "done":
+        while status == "running":
             resp = api.get_prediction_status(self._api_key, query_id)
             status = resp["status"]
 
-        result_url = resp["result_url"]
-
-        return pd.read_csv(
-            api.download_prediction_results(result_url),
-        ).values
+        if status == "error":
+            return resp["error_msg"]
+        else:
+            result_url = resp["result_url"]
+            return pd.read_csv(
+                api.download_prediction_results(result_url),
+            ).values
 
     @functools.singledispatchmethod
     def _convert_batch_to_csv(self, batch: Batch) -> io.StringIO:
@@ -69,12 +71,9 @@ class Model(abc.ABC):
         if isinstance(batch, (list, np.ndarray, pd.Series)):
             writer = csv.writer(sio)
 
-            # write header
-            writer.writerow(["label"])
-
             # write labels to CSV
-            for label in batch:
-                writer.writerow([label])
+            for input_data in batch:
+                writer.writerow([input_data])
 
         # handle tabular batches
         elif isinstance(batch, pd.DataFrame):

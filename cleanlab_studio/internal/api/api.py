@@ -1,6 +1,8 @@
 import io
 import os
 import time
+from itertools import chain
+from shutil import copyfileobj
 from typing import Callable, List, Optional, Tuple, Dict, Union, Any
 from cleanlab_studio.errors import APIError
 
@@ -338,7 +340,6 @@ def poll_progress(
 def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:
     """Uploads prediction batch and returns query ID."""
     url = f"{model_base_url}/{model_id}/upload"
-    print(f"upload {url=}")
     res = requests.post(
         url,
         headers=_construct_headers(api_key),
@@ -347,8 +348,19 @@ def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str
     handle_api_error(res)
     presigned_url = res.json()["upload_url"]
     query_id = res.json()["query_id"]
+    header = res.json()["header"]
+    if header:
+        batch_header = batch.readline()
+        if batch_header == header:
+            input_batch = batch
+        else:
+            header_io = io.StringIO(header)
+            batch_header_io = io.StringIO(batch_header)
+            input_batch = io.StringIO("\n".join(chain(header_io, batch_header_io, batch)))
+    else:
+        input_batch = batch
 
-    requests.post(presigned_url["url"], data=presigned_url["fields"], files={"file": batch})
+    requests.post(presigned_url["url"], data=presigned_url["fields"], files={"file": input_batch})
 
     return query_id
 
