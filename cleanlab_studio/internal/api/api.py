@@ -361,10 +361,10 @@ def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str
     return query_id
 
 
-def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
+def start_prediction(api_key: str, query_id: str) -> None:
     """Starts prediction for query."""
     res = requests.post(
-        f"{model_base_url}/{model_id}/predict/{query_id}",
+        f"{model_base_url}/predict/{query_id}",
         headers=_construct_headers(api_key),
     )
 

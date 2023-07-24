@@ -1,20 +1,17 @@
 import os
 
-os.environ["CLEANLAB_API_BASE_URL"] = "https://api.dev-bc26qf4m.cleanlab.ai/api"
-# os.environ["CLEANLAB_API_BASE_URL"] = "http://localhost:8500/api"
+# os.environ["CLEANLAB_API_BASE_URL"] = "https://api.dev-bc26qf4m.cleanlab.ai/api"
+os.environ["CLEANLAB_API_BASE_URL"] = "http://localhost:8500/api"
 
 from cleanlab_studio import Studio
 import pandas as pd
 
 
-API_KEY = "350b3ee6fbe64d21a6012ea281ce0ca1"
-MODEL_ID = "cea761848e5f449b85e34fe347696b53"
-# API_KEY = "75f2ab8c962c40169917136756c5d937"
-# MODEL_ID = "750dbdfb6549470192573b9646be40e9"
-BATCH = pd.read_csv(
-    "/Users/tony/test_files/text_amazon_reviews_test_small.csv", index_col=False, header=0
-).loc[0, :]
-print(BATCH)
+# API_KEY = "350b3ee6fbe64d21a6012ea281ce0ca1"
+# MODEL_ID = "cea761848e5f449b85e34fe347696b53"
+API_KEY = "75f2ab8c962c40169917136756c5d937"
+MODEL_ID = "750dbdfb6549470192573b9646be40e9"
+BATCH = pd.read_csv("/Users/tony/test_files/tabular_grades_test_small.csv")
 # TEXT_BATCH = pd.Series([
 #     "This magazine was great for the times but as with all other technology magazines the new stuff isn't as good a lot of advertisments and reviews seem biased.",
 #     "We ordered this magazine for our grandson (then 7 going on 30) who was/is deploy into technology. He really enjoyed every issue.",
