@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from . import clean, upload
+from . import clean, upload, inference
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import init_dataset_source, check_none, check_not_none
 from cleanlab_studio.internal.settings import CleanlabSettings
@@ -230,6 +230,10 @@ class Studio:
         """Deletes project with given ID"""
         api.delete_project(self._api_key, project_id)
         print(f"Successfully deleted project: {project_id}")
+
+    def get_model(self, model_id: str) -> inference.Model:
+        """Creates model object from model ID, to use for inference."""
+        return inference.Model(self._api_key, model_id)
 
     class Experimental:
         def __init__(self, outer):  # type: ignore
