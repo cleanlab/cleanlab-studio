@@ -348,15 +348,11 @@ def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str
     handle_api_error(res)
     presigned_url = res.json()["upload_url"]
     query_id = res.json()["query_id"]
+    modality = res.json()["modality"]
     header = res.json()["header"]
-    if header:
-        batch_header = batch.readline()
-        if batch_header == header:
-            input_batch = batch
-        else:
-            header_io = io.StringIO(header)
-            batch_header_io = io.StringIO(batch_header)
-            input_batch = io.StringIO("\n".join(chain(header_io, batch_header_io, batch)))
+    if modality == "text":
+        header_io = io.StringIO(header)
+        input_batch = io.StringIO("\n".join(chain(header_io, batch)))
     else:
         input_batch = batch
 
