@@ -42,10 +42,10 @@ class Model(abc.ABC):
         :param return_pred_proba: if should return class probabilities
         :return: predictions + class probabilities, if requested
         """
-        return asyncio.run(self._predict_async(batch, return_pred_proba))
+        return self._predict_async(batch, return_pred_proba)
 
     @abc.abstractmethod
-    async def predict_async(
+    def predict_async(
         self, batch: Any, return_pred_proba: bool = False
     ) -> Awaitable[Predictions] | Awaitable[Tuple[Predictions, ClassProbablities]]:
         """Asynchronously gets predictions for batch of examples, optionally returning class probabilities.
@@ -56,7 +56,7 @@ class Model(abc.ABC):
         """
         raise NotImplementedError
 
-    async def _predict_async(
+    def _predict_async(
         self, batch: io.StringIO, return_pred_proba: bool
     ) -> Predictions | Tuple[Predictions, ClassProbablities]:
         """Asynchronously gets predictions for batch of examples, optionally returning class probabilities.
@@ -65,17 +65,17 @@ class Model(abc.ABC):
         :param return_pred_proba: if should return class probabilities, defaults to False
         :return: predictions + class probabilities, if requested
         """
-        query_id: str = await api.upload_predict_batch(self._api_key, self._model_id, batch)
-        await api.start_prediction(self._api_key, self._model_id, query_id)
+        query_id: str = api.upload_predict_batch(self._api_key, self._model_id, batch)
+        api.start_prediction(self._api_key, self._model_id, query_id)
 
         status: str | None = None
         result_url: str = ""
         while status != "done":
-            status, result_url = await api.get_prediction_status(
-                self._api_key, self._model_id, query_id
+            status, result_url = api.get_prediction_status(
+                self._api_key, query_id
             )
 
         # TODO handle get pred proba case
         return pd.read_csv(
-            await api.download_prediction_results(result_url),
+            api.download_prediction_results(result_url),
         ).values

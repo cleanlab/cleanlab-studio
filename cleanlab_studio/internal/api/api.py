@@ -345,26 +345,21 @@ def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str
 
     handle_api_error(res)
     presigned_url = res.json()["upload_url"]
+    query_id = res.json()["query_id"]
 
     requests.post(presigned_url["url"], data=presigned_url["fields"], files={"file": batch})
 
-    return presigned_url["fields"]["key"]
+    return query_id
 
 
-def start_prediction(api_key: str, model_id: str, s3_key: str) -> str:
+def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
     """Starts prediction for query."""
     res = requests.post(
-        f"{model_base_url}/{model_id}/predict",
+        f"{model_base_url}/{model_id}/predict/{query_id}",
         headers=_construct_headers(api_key),
-        json={
-            "s3_key": s3_key,
-        },
     )
 
     handle_api_error(res)
-    query_id: str = res.json()["id"]
-
-    return query_id
 
 
 def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
