@@ -71,9 +71,7 @@ class Model(abc.ABC):
         status: str | None = None
         result_url: str = ""
         while status != "done":
-            status, result_url = api.get_prediction_status(
-                self._api_key, query_id
-            )
+            status, result_url = api.get_prediction_status(self._api_key, query_id)
 
         # TODO handle get pred proba case
         return pd.read_csv(
