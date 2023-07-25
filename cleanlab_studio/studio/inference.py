@@ -2,7 +2,7 @@ import abc
 import csv
 import functools
 import io
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -11,9 +11,9 @@ import pandas as pd
 from cleanlab_studio.internal.api import api
 
 
-TextBatch = List[str] | npt.NDArray[np.str_] | pd.Series
-TabularBatch = pd.DataFrame
-Batch = TextBatch | TabularBatch
+TextBatch = Union[List[str], npt.NDArray[np.str_], pd.Series]
+TabularBatch = Union[pd.DataFrame]
+Batch = Union[TextBatch, TabularBatch]
 
 Predictions = npt.NDArray[np.int_] | npt.NDArray[np.str_]
 ClassProbablities = pd.DataFrame
