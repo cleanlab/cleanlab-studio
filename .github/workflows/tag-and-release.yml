@@ -23,5 +23,11 @@ jobs:
 
   update-docs:
     needs: build-and-release-pypi-package
-    uses: cleanlab/cleanlab-studio-docs/.github/workflows/build_and_deploy.yml@main
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger docs rebuild
+        run: |
+          curl -X POST https://api.github.com/repos/cleanlab/cleanlab-studio-docs/dispatches \
+            -H 'Accept: application/vnd.github.everest-preview+json' \
+            -H 'Authorization: token ${{ secrets.DOCS_REBUILD_TOKEN }}' \
+            --data '{"event_type": "rebuild_docs"}'
