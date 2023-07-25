@@ -257,14 +257,14 @@ class Studio:
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
         """
-        Polls for cleanset status. Blocks until cleanset is ready, there is a cleanset error, or `timeout` is exceeded.
+        Repeatedly polls for cleanset status while the cleanset is being generated. Blocks until cleanset is ready, there is a cleanset error, or `timeout` is exceeded.
 
         Args:
             cleanset_id: ID of cleanset to check status of.
             timeout: Optional timeout after which to stop polling for progress. If not provided, will block until cleanset is ready.
 
         Returns:
-            `True` if cleanset is ready, `False` otherwise.
+            After cleanset is done being generated, returns `True` if cleanset is ready to use, `False` otherwise.
         """
         return clean.poll_cleanset_status(self._api_key, cleanset_id, timeout)
 
