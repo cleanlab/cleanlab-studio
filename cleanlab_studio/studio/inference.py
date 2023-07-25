@@ -9,6 +9,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+from cleanlab_studio.errors import APIError
 from cleanlab_studio.internal.api import api
 
 
@@ -31,16 +32,18 @@ class Model(abc.ABC):
     def predict(
         self,
         batch: Batch,
+        timeout: int = 600,
     ) -> Union[str, Predictions]:
         """Gets predictions for batch of examples.
 
         :param batch: batch of example to predict classes for
+        :param timeout: optional parameter to set timeout for predictions in seconds
         :return: predictions from batch
         """
         csv_batch = self._convert_batch_to_csv(batch)
-        return self._predict(csv_batch)
+        return self._predict(csv_batch, timeout)
 
-    def _predict(self, batch: io.StringIO) -> Union[str, Predictions]:
+    def _predict(self, batch: io.StringIO, timeout: int) -> Union[str, Predictions]:
         """Gets predictions for batch of examples.
 
         :param batch: batch of example to predict classes for, as in-memory CSV file
@@ -51,23 +54,24 @@ class Model(abc.ABC):
 
         resp = api.get_prediction_status(self._api_key, query_id)
         status: Optional[str] = resp["status"]
-        # Set timeout to 10 minutes as inference won't take longer than 10 minutes typically and
-        # to prevent users from getting stuck in this loop indefinitely when there is a failure
-        timeout = time.time() + 60 * 10
+        # Set timeout to prevent users from getting stuck indefinitely when there is a failure
+        timeout = time.time() + timeout
         while status == "running" and time.time() < timeout:
             resp = api.get_prediction_status(self._api_key, query_id)
             status = resp["status"]
+            # Set time.sleep so that the while loop doesn't flood backend with api calls
+            time.sleep(3)
 
         if status == "error":
-            return resp["error_msg"]
+            raise APIError(resp["error_msg"])
         else:
             result_url = resp["result_url"]
-            results: io.StringIO = api.download_prediction_results(result_url)
+            results = api.download_prediction_results(result_url)
             results_converted: Predictions = pd.read_csv(results).to_numpy()
             return results_converted
 
-    @functools.singledispatchmethod
-    def _convert_batch_to_csv(self, batch: Batch) -> io.StringIO:
+    @staticmethod
+    def _convert_batch_to_csv(batch: Batch) -> io.StringIO:
         """Converts batch object to CSV string IO."""
         sio = io.StringIO()
 

@@ -393,4 +393,4 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
 def download_prediction_results(result_url: str) -> io.StringIO:
     """Downloads prediction results from presigned URL."""
     res = requests.get(result_url)
-    return io.StringIO(res.text)
+    return io.StringIO(res.raw)
