@@ -72,6 +72,8 @@ class Studio:
                 rows_df = rows_df.drop("action")
             else:
                 rows_df.drop("action", inplace=True, axis=1)
+        if "cleanlab_row_ID" in rows_df.columns:
+            rows_df.sort_values(by="cleanlab_row_ID")
         return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
