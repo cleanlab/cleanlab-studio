@@ -29,5 +29,5 @@ jobs:
         run: |
           curl -X POST https://api.github.com/repos/cleanlab/cleanlab-studio-docs/dispatches \
             -H 'Accept: application/vnd.github.everest-preview+json' \
-            -H 'Authorization: token ${{ secrets.DOCS_REBUILD_TOKEN }}' \
+            -H 'Authorization: token ${{ secrets.REBUILD_DOCS_TOKEN }}' \
             --data '{"event_type": "rebuild_docs"}'
