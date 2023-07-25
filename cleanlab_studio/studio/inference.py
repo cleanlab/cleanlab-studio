@@ -2,7 +2,8 @@ import abc
 import csv
 import functools
 import io
-from typing import List, Union
+import time
+from typing import List, Union, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -30,7 +31,7 @@ class Model(abc.ABC):
     def predict(
         self,
         batch: Batch,
-    ) -> str | Predictions:
+    ) -> Union[str, Predictions]:
         """Gets predictions for batch of examples.
 
         :param batch: batch of example to predict classes for
@@ -39,7 +40,7 @@ class Model(abc.ABC):
         csv_batch = self._convert_batch_to_csv(batch)
         return self._predict(csv_batch)
 
-    def _predict(self, batch: io.StringIO) -> str | Predictions:
+    def _predict(self, batch: io.StringIO) -> Union[str, Predictions]:
         """Gets predictions for batch of examples.
 
         :param batch: batch of example to predict classes for, as in-memory CSV file
@@ -49,8 +50,11 @@ class Model(abc.ABC):
         api.start_prediction(self._api_key, query_id)
 
         resp = api.get_prediction_status(self._api_key, query_id)
-        status: str | None = resp["status"]
-        while status == "running":
+        status: Optional[str] = resp["status"]
+        # Set timeout to 10 minutes as inference won't take longer than 10 minutes typically and
+        # to prevent users from getting stuck in this loop indefinitely when there is a failure
+        timeout = time.time() + 60 * 10
+        while status == "running" or time.time() < timeout:
             resp = api.get_prediction_status(self._api_key, query_id)
             status = resp["status"]
 
