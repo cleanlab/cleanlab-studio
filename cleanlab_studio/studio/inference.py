@@ -15,7 +15,7 @@ TextBatch = Union[List[str], npt.NDArray[np.str_], pd.Series]
 TabularBatch = Union[pd.DataFrame]
 Batch = Union[TextBatch, TabularBatch]
 
-Predictions = npt.NDArray[np.int_] | npt.NDArray[np.str_]
+Predictions = Union[npt.NDArray[np.int_], npt.NDArray[np.str_]]
 ClassProbablities = pd.DataFrame
 
 
