@@ -55,9 +55,9 @@ class Model(abc.ABC):
         resp = api.get_prediction_status(self._api_key, query_id)
         status: Optional[str] = resp["status"]
         # Set timeout to prevent users from getting stuck indefinitely when there is a failure
-        timeout = time.time() + timeout
+        timeout_limit = time.time() + timeout
 
-        while status == "running" and time.time() < timeout:
+        while status == "running" and time.time() < timeout_limit:
             resp = api.get_prediction_status(self._api_key, query_id)
             status = resp["status"]
             # Set time.sleep so that the while loop doesn't flood backend with api calls
