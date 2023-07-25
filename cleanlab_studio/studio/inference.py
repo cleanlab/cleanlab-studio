@@ -2,7 +2,7 @@ import abc
 import csv
 import functools
 import io
-from typing import List
+from typing import List, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -11,9 +11,9 @@ import pandas as pd
 from cleanlab_studio.internal.api import api
 
 
-TextBatch = List[str] | npt.NDArray[np.str_] | pd.Series
-TabularBatch = pd.DataFrame
-Batch = TextBatch | TabularBatch
+TextBatch: TypeAlias = List[str] | npt.NDArray[np.str_] | pd.Series
+TabularBatch: TypeAlias = pd.DataFrame
+Batch: TypeAlias = TextBatch | TabularBatch
 
 Predictions = npt.NDArray[np.int_] | npt.NDArray[np.str_]
 ClassProbablities = pd.DataFrame
@@ -30,7 +30,7 @@ class Model(abc.ABC):
     def predict(
         self,
         batch: Batch,
-    ) -> Predictions:
+    ) -> str | Predictions:
         """Gets predictions for batch of examples.
 
         :param batch: batch of example to predict classes for
@@ -39,7 +39,7 @@ class Model(abc.ABC):
         csv_batch = self._convert_batch_to_csv(batch)
         return self._predict(csv_batch)
 
-    def _predict(self, batch: io.StringIO) -> Predictions:
+    def _predict(self, batch: io.StringIO) -> str | Predictions:
         """Gets predictions for batch of examples.
 
         :param batch: batch of example to predict classes for, as in-memory CSV file
@@ -58,9 +58,9 @@ class Model(abc.ABC):
             return resp["error_msg"]
         else:
             result_url = resp["result_url"]
-            return pd.read_csv(
-                api.download_prediction_results(result_url),
-            ).values
+            results: io.StringIO = api.download_prediction_results(result_url)
+            results_converted: Predictions = pd.read_csv(results).to_numpy()
+            return results_converted
 
     @functools.singledispatchmethod
     def _convert_batch_to_csv(self, batch: Batch) -> io.StringIO:

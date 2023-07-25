@@ -345,7 +345,7 @@ def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str
 
     handle_api_error(res)
     presigned_url = res.json()["upload_url"]
-    query_id = res.json()["query_id"]
+    query_id: str = res.json()["query_id"]
     modality = res.json()["modality"]
     header = res.json()["header"]
     if modality == "text":
@@ -393,4 +393,5 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
 def download_prediction_results(result_url: str) -> io.StringIO:
     """Downloads prediction results from presigned URL."""
     res = requests.get(result_url)
+    print(res.text)
     return io.StringIO(res.text)
