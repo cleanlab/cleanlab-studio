@@ -54,7 +54,7 @@ class Model(abc.ABC):
         # Set timeout to 10 minutes as inference won't take longer than 10 minutes typically and
         # to prevent users from getting stuck in this loop indefinitely when there is a failure
         timeout = time.time() + 60 * 10
-        while status == "running" or time.time() < timeout:
+        while status == "running" and time.time() < timeout:
             resp = api.get_prediction_status(self._api_key, query_id)
             status = resp["status"]
 
