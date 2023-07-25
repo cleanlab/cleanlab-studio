@@ -2,11 +2,9 @@ import io
 import os
 import time
 from itertools import chain
-from shutil import copyfileobj
 from typing import Callable, List, Optional, Tuple, Dict, Union, Any
 from cleanlab_studio.errors import APIError
 
-import aiohttp
 import requests
 from tqdm import tqdm
 import pandas as pd
