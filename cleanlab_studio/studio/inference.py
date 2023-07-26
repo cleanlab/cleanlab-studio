@@ -80,6 +80,9 @@ class Model(abc.ABC):
         if isinstance(batch, (list, np.ndarray, pd.Series)):
             writer = csv.writer(sio)
 
+            # write header
+            writer.writerow(["text"])
+
             # write labels to CSV
             for input_data in batch:
                 writer.writerow([input_data])
