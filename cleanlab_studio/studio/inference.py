@@ -50,7 +50,7 @@ class Model(abc.ABC):
         :return: predictions from batch
         """
         query_id: str = api.upload_predict_batch(self._api_key, self._model_id, batch)
-        api.start_prediction(self._api_key, query_id)
+        api.start_prediction(self._api_key, self._model_id, query_id)
 
         resp = api.get_prediction_status(self._api_key, query_id)
         status: Optional[str] = resp["status"]

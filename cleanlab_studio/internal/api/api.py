@@ -352,10 +352,10 @@ def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str
     return query_id
 
 
-def start_prediction(api_key: str, query_id: str) -> None:
+def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
     """Starts prediction for query."""
     res = requests.post(
-        f"{model_base_url}/predict/{query_id}",
+        f"{model_base_url}/{model_id}/predict/{query_id}",
         headers=_construct_headers(api_key),
     )
 
@@ -386,4 +386,4 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
 def download_prediction_results(result_url: str) -> io.StringIO:
     """Downloads prediction results from presigned URL."""
     res = requests.get(result_url)
-    return io.StringIO(res.raw)
+    return io.StringIO(res.text)
