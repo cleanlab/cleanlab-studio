@@ -67,8 +67,7 @@ class Model(abc.ABC):
             raise APIError(resp["error_msg"])
         else:
             result_url = resp["result_url"]
-            results = api.download_prediction_results(result_url)
-            results_converted: Predictions = pd.read_csv(results).to_numpy()
+            results_converted: Predictions = pd.read_csv(result_url).to_numpy()
             return results_converted
 
     @staticmethod
