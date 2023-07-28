@@ -29,13 +29,15 @@ MAX_RETRIES = 4
 
 
 def _construct_headers(
-    api_key: Optional[str], content_type: Optional[str] = "application/json"
+    api_key: Optional[str],
+    content_type: Optional[str] = "application/json",
 ) -> JSONDict:
     retval = dict()
     if api_key:
         retval["Authorization"] = f"bearer {api_key}"
     if content_type:
         retval["Content-Type"] = content_type
+    retval["Client-Type"] = "cli"
     return retval
 
 

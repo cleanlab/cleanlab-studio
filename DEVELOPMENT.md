@@ -152,3 +152,12 @@ Every time the version number is incremented, these parts of the codebase need t
 
 1. `cleanlab_studio/version.py`
 2. `README.md`
+
+## Documentation Style Guide
+
+We autogenerate documentation for the `studio` module from docstrings. In order for the generated docs to be formatted correctly, use [Google style](https://google.github.io/styleguide/pyguide.html#381-docstrings) docstrings ([example](https://www.sphinx-doc.org/en/master/usage/extensions/example_google.html))
+
+### Relative Link Formatting
+
+- To link to other functions in the `studio` module within a docstring, use the following format: `[link text](#method-function_name)`
+- To link to another page in Cleanlab Studio docs use `[link text](/{path within cleanlab-studio-docs/docs})`

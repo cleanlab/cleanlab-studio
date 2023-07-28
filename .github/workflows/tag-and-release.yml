@@ -20,3 +20,14 @@ jobs:
         run: python3 -m build
       - name: Release package
         run: twine upload dist/* -u __token__ -p ${{ secrets.PYPI_TOKEN }} --verbose
+
+  update-docs:
+    needs: build-and-release-pypi-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger docs rebuild
+        run: |
+          curl -X POST https://api.github.com/repos/cleanlab/cleanlab-studio-docs/dispatches \
+            -H 'Accept: application/vnd.github.everest-preview+json' \
+            -H 'Authorization: token ${{ secrets.REBUILD_DOCS_TOKEN }}' \
+            --data '{"event_type": "rebuild_docs"}'

@@ -1,3 +1,6 @@
+"""
+Python API for Cleanlab Studio.
+"""
 from typing import Any, List, Literal, Optional, Union
 
 import numpy as np
@@ -6,16 +9,22 @@ import pandas as pd
 
 from . import clean, upload, inference
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import init_dataset_source, check_none, check_not_none
+from cleanlab_studio.internal.util import (
+    init_dataset_source,
+    check_none,
+    check_not_none,
+)
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
 
-pyspark_exists = api.pyspark_exists
-if pyspark_exists:
+_pyspark_exists = api.pyspark_exists
+if _pyspark_exists:
     import pyspark.sql
 
 
 class Studio:
+    """Used to interact with Cleanlab Studio."""
+
     _api_key: str
 
     def __init__(self, api_key: Optional[str]):
@@ -45,6 +54,19 @@ class Studio:
         modality: Optional[str] = None,
         id_column: Optional[str] = None,
     ) -> str:
+        """
+        Uploads a dataset to Cleanlab Studio.
+
+        Args:
+            dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas DataFrame, a pyspark DataFrame.
+            dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath).
+            schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred.
+            modality: Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
+            id_column: Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated.
+
+        Returns:
+            ID of uploaded dataset.
+        """
         ds = init_dataset_source(dataset, dataset_name)
         return upload.upload_dataset(
             self._api_key,
@@ -61,8 +83,14 @@ class Studio:
         to_spark: bool = False,
     ) -> Any:
         """
-        Returns either a pandas or pyspark DataFrame
-        Type Any because don't want to rely on pyspark being installed
+        Downloads Cleanlab columns for a cleanset.
+
+        Args:
+            cleanset_id: ID of cleanset to download columns from. To obtain cleanset ID from project ID use, [get_latest_cleanset_id](#method-get_latest_cleanset_id).
+            include_action: Whether to include a column with any actions taken on the cleanset in the downloaded columns.
+
+        Returns:
+            A pandas or pyspark DataFrame. Type is `Any` to avoid requiring pyspark installation.
         """
         rows_df = api.download_cleanlab_columns(
             self._api_key, cleanset_id, all=True, to_spark=to_spark
@@ -75,10 +103,21 @@ class Studio:
         return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
+        """
+        Applies corrections from a Cleanlab Studio cleanset to your dataset. Corrections can be made by viewing your project in the Cleanlab Studio webapp (see [Cleanlab Studio web quickstart](/guide/quickstart/web#review-the-errors)).
+
+        Args:
+            cleanset_id: ID of cleanset to apply corrections from.
+            dataset: Dataset to apply corrections to. Supported formats include pandas DataFrame and pyspark DataFrame. Dataset should have the same number of rows as the dataset used to create the project. It should also contain a label column with the same name as the label column for the project.
+            keep_excluded: Whether to retain rows with an "exclude" action. By default these rows will be removed from the dataset.
+
+        Returns:
+            A copy of the dataset with corrections applied.
+        """
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
-        if pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
+        if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
             cl_cols = self.download_cleanlab_columns(
@@ -157,18 +196,20 @@ class Studio:
         text_column: Optional[str] = None,
     ) -> str:
         """
-        Creates a Cleanlab Studio project
+        Creates a Cleanlab Studio project.
 
-        :param dataset_id: ID of dataset to create project for
-        :param project_name: name for resulting project
-        :param modality: modality of project (i.e. text, tabular, image)
-        :keyword task_type: type of classification to perform (i.e. multi-class, multi-label)
-        :keyword model_type: type of model to train (i.e. fast, regular)
-        :keyword label_column: name of column in dataset containing labels (if not supplied, we'll make our best guess)
-        :keyword feature_columns: list of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns)
-        :keyword text_column: name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess)
+        Args:
+            dataset_id: ID of dataset to create project for.
+            project_name: Name for resulting project.
+            modality: Modality of project (i.e. text, tabular, image).
+            task_type: Type of classification to perform (i.e. multi-class, multi-label).
+            model_type: Type of model to train (i.e. fast, regular).
+            label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess).
+            feature_columns: List of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns).
+            text_column: Name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess).
 
-        :return: ID of project
+        Returns:
+            ID of created project.
         """
         dataset_details = api.get_dataset_details(self._api_key, dataset_id)
 
@@ -216,18 +257,36 @@ class Studio:
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
         """
-        Polls for cleanset status. Blocks until cleanset is ready, there is a cleanset error, or `timeout` is exceeded
+        Repeatedly polls for cleanset status while the cleanset is being generated. Blocks until cleanset is ready, there is a cleanset error, or `timeout` is exceeded.
 
-        :return: True if cleanset is ready, False otherwise
+        Args:
+            cleanset_id: ID of cleanset to check status of.
+            timeout: Optional timeout after which to stop polling for progress. If not provided, will block until cleanset is ready.
+
+        Returns:
+            After cleanset is done being generated, returns `True` if cleanset is ready to use, `False` otherwise.
         """
         return clean.poll_cleanset_status(self._api_key, cleanset_id, timeout)
 
     def get_latest_cleanset_id(self, project_id: str) -> str:
-        """Gets latest cleanset ID for a project"""
+        """
+        Gets latest cleanset ID for a project.
+
+        Args:
+            project_id: ID of project.
+
+        Returns:
+            ID of latest associated cleanset.
+        """
         return api.get_latest_cleanset_id(self._api_key, project_id)
 
     def delete_project(self, project_id: str) -> None:
-        """Deletes project with given ID"""
+        """
+        Deletes a project from Cleanlab Studio.
+
+        Args:
+            project_id: ID of project to delete.
+        """
         api.delete_project(self._api_key, project_id)
         print(f"Successfully deleted project: {project_id}")
 

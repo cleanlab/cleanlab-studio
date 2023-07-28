@@ -39,6 +39,7 @@ def _construct_headers(
         retval["Authorization"] = f"bearer {api_key}"
     if content_type:
         retval["Content-Type"] = content_type
+    retval["Client-Type"] = "python-api"
     return retval
 
 
