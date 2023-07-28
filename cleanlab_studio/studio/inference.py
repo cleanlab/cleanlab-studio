@@ -34,11 +34,15 @@ class Model(abc.ABC):
         batch: Batch,
         timeout: int = 600,
     ) -> Union[str, Predictions]:
-        """Gets predictions for batch of examples.
+        """
+        Gets predictions for batch of examples.
 
-        :param batch: batch of example to predict classes for
-        :param timeout: optional parameter to set timeout for predictions in seconds
-        :return: predictions from batch
+        Args:
+            batch: batch of example to predict classes for
+            timeout: optional parameter to set timeout for predictions in seconds
+
+        Returns:
+            predictions from batch as a numpy array or an error message if predictions fail
         """
         csv_batch = self._convert_batch_to_csv(batch)
         return self._predict(csv_batch, timeout)

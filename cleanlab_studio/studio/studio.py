@@ -291,7 +291,15 @@ class Studio:
         print(f"Successfully deleted project: {project_id}")
 
     def get_model(self, model_id: str) -> inference.Model:
-        """Creates model object from model ID, to use for inference."""
+        """
+        Gets a model deployed by Cleanlab Studio.
+
+        Args:
+            model_id: ID of model to get. This ID should be fetched in the deployments page of the app UI.
+
+        Returns:
+            Model object with methods run predictions on new input data
+        """
         return inference.Model(self._api_key, model_id)
 
     class Experimental:
