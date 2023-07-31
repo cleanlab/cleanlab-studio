@@ -1,9 +1,8 @@
 import abc
 import csv
-import functools
 import io
 import time
-from typing import List, Union, Optional
+from typing import List, TypeAlias, Union, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -14,7 +13,7 @@ from cleanlab_studio.internal.api import api
 
 
 TextBatch = Union[List[str], npt.NDArray[np.str_], pd.Series]
-TabularBatch = pd.DataFrame
+TabularBatch: TypeAlias = pd.DataFrame
 Batch = Union[TextBatch, TabularBatch]
 
 Predictions = Union[npt.NDArray[np.int_], npt.NDArray[np.str_]]
