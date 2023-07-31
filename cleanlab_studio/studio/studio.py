@@ -80,6 +80,8 @@ class Studio:
         self,
         cleanset_id: str,
         include_action: bool = False,
+        include_cleanlab_columns=True,
+        include_project_details=True,
         to_spark: bool = False,
     ) -> Any:
         """
@@ -93,13 +95,20 @@ class Studio:
             A pandas or pyspark DataFrame. Type is `Any` to avoid requiring pyspark installation.
         """
         rows_df = api.download_cleanlab_columns(
-            self._api_key, cleanset_id, all=True, to_spark=to_spark
+            self._api_key,
+            cleanset_id,
+            include_cleanlab_columns=include_cleanlab_columns,
+            include_project_details=include_project_details,
+            to_spark=to_spark,
         )
-        if not include_action:
+        if not include_action and "action" in rows_df.columns:
             if to_spark:
                 rows_df = rows_df.drop("action")
             else:
                 rows_df.drop("action", inplace=True, axis=1)
+
+        if "cleanlab_row_ID" in rows_df.columns:
+            rows_df.sort_values(by="cleanlab_row_ID")
         return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
