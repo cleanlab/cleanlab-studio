@@ -18,7 +18,7 @@ TabularBatch: TypeAlias = pd.DataFrame
 Batch = Union[TextBatch, TabularBatch]
 
 Predictions = Union[npt.NDArray[np.int_], npt.NDArray[np.str_]]
-ClassProbablities = pd.DataFrame
+ClassProbablities: TypeAlias = pd.DataFrame
 
 
 class Model(abc.ABC):
