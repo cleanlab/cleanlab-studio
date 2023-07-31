@@ -14,7 +14,7 @@ from cleanlab_studio.internal.api import api
 
 
 TextBatch = Union[List[str], npt.NDArray[np.str_], pd.Series]
-TabularBatch = Union[pd.DataFrame]
+TabularBatch = pd.DataFrame
 Batch = Union[TextBatch, TabularBatch]
 
 Predictions = Union[npt.NDArray[np.int_], npt.NDArray[np.str_]]
@@ -62,13 +62,15 @@ class Model(abc.ABC):
         timeout_limit = time.time() + timeout
 
         while status == "running" and time.time() < timeout_limit:
+            time.sleep(1)
+
             resp = api.get_prediction_status(self._api_key, query_id)
             status = resp["status"]
-            # Set time.sleep so that the while loop doesn't flood backend with api calls
-            time.sleep(3)
 
         if status == "error":
             raise APIError(resp["error_msg"])
+        elif status == "running":
+            raise TimeoutError("Timeout of {timeout}s expired while waiting for prediction")
         else:
             result_url = resp["result_url"]
             results_converted: Predictions = pd.read_csv(result_url).to_numpy()
