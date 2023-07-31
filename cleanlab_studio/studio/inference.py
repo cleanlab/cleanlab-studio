@@ -2,7 +2,8 @@ import abc
 import csv
 import io
 import time
-from typing import List, TypeAlias, Union, Optional
+from typing import List, Union, Optional
+from typing_extensions import TypeAlias
 
 import numpy as np
 import numpy.typing as npt
