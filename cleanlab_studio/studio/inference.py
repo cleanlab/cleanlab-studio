@@ -2,7 +2,7 @@ import abc
 import csv
 import io
 import time
-from typing import List, Union, Optional
+from typing import List, Optional, Tuple, Union
 from typing_extensions import TypeAlias
 
 import numpy as np
@@ -32,26 +32,33 @@ class Model(abc.ABC):
     def predict(
         self,
         batch: Batch,
+        return_pred_proba: bool = False,
         timeout: int = 600,
-    ) -> Union[str, Predictions]:
+    ) -> Union[Predictions, Tuple[Predictions, ClassProbablities]]:
         """
         Gets predictions for batch of examples.
 
         Args:
             batch: batch of example to predict classes for
+            return_pred_proba: if should return class probabilities for each example
             timeout: optional parameter to set timeout for predictions in seconds
 
         Returns:
-            predictions from batch as a numpy array or an error message if predictions fail
+            predictions from batch as a numpy array
         """
         csv_batch = self._convert_batch_to_csv(batch)
-        return self._predict(csv_batch, timeout)
+        predictions, class_probabilities = self._predict(csv_batch, timeout)
 
-    def _predict(self, batch: io.StringIO, timeout: int) -> Union[str, Predictions]:
+        if return_pred_proba:
+            return predictions, class_probabilities
+
+        return predictions
+
+    def _predict(self, batch: io.StringIO, timeout: int) -> Tuple[Predictions, ClassProbablities]:
         """Gets predictions for batch of examples.
 
         :param batch: batch of example to predict classes for, as in-memory CSV file
-        :return: predictions from batch
+        :return: predictions from batch, class probabilities
         """
         query_id: str = api.upload_predict_batch(self._api_key, self._model_id, batch)
         api.start_prediction(self._api_key, self._model_id, query_id)
@@ -70,11 +77,12 @@ class Model(abc.ABC):
         if status == "error":
             raise APIError(resp["error_msg"])
         elif status == "running":
-            raise TimeoutError("Timeout of {timeout}s expired while waiting for prediction")
+            raise TimeoutError(f"Timeout of {timeout}s expired while waiting for prediction")
         else:
             result_url = resp["result_url"]
-            results_converted: Predictions = pd.read_csv(result_url).to_numpy()
-            return results_converted
+            results: pd.DataFrame = pd.read_csv(result_url)
+
+            return results.pop("Suggested Label").to_numpy(), results
 
     @staticmethod
     def _convert_batch_to_csv(batch: Batch) -> io.StringIO:
