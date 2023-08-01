@@ -1,8 +1,7 @@
 import io
 import os
 import time
-from itertools import chain
-from typing import Callable, List, Optional, Tuple, Dict, Union, Any
+from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
 from cleanlab_studio.errors import APIError
 
 import requests
@@ -371,4 +370,4 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     )
     handle_api_error(res)
 
-    return res.json()
+    return cast(dict, res.json())
