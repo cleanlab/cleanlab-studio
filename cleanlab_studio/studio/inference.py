@@ -69,11 +69,12 @@ class Model(abc.ABC):
         timeout_limit = time.time() + timeout
         while time.time() < timeout_limit:
             resp = api.get_prediction_status(self._api_key, query_id)
-            time.sleep(1)
 
             if result_url := resp.get("result_url"):
                 results: pd.DataFrame = pd.read_csv(result_url)
                 return results.pop("Suggested Label").to_numpy(), results
+
+            time.sleep(1)
 
         else:
             raise TimeoutError(f"Timeout of {timeout}s expired while waiting for prediction")
