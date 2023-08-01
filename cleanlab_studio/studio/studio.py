@@ -298,7 +298,7 @@ class Studio:
             model_id: ID of model to get. This ID should be fetched in the deployments page of the app UI.
 
         Returns:
-            Model object with methods run predictions on new input data
+            Model object with methods to run predictions on new input data
         """
         return inference.Model(self._api_key, model_id)
 

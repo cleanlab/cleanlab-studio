@@ -364,21 +364,11 @@ def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
 
 
 def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
-    """Gets status of model prediction query."""
+    """Gets status of model prediction query. Returns status, and optionally the result_url or error message."""
     res = requests.get(
         f"{model_base_url}/predict/{query_id}",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
 
-    prediction_results = res.json()
-    status = prediction_results["status"]
-    result_url = prediction_results["results"]
-    error_msg = prediction_results["error_msg"]
-
-    if status == "COMPLETE":
-        return {"status": "done", "result_url": result_url}
-    elif status == "FAILED":
-        return {"status": "error", "error_msg": error_msg}
-    else:
-        return {"status": "running"}
+    return res.json()
