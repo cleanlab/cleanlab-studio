@@ -370,4 +370,4 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     )
     handle_api_error(res)
 
-    return cast(dict, res.json())
+    return cast(Dict[str, str], res.json())
