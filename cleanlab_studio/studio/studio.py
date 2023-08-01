@@ -79,9 +79,8 @@ class Studio:
     def download_cleanlab_columns(
         self,
         cleanset_id: str,
-        include_action: bool = False,
-        include_cleanlab_columns=True,
-        include_project_details=True,
+        include_cleanlab_columns: bool = True,
+        include_project_details: bool = False,
         to_spark: bool = False,
     ) -> Any:
         """
@@ -101,12 +100,6 @@ class Studio:
             include_project_details=include_project_details,
             to_spark=to_spark,
         )
-        if not include_action and "action" in rows_df.columns:
-            if to_spark:
-                rows_df = rows_df.drop("action")
-            else:
-                rows_df.drop("action", inplace=True, axis=1)
-
         if "cleanlab_row_ID" in rows_df.columns:
             rows_df.sort_values(by="cleanlab_row_ID")
         return rows_df
@@ -129,9 +122,7 @@ class Studio:
         if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
-            cl_cols = self.download_cleanlab_columns(
-                cleanset_id, include_action=True, to_spark=True
-            )
+            cl_cols = self.download_cleanlab_columns(cleanset_id, to_spark=True)
             corrected_ds_spark = dataset.alias("corrected_ds")
             if id_col not in corrected_ds_spark.columns:
                 from pyspark.sql.functions import (
@@ -168,7 +159,7 @@ class Studio:
                 .drop("action")
             )
         elif isinstance(dataset, pd.DataFrame):
-            cl_cols = self.download_cleanlab_columns(cleanset_id, include_action=True)
+            cl_cols = self.download_cleanlab_columns(cleanset_id)
             joined_ds: pd.DataFrame
             if id_col in dataset.columns:
                 joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
