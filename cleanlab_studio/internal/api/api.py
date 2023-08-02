@@ -1,6 +1,7 @@
+import io
 import os
 import time
-from typing import Callable, List, Optional, Tuple, Union, Any
+from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
 from cleanlab_studio.errors import APIError
 
 import requests
@@ -19,12 +20,14 @@ except ImportError:
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
 
+
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
 upload_base_url = f"{base_url}/upload/v0"
 dataset_base_url = f"{base_url}/datasets"
 project_base_url = f"{base_url}/projects"
 cleanset_base_url = f"{base_url}/cleansets"
+model_base_url = f"{base_url}/v1/deployment"
 
 
 def _construct_headers(
@@ -330,3 +333,41 @@ def poll_progress(
             res = request_function(progress_id)
         pbar.update(float(1) - pbar.n)
     return res
+
+
+def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:
+    """Uploads prediction batch and returns query ID."""
+    url = f"{model_base_url}/{model_id}/upload"
+    res = requests.post(
+        url,
+        headers=_construct_headers(api_key),
+    )
+
+    handle_api_error(res)
+    presigned_url = res.json()["upload_url"]
+    query_id: str = res.json()["query_id"]
+
+    requests.post(presigned_url["url"], data=presigned_url["fields"], files={"file": batch})
+
+    return query_id
+
+
+def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
+    """Starts prediction for query."""
+    res = requests.post(
+        f"{model_base_url}/{model_id}/predict/{query_id}",
+        headers=_construct_headers(api_key),
+    )
+
+    handle_api_error(res)
+
+
+def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
+    """Gets status of model prediction query. Returns status, and optionally the result url or error message."""
+    res = requests.get(
+        f"{model_base_url}/predict/{query_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+
+    return cast(Dict[str, str], res.json())

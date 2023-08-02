@@ -7,7 +7,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from . import clean, upload
+from . import clean, upload, inference
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
@@ -289,6 +289,18 @@ class Studio:
         """
         api.delete_project(self._api_key, project_id)
         print(f"Successfully deleted project: {project_id}")
+
+    def get_model(self, model_id: str) -> inference.Model:
+        """
+        Gets a model deployed by Cleanlab Studio.
+
+        Args:
+            model_id: ID of model to get. This ID should be fetched in the deployments page of the app UI.
+
+        Returns:
+            Model object with methods to run predictions on new input data
+        """
+        return inference.Model(self._api_key, model_id)
 
     class Experimental:
         def __init__(self, outer):  # type: ignore
