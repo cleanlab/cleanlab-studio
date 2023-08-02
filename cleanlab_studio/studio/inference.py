@@ -70,7 +70,7 @@ class Model(abc.ABC):
         while time.time() < timeout_limit:
             resp = api.get_prediction_status(self._api_key, query_id)
 
-            if result_url := resp.get("result_url"):
+            if result_url := resp.get("results"):
                 results: pd.DataFrame = pd.read_csv(result_url)
                 return results.pop("Suggested Label").to_numpy(), results
 
