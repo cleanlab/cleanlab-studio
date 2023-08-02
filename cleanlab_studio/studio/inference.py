@@ -2,14 +2,13 @@ import abc
 import csv
 import io
 import time
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple, Union
 from typing_extensions import TypeAlias
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cleanlab_studio.errors import APIError
 from cleanlab_studio.internal.api import api
 
 
