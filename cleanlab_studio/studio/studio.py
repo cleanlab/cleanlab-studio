@@ -7,7 +7,8 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from . import clean, upload, inference
+from . import inference
+from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
@@ -68,7 +69,7 @@ class Studio:
             ID of uploaded dataset.
         """
         ds = init_dataset_source(dataset, dataset_name)
-        return upload.upload_dataset(
+        return upload_helpers.upload_dataset(
             self._api_key,
             ds,
             schema_overrides=schema_overrides,
@@ -266,7 +267,7 @@ class Studio:
         Returns:
             After cleanset is done being generated, returns `True` if cleanset is ready to use, `False` otherwise.
         """
-        return clean.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+        return clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
 
     def get_latest_cleanset_id(self, project_id: str) -> str:
         """
@@ -298,7 +299,7 @@ class Studio:
             model_id: ID of model to get. This ID should be fetched in the deployments page of the app UI.
 
         Returns:
-            Model object with methods to run predictions on new input data
+            [Model](inference#class-model) object with methods to run predictions on new input data.
         """
         return inference.Model(self._api_key, model_id)
 
