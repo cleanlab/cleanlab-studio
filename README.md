@@ -2,7 +2,7 @@
 
 Command line and Python library interface to [Cleanlab Studio](https://cleanlab.ai/studio/). Upload datasets and download cleansets (cleaned datasets) from Cleanlab Studio in a single line of code!
 
-Comprehensive docs can be found [here](https://cleanlab-studio.readthedocs.io/en/latest/index.html).
+Comprehensive docs can be found [here](https://help.cleanlab.ai/).
 
 - [Installation](#installation)
 - [Quickstart](#quickstart)
@@ -27,6 +27,7 @@ pip install --upgrade cleanlab-studio
 ### Python API
 
 You can find your API key at https://app.cleanlab.ai/account.
+
 ```python
 from cleanlab_studio import Studio
 
@@ -45,6 +46,7 @@ corrected_dataset = studio.apply_corrections(<your dataset>, <your cleanset id>)
 ```
 
 ### CLI
+
 1. If this is your first time using the Cleanlab CLI, authenticate with `cleanlab login`. You can find your API key at https://app.cleanlab.ai/account.
 2. Upload your dataset (image, text, or tabular) using `cleanlab dataset upload`.
 3. Create a project in Cleanlab Studio.
@@ -52,20 +54,22 @@ corrected_dataset = studio.apply_corrections(<your dataset>, <your cleanset id>)
 5. Download your cleanset with `cleanlab cleanset download`.
 
 ## Dataset Structure
+
 Cleanlab Studio supports the following upload types:
+
 - Text/Tabular
   - CSV
   - JSON
   - XLS/XLSX
-  - Pandas DataFrame *(Python library only)*
-  - PySpark DataFrame *(Python library only)*
+  - Pandas DataFrame _(Python library only)_
+  - PySpark DataFrame _(Python library only)_
   - more to come!
 - Image
   - CSV (external media)
   - JSON (external media)
   - XLS/XLSX (external media)
-  - Pandas DataFrame (external media) *(Python library only)*
-  - PySpark DataFrame (external media) *(Python library only)*
+  - Pandas DataFrame (external media) _(Python library only)_
+  - PySpark DataFrame (external media) _(Python library only)_
   - Simple ZIP upload
   - Metadata ZIP upload
   - more to come!
@@ -73,12 +77,17 @@ Cleanlab Studio supports the following upload types:
 Information on dataset structuring can be found by clicking the tutorial on https://app.cleanlab.ai/upload!
 
 ## Advanced Usage
+
 ### Schema
+
 #### Python API
+
 All schema information will be inferred by default when uploading a dataset through the Python API. We provide some options to override the inferred schema if necessary:
+
 - To override the dataset modality, supply a `modality` kwarg to `studio.upload_dataset()`. Supported modalities include "text", "tabular", and "image"
 - To override the ID column, supply an `id_column` kwarg to `studio.upload_dataset()`
 - To override column types in your dataset, supply a `schema_overrides` kwarg to `studio.upload_dataset()` in the following format:
+
 ```
 {
   <name_of_column_to_override>: {
@@ -90,7 +99,9 @@ All schema information will be inferred by default when uploading a dataset thro
 ```
 
 #### CLI
+
 To specify the column types in your dataset, create a JSON file named `schema.json`. If you would like to edit an inferred schema (rather than starting from scratch) follow these steps:
+
 1. Kick off a dataset upload using: `cleanlab dataset upload`
 2. Once schema generation is complete, you'll be asked whether you'd like to use our inferred schema. Enter `n` to decline
 3. You'll then be asked whether you'd like to save the inferred schema. Enter `y` to accept. Then enter the filename you'd like to save to (`schema.json` by default)
@@ -134,7 +145,7 @@ Your schema file should be formatted as follows:
     "tweet_created": {
       "data_type": "string",
       "feature_type": "datetime"
-    },
+    }
   },
   "version": "0.1.12"
 }
@@ -148,8 +159,8 @@ type.
 
 **Data type** refers to the type of the field's values: string, integer, float, or boolean.
 
-Note that the integer type is partially *strict*, meaning floats that are equal to integers (e.g. `1.0`, `2.0`, etc)
-will be accepted, but floats like `0.8` and `1.5` will not. In contrast, the float type is *lenient*, meaning integers
+Note that the integer type is partially _strict_, meaning floats that are equal to integers (e.g. `1.0`, `2.0`, etc)
+will be accepted, but floats like `0.8` and `1.5` will not. In contrast, the float type is _lenient_, meaning integers
 are accepted. Users should select the float type if the field may include float values. Note too that integers can have
 categorical and identifier feature types, whereas floats cannot.
 
@@ -169,12 +180,12 @@ as whether it is:
 Some feature types can only correspond to specific data types. The list of possible feature types for each data type is
 shown below
 
-| Data type  | Feature type                                         |
-|:-----------|:-----------------------------------------------------|
-| string     | text, categorical, datetime, identifier, filepath    |
-| integer    | categorical, datetime, identifier, numeric           |
-| float      | datetime, numeric                                    |
-| boolean    | boolean                                              |
+| Data type | Feature type                                      |
+| :-------- | :------------------------------------------------ |
+| string    | text, categorical, datetime, identifier, filepath |
+| integer   | categorical, datetime, identifier, numeric        |
+| float     | datetime, numeric                                 |
+| boolean   | boolean                                           |
 
 The `datetime` type should be used for datetime strings, e.g. "2015-02-24 11:35:52 -0800", and Unix timestamps (which
 will be integers or floats). Datetime values must be parseable
