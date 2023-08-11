@@ -38,6 +38,8 @@ def _construct_headers(
     if content_type:
         retval["Content-Type"] = content_type
     retval["Client-Type"] = "cli"
+    retval["User-Agent"] = f"cleanlab-studio/v{__version__}"
+    return retval
     return retval
 
 
