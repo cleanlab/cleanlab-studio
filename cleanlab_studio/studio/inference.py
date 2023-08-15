@@ -11,7 +11,7 @@ import pandas as pd
 
 from cleanlab_studio.internal.api import api
 
-
+BATCH_MAX_TEXT, BATCH_MAX_TABULAR = 10000, 10000
 TextBatch = Union[List[str], npt.NDArray[np.str_], pd.Series]
 TabularBatch: TypeAlias = pd.DataFrame
 Batch = Union[TextBatch, TabularBatch]
@@ -45,13 +45,22 @@ class Model(abc.ABC):
         Returns:
             predictions from batch as a numpy array, optionally also pandas dataframe of class probabilties
         """
-        csv_batch = self._convert_batch_to_csv(batch)
-        predictions, class_probabilities = self._predict_from_csv(csv_batch, timeout)
+        batchsize = BATCH_MAX_TABULAR if isinstance(batch, TabularBatch) else BATCH_MAX_TEXT
+        batched_preds = []
+        batched_probs = []
+        for i in range(len(batch) // batchsize + 1):
+            start = i * batchsize
+            csv_batch = self._convert_batch_to_csv(
+                batch[start : min(start + batchsize, len(batch))]
+            )
+            predictions, class_probabilities = self._predict_from_csv(csv_batch, timeout)
+            batched_preds.append(predictions)
+            batched_probs.append(class_probabilities)
 
         if return_pred_proba:
-            return predictions, class_probabilities
+            return np.concatenate(batched_preds), pd.concat(batched_probs)
 
-        return predictions
+        return np.concatenate(batched_preds)
 
     def _predict_from_csv(
         self, batch: io.StringIO, timeout: int
