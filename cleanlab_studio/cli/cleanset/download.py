@@ -52,7 +52,7 @@ from cleanlab_studio.internal.api import api
     is_flag=True,
     help=(
         "Set this flag to download all Cleanlab columns (suggested label, clean label, label"
-        " quality, issue, outlier, ambiguous, near duplicate, high confidence)."
+        " quality, issue, outlier, ambiguous, near duplicate, well-labeled)."
     ),
 )
 @click.option(
