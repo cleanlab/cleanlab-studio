@@ -11,7 +11,7 @@ import pandas as pd
 
 from cleanlab_studio.internal.api import api
 
-BATCH_MAX_TEXT, BATCH_MAX_TABULAR = 100000, 100000
+BATCH_MAX_TEXT, BATCH_MAX_TABULAR = 10000, 100000
 TextBatch = Union[List[str], npt.NDArray[np.str_], pd.Series]
 TabularBatch: TypeAlias = pd.DataFrame
 Batch = Union[TextBatch, TabularBatch]
