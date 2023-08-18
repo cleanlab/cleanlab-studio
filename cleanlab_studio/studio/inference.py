@@ -48,7 +48,8 @@ class Model(abc.ABC):
         batchsize = BATCH_MAX_TABULAR if isinstance(batch, TabularBatch) else BATCH_MAX_TEXT
         batched_preds = []
         batched_probs = []
-        for i in range(len(batch) // batchsize + 1):
+        num_batches = len(batch) // batchsize + (1 if len(batch) % batchsize != 0 else 0)
+        for i in range(num_batches):
             start = i * batchsize
             csv_batch = self._convert_batch_to_csv(
                 batch[start : min(start + batchsize, len(batch))]
@@ -58,7 +59,9 @@ class Model(abc.ABC):
             batched_probs.append(class_probabilities)
 
         if return_pred_proba:
-            return np.concatenate(batched_preds), pd.concat(batched_probs)
+            return np.concatenate(batched_preds, dtype=batched_preds[0].dtype), pd.concat(
+                batched_probs
+            )
 
         return np.concatenate(batched_preds)
 
