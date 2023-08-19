@@ -105,7 +105,7 @@ class Studio:
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
         """
-        Applies corrections from a Cleanlab Studio cleanset to your dataset. Corrections can be made by viewing your project in the Cleanlab Studio webapp (see [Cleanlab Studio web quickstart](/guide/quickstart/web#review-the-errors)).
+        Applies corrections from a Cleanlab Studio cleanset to your dataset. Corrections can be made by viewing your project in the Cleanlab Studio webapp (see [Cleanlab Studio web quickstart](/guide/quickstart/web#review-issues-detected-in-your-dataset-and-correct-them)).
 
         Args:
             cleanset_id: ID of cleanset to apply corrections from.
