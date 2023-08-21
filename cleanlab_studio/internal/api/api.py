@@ -203,6 +203,7 @@ def download_cleanlab_columns(
 
     cleanset_pd: pd.DataFrame = pd.read_json(cleanset_json, orient="table")
     cleanset_pd.rename(columns={"id": id_col}, inplace=True)
+    cleanset_pd.set_index("id", drop=False)
     return cleanset_pd
 
 
