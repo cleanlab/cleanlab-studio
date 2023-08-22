@@ -48,9 +48,10 @@ class Model(abc.ABC):
         Returns:
             predictions from batch as a numpy array, optionally also pandas dataframe of class probabilties
         """
-        batchsize = BATCH_MAX_TABULAR if isinstance(batch, TabularBatch) else BATCH_MAX_TEXT
-        batched_preds = []
-        batched_probs = []
+
+        batchsize: int = BATCH_MAX_TABULAR if isinstance(batch, TabularBatch) else BATCH_MAX_TEXT
+        batched_preds: List[Predictions] = []
+        batched_probs: List[ClassProbablities] = []
         num_batches = len(batch) // batchsize + (1 if len(batch) % batchsize != 0 else 0)
         for i in range(num_batches):
             start = i * batchsize
