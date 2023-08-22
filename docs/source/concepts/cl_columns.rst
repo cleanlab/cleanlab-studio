@@ -11,7 +11,7 @@ Cleanlab Studio will run a number of analyses on your dataset to help identify p
 - Label issues
 - Outliers
 - Ambiguous examples
-- Well-labeled examples
+- Well labeled examples
 - Near duplicates (only for image and text datasets)
 
 New analyses are being continuously added to Cleanlab Studio. The raw outputs of each analysis will be available to download as Cleanlab columns by calling ``studio.download_cleanlab_columns()``.
@@ -36,7 +36,7 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
 +                            +------------------------------------------------------------------------+-------------+
 |                            | :ref:`ambiguous_score <ambiguous_score>`                               | Float       |
 +----------------------------+------------------------------------------------------------------------+-------------+
-| Well-labeled Examples      | :ref:`is_well_labeled <_is_well_labeled>`                              | Boolean     |
+| Well labeled Examples      | :ref:`is_well_labeled <_is_well_labeled>`                              | Boolean     |
 +----------------------------+------------------------------------------------------------------------+-------------+
 | Near Duplicates            | :ref:`is_near_duplicate <is_near_duplicate>`                           | Boolean     |
 +                            +------------------------------------------------------------------------+-------------+
@@ -82,7 +82,7 @@ Contains a boolean value, with ``True`` indicating that the sample is likely to 
 -------------
 Contains a score bounded between 0 and 1, which is used to determine whether a sample is ambiguous. The lower the score of a sample, the more likely it is to be ambiguous.
 
-well-labeled
+Well labeled
 ===============
 
 .. _is_well_labeled:
