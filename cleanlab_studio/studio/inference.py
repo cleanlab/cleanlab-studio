@@ -62,7 +62,7 @@ class Model(abc.ABC):
             batched_probs.append(class_probabilities)
         preds_type = int if isinstance(batched_preds[0][0], int) else str
         ret_arr = np.concatenate(batched_preds)
-        ret_arr = cast(ret_arr.astype(preds_type), Predictions)
+        ret_arr = cast(Predictions, ret_arr.astype(preds_type))
 
         if return_pred_proba:
             return ret_arr, pd.concat(batched_probs)
