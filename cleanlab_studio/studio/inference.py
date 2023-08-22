@@ -4,6 +4,7 @@ import io
 import time
 from typing import List, Tuple, Union
 from typing_extensions import TypeAlias
+import logging
 
 import numpy as np
 import numpy.typing as npt
@@ -18,6 +19,8 @@ Batch = Union[TextBatch, TabularBatch]
 
 Predictions = Union[npt.NDArray[np.int_], npt.NDArray[np.str_]]
 ClassProbablities: TypeAlias = pd.DataFrame
+
+logger = logging.getLogger(__name__)
 
 
 class Model(abc.ABC):
@@ -57,13 +60,13 @@ class Model(abc.ABC):
             predictions, class_probabilities = self._predict_from_csv(csv_batch, timeout)
             batched_preds.append(predictions)
             batched_probs.append(class_probabilities)
-
+        preds_type = int if isinstance(batched_preds[0][0], int) else str
+        ret_arr = np.concatenate(batched_preds)
+        ret_arr = ret_arr.astype(preds_type)
         if return_pred_proba:
-            return np.concatenate(batched_preds, dtype=batched_preds[0].dtype), pd.concat(
-                batched_probs
-            )
+            return ret_arr, pd.concat(batched_probs)
 
-        return np.concatenate(batched_preds)
+        return ret_arr
 
     def _predict_from_csv(
         self, batch: io.StringIO, timeout: int
