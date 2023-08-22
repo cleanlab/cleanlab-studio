@@ -28,7 +28,7 @@ The Cleanlab columns are listed below in the table. Detailed explanations of eac
 +============================+========================================================================+=============+
 | Label Issues               | :ref:`is_label_issue <is_label_issue>`                                 | Boolean     |
 +                            +------------------------------------------------------------------------+-------------+
-|                            | :ref:`label_issue_score <label_issue_score>`                           | Float       | 
+|                            | :ref:`label_issue_score <label_issue_score>`                           | Float       |
 +                            +------------------------------------------------------------------------+-------------+
 |                            | :ref:`suggested_label <suggested_label>`                               | String      |
 +----------------------------+------------------------------------------------------------------------+-------------+
