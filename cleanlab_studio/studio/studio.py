@@ -306,29 +306,33 @@ class Studio:
         self,
         cleanset_id: str,
         keep_id: bool = False,
-    ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
+    ) -> pd.DataFrame:
         """
         Downloads predicted probabilities for a cleanset
-        Old pred_probs were saved as numpy arrays, which is still compatible
-        Newer pred_probs are saved as pd.DataFrames
+
+        The probabilities will be returned as a `pd.DataFrame`. If `keep_id` is `True`,
+        the DataFrame will include an ID column that can be used for database joins/merges with
+        the original dataset or downloaded Cleanlab columns.
         """
-        pred_probs: Union[npt.NDArray[np.float_], pd.DataFrame] = api.download_array(self._api_key, cleanset_id, "pred_probs")
+        pred_probs: Union[npt.NDArray[np.float_], pd.DataFrame] = api.download_array(
+            self._api_key, cleanset_id, "pred_probs"
+        )
         if not isinstance(pred_probs, pd.DataFrame):
+            pred_probs = pd.DataFrame(pred_probs)
             return pred_probs
-        
+
         if not keep_id:
             id_col = api.get_id_column(self._api_key, cleanset_id)
             if id_col in pred_probs.columns:
                 pred_probs = pred_probs.drop(id_col, axis=1)
-        
+
         return pred_probs
 
     def download_embeddings(
         self,
         cleanset_id: str,
-    ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
+    ) -> npt.NDArray[np.float_]:
         """
         Downloads embeddings for a cleanset
-        The downloaded array will always be a numpy array, the above is just for typing purposes
         """
-        return api.download_array(self._api_key, cleanset_id, "embeddings")
+        return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
