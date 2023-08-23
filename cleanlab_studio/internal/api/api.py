@@ -199,10 +199,12 @@ def download_cleanlab_columns(
         rdd = spark.sparkContext.parallelize([cleanset_json])
         cleanset_pyspark: pyspark.sql.DataFrame = spark.read.json(rdd)
         cleanset_pyspark = cleanset_pyspark.withColumnRenamed("id", id_col)
+        cleanset_pyspark = cleanset_pyspark.sort(id_col)
         return cleanset_pyspark
 
     cleanset_pd: pd.DataFrame = pd.read_json(cleanset_json, orient="table")
     cleanset_pd.rename(columns={"id": id_col}, inplace=True)
+    cleanset_pd.sort_values(by=id_col, inplace=True)
     return cleanset_pd
 
 
