@@ -44,7 +44,6 @@ class Studio:
                 )
         api.validate_api_key(api_key)
         self._api_key = api_key
-        self.experimental = self.Experimental(self)  # type: ignore
 
     def upload_dataset(
         self,
@@ -303,27 +302,33 @@ class Studio:
         """
         return inference.Model(self._api_key, model_id)
 
-    class Experimental:
-        def __init__(self, outer):  # type: ignore
-            self._outer = outer
+    def download_pred_probs(
+        self,
+        cleanset_id: str,
+        keep_id: bool = False,
+    ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
+        """
+        Downloads predicted probabilities for a cleanset
+        Old pred_probs were saved as numpy arrays, which is still compatible
+        Newer pred_probs are saved as pd.DataFrames
+        """
+        pred_probs: Union[npt.NDArray[np.float_], pd.DataFrame] = api.download_array(self._api_key, cleanset_id, "pred_probs")
+        if not isinstance(pred_probs, pd.DataFrame):
+            return pred_probs
+        
+        if not keep_id:
+            id_col = api.get_id_column(self._api_key, cleanset_id)
+            if id_col in pred_probs.columns:
+                pred_probs = pred_probs.drop(id_col, axis=1)
+        
+        return pred_probs
 
-        def download_pred_probs(
-            self,
-            cleanset_id: str,
-        ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
-            """
-            Downloads predicted probabilities for a cleanset
-            Old pred_probs were saved as numpy arrays, which is still compatible
-            Newer pred_probs are saved as pd.DataFrames
-            """
-            return api.download_array(self._outer._api_key, cleanset_id, "pred_probs")
-
-        def download_embeddings(
-            self,
-            cleanset_id: str,
-        ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
-            """
-            Downloads embeddings for a cleanset
-            The downloaded array will always be a numpy array, the above is just for typing purposes
-            """
-            return api.download_array(self._outer._api_key, cleanset_id, "embeddings")
+    def download_embeddings(
+        self,
+        cleanset_id: str,
+    ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
+        """
+        Downloads embeddings for a cleanset
+        The downloaded array will always be a numpy array, the above is just for typing purposes
+        """
+        return api.download_array(self._api_key, cleanset_id, "embeddings")
