@@ -52,7 +52,7 @@ class Model(abc.ABC):
         batchsize: int = BATCH_MAX_TABULAR if isinstance(batch, pd.DataFrame) else BATCH_MAX_TEXT
         batched_preds: List[Predictions] = []
         batched_probs: List[ClassProbablities] = []
-        num_batches = len(batch) // batchsize + (1 if len(batch) % batchsize != 0 else 0)
+        num_batches = math.ceil(len(batch) / batchsize)
         for i in range(num_batches):
             start = i * batchsize
             csv_batch = self._convert_batch_to_csv(
