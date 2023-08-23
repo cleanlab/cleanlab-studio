@@ -260,7 +260,12 @@ async def post_file(
     return None, original_filepath
 
 
-def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False) -> pd.DataFrame:
+def download_cleanlab_columns(
+    api_key: str,
+    cleanset_id: str,
+    include_cleanlab_columns: bool = False,
+    include_project_details: bool = False,
+) -> pd.DataFrame:
     """
     Download all rows from specified Cleanlab columns
 
@@ -270,7 +275,10 @@ def download_cleanlab_columns(api_key: str, cleanset_id: str, all: bool = False)
     :return: return (rows, id_column)
     """
     res = requests.get(
-        cli_base_url + f"/cleansets/{cleanset_id}/columns?all={all}",
+        cli_base_url
+        + f"/cleansets/{cleanset_id}/columns?"
+        + f"include_cleanlab_columns={include_cleanlab_columns}"
+        + f"&include_project_details={include_project_details}",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)

@@ -169,7 +169,8 @@ def get_label_column_of_project(api_key: str, project_id: str) -> str:
 def download_cleanlab_columns(
     api_key: str,
     cleanset_id: str,
-    all: bool = True,
+    include_cleanlab_columns: bool = True,
+    include_project_details: bool = False,
     to_spark: bool = False,
 ) -> Any:
     """
@@ -177,12 +178,17 @@ def download_cleanlab_columns(
 
     :param api_key:
     :param cleanset_id:
-    :param all: whether to download all Cleanlab columns or just the clean_label column
+    :param include_cleanlab_columns: whether to download all Cleanlab columns or just the clean_label column
+    :param include_cleanlab_columns: whether to download columns related to project status such as resolved rows, actions taken, etc.
     :return: return a dataframe, either pandas or spark. Type is Any because don't want to require spark installed
     """
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/columns",
-        params=dict(to_spark=to_spark, all=all),
+        params=dict(
+            to_spark=to_spark,
+            include_cleanlab_columns=include_cleanlab_columns,
+            include_project_details=include_project_details,
+        ),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
