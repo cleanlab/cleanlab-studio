@@ -8,8 +8,9 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from . import clean, upload, inference
+from . import inference
 from cleanlab_studio.errors import CleansetRunError
+from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
@@ -45,7 +46,6 @@ class Studio:
                 )
         api.validate_api_key(api_key)
         self._api_key = api_key
-        self.experimental = self.Experimental(self)  # type: ignore
 
     def upload_dataset(
         self,
@@ -70,7 +70,7 @@ class Studio:
             ID of uploaded dataset.
         """
         ds = init_dataset_source(dataset, dataset_name)
-        return upload.upload_dataset(
+        return upload_helpers.upload_dataset(
             self._api_key,
             ds,
             schema_overrides=schema_overrides,
@@ -81,7 +81,8 @@ class Studio:
     def download_cleanlab_columns(
         self,
         cleanset_id: str,
-        include_action: bool = False,
+        include_cleanlab_columns: bool = True,
+        include_project_details: bool = False,
         to_spark: bool = False,
     ) -> Any:
         """
@@ -95,18 +96,19 @@ class Studio:
             A pandas or pyspark DataFrame. Type is `Any` to avoid requiring pyspark installation.
         """
         rows_df = api.download_cleanlab_columns(
-            self._api_key, cleanset_id, all=True, to_spark=to_spark
+            self._api_key,
+            cleanset_id,
+            include_cleanlab_columns=include_cleanlab_columns,
+            include_project_details=include_project_details,
+            to_spark=to_spark,
         )
-        if not include_action:
-            if to_spark:
-                rows_df = rows_df.drop("action")
-            else:
-                rows_df.drop("action", inplace=True, axis=1)
+        if "cleanlab_row_ID" in rows_df.columns:
+            rows_df.sort_values(by="cleanlab_row_ID")
         return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
         """
-        Applies corrections from a Cleanlab Studio cleanset to your dataset. Corrections can be made by viewing your project in the Cleanlab Studio webapp (see [Cleanlab Studio web quickstart](/guide/quickstart/web#review-the-errors)).
+        Applies corrections from a Cleanlab Studio cleanset to your dataset. Corrections can be made by viewing your project in the Cleanlab Studio webapp (see [Cleanlab Studio web quickstart](/guide/quickstart/web#review-issues-detected-in-your-dataset-and-correct-them)).
 
         Args:
             cleanset_id: ID of cleanset to apply corrections from.
@@ -122,9 +124,7 @@ class Studio:
         if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
-            cl_cols = self.download_cleanlab_columns(
-                cleanset_id, include_action=True, to_spark=True
-            )
+            cl_cols = self.download_cleanlab_columns(cleanset_id, to_spark=True)
             corrected_ds_spark = dataset.alias("corrected_ds")
             if id_col not in corrected_ds_spark.columns:
                 from pyspark.sql.functions import (
@@ -161,7 +161,7 @@ class Studio:
                 .drop("action")
             )
         elif isinstance(dataset, pd.DataFrame):
-            cl_cols = self.download_cleanlab_columns(cleanset_id, include_action=True)
+            cl_cols = self.download_cleanlab_columns(cleanset_id)
             joined_ds: pd.DataFrame
             if id_col in dataset.columns:
                 joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
@@ -274,7 +274,7 @@ class Studio:
         )
 
         try:
-            clean.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+            clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
             return True
 
         except (TimeoutError, CleansetRunError):
@@ -291,7 +291,7 @@ class Studio:
             TimeoutError: if cleanset is not ready by end of timeout
             CleansetRunError: if cleanset errored while running
         """
-        clean.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+        clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
 
     def get_latest_cleanset_id(self, project_id: str) -> str:
         """
@@ -323,31 +323,41 @@ class Studio:
             model_id: ID of model to get. This ID should be fetched in the deployments page of the app UI.
 
         Returns:
-            Model object with methods to run predictions on new input data
+            [Model](../inference#class-model) object with methods to run predictions on new input data.
         """
         return inference.Model(self._api_key, model_id)
 
-    class Experimental:
-        def __init__(self, outer):  # type: ignore
-            self._outer = outer
+    def download_pred_probs(
+        self,
+        cleanset_id: str,
+        keep_id: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Downloads predicted probabilities for a cleanset
 
-        def download_pred_probs(
-            self,
-            cleanset_id: str,
-        ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
-            """
-            Downloads predicted probabilities for a cleanset
-            Old pred_probs were saved as numpy arrays, which is still compatible
-            Newer pred_probs are saved as pd.DataFrames
-            """
-            return api.download_array(self._outer._api_key, cleanset_id, "pred_probs")
+        The probabilities will be returned as a `pd.DataFrame`. If `keep_id` is `True`,
+        the DataFrame will include an ID column that can be used for database joins/merges with
+        the original dataset or downloaded Cleanlab columns.
+        """
+        pred_probs: Union[npt.NDArray[np.float_], pd.DataFrame] = api.download_array(
+            self._api_key, cleanset_id, "pred_probs"
+        )
+        if not isinstance(pred_probs, pd.DataFrame):
+            pred_probs = pd.DataFrame(pred_probs)
+            return pred_probs
 
-        def download_embeddings(
-            self,
-            cleanset_id: str,
-        ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
-            """
-            Downloads embeddings for a cleanset
-            The downloaded array will always be a numpy array, the above is just for typing purposes
-            """
-            return api.download_array(self._outer._api_key, cleanset_id, "embeddings")
+        if not keep_id:
+            id_col = api.get_id_column(self._api_key, cleanset_id)
+            if id_col in pred_probs.columns:
+                pred_probs = pred_probs.drop(id_col, axis=1)
+
+        return pred_probs
+
+    def download_embeddings(
+        self,
+        cleanset_id: str,
+    ) -> npt.NDArray[np.float_]:
+        """
+        Downloads embeddings for a cleanset
+        """
+        return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))

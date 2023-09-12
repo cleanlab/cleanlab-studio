@@ -10,7 +10,40 @@ import requests
 
 from .api import api
 from .dataset_source import DatasetSource
-from .types import JSONDict
+from .types import FieldSchemaDict, JSONDict
+
+
+def upload_dataset(
+    api_key: str,
+    dataset_source: DatasetSource,
+    *,
+    schema_overrides: Optional[FieldSchemaDict] = None,
+    modality: Optional[str] = None,
+    id_column: Optional[str] = None,
+) -> str:
+    upload_id = upload_dataset_file(api_key, dataset_source)
+    schema = get_proposed_schema(api_key, upload_id)
+
+    if (schema is None or schema.get("immutable", False)) and (
+        schema_overrides is not None or modality is not None or id_column is not None
+    ):
+        raise ValueError(
+            "Schema_overrides, modality, and id_column parameters cannot be provided for simple zip uploads"
+        )
+
+    if schema is not None and not schema.get("immutable", False):
+        schema["metadata"]["name"] = dataset_source.dataset_name
+        if schema_overrides is not None:
+            for field in schema_overrides:
+                schema["fields"][field] = schema_overrides[field]
+        if modality is not None:
+            schema["metadata"]["modality"] = modality
+        if id_column is not None:
+            schema["metadata"]["id_column"] = id_column
+
+    api.confirm_schema(api_key, schema, upload_id)
+    dataset_id = get_ingestion_result(api_key, upload_id)
+    return dataset_id
 
 
 async def _upload_file_chunk_async(
@@ -58,7 +91,10 @@ def upload_file_parts(
 
 def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
     upload_id, part_sizes, presigned_posts = api.initialize_upload(
-        api_key, dataset_source.get_filename(), dataset_source.file_type, dataset_source.file_size
+        api_key,
+        dataset_source.get_filename(),
+        dataset_source.file_type,
+        dataset_source.file_size,
     )
     upload_parts = upload_file_parts(dataset_source, part_sizes, presigned_posts)
     api.complete_file_upload(api_key, upload_id, upload_parts)

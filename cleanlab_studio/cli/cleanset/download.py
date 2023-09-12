@@ -44,9 +44,25 @@ from cleanlab_studio.internal.api import api
     "--all",
     "-a",
     is_flag=True,
+    help=("Set this flag to download all available data."),
+)
+@click.option(
+    "--cleanlab_columns",
+    "-c",
+    is_flag=True,
     help=(
         "Set this flag to download all Cleanlab columns (suggested label, clean label, label"
-        " quality, issue). Exclude this flag to download only the clean label column."
+        " quality, issue, outlier, ambiguous, near duplicate, well-labeled)."
+    ),
+)
+@click.option(
+    "--project_details",
+    "-p",
+    is_flag=True,
+    help=(
+        "Set this flag to download project information for a cleanset"
+        " (action, previously_resolved, top_labels, top_probs, p_suggested_label,"
+        "predicted_label, p_given_label, unlabeled (initially))"
     ),
 )
 @previous_state
@@ -58,6 +74,8 @@ def download(
     filepath: Optional[str],
     output: Optional[str],
     all: bool,
+    cleanlab_columns: bool,
+    project_details: bool,
 ) -> None:
     prev_state.init_state(dict(command="download labels", args=dict(id=id)))
     CleanlabSettings.init_cleanlab_dir()
@@ -65,7 +83,12 @@ def download(
     id_column = api_service.get_id_column(api_key, cleanset_id=id)
 
     progress("Downloading Cleanlab columns...")
-    clean_df = api_service.download_cleanlab_columns(api_key, cleanset_id=id, all=all)
+    clean_df = api_service.download_cleanlab_columns(
+        api_key,
+        cleanset_id=id,
+        include_cleanlab_columns=cleanlab_columns or all,
+        include_project_details=project_details or all,
+    )
     clean_df = clean_df.set_index(id_column)
     clean_df = drop_action_col(clean_df)
 
