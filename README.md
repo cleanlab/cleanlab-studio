@@ -1,12 +1,12 @@
 # cleanlab-studio [![Build Status](https://github.com/cleanlab/cleanlab-studio/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-studio/actions?query=workflow%3ACI) [![PyPI](https://img.shields.io/pypi/v/cleanlab-studio.svg)][PyPI] ![ReadTheDocs](https://readthedocs.org/projects/cleanlab-studio/badge/?version=latest)
 
-Command line and Python library interface to [Cleanlab Studio](https://cleanlab.ai/studio/). Upload datasets and download cleansets (cleaned datasets) from Cleanlab Studio in a single line of code!
-
-Comprehensive docs can be found [here](https://help.cleanlab.ai/).
+Command line and Python library interface to [Cleanlab Studio](https://cleanlab.ai/studio/). Analyze datasets and produce *cleansets* (cleaned datasets) with Cleanlab Studio in a single line of code!
 
 - [Installation](#installation)
 - [Quickstart](#quickstart)
 - [Advanced Usage](#advanced-usage)
+- [Documentation/Tutorials](https://help.cleanlab.ai/)
+
 
 ## Installation
 
@@ -24,7 +24,7 @@ pip install --upgrade cleanlab-studio
 
 ## Quickstart
 
-### Python API
+### Python API -- run Cleanlab Studio from Python or Jupyter Notebook
 
 You can find your API key at https://app.cleanlab.ai/account.
 
@@ -45,7 +45,7 @@ cleanset = studio.download_cleanlab_columns(<your cleanset id>)
 corrected_dataset = studio.apply_corrections(<your dataset>, <your cleanset id>)
 ```
 
-### CLI
+### CLI -- run Cleanlab Studio from your command line
 
 1. If this is your first time using the Cleanlab CLI, authenticate with `cleanlab login`. You can find your API key at https://app.cleanlab.ai/account.
 2. Upload your dataset (image, text, or tabular) using `cleanlab dataset upload`.
@@ -195,10 +195,10 @@ by [polars.from_epoch](https://pola-rs.github.io/polars/py-polars/html/reference
 
 ## Other Resources
 
-- [Cleanlab Blog](https://cleanlab.ai/blog/) -- applications of Cleanlab Studio, case studies, feature announcements/explanations, ...
-- [Cleanlab Studio Audits](https://cleanlab.ai/blog/csa/) -- issues in famous datasets detected with Cleanlab Studio
-- [Slack Community](https://cleanlab.ai/slack/) -- ask questions, request features, discuss Data-Centric AI with others, ...
-- Need professional help? Reach out via email: team@cleanlab.ai
+- [Documentation](https://help.cleanlab.ai/) -- tutorials on how to use Cleanlab Studio for specific applications
+- [Blog](https://cleanlab.ai/examples/) -- example applications, feature announcements, concept explanations, benchmarks
+- [Slack Community](https://cleanlab.ai/slack/) -- ask questions, request features, discuss Data-Centric AI with others
+- Need professional help or want demo? Reach out via email: team@cleanlab.ai
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/studio.png" width=80% height=80%>
