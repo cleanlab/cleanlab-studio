@@ -26,7 +26,7 @@ class AuthError(APIError):
         super().__init__("invalid API key")
 
 
-class InternalError(BaseException):
+class InternalError(Exception):
     pass
 
 
