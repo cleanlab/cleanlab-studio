@@ -281,10 +281,10 @@ class Studio:
             return False
 
     def wait_until_cleanset_ready(self, cleanset_id: str, timeout: Optional[float] = None) -> None:
-        """Blocks until cleanset is ready, timeout is reached, or cleanset errors.
+        """Blocks until a cleanset is ready or the timeout is reached.
 
         Args:
-            cleanset_id (str): ID of cleanset to check status or
+            cleanset_id (str): ID of cleanset to check status for.
             timeout (Optional[float], optional): timeout for polling, in seconds. Defaults to None.
 
         Raises:
