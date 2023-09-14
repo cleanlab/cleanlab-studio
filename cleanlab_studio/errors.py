@@ -26,5 +26,9 @@ class AuthError(APIError):
         super().__init__("invalid API key")
 
 
-class CleansetRunError(RuntimeError):
+class InternalError(RuntimeError):
+    pass
+
+
+class CleansetError(InternalError):
     pass

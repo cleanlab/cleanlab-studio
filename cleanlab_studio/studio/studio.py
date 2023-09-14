@@ -9,7 +9,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from . import inference
-from cleanlab_studio.errors import CleansetRunError
+from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
@@ -277,7 +277,7 @@ class Studio:
             clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
             return True
 
-        except (TimeoutError, CleansetRunError):
+        except (TimeoutError, CleansetError):
             return False
 
     def wait_until_cleanset_ready(self, cleanset_id: str, timeout: Optional[float] = None) -> None:
@@ -289,7 +289,7 @@ class Studio:
 
         Raises:
             TimeoutError: if cleanset is not ready by end of timeout
-            CleansetRunError: if cleanset errored while running
+            CleansetError: if cleanset errored while running
         """
         clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
 

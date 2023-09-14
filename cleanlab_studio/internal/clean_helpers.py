@@ -4,7 +4,7 @@ from typing import Optional
 
 from tqdm import tqdm
 
-from cleanlab_studio.errors import CleansetRunError
+from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal.api import api
 
 
@@ -37,6 +37,6 @@ def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[float
 
         if res["has_error"]:
             pbar.set_postfix_str(res["step_description"])
-            raise CleansetRunError(f"Cleanset {cleanset_id} failed to complete")
+            raise CleansetError(f"Cleanset {cleanset_id} failed to complete")
 
     return
