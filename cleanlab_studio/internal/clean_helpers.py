@@ -38,5 +38,3 @@ def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[float
         if res["has_error"]:
             pbar.set_postfix_str(res["step_description"])
             raise CleansetError(f"Cleanset {cleanset_id} failed to complete")
-
-    return
