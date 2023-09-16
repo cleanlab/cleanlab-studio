@@ -24,3 +24,11 @@ class UnsupportedVersionError(APIError):
 class AuthError(APIError):
     def __init__(self) -> None:
         super().__init__("invalid API key")
+
+
+class InternalError(Exception):
+    pass
+
+
+class CleansetError(InternalError):
+    pass

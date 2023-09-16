@@ -2,12 +2,14 @@
 Python API for Cleanlab Studio.
 """
 from typing import Any, List, Literal, Optional, Union
+import warnings
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
 from . import inference
+from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
@@ -266,7 +268,30 @@ class Studio:
         Returns:
             After cleanset is done being generated, returns `True` if cleanset is ready to use, `False` otherwise.
         """
-        return clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+        warnings.warn(
+            "Poll cleanset status method has been deprecated -- please use wait_for_cleanset_ready method instead.",
+            DeprecationWarning,
+        )
+
+        try:
+            clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+            return True
+
+        except (TimeoutError, CleansetError):
+            return False
+
+    def wait_until_cleanset_ready(self, cleanset_id: str, timeout: Optional[float] = None) -> None:
+        """Blocks until a cleanset is ready or the timeout is reached.
+
+        Args:
+            cleanset_id (str): ID of cleanset to check status for.
+            timeout (Optional[float], optional): timeout for polling, in seconds. Defaults to None.
+
+        Raises:
+            TimeoutError: if cleanset is not ready by end of timeout
+            CleansetError: if cleanset errored while running
+        """
+        clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
 
     def get_latest_cleanset_id(self, project_id: str) -> str:
         """
