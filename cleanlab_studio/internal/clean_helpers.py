@@ -11,7 +11,7 @@ from cleanlab_studio.internal.api import api
 def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[float] = None) -> None:
     start_time = time.time()
     res = api.get_cleanset_status(api_key, cleanset_id)
-    spinner = itertools.chain("|/-\\")
+    spinner = itertools.cycle("|/-\\")
 
     with tqdm(
         total=res["total_steps"],
