@@ -86,7 +86,7 @@ class Studio:
         to_spark: bool = False,
     ) -> Any:
         """
-        Downloads Cleanlab columns for a cleanset.
+        Downloads [Cleanlab columns](/guide/concepts/cleanlab_columns/) for a cleanset.
 
         Args:
             cleanset_id: ID of cleanset to download columns from. To obtain cleanset ID from project ID use, [get_latest_cleanset_id](#method-get_latest_cleanset_id).
