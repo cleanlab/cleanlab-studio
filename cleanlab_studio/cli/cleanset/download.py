@@ -119,10 +119,23 @@ def download(
     else:
         while output is None or util.get_dataset_file_extension(output) != DatasetFileExtension.csv:
             output = click.prompt(
-                "Specify your output filepath (must be .csv). Leave blank to use default",
+                "Specify your output filepath  Leave blank to use default",
                 default=f"clean_labels.csv",
             )
-        clean_df.to_csv(output)
+        if util.get_dataset_file_extension(output) == DatasetFileExtension.csv:
+            clean_df.to_csv(output)
+        elif (
+            util.get_dataset_file_extension(output) == DatasetFileExtension.xlsx
+            or util.get_dataset_file_extension(output) == DatasetFileExtension.xls
+        ):
+            clean_df.to_excel(output)
+        elif util.get_dataset_file_extension(output) == DatasetFileExtension.json:
+            clean_df.to_json(output)
+        else:
+            output = click.prompt(
+                "Specify your output filepath. Filepath must have file type of CSV, JSON, or XLS(X).",
+                default=f"clean_labels.csv",
+            )
         click_helpers.success(f"Saved to {output}")
 
 
