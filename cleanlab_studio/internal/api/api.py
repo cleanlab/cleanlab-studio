@@ -397,4 +397,4 @@ def get_tlm_confidence(
         f"{tlm_base_url}/prompt", json=dict(prompt=prompt), headers=_construct_headers(api_key)
     )
     handle_api_error(res)
-    return res.json()
+    return cast(JSONDict, res.json())
