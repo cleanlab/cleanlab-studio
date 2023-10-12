@@ -1,5 +1,10 @@
-from typing import Tuple
+from typing import TypedDict
 from cleanlab_studio.internal.api import api
+
+
+class TlmResponse(TypedDict):
+    answer: str
+    confidence_score: float
 
 
 class TLM:
@@ -9,13 +14,17 @@ class TLM:
         """Initializes Trustworthy LLM hanlder w/ API key."""
         self._api_key = api_key
 
-    def prompt(self, input: str) -> Tuple[str, float]:
+    def prompt(self, input: str) -> TlmResponse:
         """
         Get inference and confidence from TLM.
+
         Args:
             input: question for the LLM
         Returns:
-            A tuple of  the LLM output and a confidence score from [0,1]
+            A dict containing the TLM response
         """
         response = api.get_tlm_confidence(self._api_key, input)
-        return (response["answer"], response["confidence_score"])
+        return {
+            "answer": response["answer"],
+            "confidence_score": response["confidence_score"],
+        }

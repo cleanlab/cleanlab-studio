@@ -388,10 +388,15 @@ def get_tlm_confidence(
 ) -> JSONDict:
     """
     Prompt Trustworthy LLM with a question, and get back its answer along with a confidence score
+
     :param api_key:
+    :param prompt:
+
     :return: a JSON dict in the format
-        {'answer': {tlm generated answer},
-        'confidence_score': {a number from 0 to 1 representing the TLM's confidence in its answer.}}
+    {
+        "answer": <tlm generated answer>,
+        "confidence_score": <float score between 0 and 1>
+    }
     """
     res = requests.post(
         f"{tlm_base_url}/prompt", json=dict(prompt=prompt), headers=_construct_headers(api_key)
