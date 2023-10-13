@@ -382,9 +382,10 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     return cast(Dict[str, str], res.json())
 
 
-def get_tlm_confidence(
+def tlm_prompt(
     api_key: str,
     prompt: str,
+    quality_preset: str,
 ) -> JSONDict:
     """
     Prompt Trustworthy LLM with a question, and get back its answer along with a confidence score
@@ -399,7 +400,9 @@ def get_tlm_confidence(
     }
     """
     res = requests.post(
-        f"{tlm_base_url}/prompt", json=dict(prompt=prompt), headers=_construct_headers(api_key)
+        f"{tlm_base_url}/prompt",
+        json=dict(prompt=prompt, quality_preset=quality_preset),
+        headers=_construct_headers(api_key),
     )
     handle_api_error(res)
     return cast(JSONDict, res.json())
