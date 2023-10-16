@@ -19,19 +19,24 @@ def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[float
         bar_format="{desc} Step {n_fmt}/{total_fmt}{postfix}",
     ) as pbar:
         while not res["is_ready"] and not res["has_error"]:
+            if pbar.total is None and res["total_steps"] is not None:
+                pbar.total = res["total_steps"]
+                pbar.refresh()
+
+            pbar.set_postfix_str(res["step_description"])
+            pbar.update(int(res["step"]) - pbar.n)
+
+            if timeout is not None and time.time() - start_time > timeout:
+                raise TimeoutError("Cleanset not ready before timeout")
+
             for _ in range(50):
                 time.sleep(0.1)
                 pbar.set_description_str(f"Cleanset Progress: {next(spinner)}")
 
-            pbar.set_postfix_str(res["step_description"])
-            pbar.update(int(res["step"]) - pbar.n)
-            if timeout is not None and time.time() - start_time > timeout:
-                raise TimeoutError("Cleanset not ready before timeout")
-
             res = api.get_cleanset_status(api_key, cleanset_id)
 
         if res["is_ready"]:
-            pbar.update(pbar.total - pbar.n)
+            pbar.update(int(res["step"]) - pbar.n)
             pbar.set_postfix_str(res["step_description"])
             return
 
