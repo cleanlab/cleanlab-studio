@@ -6,7 +6,7 @@ QualityPreset = Literal["best", "high", "medium", "low", "base"]
 
 
 class TlmResponse(TypedDict):
-    answer: str
+    response: str
     confidence_score: float
 
 
@@ -27,8 +27,8 @@ class TLM:
         Returns:
             A dict containing the TLM response
         """
-        response = api.tlm_prompt(self._api_key, input, self._quality_preset)
+        tlm_response = api.tlm_prompt(self._api_key, input, self._quality_preset)
         return {
-            "answer": response["answer"],
-            "confidence_score": response["confidence_score"],
+            "response": tlm_response["response"],
+            "confidence_score": tlm_response["confidence_score"],
         }
