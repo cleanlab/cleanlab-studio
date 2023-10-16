@@ -401,7 +401,7 @@ def tlm_prompt(
     """
     res = requests.post(
         f"{tlm_base_url}/prompt",
-        json=dict(prompt=prompt, quality_preset=quality_preset),
+        json=dict(prompt=prompt, quality=quality_preset),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
