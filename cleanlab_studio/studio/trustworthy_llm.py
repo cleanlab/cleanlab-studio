@@ -2,7 +2,7 @@ from typing import Literal, TypedDict
 from cleanlab_studio.internal.api import api
 
 
-QualityPreset = Literal["best", "high", "medium", "fast", "base"]
+QualityPreset = Literal["best", "high", "medium", "low", "base"]
 
 
 class TlmResponse(TypedDict):
