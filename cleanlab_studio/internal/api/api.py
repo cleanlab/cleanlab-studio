@@ -395,7 +395,7 @@ def tlm_prompt(
         prompt (str): prompt for TLM to respond to
         quality_preset (str): quality preset to use to generate response
 
-    Returns
+    Returns:
         JSONDict: dictionary with TLM response and confidence score
     """
     res = requests.post(
@@ -422,7 +422,7 @@ def tlm_get_confidence_score(
         response (str): response for TLM to get confidence score for
         quality_preset (str): quality preset to use to generate confidence score
 
-    Returns
+    Returns:
         JSONDict: dictionary with TLM confidence score
     """
     res = requests.post(
