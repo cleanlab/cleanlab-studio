@@ -2,6 +2,7 @@ from typing import cast, Literal, TypedDict
 from cleanlab_studio.internal.api import api
 
 
+valid_quality_presets = ["best", "high", "medium", "low", "base"]
 QualityPreset = Literal["best", "high", "medium", "low", "base"]
 
 
@@ -16,6 +17,12 @@ class TLM:
     def __init__(self, api_key: str, quality_preset: QualityPreset) -> None:
         """Initializes TLM interface."""
         self._api_key = api_key
+
+        if quality_preset not in valid_quality_presets:
+            raise ValueError(
+                f"Invalid quality preset {quality_preset} -- must be one of {valid_quality_presets}"
+            )
+
         self._quality_preset = quality_preset
 
     def prompt(self, prompt: str) -> TLMResponse:
