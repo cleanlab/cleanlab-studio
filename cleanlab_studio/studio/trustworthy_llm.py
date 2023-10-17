@@ -27,7 +27,7 @@ class TLM:
 
     def prompt(self, prompt: str) -> TLMResponse:
         """
-        Get inference and confidence from TLM.
+        Get response and confidence from TLM.
 
         Args:
             prompt: prompt for the TLM

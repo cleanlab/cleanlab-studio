@@ -388,7 +388,7 @@ def tlm_prompt(
     quality_preset: str,
 ) -> JSONDict:
     """
-    Prompt Trustworthy LLM with a question, and get back its answer along with a confidence score
+    Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
 
     Args:
         api_key (str): studio API key for auth
@@ -414,7 +414,7 @@ def tlm_get_confidence_score(
     quality_preset: str,
 ) -> JSONDict:
     """
-    Query TLM for a confidence score for the prompt-response pair.
+    Query Trustworthy Language Model for a confidence score for the prompt-response pair.
 
     Args:
         api_key (str): studio API key for auth
