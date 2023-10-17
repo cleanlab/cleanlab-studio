@@ -28,6 +28,7 @@ dataset_base_url = f"{base_url}/datasets"
 project_base_url = f"{base_url}/projects"
 cleanset_base_url = f"{base_url}/cleansets"
 model_base_url = f"{base_url}/v1/deployment"
+tlm_base_url = f"{base_url}/v0/trustworthy_llm"
 
 
 def _construct_headers(
@@ -379,3 +380,55 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     handle_api_error(res)
 
     return cast(Dict[str, str], res.json())
+
+
+def tlm_prompt(
+    api_key: str,
+    prompt: str,
+    quality_preset: str,
+) -> JSONDict:
+    """
+    Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
+
+    Args:
+        api_key (str): studio API key for auth
+        prompt (str): prompt for TLM to respond to
+        quality_preset (str): quality preset to use to generate response
+
+    Returns:
+        JSONDict: dictionary with TLM response and confidence score
+    """
+    res = requests.post(
+        f"{tlm_base_url}/prompt",
+        json=dict(prompt=prompt, quality=quality_preset),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
+def tlm_get_confidence_score(
+    api_key: str,
+    prompt: str,
+    response: str,
+    quality_preset: str,
+) -> JSONDict:
+    """
+    Query Trustworthy Language Model for a confidence score for the prompt-response pair.
+
+    Args:
+        api_key (str): studio API key for auth
+        prompt (str): prompt for TLM to get confidence score for
+        response (str): response for TLM to get confidence score for
+        quality_preset (str): quality preset to use to generate confidence score
+
+    Returns:
+        JSONDict: dictionary with TLM confidence score
+    """
+    res = requests.post(
+        f"{tlm_base_url}/get_confidence_score",
+        json=dict(prompt=prompt, response=response, quality=quality_preset),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())

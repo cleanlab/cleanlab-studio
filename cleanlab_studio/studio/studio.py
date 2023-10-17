@@ -9,6 +9,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from . import inference
+from . import trustworthy_llm
 from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
@@ -361,3 +362,11 @@ class Studio:
         Downloads embeddings for a cleanset
         """
         return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
+
+    def TLM(self, *, quality_preset: trustworthy_llm.QualityPreset = "low") -> trustworthy_llm.TLM:
+        """Gets Trustworthy Language Model (TLM) object to prompt.
+
+        Returns:
+            TLM: the Trustworthy Language Model object
+        """
+        return trustworthy_llm.TLM(self._api_key, quality_preset)
