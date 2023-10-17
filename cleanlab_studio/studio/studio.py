@@ -367,6 +367,6 @@ class Studio:
         """Gets trustworthy language model (TLM) object to prompt.
 
         Returns:
-            Tlm: the trustworthy language model object
+            TLM: the trustworthy language model object
         """
         return trustworthy_llm.TLM(self._api_key, quality_preset)

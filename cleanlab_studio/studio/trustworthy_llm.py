@@ -5,7 +5,7 @@ from cleanlab_studio.internal.api import api
 QualityPreset = Literal["best", "high", "medium", "low", "base"]
 
 
-class TlmResponse(TypedDict):
+class TLMResponse(TypedDict):
     response: str
     confidence_score: float
 
@@ -18,7 +18,7 @@ class TLM:
         self._api_key = api_key
         self._quality_preset = quality_preset
 
-    def prompt(self, prompt: str) -> TlmResponse:
+    def prompt(self, prompt: str) -> TLMResponse:
         """
         Get inference and confidence from TLM.
 
