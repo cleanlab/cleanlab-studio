@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict
+from typing import cast, Literal, TypedDict
 from cleanlab_studio.internal.api import api
 
 
@@ -45,6 +45,9 @@ class TLM:
         assert (
             self._quality_preset != "base"
         ), "Cannot get confidence score with `base` quality_preset -- choose a higher preset."
-        return api.tlm_get_confidence_score(self._api_key, prompt, response, self._quality_preset)[
-            "confidence_score"
-        ]
+        return cast(
+            float,
+            api.tlm_get_confidence_score(self._api_key, prompt, response, self._quality_preset)[
+                "confidence_score"
+            ],
+        )
