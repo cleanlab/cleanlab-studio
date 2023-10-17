@@ -390,15 +390,13 @@ def tlm_prompt(
     """
     Prompt Trustworthy LLM with a question, and get back its answer along with a confidence score
 
-    :param api_key:
-    :param prompt:
-    :param quality_preset:
+    Args:
+        api_key (str): studio API key for auth
+        prompt (str): prompt for TLM to respond to
+        quality_preset (str): quality preset to use to generate response
 
-    :return: a JSON dict in the format
-    {
-        "response": <tlm generated response>,
-        "confidence_score": <float score between 0 and 1>
-    }
+    Returns
+        JSONDict: dictionary with TLM response and confidence score
     """
     res = requests.post(
         f"{tlm_base_url}/prompt",
@@ -418,15 +416,14 @@ def tlm_get_confidence_score(
     """
     Query TLM for a confidence score for the prompt-response pair.
 
-    :param api_key:
-    :param prompt:
-    :param response:
-    :param quality_preset:
+    Args:
+        api_key (str): studio API key for auth
+        prompt (str): prompt for TLM to get confidence score for
+        response (str): response for TLM to get confidence score for
+        quality_preset (str): quality preset to use to generate confidence score
 
-    :return: a JSON dict in the format
-    {
-        "confidence_score": <float score between 0 and 1>
-    }
+    Returns
+        JSONDict: dictionary with TLM confidence score
     """
     res = requests.post(
         f"{tlm_base_url}/get_confidence_score",
