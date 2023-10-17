@@ -18,17 +18,30 @@ class TLM:
         self._api_key = api_key
         self._quality_preset = quality_preset
 
-    def prompt(self, input: str) -> TlmResponse:
+    def prompt(self, prompt: str) -> TlmResponse:
         """
         Get inference and confidence from TLM.
 
         Args:
-            input: question for the LLM
+            prompt: prompt for the TLM
         Returns:
             A dict containing the TLM response
         """
-        tlm_response = api.tlm_prompt(self._api_key, input, self._quality_preset)
+        tlm_response = api.tlm_prompt(self._api_key, prompt, self._quality_preset)
         return {
             "response": tlm_response["response"],
             "confidence_score": tlm_response["confidence_score"],
         }
+
+    def get_confidence_score(self, prompt: str, response: str) -> float:
+        """Gets confidence score for prompt-response pair.
+
+        Args:
+            prompt: prompt for the TLM
+            response: response for the TLM  to evaluate
+        Returns
+            float corresponding to the TLM's confidence score
+        """
+        return api.tlm_get_confidence_score(self._api_key, prompt, response, self._quality_preset)[
+            "confidence_score"
+        ]

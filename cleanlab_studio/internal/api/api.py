@@ -392,16 +392,45 @@ def tlm_prompt(
 
     :param api_key:
     :param prompt:
+    :param quality_preset:
 
     :return: a JSON dict in the format
     {
-        "answer": <tlm generated answer>,
+        "response": <tlm generated response>,
         "confidence_score": <float score between 0 and 1>
     }
     """
     res = requests.post(
         f"{tlm_base_url}/prompt",
         json=dict(prompt=prompt, quality=quality_preset),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
+def tlm_get_confidence_score(
+    api_key: str,
+    prompt: str,
+    response: str,
+    quality_preset: str,
+) -> JSONDict:
+    """
+    Query TLM for a confidence score for the prompt-response pair.
+
+    :param api_key:
+    :param prompt:
+    :param response:
+    :param quality_preset:
+
+    :return: a JSON dict in the format
+    {
+        "confidence_score": <float score between 0 and 1>
+    }
+    """
+    res = requests.post(
+        f"{tlm_base_url}/get_confidence_score",
+        json=dict(prompt=prompt, response=response, quality=quality_preset),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
