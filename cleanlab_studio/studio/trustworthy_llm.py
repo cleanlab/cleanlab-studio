@@ -39,7 +39,7 @@ class TLM:
         Args:
             prompt: prompt for the TLM
             response: response for the TLM  to evaluate
-        Returns
+        Returns:
             float corresponding to the TLM's confidence score
         """
         assert (
