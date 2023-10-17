@@ -11,10 +11,10 @@ class TlmResponse(TypedDict):
 
 
 class TLM:
-    """Handler for interactions with Trustworthy LLMs."""
+    """TLM interface class."""
 
     def __init__(self, api_key: str, quality_preset: QualityPreset) -> None:
-        """Initializes Trustworthy LLM hanlder w/ API key."""
+        """Initializes TLM interface."""
         self._api_key = api_key
         self._quality_preset = quality_preset
 
