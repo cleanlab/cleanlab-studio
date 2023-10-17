@@ -49,9 +49,11 @@ class TLM:
         Returns:
             float corresponding to the TLM's confidence score
         """
-        assert (
-            self._quality_preset != "base"
-        ), "Cannot get confidence score with `base` quality_preset -- choose a higher preset."
+        if self._quality_preset == "base":
+            raise ValueError(
+                "Cannot get confidence score with `base` quality_preset -- choose a higher preset."
+            )
+
         return cast(
             float,
             api.tlm_get_confidence_score(self._api_key, prompt, response, self._quality_preset)[
