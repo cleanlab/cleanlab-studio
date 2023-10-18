@@ -1,3 +1,6 @@
+"""
+API for Trustworthy Language Model.
+"""
 from typing import cast, Literal, TypedDict
 from cleanlab_studio.internal.api import api
 
@@ -7,6 +10,13 @@ QualityPreset = Literal["best", "high", "medium", "low", "base"]
 
 
 class TLMResponse(TypedDict):
+    """Trustworthy Language Model response.
+
+    Attributes:
+        response (str): text response from language model
+        confidence_score (float): score corresponding to confidence that the response is correct
+    """
+
     response: str
     confidence_score: float
 
