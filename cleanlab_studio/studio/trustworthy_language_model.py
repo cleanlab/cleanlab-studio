@@ -1,5 +1,5 @@
 """
-API for Trustworthy Language Model.
+Cleanlab TLM is a Large Language Model that gives more reliable answers and quantifies its uncertainty in these answers
 """
 from typing import cast, Literal, TypedDict
 from cleanlab_studio.internal.api import api
