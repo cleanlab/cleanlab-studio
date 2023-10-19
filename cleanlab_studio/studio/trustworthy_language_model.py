@@ -1,3 +1,6 @@
+"""
+Cleanlab TLM is a Large Language Model that gives more reliable answers and quantifies its uncertainty in these answers
+"""
 from typing import cast, Literal, TypedDict
 from cleanlab_studio.internal.api import api
 
@@ -7,6 +10,13 @@ QualityPreset = Literal["best", "high", "medium", "low", "base"]
 
 
 class TLMResponse(TypedDict):
+    """Trustworthy Language Model response.
+
+    Attributes:
+        response (str): text response from language model
+        confidence_score (float): score corresponding to confidence that the response is correct
+    """
+
     response: str
     confidence_score: float
 
@@ -30,9 +40,9 @@ class TLM:
         Get response and confidence from TLM.
 
         Args:
-            prompt: prompt for the TLM
+            prompt (str): prompt for the TLM
         Returns:
-            A dict containing the TLM response
+            TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
         """
         tlm_response = api.tlm_prompt(self._api_key, prompt, self._quality_preset)
         return {

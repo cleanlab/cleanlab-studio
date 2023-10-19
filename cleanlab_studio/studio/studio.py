@@ -9,7 +9,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from . import inference
-from . import trustworthy_llm
+from . import trustworthy_language_model
 from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
@@ -344,13 +344,18 @@ class Studio:
         """
         return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
 
-    def TLM(self, *, quality_preset: trustworthy_llm.QualityPreset = "low") -> trustworthy_llm.TLM:
+    def TLM(
+        self, *, quality_preset: trustworthy_language_model.QualityPreset = "low"
+    ) -> trustworthy_language_model.TLM:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
+        Args:
+            quality_preset ([QualityPreset](../trustworthy_language_model#QualityPreset)): quality preset to use for prompts
+
         Returns:
-            TLM: the Trustworthy Language Model object
+            TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
         """
-        return trustworthy_llm.TLM(self._api_key, quality_preset)
+        return trustworthy_language_model.TLM(self._api_key, quality_preset)
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
         """
