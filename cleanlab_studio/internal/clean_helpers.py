@@ -36,7 +36,7 @@ def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[float
             res = api.get_cleanset_status(api_key, cleanset_id)
 
         if res["is_ready"]:
-            pbar.update(int(res["step"]) - pbar.n)
+            pbar.update(pbar.total - pbar.n)
             pbar.set_postfix_str(res["step_description"])
             return
 
