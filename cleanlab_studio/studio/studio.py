@@ -258,29 +258,6 @@ class Studio:
             text_column=text_column,
         )
 
-    def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
-        """
-        Repeatedly polls for cleanset status while the cleanset is being generated. Blocks until cleanset is ready, there is a cleanset error, or `timeout` is exceeded.
-
-        Args:
-            cleanset_id: ID of cleanset to check status of.
-            timeout: Optional timeout after which to stop polling for progress. If not provided, will block until cleanset is ready.
-
-        Returns:
-            After cleanset is done being generated, returns `True` if cleanset is ready to use, `False` otherwise.
-        """
-        warnings.warn(
-            "Poll cleanset status method has been deprecated -- please use wait_for_cleanset_ready method instead.",
-            DeprecationWarning,
-        )
-
-        try:
-            clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
-            return True
-
-        except (TimeoutError, CleansetError):
-            return False
-
     def wait_until_cleanset_ready(self, cleanset_id: str, timeout: Optional[float] = None) -> None:
         """Blocks until a cleanset is ready or the timeout is reached.
 
@@ -370,3 +347,28 @@ class Studio:
             TLM: the Trustworthy Language Model object
         """
         return trustworthy_llm.TLM(self._api_key, quality_preset)
+
+    def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
+        """
+        This method has been deprecated, instead use: `wait_until_cleanset_ready()`
+
+        Repeatedly polls for cleanset status while the cleanset is being generated. Blocks until cleanset is ready, there is a cleanset error, or `timeout` is exceeded.
+
+        Args:
+            cleanset_id: ID of cleanset to check status of.
+            timeout: Optional timeout after which to stop polling for progress. If not provided, will block until cleanset is ready.
+
+        Returns:
+            After cleanset is done being generated, returns `True` if cleanset is ready to use, `False` otherwise.
+        """
+        warnings.warn(
+            "poll_cleanset_status method has been deprecated -- please use wait_for_cleanset_ready method instead.",
+            DeprecationWarning,
+        )
+
+        try:
+            clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+            return True
+
+        except (TimeoutError, CleansetError):
+            return False
