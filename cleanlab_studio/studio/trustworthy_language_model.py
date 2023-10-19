@@ -42,7 +42,7 @@ class TLM:
         Args:
             prompt (str): prompt for the TLM
         Returns:
-            TLMResponse: [TLMResponse](#class-tlmresponse) object
+            TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
         """
         tlm_response = api.tlm_prompt(self._api_key, prompt, self._quality_preset)
         return {
