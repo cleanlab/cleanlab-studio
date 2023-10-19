@@ -372,6 +372,6 @@ class Studio:
             quality_preset ([QualityPreset](../trustworthy_language_model#QualityPreset)): quality preset to use for prompts
 
         Returns:
-            [TLM](../trustworthy_language_model#TLM): the Trustworthy Language Model object
+            TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
         """
         return trustworthy_language_model.TLM(self._api_key, quality_preset)

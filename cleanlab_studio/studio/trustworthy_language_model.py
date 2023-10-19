@@ -40,9 +40,9 @@ class TLM:
         Get response and confidence from TLM.
 
         Args:
-            prompt: prompt for the TLM
+            prompt (str): prompt for the TLM
         Returns:
-            A dict containing the TLM response
+            TLMResponse: [TLMResponse](#class-tlmresponse) object
         """
         tlm_response = api.tlm_prompt(self._api_key, prompt, self._quality_preset)
         return {
