@@ -1,6 +1,7 @@
 """
 Python API for Cleanlab Studio.
 """
+from multiprocessing.sharedctypes import Value
 from typing import Any, List, Literal, Optional, Union
 import warnings
 
@@ -45,7 +46,11 @@ class Studio:
                 raise ValueError(
                     "No API key found; either specify API key or log in with 'cleanlab login' first"
                 )
-        api.validate_api_key(api_key)
+        if not api.validate_api_key(api_key):
+            raise ValueError(
+                f"Invalid API key, please check if it is properly specified: {api_key}"
+            )
+
         self._api_key = api_key
 
     def upload_dataset(
