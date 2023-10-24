@@ -157,6 +157,10 @@ Every time the version number is incremented, these parts of the codebase need t
 
 We autogenerate documentation for the `studio` module from docstrings. In order for the generated docs to be formatted correctly, use [Google style](https://google.github.io/styleguide/pyguide.html#381-docstrings) docstrings ([example](https://www.sphinx-doc.org/en/master/usage/extensions/example_google.html))
 
+### Deprecating Method
+
+If you are deprecating a method, please add the method name to `deprecated_methods.yaml` [here](https://github.com/cleanlab/cleanlab-studio-docs/blob/main/scripts/deprecated_methods.yaml) so that it is properly hidden from the docs page.
+
 ### Relative Link Formatting
 
 - To link to other functions in the `studio` module within a docstring, use the following format: `[link text](#method-function_name)`
