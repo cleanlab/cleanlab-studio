@@ -95,7 +95,7 @@ class Studio:
 
         Args:
             cleanset_id: ID of cleanset to download columns from. To obtain cleanset ID from project ID use, [get_latest_cleanset_id](#method-get_latest_cleanset_id).
-            include_action: Whether to include a column with any actions taken on the cleanset in the downloaded columns.
+            include_project_details: Whether to include a column with any actions taken on the cleanset in the downloaded columns.
 
         Returns:
             A pandas or pyspark DataFrame. Type is `Any` to avoid requiring pyspark installation.
@@ -129,7 +129,7 @@ class Studio:
         if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             from pyspark.sql.functions import udf
 
-            cl_cols = self.download_cleanlab_columns(cleanset_id, to_spark=True)
+            cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True, to_spark=True)
             corrected_ds_spark = dataset.alias("corrected_ds")
             if id_col not in corrected_ds_spark.columns:
                 from pyspark.sql.functions import (
@@ -166,7 +166,7 @@ class Studio:
                 .drop("action")
             )
         elif isinstance(dataset, pd.DataFrame):
-            cl_cols = self.download_cleanlab_columns(cleanset_id)
+            cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True)
             joined_ds: pd.DataFrame
             if id_col in dataset.columns:
                 joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
