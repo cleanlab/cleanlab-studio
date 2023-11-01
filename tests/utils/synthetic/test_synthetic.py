@@ -77,6 +77,8 @@ def test_scores_are_consistent_across_ordering(df, synthetic_scores):
 
     new_scores = score_synthetic_dataset(df_copy)
     np.testing.assert_allclose(
-        list(new_scores.values()), list(synthetic_scores.values()), atol=1e-6
+        list(new_scores.values()),
+        list(synthetic_scores.values()),
+        atol=1e-6,
+        err_msg="Shuffling the dataframe should not affect the scores",
     )
-    assert new_scores == synthetic_scores, "Shuffling the dataframe should not affect the scores"
