@@ -386,6 +386,7 @@ def tlm_prompt(
     api_key: str,
     prompt: str,
     quality_preset: str,
+    options: Optional[JSONDict],
 ) -> JSONDict:
     """
     Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
@@ -400,7 +401,7 @@ def tlm_prompt(
     """
     res = requests.post(
         f"{tlm_base_url}/prompt",
-        json=dict(prompt=prompt, quality=quality_preset),
+        json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -412,6 +413,7 @@ def tlm_get_confidence_score(
     prompt: str,
     response: str,
     quality_preset: str,
+    options: Optional[JSONDict],
 ) -> JSONDict:
     """
     Query Trustworthy Language Model for a confidence score for the prompt-response pair.
@@ -427,7 +429,7 @@ def tlm_get_confidence_score(
     """
     res = requests.post(
         f"{tlm_base_url}/get_confidence_score",
-        json=dict(prompt=prompt, response=response, quality=quality_preset),
+        json=dict(prompt=prompt, response=response, quality=quality_preset, options=options or {}),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
