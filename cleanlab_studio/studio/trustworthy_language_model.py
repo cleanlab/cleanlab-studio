@@ -1,7 +1,7 @@
 """
 Cleanlab TLM is a Large Language Model that gives more reliable answers and quantifies its uncertainty in these answers
 """
-from typing import cast, Literal, TypedDict
+from typing import cast, Literal, Optional, TypedDict
 from cleanlab_studio.internal.api import api
 
 
@@ -21,6 +21,16 @@ class TLMResponse(TypedDict):
     confidence_score: float
 
 
+class TLMOptions(TypedDict):
+    """Trustworthy language model options.
+
+    Attributes:
+        max_tokens (int): the maximum number of tokens to generate in the TLM response
+    """
+
+    max_tokens: int
+
+
 class TLM:
     """TLM interface class."""
 
@@ -35,7 +45,7 @@ class TLM:
 
         self._quality_preset = quality_preset
 
-    def prompt(self, prompt: str) -> TLMResponse:
+    def prompt(self, prompt: str, options: Optional[TLMOptions]) -> TLMResponse:
         """
         Get response and confidence from TLM.
 
@@ -44,7 +54,7 @@ class TLM:
         Returns:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
         """
-        tlm_response = api.tlm_prompt(self._api_key, prompt, self._quality_preset)
+        tlm_response = api.tlm_prompt(self._api_key, prompt, self._quality_preset, options)
         return {
             "response": tlm_response["response"],
             "confidence_score": tlm_response["confidence_score"],
@@ -66,7 +76,7 @@ class TLM:
 
         return cast(
             float,
-            api.tlm_get_confidence_score(self._api_key, prompt, response, self._quality_preset)[
-                "confidence_score"
-            ],
+            api.tlm_get_confidence_score(
+                self._api_key, prompt, response, self._quality_preset, options
+            )["confidence_score"],
         )
