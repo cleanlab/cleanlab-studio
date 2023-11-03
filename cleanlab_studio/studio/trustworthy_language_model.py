@@ -46,7 +46,7 @@ class TLM:
 
         self._quality_preset = quality_preset
 
-    def prompt(self, prompt: str, options: Optional[TLMOptions]) -> TLMResponse:
+    def prompt(self, prompt: str, options: Optional[TLMOptions] = None) -> TLMResponse:
         """
         Get response and confidence from TLM.
 
@@ -67,7 +67,7 @@ class TLM:
         }
 
     def get_confidence_score(
-        self, prompt: str, response: str, options: Optional[TLMOptions]
+        self, prompt: str, response: str, options: Optional[TLMOptions] = None
     ) -> float:
         """Gets confidence score for prompt-response pair.
 
