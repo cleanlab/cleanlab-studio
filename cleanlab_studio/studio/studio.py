@@ -95,7 +95,8 @@ class Studio:
 
         Args:
             cleanset_id: ID of cleanset to download columns from. To obtain cleanset ID from project ID use, [get_latest_cleanset_id](#method-get_latest_cleanset_id).
-            include_project_details: Whether to include a column with any actions taken on the cleanset in the downloaded columns.
+            include_cleanlab_columns: whether to download all Cleanlab columns or just the clean_label column
+            include_project_details: whether to download columns related to project status such as resolved rows, actions taken, etc.
 
         Returns:
             A pandas or pyspark DataFrame. Type is `Any` to avoid requiring pyspark installation.
@@ -173,7 +174,7 @@ class Studio:
             else:
                 joined_ds = dataset.join(cl_cols.set_index(id_col).sort_values(by=id_col))
             joined_ds["__cleanlab_final_label"] = joined_ds["corrected_label"].where(
-                joined_ds["corrected_label"].apply(check_not_none).tolist(),
+                joined_ds["corrected_label"].notnull().tolist(),
                 dataset[label_column].tolist(),
             )
 
