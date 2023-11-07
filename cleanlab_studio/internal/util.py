@@ -5,6 +5,8 @@ import math
 import numpy as np
 import pandas as pd
 
+import snowflake.snowpark as snowpark
+
 try:
     import pyspark.sql
 
@@ -16,12 +18,13 @@ from .dataset_source import (
     DatasetSource,
     FilepathDatasetSource,
     PandasDatasetSource,
+    SnowparkDatasetSource,
 )
 
 dataset_source_types = (
-    Union[str, pathlib.Path, pd.DataFrame]
+    Union[str, pathlib.Path, pd.DataFrame, snowpark.DataFrame]
     if not pyspark_exists
-    else Union[str, pathlib.Path, pd.DataFrame, pyspark.sql.DataFrame]
+    else Union[str, pathlib.Path, pd.DataFrame, snowpark.DataFrame, pyspark.sql.DataFrame]
 )
 
 DatasetSourceType = TypeVar("DatasetSourceType", bound=dataset_source_types)  # type: ignore
@@ -40,6 +43,8 @@ def init_dataset_source(
         return FilepathDatasetSource(
             filepath=pathlib.Path(dataset_source), dataset_name=dataset_name
         )
+    elif isinstance(dataset_source, snowpark.DataFrame):
+        return SnowparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     elif pyspark_exists and isinstance(dataset_source, pyspark.sql.DataFrame):
         from .dataset_source import PySparkDatasetSource
 
