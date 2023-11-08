@@ -1,7 +1,14 @@
 import io
 from typing import IO
+
 import pandas as pd
-import snowflake.snowpark as snowpark
+
+try:
+    import snowflake.snowpark as snowpark
+except ImportError:
+    raise ImportError(
+        'Must install snowpark to upload from snowpark dataframe. Use "pip install snowflake-snowpark-python"'
+    )
 
 from .dataframe_dataset_source import DataFrameDatasetSource
 

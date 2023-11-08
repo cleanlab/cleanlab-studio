@@ -5,7 +5,12 @@ import math
 import numpy as np
 import pandas as pd
 
-import snowflake.snowpark as snowpark
+try:
+    import snowflake.snowpark as snowpark
+
+    snowpark_exists = True
+except ImportError:
+    snowpark_exists = False
 
 try:
     import pyspark.sql
@@ -18,16 +23,15 @@ from .dataset_source import (
     DatasetSource,
     FilepathDatasetSource,
     PandasDatasetSource,
-    SnowparkDatasetSource,
 )
 
-dataset_source_types = (
-    Union[str, pathlib.Path, pd.DataFrame, snowpark.DataFrame]
-    if not pyspark_exists
-    else Union[str, pathlib.Path, pd.DataFrame, snowpark.DataFrame, pyspark.sql.DataFrame]
-)
+dataset_source_types = [str, pathlib.Path, pd.DataFrame]
+if pyspark_exists:
+    dataset_source_types.append(pyspark.sql.DataFrame)
+if snowpark_exists:
+    dataset_source_types.append(snowpark.DataFrame)
 
-DatasetSourceType = TypeVar("DatasetSourceType", bound=dataset_source_types)  # type: ignore
+DatasetSourceType = TypeVar("DatasetSourceType", bound=Union[tuple(dataset_source_types)])  # type: ignore
 
 
 def init_dataset_source(
@@ -43,7 +47,11 @@ def init_dataset_source(
         return FilepathDatasetSource(
             filepath=pathlib.Path(dataset_source), dataset_name=dataset_name
         )
-    elif isinstance(dataset_source, snowpark.DataFrame):
+    elif snowpark_exists and isinstance(dataset_source, snowpark.DataFrame):
+        from .dataset_source import SnowparkDatasetSource
+        
+        if dataset_name is None:
+            raise ValueError("Must provide dataset name if uploading from a DataFrame")
         return SnowparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     elif pyspark_exists and isinstance(dataset_source, pyspark.sql.DataFrame):
         from .dataset_source import PySparkDatasetSource
