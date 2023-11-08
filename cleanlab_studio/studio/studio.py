@@ -128,8 +128,6 @@ class Studio:
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
         if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
-            from pyspark.sql.functions import udf
-
             cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True, to_spark=True)
             corrected_ds_spark = dataset.alias("corrected_ds")
             if id_col not in corrected_ds_spark.columns:
