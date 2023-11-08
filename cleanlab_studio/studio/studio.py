@@ -136,6 +136,8 @@ class Studio:
                 from pyspark.sql.functions import (
                     row_number,
                     monotonically_increasing_id,
+                    when,
+                    col
                 )
                 from pyspark.sql.window import Window
 
@@ -150,12 +152,7 @@ class Studio:
             )
             final = both.withColumn(
                 "__cleanlab_final_label",
-                # XXX hacky, checks if label is none by hand
-                # instead, use original JSON, which uses null values where it's not specified
-                udf(lambda original, clean: original if check_none(clean) else clean)(
-                    both[label_column],
-                    "corrected_label",
-                ),
+                when(col("clean_label").isNull(), col(label_column)).otherwise(col("clean_label"))
             )
             new_labels = final.select(
                 [id_col, "action", "__cleanlab_final_label"]
