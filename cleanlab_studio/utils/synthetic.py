@@ -2,6 +2,9 @@ from typing import Dict, Optional, Tuple, cast
 import pandas as pd
 
 
+_near_duplicate_id_column = "near_duplicate_cluster_id"
+
+
 class _SyntheticDatasetScorer:
     """Computes the issue scores for a dataset consisting of
     real and synthetic data, to evaluate any overarching issues
@@ -18,10 +21,6 @@ class _SyntheticDatasetScorer:
         The name of the column that indicates whether each
         example is real or synthetic.
 
-    near_duplicate_id_column: str
-        The name of the column that indicates the
-        near duplicate cluster id of each example.
-
     synthetic_class_names: Tuple[str, str]
         A tuple containing the class names of the "real_or_synthetic" column
         (ie. how to identify the examples that are real and synthetic).
@@ -31,13 +30,11 @@ class _SyntheticDatasetScorer:
         self,
         cleanset_df: pd.DataFrame,
         real_or_synth_column: str,
-        near_duplicate_id_column: str,
         synthetic_class_names: Tuple[str, str],
     ):
         self.cleanset_df = cleanset_df
         self.synthetic_type, self.real_type = synthetic_class_names
         self.real_or_synth_column = real_or_synth_column
-        self.near_duplicate_id_column = near_duplicate_id_column
 
     def _display_example_counts(self) -> None:
         """Displays the number of real and synthetic
@@ -152,18 +149,18 @@ class _SyntheticDatasetScorer:
         if df_near_duplicates.empty:
             return 0.0
 
-        group_contains_real = df_near_duplicates.groupby(self.near_duplicate_id_column).apply(
+        group_contains_real = df_near_duplicates.groupby(_near_duplicate_id_column).apply(
             lambda group: (group[_rs_column] == complementary_class).any()
         )
         filtered_df = df_near_duplicates[df_near_duplicates[_rs_column] == target_type]
 
         if contains_real:
             synthetic_duplicate_count = filtered_df[
-                filtered_df[self.near_duplicate_id_column].map(group_contains_real)  # noqa: E501
+                filtered_df[_near_duplicate_id_column].map(group_contains_real)  # noqa: E501
             ].shape[0]
         else:
             synthetic_duplicate_count = filtered_df[
-                ~filtered_df[self.near_duplicate_id_column].map(group_contains_real)  # noqa: E501
+                ~filtered_df[_near_duplicate_id_column].map(group_contains_real)  # noqa: E501
             ].shape[0]
 
         total_synthetic_examples = self.cleanset_df[
@@ -176,7 +173,6 @@ class _SyntheticDatasetScorer:
 def score_synthetic_dataset(
     cleanset_df: pd.DataFrame,
     real_or_synth_column: str = "real_or_synthetic",
-    near_duplicate_id_column: str = "near_duplicate_cluster_id",
     synthetic_class_names: Optional[Tuple[str, str]] = None,
 ) -> Dict[str, float]:
     """Computes the issue scores for a dataset consisting
@@ -196,10 +192,6 @@ def score_synthetic_dataset(
         The name of the column that indicates
         whether each example is real or synthetic.
 
-    near_duplicate_id_column: str
-        The name of the column that indicates the
-        near duplicate cluster id of each example.
-
     synthetic_class_names: Optional[Tuple[str, str]]
         The class names of the "real_or_synthetic" column
         (ie. which class corresponds to real examples,
@@ -214,6 +206,5 @@ def score_synthetic_dataset(
         cleanset_df=cleanset_df,
         synthetic_class_names=synthetic_class_names or ("synthetic", "real"),
         real_or_synth_column=real_or_synth_column,
-        near_duplicate_id_column=near_duplicate_id_column,
     )
     return scorer.score_synthetic_dataset()
