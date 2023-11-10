@@ -109,7 +109,10 @@ class Studio:
             to_spark=to_spark,
         )
         if "cleanlab_row_ID" in rows_df.columns:
-            rows_df.sort_values(by="cleanlab_row_ID")
+            if to_spark:
+                rows_df.sort("cleanlab_row_ID")
+            else:
+                rows_df.sort_values(by="cleanlab_row_ID")
         return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
@@ -128,15 +131,12 @@ class Studio:
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
         if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
-            cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True, to_spark=True)
+            cl_cols = self.download_cleanlab_columns(
+                cleanset_id, include_project_details=True, to_spark=True
+            )
             corrected_ds_spark = dataset.alias("corrected_ds")
             if id_col not in corrected_ds_spark.columns:
-                from pyspark.sql.functions import (
-                    row_number,
-                    monotonically_increasing_id,
-                    when,
-                    col
-                )
+                from pyspark.sql.functions import row_number, monotonically_increasing_id, when, col
                 from pyspark.sql.window import Window
 
                 corrected_ds_spark = corrected_ds_spark.withColumn(
@@ -150,7 +150,9 @@ class Studio:
             )
             final = both.withColumn(
                 "__cleanlab_final_label",
-                when(col("clean_label").isNull(), col(label_column)).otherwise(col("clean_label"))
+                when(col("corrected_label").isNull(), col(label_column)).otherwise(
+                    col("corrected_label")
+                ),
             )
             new_labels = final.select(
                 [id_col, "action", "__cleanlab_final_label"]
