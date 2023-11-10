@@ -49,7 +49,7 @@ def init_dataset_source(
         )
     elif snowpark_exists and isinstance(dataset_source, snowpark.DataFrame):
         from .dataset_source import SnowparkDatasetSource
-        
+
         if dataset_name is None:
             raise ValueError("Must provide dataset name if uploading from a DataFrame")
         return SnowparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
