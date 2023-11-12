@@ -11,6 +11,13 @@ import numpy as np
 import numpy.typing as npt
 
 try:
+    import snowflake
+
+    snowflake_exists = True
+except ImportError:
+    snowflake_exists = False
+
+try:
     import pyspark.sql
 
     pyspark_exists = True

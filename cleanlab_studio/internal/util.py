@@ -76,3 +76,11 @@ def check_none(x: Any) -> bool:
 
 def check_not_none(x: Any) -> bool:
     return not check_none(x)
+
+
+def quote(s: str) -> str:
+    return f'"{s}"'
+
+
+def quote_list(l: list) -> list:
+    return list(map(quote, l))
