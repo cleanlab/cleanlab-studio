@@ -180,7 +180,7 @@ def download_cleanlab_columns(
     :param api_key:
     :param cleanset_id:
     :param include_cleanlab_columns: whether to download all Cleanlab columns or just the clean_label column
-    :param include_cleanlab_columns: whether to download columns related to project status such as resolved rows, actions taken, etc.
+    :param include_project_details: whether to download columns related to project status such as resolved rows, actions taken, etc.
     :return: return a dataframe, either pandas or spark. Type is Any because don't want to require spark installed
     """
     res = requests.get(

@@ -95,7 +95,8 @@ class Studio:
 
         Args:
             cleanset_id: ID of cleanset to download columns from. To obtain cleanset ID from project ID use, [get_latest_cleanset_id](#method-get_latest_cleanset_id).
-            include_action: Whether to include a column with any actions taken on the cleanset in the downloaded columns.
+            include_cleanlab_columns: whether to download all Cleanlab columns or just the clean_label column
+            include_project_details: whether to download columns related to project status such as resolved rows, actions taken, etc.
 
         Returns:
             A pandas or pyspark DataFrame. Type is `Any` to avoid requiring pyspark installation.
@@ -108,7 +109,10 @@ class Studio:
             to_spark=to_spark,
         )
         if "cleanlab_row_ID" in rows_df.columns:
-            rows_df.sort_values(by="cleanlab_row_ID")
+            if to_spark:
+                rows_df.sort("cleanlab_row_ID")
+            else:
+                rows_df.sort_values(by="cleanlab_row_ID")
         return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
@@ -127,54 +131,52 @@ class Studio:
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
         if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
-            from pyspark.sql.functions import udf
+            from pyspark.sql.functions import row_number, monotonically_increasing_id, when, col
+            from pyspark.sql.window import Window
 
-            cl_cols = self.download_cleanlab_columns(cleanset_id, to_spark=True)
+            cl_cols = self.download_cleanlab_columns(
+                cleanset_id, include_project_details=True, to_spark=True
+            )
             corrected_ds_spark = dataset.alias("corrected_ds")
             if id_col not in corrected_ds_spark.columns:
-                from pyspark.sql.functions import (
-                    row_number,
-                    monotonically_increasing_id,
-                )
-                from pyspark.sql.window import Window
-
                 corrected_ds_spark = corrected_ds_spark.withColumn(
                     id_col,
                     row_number().over(Window.orderBy(monotonically_increasing_id())) - 1,
                 )
-            both = cl_cols.select([id_col, "action", "clean_label"]).join(
+            both = cl_cols.select([id_col, "action", "corrected_label"]).join(
                 corrected_ds_spark.select([id_col, label_column]),
                 on=id_col,
                 how="left",
             )
             final = both.withColumn(
                 "__cleanlab_final_label",
-                # XXX hacky, checks if label is none by hand
-                # instead, use original JSON, which uses null values where it's not specified
-                udf(lambda original, clean: original if check_none(clean) else clean)(
-                    both[label_column],
-                    "clean_label",
+                when(col("corrected_label").isNull(), col(label_column)).otherwise(
+                    col("corrected_label")
                 ),
             )
             new_labels = final.select(
                 [id_col, "action", "__cleanlab_final_label"]
             ).withColumnRenamed("__cleanlab_final_label", label_column)
-            return (
-                corrected_ds_spark.drop(label_column)
-                .join(new_labels, on=id_col, how="right")
-                .where(new_labels["action"] != "exclude")
-                .drop("action")
-            )
+
+            res = corrected_ds_spark.drop(label_column).join(new_labels, on=id_col, how="right")
+            res = (
+                res.where((col("action").isNull()) | (col("action") != "exclude"))
+                if not keep_excluded
+                else res
+            ).drop("action")
+
+            return res
+
         elif isinstance(dataset, pd.DataFrame):
-            cl_cols = self.download_cleanlab_columns(cleanset_id)
+            cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True)
             joined_ds: pd.DataFrame
             if id_col in dataset.columns:
                 joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
             else:
                 joined_ds = dataset.join(cl_cols.set_index(id_col).sort_values(by=id_col))
-            joined_ds["__cleanlab_final_label"] = joined_ds["clean_label"].where(
-                np.asarray(list(map(check_not_none, joined_ds["clean_label"].to_numpy()))),
-                dataset[label_column].to_numpy(),
+            joined_ds["__cleanlab_final_label"] = joined_ds["corrected_label"].where(
+                joined_ds["corrected_label"].notnull().tolist(),
+                dataset[label_column].tolist(),
             )
 
             corrected_ds: pd.DataFrame = dataset.copy()
