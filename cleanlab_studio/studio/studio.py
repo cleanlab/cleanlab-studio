@@ -157,12 +157,16 @@ class Studio:
             new_labels = final.select(
                 [id_col, "action", "__cleanlab_final_label"]
             ).withColumnRenamed("__cleanlab_final_label", label_column)
-            return (
-                corrected_ds_spark.drop(label_column)
-                .join(new_labels, on=id_col, how="right")
-                .where(new_labels["action"] != "exclude")
-                .drop("action")
-            )
+
+            res = corrected_ds_spark.drop(label_column).join(new_labels, on=id_col, how="right")
+            res = (
+                res.where((col("action").isNull()) | (col("action") != "exclude"))
+                if not keep_excluded
+                else res
+            ).drop("action")
+
+            return res
+
         elif isinstance(dataset, pd.DataFrame):
             cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True)
             joined_ds: pd.DataFrame
