@@ -123,43 +123,36 @@ def apply_corrections_spark_df(
     label_column: str,
     keep_excluded: bool,
 ) -> Any:
-    from pyspark.sql.functions import udf
+    from pyspark.sql.functions import row_number, monotonically_increasing_id, when, col
+    from pyspark.sql.window import Window
 
     corrected_ds_spark = dataset.alias("corrected_ds")
     if id_col not in corrected_ds_spark.columns:
-        from pyspark.sql.functions import (
-            row_number,
-            monotonically_increasing_id,
-        )
-        from pyspark.sql.window import Window
-
         corrected_ds_spark = corrected_ds_spark.withColumn(
             id_col,
             row_number().over(Window.orderBy(monotonically_increasing_id())) - 1,
         )
-    both = cl_cols.select([id_col, "action", "clean_label"]).join(
+    both = cl_cols.select([id_col, "action", "corrected_label"]).join(
         corrected_ds_spark.select([id_col, label_column]),
         on=id_col,
         how="left",
     )
     final = both.withColumn(
         "__cleanlab_final_label",
-        # XXX hacky, checks if label is none by hand
-        # instead, use original JSON, which uses null values where it's not specified
-        udf(lambda original, clean: original if check_none(clean) else clean)(
-            both[label_column],
-            "clean_label",
-        ),
+        when(col("corrected_label").isNull(), col(label_column)).otherwise(col("corrected_label")),
     )
     new_labels = final.select([id_col, "action", "__cleanlab_final_label"]).withColumnRenamed(
         "__cleanlab_final_label", label_column
     )
-    return (
-        corrected_ds_spark.drop(label_column)
-        .join(new_labels, on=id_col, how="right")
-        .where(new_labels["action"] != "exclude")
-        .drop("action")
-    )
+
+    res = corrected_ds_spark.drop(label_column).join(new_labels, on=id_col, how="right")
+    res = (
+        res.where((col("action").isNull()) | (col("action") != "exclude"))
+        if not keep_excluded
+        else res
+    ).drop("action")
+
+    return res
 
 
 def apply_corrections_pd_df(
@@ -174,9 +167,9 @@ def apply_corrections_pd_df(
         joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
     else:
         joined_ds = dataset.join(cl_cols.set_index(id_col).sort_values(by=id_col))
-    joined_ds["__cleanlab_final_label"] = joined_ds["clean_label"].where(
-        np.asarray(list(map(check_not_none, joined_ds["clean_label"].to_numpy()))),
-        dataset[label_column].to_numpy(),
+    joined_ds["__cleanlab_final_label"] = joined_ds["corrected_label"].where(
+        joined_ds["corrected_label"].notnull().tolist(),
+        dataset[label_column].tolist(),
     )
 
     corrected_ds: pd.DataFrame = dataset.copy()

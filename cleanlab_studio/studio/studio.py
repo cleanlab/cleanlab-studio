@@ -101,7 +101,8 @@ class Studio:
 
         Args:
             cleanset_id: ID of cleanset to download columns from. To obtain cleanset ID from project ID use, [get_latest_cleanset_id](#method-get_latest_cleanset_id).
-            include_action: Whether to include a column with any actions taken on the cleanset in the downloaded columns.
+            include_cleanlab_columns: whether to download all Cleanlab columns or just the clean_label column
+            include_project_details: whether to download columns related to project status such as resolved rows, actions taken, etc.
 
         Returns:
             A pandas or pyspark DataFrame. Type is `Any` to avoid requiring pyspark installation.
@@ -321,7 +322,7 @@ class Studio:
         return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
 
     def TLM(
-        self, *, quality_preset: trustworthy_language_model.QualityPreset = "low"
+        self, *, quality_preset: trustworthy_language_model.QualityPreset = "medium"
     ) -> trustworthy_language_model.TLM:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
