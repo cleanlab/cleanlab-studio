@@ -345,7 +345,7 @@ class Studio:
         return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
 
     def TLM(
-        self, *, quality_preset: trustworthy_language_model.QualityPreset = "low"
+        self, *, quality_preset: trustworthy_language_model.QualityPreset = "medium"
     ) -> trustworthy_language_model.TLM:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
