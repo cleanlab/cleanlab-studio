@@ -67,7 +67,9 @@ async def upload_file_parts_async(
             )
         task_results = await asyncio.gather(*tasks)
     return [
-        {"ETag": json.loads(res.get("etag")), "PartNumber": i + 1}
+        # TODO: need to give handle error for missing etags
+        # next line currently fails typing because res.get("etag") can be None
+        {"ETag": json.loads(res.get("etag")), "PartNumber": i + 1}  # type: ignore
         for i, res in enumerate(task_results)
     ]
 

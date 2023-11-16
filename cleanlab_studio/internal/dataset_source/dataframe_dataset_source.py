@@ -25,7 +25,7 @@ class DataFrameDatasetSource(DatasetSource, Generic[DataFrame]):
         self.dataset_name = dataset_name
         self._fileobj = self._init_fileobj_from_df(df)
         self.file_size = self._get_size_in_bytes()
-        self.file_type = "text/csv"
+        self.file_type = "application/json"
 
     @abstractmethod
     def _init_fileobj_from_df(self, df: DataFrame) -> IO[bytes]:
@@ -37,4 +37,4 @@ class DataFrameDatasetSource(DatasetSource, Generic[DataFrame]):
             return dataset_file.tell()
 
     def get_filename(self) -> str:
-        return str(pathlib.Path(self.dataset_name).with_suffix(".csv"))
+        return str(pathlib.Path(self.dataset_name).with_suffix(".json"))
