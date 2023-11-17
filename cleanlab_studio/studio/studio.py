@@ -388,13 +388,18 @@ class Studio:
             return False
 
     def get_autofix_defaults(self, project_id):
+        """
+        Returns the default parameters for autofix.
+        """
         cleanset_id = api.get_latest_cleanset_id(self._api_key, project_id)
         cleaned_df = self.download_cleanlab_columns(cleanset_id)
         return _get_autofix_defaults(cleaned_df)
 
-    def autofix_dataset(self, project_id):
+    def autofix_dataset(self, project_id, params=None):
         cleanset_id = api.get_latest_cleanset_id(self._api_key, project_id)
-        cleaned_df = self.download_cleanlab_columns(cleanset_id)
+        cleanset_df = self.download_cleanlab_columns(cleanset_id)
         original_df = get_original_df()  # Studio team
-        parameters = _get_autofix_defaults(cleaned_df)
-        return _apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, parameters)
+        if params is None:
+            params = _get_autofix_defaults(cleanset_df)
+            print("Using autofix parameters:", params)
+        return _apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, params)

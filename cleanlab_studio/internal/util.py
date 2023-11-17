@@ -87,9 +87,9 @@ def _get_autofix_defaults(cleanset_df):
     for param_name, param_value in default_params.items():
         if param_name != "confidence_threshold":
             num_rows = cleanset_df[f"is_{param_name}"].sum()
-            default_values[param_name] = math.ceil(num_rows * param_value)
+            default_values[f"drop_{param_name}"] = math.ceil(num_rows * param_value)
         else:
-            default_values[param_name] = param_value
+            default_values[f"drop_{param_name}"] = param_value
     return default_values
 
 
@@ -172,13 +172,14 @@ def _apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, paramet
 
     merged_df = merged_df.apply(
         lambda row: _update_label_based_on_confidence(
-            row, conf_threshold=parameters["confidence_threshold"]
+            row, conf_threshold=parameters["drop_confidence_threshold"]
         ),
         axis=1,
     )
 
     indices_to_drop = set()
-    for column_name, top_num in parameters.items():
+    for drop_name, top_num in parameters.items():
+        column_name = drop_name.replace("drop_", "")
         if column_name == "confidence_threshold":
             continue
         top_percent_ids = _get_top_fraction_ids(merged_df, column_name, top_num, asc=False)
