@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union, List
 import math
 
 import copy
@@ -66,8 +66,8 @@ def check_not_none(x: Any) -> bool:
     return not check_none(x)
 
 
-def _get_autofix_default_params():
-    """returns default params of autofix"""
+def _get_autofix_default_params() -> dict:
+    """returns default percentage-wise params of autofix"""
     return {
         "ambiguous": 0.2,
         "label_issue": 0.5,
@@ -77,7 +77,7 @@ def _get_autofix_default_params():
     }
 
 
-def _get_autofix_defaults(cleanset_df):
+def _get_autofix_defaults(cleanset_df: pd.DataFrame) -> dict:
     """
     Generate default values for autofix parameters based on the size of the cleaned dataset.
     """
@@ -93,7 +93,9 @@ def _get_autofix_defaults(cleanset_df):
     return default_values
 
 
-def _get_top_fraction_ids(cleanset_df, name_col, num_rows, asc=True):
+def _get_top_fraction_ids(
+    cleanset_df: pd.DataFrame, name_col: str, num_rows: int, asc=True
+) -> List[str]:
     """
     Extracts the top specified number of rows based on a specified score column from a DataFrame.
 
@@ -164,7 +166,9 @@ def _update_label_based_on_confidence(row, conf_threshold):
     return row
 
 
-def _apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, parameters):
+def _apply_autofixed_cleanset_to_new_dataframe(
+    original_df: pd.DataFrame, cleanset_df: pd.DataFrame, parameters: pd.DataFrame
+) -> pd.DataFrame:
     """Apply a cleanset to update original dataaset labels and remove top rows based on specified parameters."""
     original_df_copy = copy.deepcopy(original_df)
     original_columns = original_df_copy.columns

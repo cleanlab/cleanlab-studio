@@ -387,15 +387,25 @@ class Studio:
         except (TimeoutError, CleansetError):
             return False
 
-    def get_autofix_defaults(self, project_id):
+    def get_autofix_defaults(self, project_id: str) -> dict:
         """
         Returns the default parameters for autofix.
+        Args:
+            project_id: ID of project.
+
+        Returns:
+            A dictionary containing number of rows to drop for each issue type.
         """
         cleanset_id = api.get_latest_cleanset_id(self._api_key, project_id)
         cleaned_df = self.download_cleanlab_columns(cleanset_id)
         return _get_autofix_defaults(cleaned_df)
 
-    def autofix_dataset(self, project_id, params=None):
+    def autofix_dataset(self, project_id: str, params: dict = None) -> pd.DataFrame:
+        """
+        Args:
+            project_id: ID of project.
+            params: Default parameter dictionary showing number of rows to drop for each issue type.
+        """
         cleanset_id = api.get_latest_cleanset_id(self._api_key, project_id)
         cleanset_df = self.download_cleanlab_columns(cleanset_id)
         original_df = get_original_df()  # Studio team
