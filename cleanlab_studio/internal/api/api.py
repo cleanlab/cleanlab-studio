@@ -1,3 +1,4 @@
+import aiohttp
 import io
 import os
 import time
@@ -382,11 +383,12 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     return cast(Dict[str, str], res.json())
 
 
-def tlm_prompt(
+async def tlm_prompt(
     api_key: str,
     prompt: str,
     quality_preset: str,
     options: Optional[JSONDict],
+    client_session: Optional[aiohttp.ClientSession] = None,
 ) -> JSONDict:
     """
     Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
@@ -395,25 +397,38 @@ def tlm_prompt(
         api_key (str): studio API key for auth
         prompt (str): prompt for TLM to respond to
         quality_preset (str): quality preset to use to generate response
+        options (JSONDict): additional parameters for TLM
+        client_session (aiohttp.ClientSession): client session used to issue TLM request
 
     Returns:
         JSONDict: dictionary with TLM response and confidence score
     """
-    res = requests.post(
+    local_scoped_client = False
+    if not client_session:
+        client_session = aiohttp.ClientSession()
+        local_scoped_client = True
+
+    res = await client_session.post(
         f"{tlm_base_url}/prompt",
         json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
         headers=_construct_headers(api_key),
     )
-    handle_api_error(res)
-    return cast(JSONDict, res.json())
+    res_json = await res.json()
+
+    if local_scoped_client:
+        await client_session.close()
+
+    handle_api_error_from_json(res_json)
+    return cast(JSONDict, res_json)
 
 
-def tlm_get_confidence_score(
+async def tlm_get_confidence_score(
     api_key: str,
     prompt: str,
     response: str,
     quality_preset: str,
     options: Optional[JSONDict],
+    client_session: Optional[aiohttp.ClientSession] = None,
 ) -> JSONDict:
     """
     Query Trustworthy Language Model for a confidence score for the prompt-response pair.
@@ -423,14 +438,26 @@ def tlm_get_confidence_score(
         prompt (str): prompt for TLM to get confidence score for
         response (str): response for TLM to get confidence score for
         quality_preset (str): quality preset to use to generate confidence score
+        options (JSONDict): additional parameters for TLM
+        client_session (aiohttp.ClientSession): client session used to issue TLM request
 
     Returns:
         JSONDict: dictionary with TLM confidence score
     """
-    res = requests.post(
+    local_scoped_client = False
+    if not client_session:
+        client_session = aiohttp.ClientSession()
+        local_scoped_client = True
+
+    res = await client_session.post(
         f"{tlm_base_url}/get_confidence_score",
         json=dict(prompt=prompt, response=response, quality=quality_preset, options=options or {}),
         headers=_construct_headers(api_key),
     )
-    handle_api_error(res)
-    return cast(JSONDict, res.json())
+    res_json = await res.json()
+
+    if local_scoped_client:
+        await client_session.close()
+
+    handle_api_error_from_json(res_json)
+    return cast(JSONDict, res_json)
