@@ -17,6 +17,9 @@ from cleanlab_studio.internal.util import (
     init_dataset_source,
     check_none,
     check_not_none,
+    _get_autofix_default_params,
+    _get_autofix_defaults,
+    _apply_autofixed_cleanset_to_new_dataframe,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
@@ -383,3 +386,15 @@ class Studio:
 
         except (TimeoutError, CleansetError):
             return False
+
+    def get_autofix_defaults(self, project_id):
+        cleanset_id = api.get_latest_cleanset_id(self._api_key, project_id)
+        cleaned_df = self.download_cleanlab_columns(cleanset_id)
+        return _get_autofix_defaults(cleaned_df)
+
+    def autofix_dataset(self, project_id):
+        cleanset_id = api.get_latest_cleanset_id(self._api_key, project_id)
+        cleaned_df = self.download_cleanlab_columns(cleanset_id)
+        original_df = get_original_df()  # Studio team
+        parameters = _get_autofix_defaults(cleaned_df)
+        return _apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, parameters)
