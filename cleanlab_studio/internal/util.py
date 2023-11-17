@@ -77,6 +77,9 @@ def apply_corrections_snowpark_df(
         monotonically_increasing_id,
     )
 
+    # to use lowercase column names, they need to be wrapped in double quotes to become valid identifiers
+    # for example ("col" should be '"col"' so the engine will process the name as "col")
+    # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     label_col = quote(label_column)
     id_col = quote(id_col)
     action_col = quote("action")
@@ -86,27 +89,27 @@ def apply_corrections_snowpark_df(
     corrected_ds = dataset
     session = dataset.session
 
-    cl_cols = session.create_dataframe(cl_cols)
+    cl_cols_snowflake = session.create_dataframe(cl_cols)
 
     if id_col not in corrected_ds.columns:
         corrected_ds = corrected_ds.withColumn(id_col, monotonically_increasing_id())
 
-    both = cl_cols.select([id_col, action_col, corrected_label_col]).join(
-        corrected_ds.select([id_col, label_col]),
-        on=id_col,
-        how="left",
+    corrected_ds = (
+        cl_cols_snowflake.select([id_col, action_col, corrected_label_col])
+        .join(
+            corrected_ds,
+            on=id_col,
+            how="left",
+        )
+        .withColumn(
+            cleanlab_final_label_col,
+            when(is_null(corrected_label_col), col(label_col)).otherwise(col(corrected_label_col)),
+        )
+        .drop(label_col)
+        .withColumnRenamed(cleanlab_final_label_col, label_col)
+        .select(dataset.columns + [id_col, action_col])
     )
 
-    final = both.withColumn(
-        cleanlab_final_label_col,
-        when(is_null(corrected_label_col), col(label_col)).otherwise(col(corrected_label_col)),
-    )
-
-    new_labels = final.select([id_col, action_col, cleanlab_final_label_col]).withColumnRenamed(
-        cleanlab_final_label_col, label_col
-    )
-
-    corrected_ds = corrected_ds.drop(label_col).join(new_labels, on=id_col, how="left")
     corrected_ds = (
         corrected_ds.where((col(action_col) != "exclude") | is_null(col(action_col)))
         if not keep_excluded
@@ -201,4 +204,4 @@ def quote(s: str) -> str:
 
 
 def quote_list(l: list) -> list:
-    return list(map(quote, l))
+    return [quote(i) for i in l]
