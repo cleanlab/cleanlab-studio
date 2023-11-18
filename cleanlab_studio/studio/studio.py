@@ -387,28 +387,30 @@ class Studio:
         except (TimeoutError, CleansetError):
             return False
 
-    def get_autofix_defaults(self, project_id: str) -> dict:
+    def autofix_dataset(
+        self, original_df: pd.DataFrame, cleanset_id: str, params: dict = None
+    ) -> pd.DataFrame:
         """
-        Returns the default parameters for autofix.
+        This method returns the auto-fixed dataset.
         Args:
-            project_id: ID of project.
+            cleanset_id (str): ID of cleanset.
+            params (dict, optional): Default parameter dictionary containing confidence threshold for auto-relabelling, and
+                number of rows to drop for each issue type. If not provided, default values will be used.
+
+                Example:
+                {
+                    'drop_ambiguous': 9,
+                    'drop_label_issue': 92,
+                    'drop_near_duplicate': 1,
+                    'drop_outlier': 3,
+                    'drop_confidence_threshold': 0.95
+                }
 
         Returns:
-            A dictionary containing number of rows to drop for each issue type.
-        """
-        cleanset_id = api.get_latest_cleanset_id(self._api_key, project_id)
-        cleaned_df = self.download_cleanlab_columns(cleanset_id)
-        return _get_autofix_defaults(cleaned_df)
+            pd.DataFrame: A new dataframe after applying auto-fixes to the cleanset.
 
-    def autofix_dataset(self, project_id: str, params: dict = None) -> pd.DataFrame:
         """
-        Args:
-            project_id: ID of project.
-            params: Default parameter dictionary showing number of rows to drop for each issue type.
-        """
-        cleanset_id = api.get_latest_cleanset_id(self._api_key, project_id)
         cleanset_df = self.download_cleanlab_columns(cleanset_id)
-        original_df = get_original_df()  # Studio team
         if params is None:
             params = _get_autofix_defaults(cleanset_df)
             print("Using autofix parameters:", params)
