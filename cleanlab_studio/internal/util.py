@@ -97,8 +97,7 @@ def _get_top_fraction_ids(
     cleanset_df: pd.DataFrame, name_col: str, num_rows: int, asc=True
 ) -> List[str]:
     """
-    Extracts the top specified number of rows based on a specified score column from a DataFrame.
-
+    This will only return the IDs of datapoints to drop for a given setting of the num_rows to drop during autofix.
     Parameters:
     - cleanset_df (pd.DataFrame): The input DataFrame containing the cleanset.
     - name_col (str): The name of the column indicating the category for which the top rows should be extracted.
@@ -161,7 +160,9 @@ def _update_label_based_on_confidence(row, conf_threshold):
         pd.Series: The updated row.
     """
     if row["is_label_issue"] and row["suggested_label_confidence_score"] > conf_threshold:
-        row["is_issue"] = False  # make sure this does not affect back end. We are doing this to avoid dropping these datapoints in autofix later, they should be relabeled 
+        row[
+            "is_issue"
+        ] = False  # make sure this does not affect back end. We are doing this to avoid dropping these datapoints in autofix later, they should be relabeled
         row["label"] = row["suggested_label"]
     return row
 
