@@ -161,7 +161,7 @@ def _update_label_based_on_confidence(row, conf_threshold):
         pd.Series: The updated row.
     """
     if row["is_label_issue"] and row["suggested_label_confidence_score"] > conf_threshold:
-        row["is_issue"] = False
+        row["is_issue"] = False  # make sure this does not affect back end. We are doing this to avoid dropping these datapoints in autofix later, they should be relabeled 
         row["label"] = row["suggested_label"]
     return row
 
