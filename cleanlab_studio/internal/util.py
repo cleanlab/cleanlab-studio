@@ -69,7 +69,7 @@ def check_not_none(x: Any) -> bool:
 def _get_autofix_default_params() -> dict:
     """returns default percentage-wise params of autofix"""
     return {
-        "ambiguous": 0.2,
+        "ambiguous": 0.0,
         "label_issue": 0.5,
         "near_duplicate": 0.2,
         "outlier": 0.5,
