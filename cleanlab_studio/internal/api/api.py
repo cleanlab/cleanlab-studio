@@ -3,7 +3,7 @@ import io
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
-from cleanlab_studio.errors import APIError
+from cleanlab_studio.errors import APIError, RateLimitError
 
 import requests
 from tqdm import tqdm
@@ -56,6 +56,14 @@ def handle_api_error_from_json(res_json: JSONDict) -> None:
             raise APIError(res_json["description"])
     if res_json.get("error", None) is not None:
         raise APIError(res_json["error"])
+
+
+def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+    """Catches 429 (rate limit) errors."""
+    if resp.status == 429:
+        raise RateLimitError(
+            f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0))
+        )
 
 
 def validate_api_key(api_key: str) -> bool:

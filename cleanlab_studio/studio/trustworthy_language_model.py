@@ -2,7 +2,7 @@
 Cleanlab TLM is a Large Language Model that gives more reliable answers and quantifies its uncertainty in these answers
 """
 import asyncio
-from typing import cast, Literal, Optional, TypedDict
+from typing import Coroutine, cast, List, Literal, Optional, TypedDict
 
 import aiohttp
 
@@ -12,6 +12,8 @@ from cleanlab_studio.internal.types import JSONDict
 
 valid_quality_presets = ["best", "high", "medium", "low", "base"]
 QualityPreset = Literal["best", "high", "medium", "low", "base"]
+
+MAX_CONCURRENT_TLM_REQUESTS: int = 16
 
 
 class TLMResponse(TypedDict):
@@ -49,10 +51,68 @@ class TLM:
             )
 
         self._quality_preset = quality_preset
+        self._query_semaphore = asyncio.Semaphore(MAX_CONCURRENT_TLM_REQUESTS)
 
-    # TODO!
-    # add batch_prompt, batch_prompt_async, batch_get_confidence_score, batch_get_confidence_score_async methods
-    # share batch code between the _async methods (same rate limit, error handling)
+    def batch_prompt(
+        self,
+        prompts: List[str],
+        options: TLMOptions | List[TLMOptions],
+        timeout: Optional[float] = None,
+    ) -> List[TLMResponse]:
+        """TODO!! add docs"""
+        if not isinstance(options, list):
+            options = [options for _ in prompts]
+
+        tlm_responses = asyncio.run(
+            self._batch_async(
+                [
+                    self.prompt_async(
+                        prompt,
+                        option_dict,
+                    )
+                    for prompt, option_dict in zip(prompts, options)
+                ],
+                timeout=timeout,
+            )
+        )
+
+        return cast(List[TLMResponse], tlm_responses)
+
+    def batch_get_confidence_score(
+        self,
+        prompts: List[str],
+        responses: List[str],
+        options: TLMOptions | List[TLMOptions],
+        timeout: Optional[float] = None,
+    ) -> List[float]:
+        """TODO!! add docs"""
+        if not isinstance(options, list):
+            options = [options for _ in prompts]
+
+        tlm_responses = asyncio.run(
+            self._batch_async(
+                [
+                    self.get_confidence_score_async(
+                        prompt,
+                        response,
+                        option_dict,
+                    )
+                    for prompt, response, option_dict in zip(prompts, responses, options)
+                ],
+                timeout=timeout,
+            )
+        )
+
+        return cast(List[float], tlm_responses)
+
+    async def _batch_async(
+        self,
+        tlm_coroutines: List[Coroutine[None, None, TLMResponse | float]],
+        timeout: Optional[float],
+    ) -> List[TLMResponse] | List[float]:
+        tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
+
+        return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=timeout)
 
     def prompt(self, prompt: str, options: Optional[TLMOptions] = None) -> TLMResponse:
         """
@@ -70,7 +130,13 @@ class TLM:
             )
         )
 
-    async def prompt_async(self, prompt: str, options: Optional[TLMOptions] = None) -> TLMResponse:
+    async def prompt_async(
+        self,
+        prompt: str,
+        options: Optional[TLMOptions] = None,
+        client_session: Optional[aiohttp.ClientSession] = None,
+        retries: int = 0,
+    ) -> TLMResponse:
         """
         (Asynchronously) Get response and confidence from TLM.
 
@@ -78,13 +144,17 @@ class TLM:
             prompt (str): prompt for the TLM
         Returns:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
+
+        TODO!! update docs, add retries
         """
-        tlm_response = await api.tlm_prompt(
-            self._api_key,
-            prompt,
-            self._quality_preset,
-            cast(JSONDict, options),
-        )
+        async with self._query_semaphore:
+            tlm_response = await api.tlm_prompt(
+                self._api_key,
+                prompt,
+                self._quality_preset,
+                cast(JSONDict, options),
+                client_session,
+            )
 
         return {
             "response": tlm_response["response"],
@@ -111,7 +181,12 @@ class TLM:
         )
 
     async def get_confidence_score_async(
-        self, prompt: str, response: str, options: Optional[TLMOptions] = None
+        self,
+        prompt: str,
+        response: str,
+        options: Optional[TLMOptions] = None,
+        client_session: Optional[aiohttp.ClientSession] = None,
+        retries: int = 0,
     ) -> float:
         """(Asynchronously) gets confidence score for prompt-response pair.
 
@@ -120,21 +195,25 @@ class TLM:
             response: response for the TLM  to evaluate
         Returns:
             float corresponding to the TLM's confidence score
+
+        TODO!! update docs, add retries
         """
         if self._quality_preset == "base":
             raise ValueError(
                 "Cannot get confidence score with `base` quality_preset -- choose a higher preset."
             )
 
-        return cast(
-            float,
-            (
-                await api.tlm_get_confidence_score(
-                    self._api_key,
-                    prompt,
-                    response,
-                    self._quality_preset,
-                    cast(JSONDict, options),
-                )
-            )["confidence_score"],
-        )
+        async with self._query_semaphore:
+            return cast(
+                float,
+                (
+                    await api.tlm_get_confidence_score(
+                        self._api_key,
+                        prompt,
+                        response,
+                        self._quality_preset,
+                        cast(JSONDict, options),
+                        client_session,
+                    )
+                )["confidence_score"],
+            )
