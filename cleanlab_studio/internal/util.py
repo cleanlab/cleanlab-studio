@@ -66,7 +66,7 @@ def check_not_none(x: Any) -> bool:
     return not check_none(x)
 
 
-def _get_autofix_default_params() -> dict:
+def _get_autofix_default_params() -> dict:  # Studio team port to backend
     """returns default percentage-wise params of autofix"""
     return {
         "ambiguous": 0.0,
@@ -77,7 +77,7 @@ def _get_autofix_default_params() -> dict:
     }
 
 
-def _get_autofix_defaults(cleanset_df: pd.DataFrame) -> dict:
+def _get_autofix_defaults(cleanset_df: pd.DataFrame) -> dict:  # Studio team port to backend
     """
     Generate default values for autofix parameters based on the size of the cleaned dataset.
     """
@@ -93,7 +93,7 @@ def _get_autofix_defaults(cleanset_df: pd.DataFrame) -> dict:
     return default_values
 
 
-def _get_top_fraction_ids(
+def _get_top_fraction_ids(  # Studio team port to backend
     cleanset_df: pd.DataFrame, name_col: str, num_rows: int, asc=True
 ) -> List[str]:
     """
@@ -149,7 +149,7 @@ def _get_top_fraction_ids(
         return top_rows_ids
 
 
-def _update_label_based_on_confidence(row, conf_threshold):
+def _update_label_based_on_confidence(row, conf_threshold):  # Studio team port to backend
     """Update the label and is_issue based on confidence threshold if there is a label issue.
 
     Args:
@@ -167,7 +167,7 @@ def _update_label_based_on_confidence(row, conf_threshold):
     return row
 
 
-def _apply_autofixed_cleanset_to_new_dataframe(
+def _apply_autofixed_cleanset_to_new_dataframe(  # Studio team port to backend
     original_df: pd.DataFrame, cleanset_df: pd.DataFrame, parameters: pd.DataFrame
 ) -> pd.DataFrame:
     """Apply a cleanset to update original dataaset labels and remove top rows based on specified parameters."""
