@@ -383,3 +383,27 @@ class Studio:
 
         except (TimeoutError, CleansetError):
             return False
+
+    def get_snowflake_datarows(self, snowflake_cursor, stage_name, signed_url_expiration=604800):
+        """
+        Returns a pandas DataFrame listing the path and presigned URLs of files stored in a Snowflake stage.
+        Original implemetation here https://github.com/Labelbox/labelsnow/blob/main/labelsnow/get_snowflake_datarows.py
+
+        Args:
+            snowflake_cursor: Snowflake cursor to use for querying.
+            stage_name: Name of stage to query.
+            signed_url_expiration: Number of seconds until signed URLs expire. Defaults to 604800 (7 days).
+
+        Returns:
+            Pandas DataFrame with columns `external_id` and `row_data`. `external_id` is the relative path of the file in the stage. `row_data` is the presigned URL of the file.
+        """
+        sql_string = (
+            "select relative_path as external_id, "
+            "get_presigned_url(@{s_name}, relative_path, {s_expiration}) as row_data "
+            "from directory(@{s_name})".format(
+                s_name=stage_name, s_expiration=signed_url_expiration
+            )
+        )
+
+        snowflake_cursor.execute(sql_string)
+        return snowflake_cursor.fetch_pandas_all()
