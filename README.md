@@ -40,7 +40,7 @@ dataset_id: str = studio.upload_dataset(<your dataset>, <your dataset name>)
 # download your cleanset or apply corrections to your local Pandas or PySpark dataset!
 # you can find your cleanset ID by clicking on the Export Cleanset button in your project
 cleanset = studio.download_cleanlab_columns(<your cleanset id>)
-corrected_dataset = studio.apply_corrections(<your dataset>, <your cleanset id>)
+corrected_dataset = studio.apply_corrections(<your cleanset id>, <your dataset>)
 ```
 
 The Python API offers significantly more functionality than is available in the Cleanlab Studio Web Application. Learn more via the [tutorials](https://help.cleanlab.ai/tutorials/) and [quickstart guide](https://help.cleanlab.ai/guide/quickstart/api/).
