@@ -41,8 +41,19 @@ class TLMOptions(TypedDict):
 class TLM:
     """TLM interface class."""
 
-    def __init__(self, api_key: str, quality_preset: QualityPreset) -> None:
-        """Initializes TLM interface."""
+    def __init__(
+        self,
+        api_key: str,
+        quality_preset: QualityPreset,
+        max_concurrent_requests: int = MAX_CONCURRENT_TLM_REQUESTS,
+    ) -> None:
+        """Initializes TLM interface.
+
+        Args:
+            api_key (str): API key used to authenticate TLM client
+            quality_preset (QualityPreset): quality preset to use for TLM queries
+            max_concurrent_requests (int): maximum number of concurrent requests when issuing batch queries. Default is 16.
+        """
         self._api_key = api_key
 
         if quality_preset not in valid_quality_presets:
@@ -53,7 +64,7 @@ class TLM:
         self._quality_preset = quality_preset
 
         self._event_loop = asyncio.get_event_loop()
-        self._query_semaphore = asyncio.Semaphore(MAX_CONCURRENT_TLM_REQUESTS)
+        self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
 
     def batch_prompt(
         self,
