@@ -51,24 +51,40 @@ class TLM:
             )
 
         self._quality_preset = quality_preset
+
+        self._event_loop = asyncio.get_event_loop()
         self._query_semaphore = asyncio.Semaphore(MAX_CONCURRENT_TLM_REQUESTS)
 
     def batch_prompt(
         self,
         prompts: List[str],
-        options: TLMOptions | List[TLMOptions],
+        options: None | TLMOptions | List[TLMOptions | None] = None,
         timeout: Optional[float] = None,
+        retries: int = 0,
     ) -> List[TLMResponse]:
-        """TODO!! add docs"""
+        """Run batch of TLM prompts.
+
+        Args:
+            prompts (List[str]): list of prompts to run
+            options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to prompt method. Defaults to None.
+            timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
+            retries (int): number of retries to attempt for each individual prompt. Defaults to 0.
+
+        Returns:
+            List[TLMResponse]: TLM responses for each prompt (in supplied order)
+        """
         if not isinstance(options, list):
             options = [options for _ in prompts]
 
-        tlm_responses = asyncio.run(
+        assert len(prompts) == len(options), "Length of prompts and options must match."
+
+        tlm_responses = self._event_loop.run_until_complete(
             self._batch_async(
                 [
                     self.prompt_async(
                         prompt,
                         option_dict,
+                        retries=retries,
                     )
                     for prompt, option_dict in zip(prompts, options)
                 ],
@@ -82,20 +98,36 @@ class TLM:
         self,
         prompts: List[str],
         responses: List[str],
-        options: TLMOptions | List[TLMOptions],
+        options: None | TLMOptions | List[TLMOptions | None] = None,
         timeout: Optional[float] = None,
+        retries: int = 0,
     ) -> List[float]:
-        """TODO!! add docs"""
+        """Run batch of TLM get confidence score.
+
+        Args:
+            prompts (List[str]): list of prompts to run get confidence score for
+            responses (List[str]): list of responses to run get confidence score for
+            options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to get confidence score method. Defaults to None.
+            timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
+            retries (int): number of retries to attempt for each individual prompt. Defaults to 0.
+
+        Returns:
+            List[float]: TLM confidence score for each prompt (in supplied order)
+        """
         if not isinstance(options, list):
             options = [options for _ in prompts]
 
-        tlm_responses = asyncio.run(
+        assert len(prompts) == len(responses), "Length of prompts and responses must match."
+        assert len(prompts) == len(options), "Length of prompts and options must match."
+
+        tlm_responses = self._event_loop.run_until_complete(
             self._batch_async(
                 [
                     self.get_confidence_score_async(
                         prompt,
                         response,
                         option_dict,
+                        retries=retries,
                     )
                     for prompt, response, option_dict in zip(prompts, responses, options)
                 ],
@@ -123,7 +155,7 @@ class TLM:
         Returns:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
         """
-        return asyncio.run(
+        return self._event_loop.run_until_complete(
             self.prompt_async(
                 prompt,
                 options,
@@ -154,6 +186,7 @@ class TLM:
                 self._quality_preset,
                 cast(JSONDict, options),
                 client_session,
+                retries=retries,
             )
 
         return {
@@ -172,7 +205,7 @@ class TLM:
         Returns:
             float corresponding to the TLM's confidence score
         """
-        return asyncio.run(
+        return self._event_loop.run_until_complete(
             self.get_confidence_score_async(
                 prompt,
                 response,
@@ -214,6 +247,7 @@ class TLM:
                         self._quality_preset,
                         cast(JSONDict, options),
                         client_session,
+                        retries=retries,
                     )
                 )["confidence_score"],
             )

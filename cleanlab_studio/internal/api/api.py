@@ -1,10 +1,11 @@
-import aiohttp
+import asyncio
 import io
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
 from cleanlab_studio.errors import APIError, RateLimitError
 
+import aiohttp
 import requests
 from tqdm import tqdm
 import pandas as pd
@@ -61,6 +62,7 @@ def handle_api_error_from_json(res_json: JSONDict) -> None:
 def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
     """Catches 429 (rate limit) errors."""
     if resp.status == 429:
+        print(f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0)))
         raise RateLimitError(
             f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0))
         )
@@ -391,6 +393,30 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     return cast(Dict[str, str], res.json())
 
 
+def tlm_retry(func: Callable) -> Callable:
+    """Implements TLM retry decorator, with special handling for rate limit retries."""
+
+    async def wrapper(*args, **kwargs) -> Any:
+        # total number of tries = number of retries + original try
+        retries = kwargs.pop("retries", 0)
+        num_tries = retries + 1
+        sleep_time = 0
+
+        for num_try in range(num_tries):
+            await asyncio.sleep(sleep_time)
+            try:
+                return await func(*args, **kwargs)
+            except RateLimitError as e:
+                sleep_time = e.retry_after
+            except Exception as e:
+                sleep_time = 2**num_try
+        else:
+            raise RateLimitError(f"TLM failed after {retries + 1} attempts", -1)
+
+    return wrapper
+
+
+@tlm_retry
 async def tlm_prompt(
     api_key: str,
     prompt: str,
@@ -426,10 +452,12 @@ async def tlm_prompt(
     if local_scoped_client:
         await client_session.close()
 
+    handle_rate_limit_error_from_resp(res)
     handle_api_error_from_json(res_json)
     return cast(JSONDict, res_json)
 
 
+@tlm_retry
 async def tlm_get_confidence_score(
     api_key: str,
     prompt: str,
@@ -467,5 +495,6 @@ async def tlm_get_confidence_score(
     if local_scoped_client:
         await client_session.close()
 
+    handle_rate_limit_error_from_resp(res)
     handle_api_error_from_json(res_json)
     return cast(JSONDict, res_json)
