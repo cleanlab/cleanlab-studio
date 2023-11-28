@@ -442,18 +442,21 @@ async def tlm_prompt(
         client_session = aiohttp.ClientSession()
         local_scoped_client = True
 
-    res = await client_session.post(
-        f"{tlm_base_url}/prompt",
-        json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
-        headers=_construct_headers(api_key),
-    )
-    res_json = await res.json()
+    try:
+        res = await client_session.post(
+            f"{tlm_base_url}/prompt",
+            json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
+            headers=_construct_headers(api_key),
+        )
+        res_json = await res.json()
 
-    if local_scoped_client:
-        await client_session.close()
+        handle_rate_limit_error_from_resp(res)
+        handle_api_error_from_json(res_json)
 
-    handle_rate_limit_error_from_resp(res)
-    handle_api_error_from_json(res_json)
+    finally:
+        if local_scoped_client:
+            await client_session.close()
+
     return cast(JSONDict, res_json)
 
 
