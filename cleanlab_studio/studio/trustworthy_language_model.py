@@ -152,6 +152,7 @@ class TLM:
 
         Args:
             prompt (str): prompt for the TLM
+            options (Optional[TLMOptions]): options to parameterize TLM with. Defaults to None.
         Returns:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
         """
@@ -174,10 +175,11 @@ class TLM:
 
         Args:
             prompt (str): prompt for the TLM
+            options (Optional[TLMOptions]): options to parameterize TLM with. Defaults to None.
+            client_session (Optional[aiohttp.ClientSession]): async HTTP session to use for TLM query. Defaults to None.
+            retries (int): number of retries for TLM query. Defaults to 0.
         Returns:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
-
-        TODO!! update docs, add retries
         """
         async with self._query_semaphore:
             tlm_response = await api.tlm_prompt(
@@ -201,7 +203,8 @@ class TLM:
 
         Args:
             prompt: prompt for the TLM
-            response: response for the TLM  to evaluate
+            response: response for the TLM to evaluate
+            options (Optional[TLMOptions]): options to parameterize TLM with. Defaults to None.
         Returns:
             float corresponding to the TLM's confidence score
         """
@@ -226,10 +229,12 @@ class TLM:
         Args:
             prompt: prompt for the TLM
             response: response for the TLM  to evaluate
+            options (Optional[TLMOptions]): options to parameterize TLM with. Defaults to None.
+            client_session (Optional[aiohttp.ClientSession]): async HTTP session to use for TLM query. Defaults to None.
+            retries (int): number of retries for TLM query. Defaults to 0.
         Returns:
             float corresponding to the TLM's confidence score
 
-        TODO!! update docs, add retries
         """
         if self._quality_preset == "base":
             raise ValueError(
