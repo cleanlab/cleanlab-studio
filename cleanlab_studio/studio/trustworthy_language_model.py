@@ -152,7 +152,7 @@ class TLM:
         self,
         tlm_coroutines: List[Coroutine[None, None, Union[TLMResponse, float]]],
         timeout: Optional[float],
-    ) -> List[TLMResponse] | List[float]:
+    ) -> Union[List[TLMResponse], List[float]]:
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
 
         return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=timeout)
