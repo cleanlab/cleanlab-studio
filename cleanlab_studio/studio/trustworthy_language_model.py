@@ -150,7 +150,9 @@ class TLM:
 
     async def _batch_async(
         self,
-        tlm_coroutines: List[Coroutine[None, None, Union[TLMResponse, float]]],
+        tlm_coroutines: List[
+            Union[Coroutine[None, None, TLMResponse], Coroutine[None, None, float]]
+        ],
         timeout: Optional[float],
     ) -> Union[List[TLMResponse], List[float]]:
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
