@@ -157,7 +157,7 @@ class TLM:
     ) -> Union[List[TLMResponse], List[float]]:
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
 
-        return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=timeout)
+        return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=timeout)  # type: ignore[arg-type]
 
     def prompt(self, prompt: str, options: Optional[TLMOptions] = None) -> TLMResponse:
         """
