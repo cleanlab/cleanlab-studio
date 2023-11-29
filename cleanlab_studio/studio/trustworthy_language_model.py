@@ -2,7 +2,7 @@
 Cleanlab TLM is a Large Language Model that gives more reliable answers and quantifies its uncertainty in these answers
 """
 import asyncio
-from typing import Coroutine, cast, List, Literal, Optional, TypedDict
+from typing import Coroutine, cast, List, Literal, Optional, TypedDict, Union
 
 import aiohttp
 
@@ -69,7 +69,7 @@ class TLM:
     def batch_prompt(
         self,
         prompts: List[str],
-        options: None | TLMOptions | List[TLMOptions | None] = None,
+        options: Union[None, TLMOptions, List[Union[TLMOptions, None]]] = None,
         timeout: Optional[float] = None,
         retries: int = 0,
     ) -> List[TLMResponse]:
@@ -109,7 +109,7 @@ class TLM:
         self,
         prompts: List[str],
         responses: List[str],
-        options: None | TLMOptions | List[TLMOptions | None] = None,
+        options: Union[None, TLMOptions, List[Union[TLMOptions, None]]] = None,
         timeout: Optional[float] = None,
         retries: int = 0,
     ) -> List[float]:
@@ -150,7 +150,7 @@ class TLM:
 
     async def _batch_async(
         self,
-        tlm_coroutines: List[Coroutine[None, None, TLMResponse | float]],
+        tlm_coroutines: List[Coroutine[None, None, Union[TLMResponse, float]]],
         timeout: Optional[float],
     ) -> List[TLMResponse] | List[float]:
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
