@@ -27,9 +27,11 @@ class TLMOptions(TypedDict):
 
     Attributes:
         max_tokens (int): the maximum number of tokens to generate in the TLM response
+        use_self_reflection (bool): Optional flag to turn on/off asking the TLM self_reflection questions
     """
 
     max_tokens: int
+    use_self_reflection: bool
 
 
 class TLM:
