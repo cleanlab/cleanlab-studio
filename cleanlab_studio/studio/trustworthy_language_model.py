@@ -13,7 +13,8 @@ from cleanlab_studio.internal.types import JSONDict
 valid_quality_presets = ["best", "high", "medium", "low", "base"]
 QualityPreset = Literal["best", "high", "medium", "low", "base"]
 
-MAX_CONCURRENT_TLM_REQUESTS: int = 16
+DEFAULT_MAX_CONCURRENT_TLM_REQUESTS: int = 16
+MAX_CONCURRENT_TLM_REQUESTS_LIMIT: int = 128
 
 
 class TLMResponse(TypedDict):
@@ -45,7 +46,7 @@ class TLM:
         self,
         api_key: str,
         quality_preset: QualityPreset,
-        max_concurrent_requests: int = MAX_CONCURRENT_TLM_REQUESTS,
+        max_concurrent_requests: int = DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
     ) -> None:
         """Initializes TLM interface.
 
@@ -55,6 +56,10 @@ class TLM:
             max_concurrent_requests (int): maximum number of concurrent requests when issuing batch queries. Default is 16.
         """
         self._api_key = api_key
+
+        assert (
+            max_concurrent_requests < MAX_CONCURRENT_TLM_REQUESTS_LIMIT
+        ), f"max_concurrent_requests must be less than {MAX_CONCURRENT_TLM_REQUESTS_LIMIT}"
 
         if quality_preset not in valid_quality_presets:
             raise ValueError(
