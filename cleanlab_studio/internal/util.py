@@ -66,30 +66,46 @@ def check_not_none(x: Any) -> bool:
     return not check_none(x)
 
 
-def _get_autofix_default_params() -> dict:  # Studio team port to backend
+def _get_autofix_default_thresholds(strategy: str) -> dict:  # Studio team port to backend
     """returns default percentage-wise params of autofix"""
-    return {
-        "ambiguous": 0.0,
-        "label_issue": 0.5,
-        "near_duplicate": 0.2,
-        "outlier": 0.5,
-        "confidence_threshold": 0.95,
+
+    strategy_defaults = {
+        "optimized_training_data": {
+            "drop_ambiguous": 0.0,
+            "drop_label_issue": 0.5,
+            "drop_near_duplicate": 0.2,
+            "drop_outlier": 0.5,
+            "relabel_confidence_threshold": 0.95,
+        },
+        "drop_all_issues": {
+            "drop_ambiguous": 1.0,
+            "drop_label_issue": 1.5,
+            "drop_near_duplicate": 1.0,
+            "drop_outlier": 1.0,
+        },
+        "suggested_actions": {
+            "drop_near_duplicate": 1.0,
+            "drop_outlier": 1.0,
+            "relabel_confidence_threshold": 0.5,
+        },
     }
+    return strategy_defaults[strategy]
 
 
-def _get_autofix_defaults(cleanset_df: pd.DataFrame) -> dict:  # Studio team port to backend
+def get_autofix_defaults(
+    cleanset_df: pd.DataFrame, strategy
+) -> dict:  # Studio team port to backend
     """
     Generate default values for autofix parameters based on the size of the cleaned dataset.
     """
-    default_params = _get_autofix_default_params()
+    default_thresholds = _get_autofix_default_thresholds(strategy)
     default_values = {}
 
-    for param_name, param_value in default_params.items():
-        if param_name != "confidence_threshold":
-            num_rows = cleanset_df[f"is_{param_name}"].sum()
-            default_values[f"drop_{param_name}"] = math.ceil(num_rows * param_value)
-        else:
-            default_values[f"drop_{param_name}"] = param_value
+    for param_type, param_value in default_thresholds.items():
+        if param_type.startswith("drop_"):
+            issue_name = param_type[5:]
+            num_rows = cleanset_df[f"is_{issue_name}"].sum()
+            default_values[param_type] = math.ceil(num_rows * param_value)
     return default_values
 
 
@@ -167,7 +183,7 @@ def _update_label_based_on_confidence(row, conf_threshold):  # Studio team port 
     return row
 
 
-def _apply_autofixed_cleanset_to_new_dataframe(  # Studio team port to backend
+def apply_autofixed_cleanset_to_new_dataframe(  # Studio team port to backend
     original_df: pd.DataFrame, cleanset_df: pd.DataFrame, parameters: pd.DataFrame
 ) -> pd.DataFrame:
     """Apply a cleanset to update original dataaset labels and remove top rows based on specified parameters."""

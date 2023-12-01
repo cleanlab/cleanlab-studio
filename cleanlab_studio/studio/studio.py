@@ -1,28 +1,28 @@
 """
 Python API for Cleanlab Studio.
 """
-from typing import Any, List, Literal, Optional, Union
 import warnings
+from typing import Any, List, Literal, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from . import inference
-from . import trustworthy_language_model
 from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import (
-    init_dataset_source,
-    check_none,
-    check_not_none,
-    _get_autofix_default_params,
-    _get_autofix_defaults,
-    _apply_autofixed_cleanset_to_new_dataframe,
-)
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
+from cleanlab_studio.internal.util import (
+    apply_autofixed_cleanset_to_new_dataframe,
+    _get_autofix_default_thresholds,
+    check_none,
+    check_not_none,
+    get_autofix_defaults,
+    init_dataset_source,
+)
+
+from . import inference, trustworthy_language_model
 
 _pyspark_exists = api.pyspark_exists
 if _pyspark_exists:
@@ -134,7 +134,7 @@ class Studio:
         label_column = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
         if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
-            from pyspark.sql.functions import row_number, monotonically_increasing_id, when, col
+            from pyspark.sql.functions import col, monotonically_increasing_id, row_number, when
             from pyspark.sql.window import Window
 
             cl_cols = self.download_cleanlab_columns(
@@ -388,7 +388,11 @@ class Studio:
             return False
 
     def autofix_dataset(
-        self, original_df: pd.DataFrame, cleanset_id: str, params: dict = None
+        self,
+        original_df: pd.DataFrame,
+        cleanset_id: str,
+        params: dict = None,
+        strategy="optimized_training_data",
     ) -> pd.DataFrame:
         """
         This method returns the auto-fixed dataset.
@@ -412,6 +416,6 @@ class Studio:
         """
         cleanset_df = self.download_cleanlab_columns(cleanset_id)
         if params is None:
-            params = _get_autofix_defaults(cleanset_df)
+            params = get_autofix_defaults(cleanset_df, strategy)
             print("Using autofix parameters:", params)
-        return _apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, params)
+        return apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, params)
