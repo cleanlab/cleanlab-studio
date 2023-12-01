@@ -110,7 +110,7 @@ def get_autofix_defaults(
 
 
 def _get_top_fraction_ids(  # Studio team port to backend
-    cleanset_df: pd.DataFrame, name_col: str, num_rows: int, asc=True
+    cleanset_df: pd.DataFrame, issue_name: str, num_rows: int, asc=True
 ) -> List[str]:
     """
     This will only return the IDs of datapoints to drop for a given setting of the num_rows to drop during autofix.
@@ -124,14 +124,14 @@ def _get_top_fraction_ids(  # Studio team port to backend
     Returns:
     - list: A list of row indices representing the top specified number of rows based on the specified score column.
     """
-    bool_column_name = f"is_{name_col}"
+    bool_column_name = f"is_{issue_name}"
 
     # Construct a filter based on the 'label_issue' variable
     filter_condition = cleanset_df[bool_column_name]
 
     # Create a new DataFrame based on the filter
     filtered_df = cleanset_df[filter_condition]
-    if name_col == "near_duplicate":
+    if issue_name == "near_duplicate":
         # Group by the 'near_duplicate_cluster_ID' column
         df_n = filtered_df.sort_values(by="near_duplicate_score").reset_index(drop=True)
         sorted_df = df_n.head(num_rows)
@@ -144,7 +144,7 @@ def _get_top_fraction_ids(  # Studio team port to backend
         for group_name, group_df in grouped_df:
             # Sort the group DataFrame by the 'near_duplicate_score' column in ascending order
             sorted_group_df = group_df.sort_values(
-                by=f"{name_col}_score", ascending=asc
+                by=f"{issue_name}_score", ascending=asc
             ).reset_index(drop=True)
 
             # Extract every other index and append to the aggregated indices list
@@ -154,7 +154,7 @@ def _get_top_fraction_ids(  # Studio team port to backend
         return aggregated_indices
     else:
         # Construct the boolean column name with 'is_' prefix and 'label_issue_score' suffix
-        score_col_name = f"{name_col}_score"
+        score_col_name = f"{issue_name}_score"
 
         # Sort the filtered DataFrame by the constructed boolean column in descending order
         sorted_df = filtered_df.sort_values(by=score_col_name, ascending=asc)
@@ -184,7 +184,7 @@ def _update_label_based_on_confidence(row, conf_threshold):  # Studio team port 
 
 
 def apply_autofixed_cleanset_to_new_dataframe(  # Studio team port to backend
-    original_df: pd.DataFrame, cleanset_df: pd.DataFrame, parameters: pd.DataFrame
+    original_df: pd.DataFrame, cleanset_df: pd.DataFrame, parameters: dict
 ) -> pd.DataFrame:
     """Apply a cleanset to update original dataaset labels and remove top rows based on specified parameters."""
     original_df_copy = copy.deepcopy(original_df)
@@ -193,18 +193,17 @@ def apply_autofixed_cleanset_to_new_dataframe(  # Studio team port to backend
 
     merged_df = merged_df.apply(
         lambda row: _update_label_based_on_confidence(
-            row, conf_threshold=parameters["drop_confidence_threshold"]
+            row, conf_threshold=parameters["relabel_confidence_threshold"]
         ),
         axis=1,
     )
 
     indices_to_drop = set()
-    for drop_name, top_num in parameters.items():
-        column_name = drop_name.replace("drop_", "")
-        if column_name == "confidence_threshold":
-            continue
-        top_percent_ids = _get_top_fraction_ids(merged_df, column_name, top_num, asc=False)
-        indices_to_drop.update(top_percent_ids)
+    for param_name, top_num in parameters.items():
+        if param_name.startswith('drop_'):
+            issue_name = param_name.replace("drop_", "")
+            top_percent_ids = _get_top_fraction_ids(merged_df, issue_name, top_num, asc=False)
+            indices_to_drop.update(top_percent_ids)
 
     merged_df = merged_df.drop(list(indices_to_drop), axis=0).reset_index(drop=True)
     return merged_df[original_columns]
