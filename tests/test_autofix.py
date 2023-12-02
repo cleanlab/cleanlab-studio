@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from cleanlab_studio.internal.util import get_autofix_defaults
+from cleanlab_studio.internal.util import get_autofix_defaults, _update_label_based_on_confidence
 
 
 class TestAutofix:
@@ -46,3 +46,83 @@ class TestAutofix:
 
         params = get_autofix_defaults(cleanlab_columns, strategy)
         assert params == expected_results
+
+    @pytest.mark.parametrize(
+        "row, expected_updated_row",
+        [
+            (
+                {
+                    "is_label_issue": True,
+                    "suggested_label_confidence_score": 0.6,
+                    "label": "label_0",
+                    "suggested_label": "label_1",
+                    "is_issue": True,
+                },
+                {
+                    "is_label_issue": True,
+                    "suggested_label_confidence_score": 0.6,
+                    "label": "label_1",
+                    "suggested_label": "label_1",
+                    "is_issue": False,
+                },
+            ),
+            (
+                {
+                    "is_label_issue": True,
+                    "suggested_label_confidence_score": 0.5,
+                    "label": "label_0",
+                    "suggested_label": "label_1",
+                    "is_issue": True,
+                },
+                {
+                    "is_label_issue": True,
+                    "suggested_label_confidence_score": 0.5,
+                    "label": "label_0",
+                    "suggested_label": "label_1",
+                    "is_issue": True,
+                },
+            ),
+            (
+                {
+                    "is_label_issue": True,
+                    "suggested_label_confidence_score": 0.4,
+                    "label": "label_0",
+                    "suggested_label": "label_1",
+                    "is_issue": True,
+                },
+                {
+                    "is_label_issue": True,
+                    "suggested_label_confidence_score": 0.4,
+                    "label": "label_0",
+                    "suggested_label": "label_1",
+                    "is_issue": True,
+                },
+            ),
+            (
+                {
+                    "is_label_issue": False,
+                    "suggested_label_confidence_score": 0.4,
+                    "label": "label_0",
+                    "suggested_label": "label_1",
+                    "is_issue": True,
+                },
+                {
+                    "is_label_issue": False,
+                    "suggested_label_confidence_score": 0.4,
+                    "label": "label_0",
+                    "suggested_label": "label_1",
+                    "is_issue": True,
+                },
+            ),
+        ],
+        ids=[
+            "is a label issue with confidence score greater than threshold",
+            "is a label issue with confidence score equal to threshold",
+            "is a label issue with confidence score less than threshold",
+            "is not a label issue",
+        ],
+    )
+    def test_update_label_based_on_confidence(self, row, expected_updated_row):
+        conf_threshold = 0.5
+        updated_row = _update_label_based_on_confidence(row, conf_threshold)
+        assert updated_row == expected_updated_row
