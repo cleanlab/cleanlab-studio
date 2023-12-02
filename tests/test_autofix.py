@@ -140,3 +140,14 @@ class TestAutofix:
         cleanlab_columns["dummy_score"] = np.arange(10) * 0.1
         top_ids = _get_top_fraction_ids(cleanlab_columns, "dummy", 3)
         assert set(top_ids) == set([5, 6, 7])
+
+    def test_get_top_fraction_ids_near_duplicate(self):
+        cleanlab_columns = pd.DataFrame()
+
+        cleanlab_columns["cleanlab_row_ID"] = np.arange(12)
+        cleanlab_columns["is_near_duplicate"] = [False] * 6 + [True] * 6
+        cleanlab_columns["near_duplicate_score"] = np.arange(12) * 0.1
+        cleanlab_columns["near_duplicate_cluster_id"] = [None] * 6 + [0, 0, 1, 1, 1, 1]
+
+        top_ids = _get_top_fraction_ids(cleanlab_columns, "near_duplicate", 5)
+        assert set(top_ids) == set([6, 8, 10])
