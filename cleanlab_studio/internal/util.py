@@ -203,7 +203,7 @@ def apply_autofixed_cleanset_to_new_dataframe(  # Studio team port to backend
 
     indices_to_drop = set()
     for param_name, top_num in parameters.items():
-        if param_name.startswith('drop_'):
+        if param_name.startswith("drop_"):
             issue_name = param_name.replace("drop_", "")
             top_percent_ids = _get_top_fraction_ids(merged_df, issue_name, top_num, asc=False)
             indices_to_drop.update(top_percent_ids)
