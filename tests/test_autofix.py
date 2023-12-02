@@ -1,6 +1,11 @@
 import pandas as pd
 import pytest
-from cleanlab_studio.internal.util import get_autofix_defaults, _update_label_based_on_confidence
+from cleanlab_studio.internal.util import (
+    get_autofix_defaults,
+    _update_label_based_on_confidence,
+    _get_top_fraction_ids,
+)
+import numpy as np
 
 
 class TestAutofix:
@@ -126,3 +131,12 @@ class TestAutofix:
         conf_threshold = 0.5
         updated_row = _update_label_based_on_confidence(row, conf_threshold)
         assert updated_row == expected_updated_row
+
+    def test_get_top_fraction_ids(self):
+        cleanlab_columns = pd.DataFrame()
+
+        cleanlab_columns["cleanlab_row_ID"] = np.arange(10)
+        cleanlab_columns["is_dummy"] = [False] * 5 + [True] * 5
+        cleanlab_columns["dummy_score"] = np.arange(10) * 0.1
+        top_ids = _get_top_fraction_ids(cleanlab_columns, "dummy", 3)
+        assert set(top_ids) == set([5, 6, 7])
