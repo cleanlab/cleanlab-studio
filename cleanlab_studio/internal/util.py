@@ -79,14 +79,14 @@ def _get_autofix_default_thresholds(strategy: str) -> dict:  # Studio team port 
         },
         "drop_all_issues": {
             "drop_ambiguous": 1.0,
-            "drop_label_issue": 1.5,
+            "drop_label_issue": 1.0,
             "drop_near_duplicate": 1.0,
             "drop_outlier": 1.0,
         },
         "suggested_actions": {
             "drop_near_duplicate": 1.0,
             "drop_outlier": 1.0,
-            "relabel_confidence_threshold": 0.5,
+            "relabel_confidence_threshold": 0.0,
         },
     }
     return strategy_defaults[strategy]
@@ -102,10 +102,13 @@ def get_autofix_defaults(
     default_values = {}
 
     for param_type, param_value in default_thresholds.items():
+        # Convert drop fractions to number of rows and leave rest of the parameters as is
         if param_type.startswith("drop_"):
             issue_name = param_type[5:]
             num_rows = cleanset_df[f"is_{issue_name}"].sum()
             default_values[param_type] = math.ceil(num_rows * param_value)
+        else:
+            default_values[param_type] = param_value
     return default_values
 
 

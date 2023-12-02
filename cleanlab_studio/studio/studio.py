@@ -417,5 +417,5 @@ class Studio:
         cleanset_df = self.download_cleanlab_columns(cleanset_id)
         if params is None:
             params = get_autofix_defaults(cleanset_df, strategy)
-            print("Using autofix parameters:", params)
+            print("Using autofix values:", params)
         return apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, params)
