@@ -2,7 +2,7 @@
 Python API for Cleanlab Studio.
 """
 import warnings
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union, Dict
 
 import numpy as np
 import numpy.typing as npt
@@ -391,7 +391,7 @@ class Studio:
         self,
         original_df: pd.DataFrame,
         cleanset_id: str,
-        params: dict = None,
+        params: Optional[Dict[str, Union[int, float]]] = None,
         strategy="optimized_training_data",
     ) -> pd.DataFrame:
         """
