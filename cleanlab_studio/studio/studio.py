@@ -67,7 +67,7 @@ class Studio:
         Args:
             dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas DataFrame, a pyspark DataFrame.
             dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath).
-            schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred. Format defined here: https://cleanlab-studio.readthedocs.io/en/latest/concepts/datasets.html#schemas
+            schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred. Format defined [here](/guide/concepts/datasets/#schema-overrides).
             modality: Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
             id_column: Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated.
 
@@ -352,7 +352,7 @@ class Studio:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
         Args:
-            quality_preset ([QualityPreset](../trustworthy_language_model#QualityPreset)): quality preset to use for prompts
+            quality_preset: quality preset to use for prompts
 
         Returns:
             TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
