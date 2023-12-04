@@ -6,8 +6,9 @@ import abc
 import csv
 import io
 import time
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, cast
 from typing_extensions import TypeAlias
+import logging
 
 import numpy as np
 import numpy.typing as npt
@@ -15,13 +16,15 @@ import pandas as pd
 
 from cleanlab_studio.internal.api import api
 
-
+BATCH_MAX_TEXT, BATCH_MAX_TABULAR = 10000, 100000
 TextBatch = Union[List[str], npt.NDArray[np.str_], pd.Series]
 TabularBatch: TypeAlias = pd.DataFrame
 Batch = Union[TextBatch, TabularBatch]
 
 Predictions = Union[npt.NDArray[np.int_], npt.NDArray[np.str_]]
 ClassProbablities: TypeAlias = pd.DataFrame
+
+logger = logging.getLogger(__name__)
 
 
 class Model(abc.ABC):
@@ -49,13 +52,27 @@ class Model(abc.ABC):
         Returns:
             predictions from batch as a numpy array, optionally also pandas dataframe of class probabilties
         """
-        csv_batch = self._convert_batch_to_csv(batch)
-        predictions, class_probabilities = self._predict_from_csv(csv_batch, timeout)
+
+        batchsize: int = BATCH_MAX_TABULAR if isinstance(batch, pd.DataFrame) else BATCH_MAX_TEXT
+        batched_preds: List[Predictions] = []
+        batched_probs: List[ClassProbablities] = []
+        num_batches = math.ceil(len(batch) / batchsize)
+        for i in range(num_batches):
+            start = i * batchsize
+            csv_batch = self._convert_batch_to_csv(
+                batch[start : min(start + batchsize, len(batch))]
+            )
+            predictions, class_probabilities = self._predict_from_csv(csv_batch, timeout)
+            batched_preds.append(predictions)
+            batched_probs.append(class_probabilities)
+        preds_type = int if isinstance(batched_preds[0][0], int) else str
+        ret_arr = np.concatenate(batched_preds)
+        ret_arr = cast(Predictions, ret_arr.astype(preds_type))
 
         if return_pred_proba:
-            return predictions, class_probabilities
+            return ret_arr, pd.concat(batched_probs)
 
-        return predictions
+        return ret_arr
 
     def _predict_from_csv(
         self, batch: io.StringIO, timeout: int
