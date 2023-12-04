@@ -21,7 +21,7 @@ setup(
     url="https://github.com/cleanlab/cleanlab-studio",
     project_urls={
         "Bug Tracker": "https://github.com/cleanlab/cleanlab-studio/issues",
-        "Documentation": "https://cleanlab-studio.readthedocs.io/en/latest/index.html",
+        "Documentation": "https://help.cleanlab.ai",
     },
     classifiers=[
         "License :: OSI Approved :: MIT License",
