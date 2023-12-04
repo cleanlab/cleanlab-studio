@@ -105,9 +105,8 @@ def apply_corrections_snowpark_df(
             cleanlab_final_label_col,
             when(is_null(corrected_label_col), col(label_col)).otherwise(col(corrected_label_col)),
         )
-        .drop(label_col)
+        .drop(label_col, corrected_label_col)
         .withColumnRenamed(cleanlab_final_label_col, label_col)
-        .select(dataset.columns + [id_col, action_col])
     )
 
     corrected_ds = (
