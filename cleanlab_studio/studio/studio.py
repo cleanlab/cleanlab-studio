@@ -8,6 +8,8 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+from . import inference
+from . import trustworthy_language_model
 from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
@@ -23,7 +25,6 @@ from cleanlab_studio.internal.util import (
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
 
-from . import inference, trustworthy_language_model
 
 _snowflake_exists = api.snowflake_exists
 if _snowflake_exists:
