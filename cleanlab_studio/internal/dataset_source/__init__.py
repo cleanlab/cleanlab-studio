@@ -4,6 +4,12 @@ from .filepath_dataset_source import FilepathDatasetSource as FilepathDatasetSou
 from .pandas_dataset_source import PandasDatasetSource as PandasDatasetSource
 
 try:
+    import snowflake.snowpark as snowpark
+    from .snowpark_dataset_source import SnowparkDatasetSource as SnowparkDatasetSource
+except ImportError:
+    pass
+
+try:
     import pyspark.sql
     from .pyspark_dataset_source import PySparkDatasetSource as PySparkDatasetSource
 except ImportError:

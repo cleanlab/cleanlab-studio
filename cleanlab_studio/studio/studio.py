@@ -16,10 +16,16 @@ from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
     check_none,
-    check_not_none,
+    apply_corrections_snowpark_df,
+    apply_corrections_spark_df,
+    apply_corrections_pd_df,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
+
+_snowflake_exists = api.snowflake_exists
+if _snowflake_exists:
+    import snowflake.snowpark as snowpark
 
 _pyspark_exists = api.pyspark_exists
 if _pyspark_exists:
@@ -65,7 +71,7 @@ class Studio:
         Uploads a dataset to Cleanlab Studio.
 
         Args:
-            dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas DataFrame, a pyspark DataFrame.
+            dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas, snowflake, or pyspark DataFrame.
             dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath).
             schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred. Format defined [here](/guide/concepts/datasets/#schema-overrides).
             modality: Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
@@ -121,75 +127,44 @@ class Studio:
 
         Args:
             cleanset_id: ID of cleanset to apply corrections from.
-            dataset: Dataset to apply corrections to. Supported formats include pandas DataFrame and pyspark DataFrame. Dataset should have the same number of rows as the dataset used to create the project. It should also contain a label column with the same name as the label column for the project.
+            dataset: Dataset to apply corrections to. Supported formats include pandas, snowpark, and pyspark DataFrame. Dataset should have the same number of rows as the dataset used to create the project. It should also contain a label column with the same name as the label column for the project.
             keep_excluded: Whether to retain rows with an "exclude" action. By default these rows will be removed from the dataset.
 
         Returns:
             A copy of the dataset with corrections applied.
         """
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
-        label_column = api.get_label_column_of_project(self._api_key, project_id)
+        label_col = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
-        if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
-            from pyspark.sql.functions import row_number, monotonically_increasing_id, when, col
-            from pyspark.sql.window import Window
 
+        if _snowflake_exists and isinstance(dataset, snowpark.DataFrame):
             cl_cols = self.download_cleanlab_columns(
-                cleanset_id, include_project_details=True, to_spark=True
+                cleanset_id, to_spark=False, include_project_details=True
             )
-            corrected_ds_spark = dataset.alias("corrected_ds")
-            if id_col not in corrected_ds_spark.columns:
-                corrected_ds_spark = corrected_ds_spark.withColumn(
-                    id_col,
-                    row_number().over(Window.orderBy(monotonically_increasing_id())) - 1,
-                )
-            both = cl_cols.select([id_col, "action", "corrected_label"]).join(
-                corrected_ds_spark.select([id_col, label_column]),
-                on=id_col,
-                how="left",
+            corrected_ds: snowpark.DataFrame = apply_corrections_snowpark_df(
+                dataset, cl_cols, id_col, label_col, keep_excluded
             )
-            final = both.withColumn(
-                "__cleanlab_final_label",
-                when(col("corrected_label").isNull(), col(label_column)).otherwise(
-                    col("corrected_label")
-                ),
-            )
-            new_labels = final.select(
-                [id_col, "action", "__cleanlab_final_label"]
-            ).withColumnRenamed("__cleanlab_final_label", label_column)
+            return corrected_ds
 
-            res = corrected_ds_spark.drop(label_column).join(new_labels, on=id_col, how="right")
-            res = (
-                res.where((col("action").isNull()) | (col("action") != "exclude"))
-                if not keep_excluded
-                else res
-            ).drop("action")
-
-            return res
+        elif _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
+            cl_cols = self.download_cleanlab_columns(
+                cleanset_id, to_spark=True, include_project_details=True
+            )
+            corrected_ds: pyspark.sql.DataFrame = apply_corrections_spark_df(
+                dataset, cl_cols, id_col, label_col, keep_excluded
+            )
+            return corrected_ds
 
         elif isinstance(dataset, pd.DataFrame):
             cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True)
-            joined_ds: pd.DataFrame
-            if id_col in dataset.columns:
-                joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
-            else:
-                joined_ds = dataset.join(cl_cols.set_index(id_col).sort_values(by=id_col))
-            joined_ds["__cleanlab_final_label"] = joined_ds["corrected_label"].where(
-                joined_ds["corrected_label"].notnull().tolist(),
-                dataset[label_column].tolist(),
+            corrected_ds: pd.DataFrame = apply_corrections_pd_df(
+                dataset, cl_cols, id_col, label_col, keep_excluded
             )
-
-            corrected_ds: pd.DataFrame = dataset.copy()
-            corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
-            if not keep_excluded:
-                corrected_ds = corrected_ds.loc[(joined_ds["action"] != "exclude").fillna(True)]
-            else:
-                corrected_ds["action"] = joined_ds["action"]
             return corrected_ds
 
         else:
             raise ValueError(
-                f"Provided unsupported dataset of type: {type(dataset)}. We currently support applying corrections to pandas or pyspark dataframes"
+                f"Provided unsupported dataset of type: {type(dataset)}. We currently support applying corrections to pandas, snowpark, or pyspark dataframes"
             )
 
     def create_project(

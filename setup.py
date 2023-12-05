@@ -21,7 +21,7 @@ setup(
     url="https://github.com/cleanlab/cleanlab-studio",
     project_urls={
         "Bug Tracker": "https://github.com/cleanlab/cleanlab-studio/issues",
-        "Documentation": "https://cleanlab-studio.readthedocs.io/en/latest/index.html",
+        "Documentation": "https://help.cleanlab.ai",
     },
     classifiers=[
         "License :: OSI Approved :: MIT License",
@@ -62,14 +62,6 @@ setup(
         "openpyxl==3.0.10",
         "validators>=0.20.0",
     ],
-    extras_require={
-        "docs": [
-            "sphinx==6.2.1",
-            "sphinx_toolbox==3.4.0",
-            "furo==2022.12.07",
-            "nbsphinx==0.9.1",
-        ],
-    },
     entry_points="""
         [console_scripts]
         cleanlab=cleanlab_studio.cli:main
