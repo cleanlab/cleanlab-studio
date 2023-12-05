@@ -152,7 +152,3 @@ class TestAutofix:
 
         top_ids = _get_top_fraction_ids(cleanlab_columns, "near_duplicate", 5)
         assert set(top_ids) == set([6, 8, 10])
-
-
-    def test_get_indices_to_drop(self):
-        pass
