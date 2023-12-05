@@ -4,7 +4,7 @@ from cleanlab_studio.internal.util import (
     get_param_values,
     _update_label_based_on_confidence,
     _get_top_fraction_ids,
-    _get_indices_to_drop
+    _get_indices_to_drop,
 )
 import numpy as np
 
