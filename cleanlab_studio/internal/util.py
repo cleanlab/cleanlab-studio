@@ -49,6 +49,7 @@ AUTOFIX_DEFAULTS = {
     },
 }
 
+
 def init_dataset_source(
     dataset_source: DatasetSourceType, dataset_name: Optional[str] = None
 ) -> DatasetSource:
@@ -91,6 +92,7 @@ def check_not_none(x: Any) -> bool:
 def get_autofix_defaults_for_strategy(strategy):
     return AUTOFIX_DEFAULTS[strategy]
 
+
 def get_param_values(cleanset_df, params, strategy):
     thresholds = get_autofix_defaults_for_strategy(strategy) if params is None else params
     param_values = {}
@@ -103,6 +105,7 @@ def get_param_values(cleanset_df, params, strategy):
         else:
             param_values[param_type] = param_value
     return param_values
+
 
 def _get_top_fraction_ids(  # Studio team port to backend
     cleanset_df: pd.DataFrame, issue_name: str, num_rows: int, asc=True
@@ -171,9 +174,9 @@ def _update_label_based_on_confidence(row, conf_threshold):  # Studio team port 
         pd.Series: The updated row.
     """
     if row["is_label_issue"] and row["suggested_label_confidence_score"] > conf_threshold:
-        row[
-            "is_issue"
-        ] = False  # make sure this does not affect back end. We are doing this to avoid dropping these datapoints in autofix later, they should be relabeled
+        # make sure this does not affect back end. We are doing this to avoid dropping these datapoints in autofix later, they should be relabeled
+        row["is_issue"] = False
+        row["is_label_issue"] = False
         row["label"] = row["suggested_label"]
     return row
 
@@ -195,7 +198,7 @@ def apply_autofixed_cleanset_to_new_dataframe(  # Studio team port to backend
 
     indices_to_drop = _get_indices_to_drop(merged_df, parameters)
 
-    merged_df = merged_df.drop(indices_to_drop, axis=0).reset_index(drop=True)
+    merged_df = merged_df.drop(indices_to_drop, axis=0)
     return merged_df[original_columns]
 
 
