@@ -144,19 +144,19 @@ class Studio:
             cl_cols = self.download_cleanlab_columns(
                 cleanset_id, to_spark=False, include_project_details=True
             )
-            corrected_ds: snowpark.DataFrame = apply_corrections_snowpark_df(
+            snowflake_corrected_ds: snowpark.DataFrame = apply_corrections_snowpark_df(
                 dataset, cl_cols, id_col, label_col, keep_excluded
             )
-            return corrected_ds
+            return snowflake_corrected_ds
 
         elif _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             cl_cols = self.download_cleanlab_columns(
                 cleanset_id, to_spark=True, include_project_details=True
             )
-            corrected_ds: pyspark.sql.DataFrame = apply_corrections_spark_df(
+            pyspark_corrected_ds: pyspark.sql.DataFrame = apply_corrections_spark_df(
                 dataset, cl_cols, id_col, label_col, keep_excluded
             )
-            return corrected_ds
+            return pyspark_corrected_ds
 
         elif isinstance(dataset, pd.DataFrame):
             cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True)
