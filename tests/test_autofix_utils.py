@@ -1,9 +1,10 @@
 import pandas as pd
 import pytest
 from cleanlab_studio.internal.util import (
-    get_autofix_defaults,
+    get_param_values,
     _update_label_based_on_confidence,
     _get_top_fraction_ids,
+    _get_indices_to_drop
 )
 import numpy as np
 
@@ -42,14 +43,14 @@ class TestAutofix:
         ],
         ids=["optimized_training_data", "drop_all_issues", "suggested_actions"],
     )
-    def test_get_autofix_defaults(self, strategy, expected_results):
+    def test_get_param_values(self, strategy, expected_results):
         cleanlab_columns = pd.DataFrame()
         cleanlab_columns["is_label_issue"] = [True] * 3 + [False] * 7
         cleanlab_columns["is_near_duplicate"] = [True] * 6 + [False] * 4
         cleanlab_columns["is_outlier"] = [True] * 6 + [False] * 4
         cleanlab_columns["is_ambiguous"] = [True] * 10
 
-        params = get_autofix_defaults(cleanlab_columns, strategy)
+        params = get_param_values(cleanlab_columns, None, strategy)
         assert params == expected_results
 
     @pytest.mark.parametrize(
@@ -151,3 +152,7 @@ class TestAutofix:
 
         top_ids = _get_top_fraction_ids(cleanlab_columns, "near_duplicate", 5)
         assert set(top_ids) == set([6, 8, 10])
+
+
+    def test_get_indices_to_drop(self):
+        pass

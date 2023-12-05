@@ -15,10 +15,8 @@ from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
 from cleanlab_studio.internal.util import (
     apply_autofixed_cleanset_to_new_dataframe,
-    _get_autofix_default_thresholds,
-    check_none,
-    check_not_none,
-    get_autofix_defaults,
+    get_autofix_defaults_for_strategy,
+    get_param_values,
     init_dataset_source,
 )
 
@@ -415,7 +413,10 @@ class Studio:
 
         """
         cleanset_df = self.download_cleanlab_columns(cleanset_id)
-        if params is None:
-            params = get_autofix_defaults(cleanset_df, strategy)
-            print("Using autofix values:", params)
-        return apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, params)
+        if params is not None and strategy is not None:
+            raise ValueError("Please provide only of params or strategy for autofix")
+        param_values = get_param_values(cleanset_df, params, strategy)
+        return apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, param_values)
+
+    def get_autofix_defaults(self, strategy="optimized_training_data"):
+        return get_autofix_defaults_for_strategy(strategy)

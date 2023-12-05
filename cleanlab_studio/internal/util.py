@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, Optional, TypeVar, Union, List
+from typing import Any, Optional, TypeVar, Union, List, Dict
 import math
 
 import copy
@@ -27,6 +27,27 @@ dataset_source_types = (
 
 DatasetSourceType = TypeVar("DatasetSourceType", bound=dataset_source_types)  # type: ignore
 
+# Studio team port to backend
+AUTOFIX_DEFAULTS = {
+    "optimized_training_data": {
+        "drop_ambiguous": 0.0,
+        "drop_label_issue": 0.5,
+        "drop_near_duplicate": 0.2,
+        "drop_outlier": 0.5,
+        "relabel_confidence_threshold": 0.95,
+    },
+    "drop_all_issues": {
+        "drop_ambiguous": 1.0,
+        "drop_label_issue": 1.0,
+        "drop_near_duplicate": 1.0,
+        "drop_outlier": 1.0,
+    },
+    "suggested_actions": {
+        "drop_near_duplicate": 1.0,
+        "drop_outlier": 1.0,
+        "relabel_confidence_threshold": 0.0,
+    },
+}
 
 def init_dataset_source(
     dataset_source: DatasetSourceType, dataset_name: Optional[str] = None
@@ -66,51 +87,22 @@ def check_not_none(x: Any) -> bool:
     return not check_none(x)
 
 
-def _get_autofix_default_thresholds(strategy: str) -> dict:  # Studio team port to backend
-    """returns default percentage-wise params of autofix"""
+# Studio team port to backend
+def get_autofix_defaults_for_strategy(strategy):
+    return AUTOFIX_DEFAULTS[strategy]
 
-    strategy_defaults = {
-        "optimized_training_data": {
-            "drop_ambiguous": 0.0,
-            "drop_label_issue": 0.5,
-            "drop_near_duplicate": 0.2,
-            "drop_outlier": 0.5,
-            "relabel_confidence_threshold": 0.95,
-        },
-        "drop_all_issues": {
-            "drop_ambiguous": 1.0,
-            "drop_label_issue": 1.0,
-            "drop_near_duplicate": 1.0,
-            "drop_outlier": 1.0,
-        },
-        "suggested_actions": {
-            "drop_near_duplicate": 1.0,
-            "drop_outlier": 1.0,
-            "relabel_confidence_threshold": 0.0,
-        },
-    }
-    return strategy_defaults[strategy]
-
-
-def get_autofix_defaults(
-    cleanset_df: pd.DataFrame, strategy
-) -> dict:  # Studio team port to backend
-    """
-    Generate default values for autofix parameters based on the size of the cleaned dataset.
-    """
-    default_thresholds = _get_autofix_default_thresholds(strategy)
-    default_values = {}
-
-    for param_type, param_value in default_thresholds.items():
+def get_param_values(cleanset_df, params, strategy):
+    thresholds = get_autofix_defaults_for_strategy(strategy) if params is None else params
+    param_values = {}
+    for param_type, param_value in thresholds.items():
         # Convert drop fractions to number of rows and leave rest of the parameters as is
         if param_type.startswith("drop_"):
             issue_name = param_type[5:]
             num_rows = cleanset_df[f"is_{issue_name}"].sum()
-            default_values[param_type] = math.ceil(num_rows * param_value)
+            param_values[param_type] = math.ceil(num_rows * param_value)
         else:
-            default_values[param_type] = param_value
-    return default_values
-
+            param_values[param_type] = param_value
+    return param_values
 
 def _get_top_fraction_ids(  # Studio team port to backend
     cleanset_df: pd.DataFrame, issue_name: str, num_rows: int, asc=True
@@ -201,12 +193,17 @@ def apply_autofixed_cleanset_to_new_dataframe(  # Studio team port to backend
         axis=1,
     )
 
+    indices_to_drop = _get_indices_to_drop(merged_df, parameters)
+
+    merged_df = merged_df.drop(indices_to_drop, axis=0).reset_index(drop=True)
+    return merged_df[original_columns]
+
+
+def _get_indices_to_drop(merged_df, parameters):
     indices_to_drop = set()
     for param_name, top_num in parameters.items():
         if param_name.startswith("drop_"):
             issue_name = param_name.replace("drop_", "")
-            top_percent_ids = _get_top_fraction_ids(merged_df, issue_name, top_num, asc=False)
+            top_percent_ids = _get_top_fraction_ids(merged_df, issue_name, top_num, asc=True)
             indices_to_drop.update(top_percent_ids)
-
-    merged_df = merged_df.drop(list(indices_to_drop), axis=0).reset_index(drop=True)
-    return merged_df[original_columns]
+    return list(indices_to_drop)
