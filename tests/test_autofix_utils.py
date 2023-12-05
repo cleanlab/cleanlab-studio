@@ -65,7 +65,7 @@ class TestAutofix:
                     "is_issue": True,
                 },
                 {
-                    "is_label_issue": True,
+                    "is_label_issue": False,
                     "suggested_label_confidence_score": 0.6,
                     "label": "label_1",
                     "suggested_label": "label_1",
