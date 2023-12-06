@@ -374,16 +374,18 @@ class Studio:
         Args:
             cleanset_id (str): ID of cleanset.
             params (dict, optional): Default parameter dictionary containing confidence threshold for auto-relabelling, and
-                number of rows to drop for each issue type. If not provided, default values will be used.
+                fraction of rows to drop for each issue type. If not provided, default values will be used.
 
                 Example:
                 {
-                    'drop_ambiguous': 9,
-                    'drop_label_issue': 92,
-                    'drop_near_duplicate': 1,
-                    'drop_outlier': 3,
-                    'drop_confidence_threshold': 0.95
+                    'drop_ambiguous': 0.0,
+                    'drop_label_issue': 0.5,
+                    'drop_near_duplicate': 0.5,
+                    'drop_outlier': 0.2,
+                    'relabel_confidence_threshold': 0.95
                 }
+            strategy (str): Auto-fixing strategy to use,
+                Possible strategies: optimized_training_data, drop_all_issues, suggested_actions
 
         Returns:
             pd.DataFrame: A new dataframe after applying auto-fixes to the cleanset.
@@ -395,5 +397,16 @@ class Studio:
         param_values = get_param_values(cleanset_df, params, strategy)
         return apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, param_values)
 
-    def get_autofix_defaults(self, strategy="optimized_training_data"):
+    def get_autofix_defaults(self, strategy="optimized_training_data")-> Dict[str, float]:
+        """
+        This method returns the default params auto-fixed dataset.
+        Args:
+            strategy (str): Auto-fixing strategy
+                Possible strategies: optimized_training_data, drop_all_issues, suggested_actions
+
+        Returns:
+            dict[str, float]: parameter dictionary containing confidence threshold for auto-relabelling, and
+                fraction of rows to drop for each issue type.
+        """
         return get_autofix_defaults_for_strategy(strategy)
+
