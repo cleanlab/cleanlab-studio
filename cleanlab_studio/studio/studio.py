@@ -397,7 +397,7 @@ class Studio:
         param_values = get_param_values(cleanset_df, params, strategy)
         return apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, param_values)
 
-    def get_autofix_defaults(self, strategy="optimized_training_data")-> Dict[str, float]:
+    def get_autofix_defaults(self, strategy="optimized_training_data") -> Dict[str, float]:
         """
         This method returns the default params auto-fixed dataset.
         Args:
@@ -409,4 +409,3 @@ class Studio:
                 fraction of rows to drop for each issue type.
         """
         return get_autofix_defaults_for_strategy(strategy)
-

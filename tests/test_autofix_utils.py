@@ -155,7 +155,7 @@ class TestAutofix:
 
     def test_get_indices_to_drop(self):
         cleanlab_columns = pd.DataFrame()
-        cleanlab_columns['cleanlab_row_ID'] = np.arange(10)
+        cleanlab_columns["cleanlab_row_ID"] = np.arange(10)
         cleanlab_columns["is_issue1"] = [True] * 2 + [False] * 8
         cleanlab_columns["issue1_score"] = [1.0, 0.9] + [0] * 8
         cleanlab_columns["is_issue2"] = [False] * 2 + [True] * 4 + [False] * 4
