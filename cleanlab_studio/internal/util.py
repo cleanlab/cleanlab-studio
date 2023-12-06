@@ -340,7 +340,7 @@ def _get_indices_to_drop(merged_df, parameters):
     for param_name, top_num in parameters.items():
         if param_name.startswith("drop_"):
             issue_name = param_name.replace("drop_", "")
-            top_percent_ids = _get_top_fraction_ids(merged_df, issue_name, top_num, asc=True)
+            top_percent_ids = _get_top_fraction_ids(merged_df, issue_name, top_num, asc=False)
             indices_to_drop.update(top_percent_ids)
     return list(indices_to_drop)
 

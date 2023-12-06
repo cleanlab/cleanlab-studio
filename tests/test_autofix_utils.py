@@ -152,3 +152,23 @@ class TestAutofix:
 
         top_ids = _get_top_fraction_ids(cleanlab_columns, "near_duplicate", 5)
         assert set(top_ids) == set([6, 8, 10])
+
+    def test_get_indices_to_drop(self):
+        cleanlab_columns = pd.DataFrame()
+        cleanlab_columns['cleanlab_row_ID'] = np.arange(10)
+        cleanlab_columns["is_issue1"] = [True] * 2 + [False] * 8
+        cleanlab_columns["issue1_score"] = [1.0, 0.9] + [0] * 8
+        cleanlab_columns["is_issue2"] = [False] * 2 + [True] * 4 + [False] * 4
+        cleanlab_columns["issue2_score"] = [0] * 2 + [1.0, 0.9, 0.8, 0.7] + [0] * 4
+        cleanlab_columns["is_issue3"] = [False] * 4 + [True] * 3 + [False] * 3
+        cleanlab_columns["issue3_score"] = [0] * 4 + [1.0, 0.9, 0.8] + [0] * 3
+
+        params = {
+            "drop_issue1": 1,
+            "drop_issue2": 3,
+            "drop_issue3": 2,
+        }
+        expected_indices = [0, 2, 3, 4, 5]
+
+        indices = _get_indices_to_drop(cleanlab_columns, params)
+        assert set(indices) == set(expected_indices)
