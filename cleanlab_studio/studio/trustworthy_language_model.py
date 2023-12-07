@@ -25,11 +25,36 @@ class TLMResponse(TypedDict):
 class TLMOptions(TypedDict):
     """Trustworthy language model options.
 
-    Attributes:
-        max_tokens (int): the maximum number of tokens to generate in the TLM response
+    Parameters
+    ----------
+    max_tokens: int, default = 512
+       The maximum number of tokens to generate in the TLM response.
+
+    max_timeout: int, optional
+       The maximum timeout to query from TLM in seconds. If a max_timeout is not specified, then timeout is calculated based on number of tokens.
+
+    num_candidate_responses: int, default = 1
+       This controls how many candidate responses are internally generated.
+       TLM scores the confidence of each candidate response, and then returns the most confident one.
+       A higher value here can produce better (more accurate) responses from the TLM, but at higher costs/runtimes.
+
+    num_consistency_samples: int, default = 5
+       This controls how many samples are internally generated to evaluate the LLM-response-consistency.
+       This is a big part of the returned confidence_score, in particular for ensuring lower scores for strange input prompts or those that are too open-ended to receive a well-defined 'good' response.
+       Higher values here produce better (more reliable) TLM confidence scores, but at higher costs/runtimes.
+
+    use_self_reflection: bool, default = True
+       This controls whether self-reflection is used to have the LLM reflect upon the response it is generating and explicitly self-evaluate whether it seems good or not.
+       This is a big part of the confidence score, in particular for ensure low scores for responses that are obviously incorrect/bad for a standard prompt that LLMs should be able to handle.
+       Setting this to False disables the use of self-reflection and may produce worse TLM confidence scores, but can reduce costs/runtimes.
+
     """
 
     max_tokens: int
+    max_timeout: int
+    num_candidate_responses: int
+    num_consistency_samples: int
+    use_self_reflection: bool
 
 
 class TLM:
