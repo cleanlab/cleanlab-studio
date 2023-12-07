@@ -195,12 +195,12 @@ class Studio:
         Returns:
             ID of created project.
         """
-        dataset_details = api.get_dataset_details(self._api_key, dataset_id)
+        dataset_details = api.get_dataset_details(self._api_key, dataset_id, task_type)
 
         if label_column is not None:
             if label_column not in dataset_details["label_columns"]:
                 raise ValueError(
-                    f"Invalid label column: {label_column}. Label column must have categorical feature type"
+                    f"Invalid label column '{label_column}' for task type '{task_type}'"
                 )
         else:
             label_column = str(dataset_details["label_column_guess"])
