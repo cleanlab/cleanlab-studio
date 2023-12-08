@@ -173,7 +173,7 @@ class Studio:
         project_name: str,
         modality: Literal["text", "tabular", "image"],
         *,
-        task_type: Literal["multi-class", "multi-label"] = "multi-class",
+        task_type: Literal["multi-class", "multi-label", "regression"] = "multi-class",
         model_type: Literal["fast", "regular"] = "regular",
         label_column: Optional[str] = None,
         feature_columns: Optional[List[str]] = None,
@@ -186,7 +186,7 @@ class Studio:
             dataset_id: ID of dataset to create project for.
             project_name: Name for resulting project.
             modality: Modality of project (i.e. text, tabular, image).
-            task_type: Type of classification to perform (i.e. multi-class, multi-label).
+            task_type: Type of classification to perform (i.e. multi-class, multi-label, regression).
             model_type: Type of model to train (i.e. fast, regular).
             label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess).
             feature_columns: List of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns).
