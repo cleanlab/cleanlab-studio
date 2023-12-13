@@ -144,10 +144,10 @@ class Studio:
             cl_cols = self.download_cleanlab_columns(
                 cleanset_id, to_spark=False, include_project_details=True
             )
-            snowflake_corrected_ds: snowpark.DataFrame = apply_corrections_snowpark_df(
+            corrected_ds: snowpark.DataFrame = apply_corrections_snowpark_df(
                 dataset, cl_cols, id_col, label_col, keep_excluded
             )
-            return snowflake_corrected_ds
+            return corrected_ds
 
         elif _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             cl_cols = self.download_cleanlab_columns(
