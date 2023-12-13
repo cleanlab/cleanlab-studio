@@ -76,7 +76,7 @@ class Studio:
         Args:
             dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas, snowflake, or pyspark DataFrame.
             dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath).
-            schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred. Format defined here: https://help.cleanlab.ai/guide/concepts/datasets/#schemas
+            schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred. Format defined [here](/guide/concepts/datasets/#schema-overrides).
             modality: Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
             id_column: Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated.
 
@@ -176,7 +176,7 @@ class Studio:
         project_name: str,
         modality: Literal["text", "tabular", "image"],
         *,
-        task_type: Literal["multi-class", "multi-label"] = "multi-class",
+        task_type: Literal["multi-class", "multi-label", "regression"] = "multi-class",
         model_type: Literal["fast", "regular"] = "regular",
         label_column: Optional[str] = None,
         feature_columns: Optional[List[str]] = None,
@@ -189,7 +189,7 @@ class Studio:
             dataset_id: ID of dataset to create project for.
             project_name: Name for resulting project.
             modality: Modality of project (i.e. text, tabular, image).
-            task_type: Type of classification to perform (i.e. multi-class, multi-label).
+            task_type: Type of ML task to perform (i.e. multi-class, multi-label, regression).
             model_type: Type of model to train (i.e. fast, regular).
             label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess).
             feature_columns: List of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns).
@@ -198,12 +198,12 @@ class Studio:
         Returns:
             ID of created project.
         """
-        dataset_details = api.get_dataset_details(self._api_key, dataset_id)
+        dataset_details = api.get_dataset_details(self._api_key, dataset_id, task_type)
 
         if label_column is not None:
             if label_column not in dataset_details["label_columns"]:
                 raise ValueError(
-                    f"Invalid label column: {label_column}. Label column must have categorical feature type"
+                    f"Invalid label column '{label_column}' for task type '{task_type}'"
                 )
         else:
             label_column = str(dataset_details["label_column_guess"])
@@ -330,7 +330,7 @@ class Studio:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
         Args:
-            quality_preset ([QualityPreset](../trustworthy_language_model#QualityPreset)): quality preset to use for prompts
+            quality_preset: quality preset to use for prompts
 
         Returns:
             TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
