@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 from cleanlab_studio.internal.util import (
-    get_param_values,
+    _get_param_values,
     _update_label_based_on_confidence,
     _get_top_fraction_ids,
     _get_indices_to_drop,
@@ -50,7 +50,7 @@ class TestAutofix:
         cleanlab_columns["is_outlier"] = [True] * 6 + [False] * 4
         cleanlab_columns["is_ambiguous"] = [True] * 10
 
-        params = get_param_values(cleanlab_columns, None, strategy)
+        params = _get_param_values(cleanlab_columns, None, strategy)
         assert params == expected_results
 
     @pytest.mark.parametrize(

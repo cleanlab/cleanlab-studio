@@ -222,12 +222,12 @@ def check_not_none(x: Any) -> bool:
 
 
 # Studio team port to backend
-def get_autofix_defaults_for_strategy(strategy):
+def _get_autofix_defaults_for_strategy(strategy):
     return AUTOFIX_DEFAULTS[strategy]
 
 
-def get_param_values(cleanset_df, params, strategy):
-    thresholds = get_autofix_defaults_for_strategy(strategy) if params is None else params
+def _get_param_values(cleanset_df, params, strategy):
+    thresholds = _get_autofix_defaults_for_strategy(strategy) if params is None else params
     param_values = {}
     for param_type, param_value in thresholds.items():
         # Convert drop fractions to number of rows and leave rest of the parameters as is

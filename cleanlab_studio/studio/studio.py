@@ -19,8 +19,8 @@ from cleanlab_studio.internal.util import (
     apply_corrections_spark_df,
     apply_corrections_pd_df,
     apply_autofixed_cleanset_to_new_dataframe,
-    get_autofix_defaults_for_strategy,
-    get_param_values,
+    _get_autofix_defaults_for_strategy,
+    _get_param_values,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
@@ -370,13 +370,20 @@ class Studio:
         strategy="optimized_training_data",
     ) -> pd.DataFrame:
         """
-        This method returns the auto-fixed dataset.
+        This method returns the auto-fixed dataset. It works for text or tabular dataset only.
         Args:
             cleanset_id (str): ID of cleanset.
+            original_df (pd.DataFrame): The original dataset in DataFrame format.
             params (dict, optional): Default parameter dictionary containing confidence threshold for auto-relabelling, and
                 fraction of rows to drop for each issue type. If not provided, default values will be used.
+                This dictionary includes the following options:
 
-                Example:
+                    * drop_ambiguous (float): Fraction of rows to drop when encountering ambiguous data. Default is 0.0 (no rows dropped).
+                    * drop_label_issue (float): Fraction of rows to drop when facing label-related issues. Default is 0.5 (50% of rows dropped).
+                    * drop_near_duplicate (float): Fraction of rows to drop for near-duplicate data. Default is 0.5 (50% of rows dropped).
+                    * drop_outlier (float): Fraction of rows to drop for outlier data. Default is 0.2 (20% of rows dropped).
+                    * relabel_confidence_threshold (float): Confidence threshold for auto-relabelling. Default is 0.95.
+                For example, the default values are:
                 {
                     'drop_ambiguous': 0.0,
                     'drop_label_issue': 0.5,
@@ -384,6 +391,9 @@ class Studio:
                     'drop_outlier': 0.2,
                     'relabel_confidence_threshold': 0.95
                 }
+
+            Specify values in params to customize the behavior for specific scenarios. If params are provided, the values in params take precedence over default ones.
+            
             strategy (str): Auto-fixing strategy to use,
                 Possible strategies: optimized_training_data, drop_all_issues, suggested_actions
 
@@ -394,7 +404,7 @@ class Studio:
         cleanset_df = self.download_cleanlab_columns(cleanset_id)
         if params is not None and strategy is not None:
             raise ValueError("Please provide only of params or strategy for autofix")
-        param_values = get_param_values(cleanset_df, params, strategy)
+        param_values = _get_param_values(cleanset_df, params, strategy)
         return apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, param_values)
 
     def get_autofix_defaults(self, strategy="optimized_training_data") -> Dict[str, float]:
@@ -408,4 +418,4 @@ class Studio:
             dict[str, float]: parameter dictionary containing confidence threshold for auto-relabelling, and
                 fraction of rows to drop for each issue type.
         """
-        return get_autofix_defaults_for_strategy(strategy)
+        return _get_autofix_defaults_for_strategy(strategy)
