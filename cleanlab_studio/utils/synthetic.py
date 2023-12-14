@@ -1,3 +1,7 @@
+"""
+Collection of utility functions for Cleanlab Studio Python API
+"""
+
 from typing import Dict, Optional, Tuple, cast
 import pandas as pd
 
@@ -6,24 +10,13 @@ _near_duplicate_id_column = "near_duplicate_cluster_id"
 
 
 class _SyntheticDatasetScorer:
-    """Computes the issue scores for a dataset consisting of
-    real and synthetic data, to evaluate any overarching issues
-    within the synthetic dataset.
+    """
+    Computes the issue scores for a dataset consisting of real and synthetic data, to evaluate any overarching issues within the synthetic dataset.
 
-    Parameters
-    ----------
-    cleanset_df: pd.DataFrame
-        The dataframe containing the dataset to score.
-        It should contain a column named "real_or_synthetic" that
-        indicates whether each example is real or synthetic.
-
-    real_or_synth_column: str
-        The name of the column that indicates whether each
-        example is real or synthetic.
-
-    synthetic_class_names: Tuple[str, str]
-        A tuple containing the class names of the "real_or_synthetic" column
-        (ie. how to identify the examples that are real and synthetic).
+    Args:
+        cleanset_df: The dataframe containing the dataset to score. It should contain a column named "real_or_synthetic" that indicates whether each example is real or synthetic.
+        real_or_synth_column: The name of the column that indicates whether each example is real or synthetic.
+        synthetic_class_names: A tuple containing the class names of the "real_or_synthetic" column (ie. how to identify the examples that are real and synthetic).
     """
 
     def __init__(
@@ -49,9 +42,8 @@ class _SyntheticDatasetScorer:
         print(f"Number of synthetic examples: {num_synthetic_examples}")
 
     def score_synthetic_dataset(self) -> Dict[str, float]:
-        """Computes the issue scores for a dataset consisting of
-        real and synthetic data, to evaluate any overarching
-        issues within the synthetic dataset.
+        """
+        Computes the issue scores for a dataset consisting of real and synthetic data, to evaluate any overarching issues within the synthetic dataset.
         """
         self._display_example_counts()
         scores = {
@@ -63,39 +55,28 @@ class _SyntheticDatasetScorer:
         return scores
 
     def _unrealistic_score(self) -> float:
-        """Evaluates how distinguishable the
-        synthetic data appears from real data.
-        High values indicate there are many
-        unrealistic-looking synthetic samples
-        which look obviously fake.
+        """
+        Evaluates how distinguishable the synthetic data appears from real data. High values indicate there are many unrealistic-looking synthetic samples which look obviously fake.
         """
         return self._lis_to_synthetic_score(self.synthetic_type)
 
     def _unrepresentative_score(self) -> float:
-        """Evaluates how poorly represented the
-        real data is amongst the synthetic data samples.
-        High values indicate there exist tails
-        of the real data distribution (rare scenarios)
-        that the distribution of synthetic samples fails to capture.
+        """
+        Evaluates how poorly represented the real data is amongst the synthetic data samples. High values indicate there exist tails of the real data distribution (rare scenarios) that the distribution of synthetic samples fails to capture.
         """
 
         return self._lis_to_synthetic_score(self.real_type)
 
     def _unvaried_score(self) -> float:
-        """Evaluates the diversity among synthetic samples.
-        High values indicate a non-diverse synthetic data generator
-        that produces many similar samples which look like near duplicates
-        of other synthetic samples.
+        """
+        Evaluates the diversity among synthetic samples. High values indicate a non-diverse synthetic data generator that produces many similar samples which look like near duplicates of other synthetic samples.
         """
         target_type = self.synthetic_type
         return self._calculate_synthetic_duplicate_scores(target_type, False)
 
     def _unoriginal_score(self) -> float:
-        """Evaluates the lack of novelty of the synthetic data.
-        High values indicate many synthetic samples are near duplicates
-        of an example from the real dataset,
-        i.e. the synthetic data generator may be memorizing the real data
-        too closely and failing to generalize.
+        """
+        Evaluates the lack of novelty of the synthetic data. High values indicate many synthetic samples are near duplicates of an example from the real dataset, i.e. the synthetic data generator may be memorizing the real data too closely and failing to generalize.
         """
         return self._calculate_synthetic_duplicate_scores(
             self.synthetic_type,
@@ -103,27 +84,14 @@ class _SyntheticDatasetScorer:
         )
 
     def _lis_to_synthetic_score(self, target_type: str) -> float:
-        """Computes the synthetic score based on
-        the label quality scores of the dataset.
+        """
+        Computes the synthetic score based on the label quality scores of the dataset.
 
-        Parameters
-        ----------
-        target_type: str
-            The type of examples to compute the score for. If the
-            target type is "synthetic", or a class name that
-            corresponds to synthetic examples, then the score is
-            computed based on the label issue scores of the
-            synthetic examples.
-            If the target type is "real",
-            or a class name that corresponds to real examples,
-            then the score is computed based on the label
-            issue scores of the real examples.
+        Args:
+            target_type: The type of examples to compute the score for. If the target type is "synthetic", or a class name that corresponds to synthetic examples, then the score is computed based on the label issue scores of the synthetic examples. If the target type is "real", or a class name that corresponds to real examples, then the score is computed based on the label issue scores of the real examples.
 
-        Returns
-        -------
-        score: float
-            The synthetic score, which is the mean label issue score
-            of the target type.
+        Returns:
+            The synthetic score, which is the mean label issue score of the target type.
         """
         query = f"{self.real_or_synth_column} == @target_type"
         filtered_df = self.cleanset_df.query(query)
@@ -136,6 +104,9 @@ class _SyntheticDatasetScorer:
         target_type: str,
         contains_real: bool,
     ) -> float:
+        """
+        Computes the synthetic duplicate score.
+        """
         # Real or synthetic column
         _rs_column = self.real_or_synth_column
 
@@ -175,30 +146,13 @@ def score_synthetic_dataset(
     real_or_synth_column: str = "real_or_synthetic",
     synthetic_class_names: Optional[Tuple[str, str]] = None,
 ) -> Dict[str, float]:
-    """Computes the issue scores for a dataset consisting
-    of real and synthetic data, to evaluate any
-    overarching issues within the synthetic dataset.
+    """
+    Computes the issue scores for a dataset consisting of real and synthetic data, to evaluate any overarching issues within the synthetic dataset.
 
-    Parameters
-    ----------
-    cleanset_df: pd.DataFrame
-        The dataframe containing the dataset to score.
-        It should contain a column named "real_or_synthetic"
-        that indicates whether each example is real or synthetic.
-        It should also have the cleanset columns
-        provided by Cleanlab Studio.
-
-    real_or_synth_column: str
-        The name of the column that indicates
-        whether each example is real or synthetic.
-
-    synthetic_class_names: Optional[Tuple[str, str]]
-        The class names of the "real_or_synthetic" column
-        (ie. which class corresponds to real examples,
-        which to synthetic examples).
-        If None, the default values are ("synthetic", "real").
-        The first class name should correspond to the synthetic examples,
-        and the second class name should correspond to the real examples.
+    Args:
+        cleanset_df: The dataframe containing the dataset to score. It should contain a column named "real_or_synthetic" that indicates whether each example is real or synthetic. It should also have the cleanset columns provided by Cleanlab Studio.
+        real_or_synth_column: The name of the column that indicates whether each example is real or synthetic.
+        synthetic_class_names: The class names of the "real_or_synthetic" column (ie. which class corresponds to real examples, which to synthetic examples). If None, the default values are ("synthetic", "real"). The first class name should correspond to the synthetic examples, and the second class name should correspond to the real examples.
     """
 
     # Configure scorer
