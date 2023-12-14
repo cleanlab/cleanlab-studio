@@ -193,7 +193,7 @@ class Studio:
                 raise ValueError(
                     f"Invalid label column '{label_column}' for task type '{task_type}'"
                 )
-        else:
+        elif task_type is not None:
             label_column = str(dataset_details["label_column_guess"])
             print(f"Label column not supplied. Using best guess {label_column}")
 

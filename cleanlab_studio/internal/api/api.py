@@ -286,7 +286,7 @@ def clean_dataset(
     api_key: str,
     dataset_id: str,
     project_name: str,
-    task_type: str,
+    task_type: Optional[str],
     modality: str,
     model_type: str,
     label_column: str,
