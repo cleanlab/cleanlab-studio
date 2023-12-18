@@ -383,7 +383,7 @@ class Studio:
                     * drop_outlier (float): Fraction of the data points detected as outliers to exclude from the dataset.
                     * relabel_confidence_threshold (float): Confidence threshold for the suggested label, data points with label issues that also exceed this threshold are re-labeled as the suggested label.
 
-            strategy (str): What strategy to use for auto-fixing the dataset out of the following possibilities: 
+            strategy (str): What strategy to use for auto-fixing the dataset out of the following possibilities:
             ['optimized_training_data', 'drop_all_issues', 'suggested_actions'].
             Each of these possibilities corresponds to a default setting of the `params` dictionary, designed to be used in different scenarios.
             If specified, the `params` argument will override this argument. Specify 'optimized_training_data' when your goal is to auto-fix training data to achieve the best ML performance on randomly split test data.
