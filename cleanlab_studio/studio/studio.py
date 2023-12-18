@@ -1,8 +1,8 @@
 """
 Python API for Cleanlab Studio.
 """
-from typing import Any, List, Literal, Optional, Union
 import warnings
+from typing import Any, List, Literal, Optional, Union, Dict
 
 import numpy as np
 import numpy.typing as npt
@@ -15,13 +15,16 @@ from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
-    check_none,
     apply_corrections_snowpark_df,
     apply_corrections_spark_df,
     apply_corrections_pd_df,
+    apply_autofixed_cleanset_to_new_dataframe,
+    _get_autofix_defaults_for_strategy,
+    _get_param_values,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
+
 
 _snowflake_exists = api.snowflake_exists
 if _snowflake_exists:
@@ -150,10 +153,10 @@ class Studio:
             cl_cols = self.download_cleanlab_columns(
                 cleanset_id, to_spark=True, include_project_details=True
             )
-            corrected_ds: pyspark.sql.DataFrame = apply_corrections_spark_df(
+            pyspark_corrected_ds: pyspark.sql.DataFrame = apply_corrections_spark_df(
                 dataset, cl_cols, id_col, label_col, keep_excluded
             )
-            return corrected_ds
+            return pyspark_corrected_ds
 
         elif isinstance(dataset, pd.DataFrame):
             cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True)
@@ -358,3 +361,54 @@ class Studio:
 
         except (TimeoutError, CleansetError):
             return False
+
+    def autofix_dataset(
+        self,
+        original_df: pd.DataFrame,
+        cleanset_id: str,
+        params: Optional[Dict[str, Union[int, float]]] = None,
+        strategy="optimized_training_data",
+    ) -> pd.DataFrame:
+        """
+        Improves a dataset by applying automatically-suggested corrections based on issues detected by Cleanlab.
+        Args:
+            cleanset_id (str): ID of the cleanset from the Project for this Dataset.
+            original_df (pd.DataFrame): The original dataset (must be a DataFrame, so only text and tabular datasets are currently supported).
+            params (dict, optional): Optional parameters to control how many data points from each type of detected data issue are auto-corrected or filtered (prioritizing the more severe instances of each issue). If not provided, default `params` values will be used.
+                The `params` dictionary includes the following options:
+
+                    * drop_ambiguous (float): Fraction of the data points detected as ambiguous to exclude from the dataset.
+                    * drop_label_issue (float): Fraction of the data points with label issues to exclude from the dataset.
+                    * drop_near_duplicate (float): Fraction of the data points detected as near duplicates to exclude from the dataset.
+                    * drop_outlier (float): Fraction of the data points detected as outliers to exclude from the dataset.
+                    * relabel_confidence_threshold (float): Confidence threshold for the suggested label, data points with label issues that also exceed this threshold are re-labeled as the suggested label.
+
+            strategy (str): What strategy to use for auto-fixing the dataset out of the following possibilities:
+            ['optimized_training_data', 'drop_all_issues', 'suggested_actions'].
+            Each of these possibilities corresponds to a default setting of the `params` dictionary, designed to be used in different scenarios.
+            If specified, the `params` argument will override this argument. Specify 'optimized_training_data' when your goal is to auto-fix training data to achieve the best ML performance on randomly split test data.
+            Specify 'drop_all_issues' to instead exclude all datapoints detected to have issues from the dataset.
+            Specify 'suggested_actions' to instead apply the suggested action to each data point that is displayed in the Cleanlab Studio Web Application (e.g. relabeling for label issues, dropping for outliers, etc).
+
+        Returns:
+            pd.DataFrame: A new dataframe after applying auto-fixes to the cleanset.
+
+        """
+        cleanset_df = self.download_cleanlab_columns(cleanset_id)
+        if params is not None and strategy is not None:
+            raise ValueError("Please provide only of params or strategy for autofix")
+        param_values = _get_param_values(cleanset_df, params, strategy)
+        return apply_autofixed_cleanset_to_new_dataframe(original_df, cleanset_df, param_values)
+
+    def get_autofix_defaults(self, strategy="optimized_training_data") -> Dict[str, float]:
+        """
+        This method returns the default params auto-fixed dataset.
+        Args:
+            strategy (str): Auto-fixing strategy
+                Possible strategies: optimized_training_data, drop_all_issues, suggested_actions
+
+        Returns:
+            dict[str, float]: parameter dictionary containing confidence threshold for auto-relabelling, and
+                fraction of rows to drop for each issue type.
+        """
+        return _get_autofix_defaults_for_strategy(strategy)
