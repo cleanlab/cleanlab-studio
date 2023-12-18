@@ -3,7 +3,6 @@ Python API for Cleanlab Studio.
 """
 from typing import Any, List, Literal, Optional, Union
 import warnings
-import os
 
 import numpy as np
 import numpy.typing as npt
@@ -16,8 +15,6 @@ from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
-    check_none,
-    check_not_none,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
@@ -384,71 +381,3 @@ class Studio:
 
         except (TimeoutError, CleansetError):
             return False
-
-    def get_snowflake_datarows(self, snowflake_cursor, stage_name, signed_url_expiration=604800):
-        """
-        Returns a pandas DataFrame listing the path and presigned URLs of files stored in a Snowflake stage.
-        Original implemetation here https://github.com/Labelbox/labelsnow/blob/main/labelsnow/get_snowflake_datarows.py
-
-        Args:
-            snowflake_cursor: Snowflake cursor to use for querying.
-            stage_name: Name of stage to query.
-            signed_url_expiration: Number of seconds until signed URLs expire. Defaults to 604800 (7 days).
-
-        Returns:
-            Pandas DataFrame with columns `external_id` and `row_data`. `external_id` is the relative path of the file in the stage. `row_data` is the presigned URL of the file.
-        """
-        sql_string = (
-            "select relative_path as external_id, "
-            "get_presigned_url(@{s_name}, relative_path, {s_expiration}) as row_data "
-            "from directory(@{s_name})".format(
-                s_name=stage_name, s_expiration=signed_url_expiration
-            )
-        )
-
-        snowflake_cursor.execute(sql_string)
-        return snowflake_cursor.fetch_pandas_all()
-
-    def get_snowflake_imageset(
-        self, snowflake_cursor, stage_name, root=None, signed_url_expiration=604800
-    ):
-        """
-        Returns a pandas DataFrame listing the class and presigned URLs of images from an image dataset hosted on Snowflake.
-        A dataset should be identified by its Snowflake stage and path from the stage to its root.
-
-        Similar to how pytorch expects a dataset to be structured, the dataset should be structured as follows:
-        https://pytorch.org/vision/stable/generated/torchvision.datasets.ImageFolder.html
-        ```
-        [root]
-        ├── class_1
-        │   ├── image_1.jpg
-        │   ├── image_2.jpg
-        │   └── ...
-        ├── class_2
-        │   ├── image_1.jpg
-        │   ├── image_2.jpg
-        │   └── ...
-        └── ...
-        ```
-
-        Args:
-            snowflake_cursor: Snowflake cursor to use for querying.
-            stage_name: Name of stage to query.
-            root: Root of dataset. Defaults to None, which will treat the root of the stage as the root of the dataset.
-            signed_url_expiration: Number of seconds until signed URLs expire. Defaults to 604800 (7 days).
-
-        Returns:
-            Pandas DataFrame with columns `class` and `row_data`. `class` is the class of the image. `row_data` is the presigned URL of the image.
-        """
-        root = os.path.normpath(root) if root is not None else ""
-        sql_string = (
-            "select reverse(split_part(reverse(relative_path), '/', 2)) as class, "
-            "get_presigned_url(@{s_name}, relative_path, {s_expiration}) as row_data "
-            "from directory(@{s_name})"
-            "where relative_path like '{root}%'".format(
-                s_name=stage_name, s_expiration=signed_url_expiration, root=root
-            )
-        )
-
-        snowflake_cursor.execute(sql_string)
-        return snowflake_cursor.fetch_pandas_all()
