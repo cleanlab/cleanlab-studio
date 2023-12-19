@@ -6,7 +6,7 @@ import abc
 import csv
 import io
 import time
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Any
 from typing_extensions import TypeAlias
 
 import numpy as np
@@ -20,7 +20,7 @@ TextBatch = Union[List[str], npt.NDArray[np.str_], pd.Series]
 TabularBatch: TypeAlias = pd.DataFrame
 Batch = Union[TextBatch, TabularBatch]
 
-Predictions = Union[npt.NDArray[np.int_], npt.NDArray[np.str_]]
+Predictions = Union[npt.NDArray[np.int_], npt.NDArray[np.str_], npt.NDArray[Any]]
 ClassProbablities: TypeAlias = pd.DataFrame
 
 
@@ -39,15 +39,49 @@ class Model(abc.ABC):
         timeout: int = 600,
     ) -> Union[Predictions, Tuple[Predictions, ClassProbablities]]:
         """
-        Gets predictions for batch of examples.
+        Gets predictions for batch of examples using deployed model, as well as predicted probabilities.
+                                Currently only supports tabular and text datasets.
 
         Args:
             batch: batch of examples to predict classes for
-            return_pred_proba: if should return class probabilities for each example
+            return_pred_proba: whether to return predicted class probabilities for each example
             timeout: optional parameter to set timeout for predictions in seconds
 
         Returns:
-            predictions from batch as a numpy array, optionally also pandas dataframe of class probabilties
+            Predictions: the predicted labels for the batch as a numpy array. If calling `predict` for a multi-class model,
+                                                we will return a numpy array of the labels, whose type matches the given label in the
+                                                original training set (string or integer). If calling `predict` for a multi-label model, we will return a numpy array of list of strings,
+                                                where each list corresponds to the labels that are present for the corresponding row.
+
+            ClassProbabilities: optionally we also return the pandas DataFrame of the class probabilities.
+            The column names will be the labels.
+
+
+        Example outputs:
+            Multi-class project:
+            Say we have a dataset with 3 classes, "bear", "cat" and "dog". For two example rows,
+            the deployed model predicts "cat" and "dog", each with probability 1.
+            The outputs will be:
+                    Predictions: `array(['cat', 'dog'])`
+                    ClassProbabilities:
+                    bear  cat  dog
+                    0    0.0  1.0  0.0
+                    1    0.0  0.0  1.0
+            Note the for multi-class predictions, the ClassProbabilities will have rows that sum to 1,
+            and the prediction for each row corresponds to the column with the highest probability.
+
+            Multi-label project:
+            Say we have some text dataset that we want sentiment predictions for, and the model predicts
+            probabilities `[0.6, 0.9, 0.1]` for the set of possible labels, "happy", "excited", "sad"; for
+            a second example, the predicted probabilities are `[0.1, 0.3, 0.8]`.
+            The outputs will be:
+                    Predictions: `array([["happy", "excited"], ["sad"]])`
+                    ClassProbabilities:
+                    happy  excited  sad
+                    0    0.6  0.9  0.1
+                    1    0.1  0.3  0.8
+            Note that for multi-label predictions, each entry in a row of the ClassProbabilities should be interpreted
+            as the probability that label is present for the example.
         """
         csv_batch = self._convert_batch_to_csv(batch)
         predictions, class_probabilities = self._predict_from_csv(csv_batch, timeout)
@@ -75,7 +109,18 @@ class Model(abc.ABC):
 
             if result_url := resp.get("results"):
                 results: pd.DataFrame = pd.read_csv(result_url)
-                return results.pop("Suggested Label").to_numpy(), results
+                # suggested labels are a list of strings for multi-class
+                # and a list of strings of csv encoded lists for multi-label
+                # we need to first csv-decode the strings, and then if they are all length 1
+                # we assume multi-class and return a numpy array of strings
+                # TODO this is hacky
+                suggested_labels = (
+                    results.pop("Suggested Label").apply(csv_string_to_list).to_numpy()
+                )
+                if all(len(labels) == 1 for labels in suggested_labels):
+                    # all rows have a single label, assume multi-class
+                    suggested_labels = np.array([labels[0] for labels in suggested_labels])
+                return suggested_labels, results
 
             time.sleep(1)
 
@@ -107,3 +152,15 @@ class Model(abc.ABC):
 
         sio.seek(0)
         return sio
+
+
+def csv_string_to_list(csv_string: str) -> List[str]:
+    """convert a csv string with one row that represents a list into a list
+
+    Return empty list of string is empty
+    """
+    input_stream = io.StringIO(csv_string)
+    reader = csv.reader(input_stream)
+    for row in reader:
+        return row
+    return []
