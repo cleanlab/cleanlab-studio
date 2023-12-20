@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union, Type
 import math
 
 import numpy as np
@@ -35,7 +35,7 @@ DatasetSourceType = TypeVar("DatasetSourceType", bound=Union[tuple(dataset_sourc
 
 
 def init_dataset_source(
-    dataset_source: DatasetSourceType, dataset_name: Optional[str] = None
+    dataset_source: Type[DatasetSourceType], dataset_name: Optional[str] = None
 ) -> DatasetSource:
     if isinstance(dataset_source, pd.DataFrame):
         if dataset_name is None:
