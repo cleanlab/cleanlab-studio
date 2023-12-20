@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union, List
 import math
 
 import numpy as np
@@ -202,5 +202,5 @@ def quote(s: str) -> str:
     return f'"{s}"'
 
 
-def quote_list(l: list) -> list:
+def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
