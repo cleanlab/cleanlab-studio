@@ -141,23 +141,17 @@ class Studio:
             cl_cols = self.download_cleanlab_columns(
                 cleanset_id, to_spark=False, include_project_details=True
             )
-            return apply_corrections_snowpark_df(
-                dataset, cl_cols, id_col, label_col, keep_excluded
-            )
+            return apply_corrections_snowpark_df(dataset, cl_cols, id_col, label_col, keep_excluded)
 
         elif _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
             cl_cols = self.download_cleanlab_columns(
                 cleanset_id, to_spark=True, include_project_details=True
             )
-            return apply_corrections_spark_df(
-                dataset, cl_cols, id_col, label_col, keep_excluded
-            )
+            return apply_corrections_spark_df(dataset, cl_cols, id_col, label_col, keep_excluded)
 
         elif isinstance(dataset, pd.DataFrame):
             cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True)
-            return apply_corrections_pd_df(
-                dataset, cl_cols, id_col, label_col, keep_excluded
-            )
+            return apply_corrections_pd_df(dataset, cl_cols, id_col, label_col, keep_excluded)
 
         else:
             raise ValueError(
