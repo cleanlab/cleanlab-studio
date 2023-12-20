@@ -390,6 +390,17 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     return cast(Dict[str, str], res.json())
 
 
+def get_deployed_model_info(api_key: str, model_id: str) -> Dict[str, str]:
+    """Get info about deployed model, including model id, name, cleanset id, dataset id, projectid, updated_at, status, and tasktype"""
+    res = requests.get(
+        f"{model_base_url}/{model_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+
+    return cast(Dict[str, str], res.json())
+
+
 def tlm_prompt(
     api_key: str,
     prompt: str,

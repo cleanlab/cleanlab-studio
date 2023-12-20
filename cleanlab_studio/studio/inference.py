@@ -32,6 +32,9 @@ class Model(abc.ABC):
         self._api_key = api_key
         self._model_id = model_id
 
+        model_info = api.get_deployed_model_info(self._api_key, self._model_id)
+        self._tasktype = model_info["tasktype"]
+
     def predict(
         self,
         batch: Batch,
@@ -109,17 +112,14 @@ class Model(abc.ABC):
 
             if result_url := resp.get("results"):
                 results: pd.DataFrame = pd.read_csv(result_url)
-                # suggested labels are a list of strings for multi-class
-                # and a list of strings of csv encoded lists for multi-label
-                # we need to first csv-decode the strings, and then if they are all length 1
-                # we assume multi-class and return a numpy array of strings
-                # TODO this is hacky
-                suggested_labels = (
-                    results.pop("Suggested Label").apply(csv_string_to_list).to_numpy()
-                )
-                if all(len(labels) == 1 for labels in suggested_labels):
-                    # all rows have a single label, assume multi-class
-                    suggested_labels = np.array([labels[0] for labels in suggested_labels])
+                if self._tasktype == "multi-label":
+                    # convert multi-label suggested labels to list of list of strings
+                    suggested_labels = (
+                        results.pop("Suggested Label").apply(csv_string_to_list).to_numpy()
+                    )
+                else:
+                    suggested_labels = results.pop("Suggested Label").to_numpy()
+
                 return suggested_labels, results
 
             time.sleep(1)
