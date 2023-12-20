@@ -11,6 +11,13 @@ import numpy as np
 import numpy.typing as npt
 
 try:
+    import snowflake
+
+    snowflake_exists = True
+except ImportError:
+    snowflake_exists = False
+
+try:
     import pyspark.sql
 
     pyspark_exists = True
@@ -263,9 +270,10 @@ def get_dataset_schema(api_key: str, dataset_id: str) -> JSONDict:
     return schema
 
 
-def get_dataset_details(api_key: str, dataset_id: str) -> JSONDict:
+def get_dataset_details(api_key: str, dataset_id: str, task_type: str) -> JSONDict:
     res = requests.get(
-        dataset_base_url + f"/details/{dataset_id}",
+        project_base_url + f"/dataset_details/{dataset_id}",
+        params=dict(tasktype=task_type),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)

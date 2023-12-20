@@ -1,4 +1,4 @@
-# cleanlab-studio [![Build Status](https://github.com/cleanlab/cleanlab-studio/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-studio/actions?query=workflow%3ACI) [![PyPI](https://img.shields.io/pypi/v/cleanlab-studio.svg)][PyPI] ![ReadTheDocs](https://readthedocs.org/projects/cleanlab-studio/badge/?version=latest)
+# cleanlab-studio [![Build Status](https://github.com/cleanlab/cleanlab-studio/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-studio/actions?query=workflow%3ACI) [![PyPI](https://img.shields.io/pypi/v/cleanlab-studio.svg)][PyPI]
 
 Command line and Python library interface to [Cleanlab Studio](https://cleanlab.ai/studio/). Analyze datasets and produce *cleansets* (cleaned datasets) with Cleanlab Studio in a single line of code!
 
@@ -26,8 +26,6 @@ pip install --upgrade cleanlab-studio
 
 ### Python API -- run Cleanlab Studio from Python or Jupyter Notebook
 
-You can find your API key at https://app.cleanlab.ai/account.
-
 ```python
 from cleanlab_studio import Studio
 
@@ -42,8 +40,10 @@ dataset_id: str = studio.upload_dataset(<your dataset>, <your dataset name>)
 # download your cleanset or apply corrections to your local Pandas or PySpark dataset!
 # you can find your cleanset ID by clicking on the Export Cleanset button in your project
 cleanset = studio.download_cleanlab_columns(<your cleanset id>)
-corrected_dataset = studio.apply_corrections(<your dataset>, <your cleanset id>)
+corrected_dataset = studio.apply_corrections(<your cleanset id>, <your dataset>)
 ```
+
+The Python API offers significantly more functionality than is available in the Cleanlab Studio Web Application. Learn more via the [tutorials](https://help.cleanlab.ai/tutorials/) and [quickstart guide](https://help.cleanlab.ai/guide/quickstart/api/).
 
 ### CLI -- run Cleanlab Studio from your command line
 
@@ -53,9 +53,11 @@ corrected_dataset = studio.apply_corrections(<your dataset>, <your cleanset id>)
 4. Improve your dataset in Cleanlab Studio (e.g., correct some labels).
 5. Download your cleanset with `cleanlab cleanset download`.
 
+Learn more about the Cleanlab Studio CLI from the [quickstart guide](https://help.cleanlab.ai/guide/quickstart/cli/).
+
 ## Dataset Structure
 
-Cleanlab Studio supports the following upload types:
+Cleanlab Studio supports the following data formats:
 
 - Text/Tabular
   - CSV
@@ -74,7 +76,7 @@ Cleanlab Studio supports the following upload types:
   - Metadata ZIP upload
   - more to come!
 
-Information on dataset structuring can be found by clicking the tutorial on https://app.cleanlab.ai/upload!
+Information on how to format your dataset can be found by clicking the tutorial on https://app.cleanlab.ai/upload or in the [Datasets concept guide](https://help.cleanlab.ai/guide/concepts/datasets/). We also provide tutorials for converting certain common Python [image](https://help.cleanlab.ai/tutorials/format_image_data/) or [text](https://help.cleanlab.ai/tutorials/format_text_data/) datasets.
 
 ## Advanced Usage
 
@@ -195,8 +197,8 @@ by [polars.from_epoch](https://pola-rs.github.io/polars/py-polars/html/reference
 
 ## Other Resources
 
-- [Documentation](https://help.cleanlab.ai/) -- tutorials on how to use Cleanlab Studio for specific applications
-- [Blog](https://cleanlab.ai/examples/) -- example applications, feature announcements, concept explanations, benchmarks
+- [Documentation](https://help.cleanlab.ai/) -- tutorials on how to use Cleanlab Studio and guides to learn key concepts
+- [Blog](https://cleanlab.ai/examples/) -- end-to-end applications, feature announcements, how-it-works explanations, benchmarks
 - [Slack Community](https://cleanlab.ai/slack/) -- ask questions, request features, discuss Data-Centric AI with others
 - Need professional help or want demo? Reach out via email: team@cleanlab.ai
 
