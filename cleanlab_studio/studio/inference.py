@@ -42,22 +42,21 @@ class Model(abc.ABC):
         timeout: int = 600,
     ) -> Union[Predictions, Tuple[Predictions, ClassProbablities]]:
         """
-        Gets predictions for batch of examples using deployed model, as well as predicted probabilities.
+        Gets predictions (and optionally, predicted probabilities) for batch of examples using deployed model.
                                 Currently only supports tabular and text datasets.
 
         Args:
             batch: batch of examples to predict classes for
             return_pred_proba: whether to return predicted class probabilities for each example
-            timeout: optional parameter to set timeout for predictions in seconds
+            timeout: optional parameter to set timeout for predictions in seconds (defaults to 600s)
 
         Returns:
-            Predictions: the predicted labels for the batch as a numpy array. If calling `predict` for a multi-class model,
-                                                we will return a numpy array of the labels, whose type matches the given label in the
-                                                original training set (string or integer). If calling `predict` for a multi-label model, we will return a numpy array of list of strings,
-                                                where each list corresponds to the labels that are present for the corresponding row.
+            Predictions: the predicted labels for the batch as a numpy array. For a multi-class model,
+                                                returns a numpy array of the labels with types matching types of given labels in the
+                                                original training set (string, integer, or boolean). For a multi-label model, returns a numpy array of lists of strings,
+                                                where each list includes the labels that are present for the corresponding row.
 
-            ClassProbabilities: optionally we also return the pandas DataFrame of the class probabilities.
-            The column names will be the labels.
+            ClassProbabilities: optionally returns pandas DataFrame of the class probabilities where column names correspond to the labels.
 
 
         Example outputs:
@@ -67,10 +66,10 @@ class Model(abc.ABC):
             The outputs will be:
                     Predictions: `array(['cat', 'dog'])`
                     ClassProbabilities:
-                    bear  cat  dog
-                    0    0.0  1.0  0.0
-                    1    0.0  0.0  1.0
-            Note the for multi-class predictions, the ClassProbabilities will have rows that sum to 1,
+                         bear  cat  dog
+                    0    0.0   1.0  0.0
+                    1    0.0   0.0  1.0
+            Note that for multi-class predictions, ClassProbabilities rows will sum to 1,
             and the prediction for each row corresponds to the column with the highest probability.
 
             Multi-label project:
@@ -80,9 +79,9 @@ class Model(abc.ABC):
             The outputs will be:
                     Predictions: `array([["happy", "excited"], ["sad"]])`
                     ClassProbabilities:
-                    happy  excited  sad
-                    0    0.6  0.9  0.1
-                    1    0.1  0.3  0.8
+                         happy  excited  sad
+                    0    0.6    0.9      0.1
+                    1    0.1    0.3      0.8
             Note that for multi-label predictions, each entry in a row of the ClassProbabilities should be interpreted
             as the probability that label is present for the example.
         """
@@ -155,9 +154,9 @@ class Model(abc.ABC):
 
 
 def csv_string_to_list(csv_string: str) -> List[str]:
-    """convert a csv string with one row that represents a list into a list
+    """Convert a csv string with one row that represents a list into a list
 
-    Return empty list of string is empty
+    Return empty list if string is empty
     """
     input_stream = io.StringIO(csv_string)
     reader = csv.reader(input_stream)
