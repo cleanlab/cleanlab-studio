@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union, List
 import math
 
 import numpy as np
@@ -35,7 +35,7 @@ DatasetSourceType = TypeVar("DatasetSourceType", bound=Union[tuple(dataset_sourc
 
 
 def init_dataset_source(
-    dataset_source: DatasetSourceType, dataset_name: Optional[str] = None
+    dataset_source: DatasetSourceType, dataset_name: Optional[str] = None  # type: ignore
 ) -> DatasetSource:
     if isinstance(dataset_source, pd.DataFrame):
         if dataset_name is None:
@@ -202,5 +202,5 @@ def quote(s: str) -> str:
     return f'"{s}"'
 
 
-def quote_list(l: list) -> list:
+def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
