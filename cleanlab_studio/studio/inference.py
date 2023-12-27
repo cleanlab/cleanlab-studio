@@ -6,7 +6,7 @@ import abc
 import csv
 import io
 import time
-from typing import List, Tuple, Union, Any
+from typing import List, Optional, Tuple, Union, Any
 from typing_extensions import TypeAlias
 
 import numpy as np
@@ -153,11 +153,13 @@ class Model(abc.ABC):
         return sio
 
 
-def csv_string_to_list(csv_string: str) -> List[str]:
+def csv_string_to_list(csv_string: Optional[str]) -> List[str]:
     """Convert a csv string with one row that represents a list into a list
 
     Return empty list if string is empty
     """
+    if pd.isna(csv_string):
+        return []
     input_stream = io.StringIO(csv_string)
     reader = csv.reader(input_stream)
     for row in reader:
