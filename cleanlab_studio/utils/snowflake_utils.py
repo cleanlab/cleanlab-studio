@@ -90,6 +90,7 @@ def get_snowflake_metadata_imageset(
         Returns:
             Pandas DataFrame of original metadata csv, with `row_data` column added as presigned URLs for the image.
     """
+
     metadata_path = os.path.normpath(metadata_path)
 
     parent = lambda p: os.path.normpath(os.path.join(p, os.pardir))
