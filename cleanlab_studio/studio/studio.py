@@ -15,7 +15,6 @@ from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
-    check_none,
     apply_corrections_snowpark_df,
     apply_corrections_spark_df,
     apply_corrections_pd_df,
@@ -164,7 +163,7 @@ class Studio:
         project_name: str,
         modality: Literal["text", "tabular", "image"],
         *,
-        task_type: Literal["multi-class", "multi-label", "regression"] = "multi-class",
+        task_type: Optional[Literal["multi-class", "multi-label", "regression"]] = "multi-class",
         model_type: Literal["fast", "regular"] = "regular",
         label_column: Optional[str] = None,
         feature_columns: Optional[List[str]] = None,
