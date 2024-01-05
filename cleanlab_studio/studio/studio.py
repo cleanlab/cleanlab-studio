@@ -203,7 +203,8 @@ class Studio:
         if feature_columns is None:
             if modality == "tabular":
                 feature_columns = dataset_details["distinct_columns"]
-                feature_columns.remove(label_column)
+                if label_column is not None:
+                    feature_columns.remove(label_column)
                 print(f"Feature columns not supplied. Using all valid feature columns")
 
         if text_column is not None:

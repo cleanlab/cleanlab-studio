@@ -271,7 +271,7 @@ def get_dataset_schema(api_key: str, dataset_id: str) -> JSONDict:
     return schema
 
 
-def get_dataset_details(api_key: str, dataset_id: str, task_type: str) -> JSONDict:
+def get_dataset_details(api_key: str, dataset_id: str, task_type: Optional[str]) -> JSONDict:
     res = requests.get(
         project_base_url + f"/dataset_details/{dataset_id}",
         params=dict(tasktype=task_type),
@@ -289,7 +289,7 @@ def clean_dataset(
     task_type: Optional[str],
     modality: str,
     model_type: str,
-    label_column: str,
+    label_column: Optional[str],
     feature_columns: List[str],
     text_column: Optional[str],
 ) -> str:
