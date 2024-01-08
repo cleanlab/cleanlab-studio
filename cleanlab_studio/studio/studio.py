@@ -163,7 +163,9 @@ class Studio:
         project_name: str,
         modality: Literal["text", "tabular", "image"],
         *,
-        task_type: Optional[Literal["multi-class", "multi-label", "regression"]] = "multi-class",
+        task_type: Optional[
+            Literal["multi-class", "multi-label", "regression", "unsupervised"]
+        ] = "multi-class",
         model_type: Literal["fast", "regular"] = "regular",
         label_column: Optional[str] = None,
         feature_columns: Optional[List[str]] = None,
@@ -192,7 +194,7 @@ class Studio:
                 raise ValueError(
                     f"Invalid label column '{label_column}' for task type '{task_type}'"
                 )
-        elif task_type is not None:
+        elif task_type is not None and task_type != "unsupervised":
             label_column = str(dataset_details["label_column_guess"])
             print(f"Label column not supplied. Using best guess {label_column}")
 
