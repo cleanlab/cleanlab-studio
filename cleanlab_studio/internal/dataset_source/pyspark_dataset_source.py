@@ -1,7 +1,10 @@
-import io
-from typing import IO
+import json
+from typing import List, IO, Iterator
 
-import pandas as pd
+from ..util import len_of_string_as_bytes, str_as_bytes
+
+import time
+
 
 try:
     import pyspark.sql
@@ -10,13 +13,54 @@ except ImportError:
         'Must install pyspark to upload from pyspark dataframe. Use "pip install pyspark"'
     )
 
-from .dataframe_dataset_source import DataFrameDatasetSource
+from .lazy_loaded_dataset_source import LazyLoadedDatasetSource
 
 
-class PySparkDatasetSource(DataFrameDatasetSource[pyspark.sql.DataFrame]):
-    def _init_fileobj_from_df(self, df: pyspark.sql.DataFrame) -> IO[bytes]:
-        fileobj = io.BytesIO()
-        pd_df: pd.DataFrame = df.toPandas()
-        pd_df.to_json(fileobj, orient="records")
-        fileobj.seek(0)
-        return fileobj
+class PySparkDatasetSource(LazyLoadedDatasetSource[pyspark.sql.DataFrame]):
+    def _get_size_in_bytes(self, measure_time=True) -> int:
+        first = True
+        size = 0
+
+        if measure_time:
+            start_time = time.time()
+
+        for row in self.dataframe.toLocalIterator():
+            if first:
+                size += len_of_string_as_bytes(f"[{json.dumps(row.asDict())}")
+                first = False
+            else:
+                size += len_of_string_as_bytes(f",{json.dumps(row.asDict())}")
+
+        size += len_of_string_as_bytes("]")
+
+        if measure_time:
+            print(f"Time to get size: {time.time() - start_time}")
+
+        return size
+
+    def get_chunks(self, chunk_sizes: List[int], measure_time=True) -> Iterator[bytes]:
+        first = True
+        chunk = 0
+        buffer = b""
+
+        if measure_time:
+            start_time = time.time()
+
+        for row in self.dataframe.toLocalIterator():
+            if first:
+                buffer += str_as_bytes(f"[{json.dumps(row.asDict())}")
+                first = False
+            else:
+                buffer += str_as_bytes(f",{json.dumps(row.asDict())}")
+
+            if len(buffer) >= chunk_sizes[chunk]:
+                yield buffer[: chunk_sizes[chunk]]
+                buffer = buffer[chunk_sizes[chunk] :]
+                chunk += 1
+
+        buffer += str_as_bytes("]")
+
+        yield buffer[: chunk_sizes[chunk]]
+
+        if measure_time:
+            print(f"Time to get chunks: {time.time() - start_time}")

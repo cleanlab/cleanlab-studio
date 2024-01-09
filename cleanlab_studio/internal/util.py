@@ -2,8 +2,8 @@ import pathlib
 from typing import Any, Optional, TypeVar, Union, List
 import math
 
-import numpy as np
 import pandas as pd
+import os
 
 try:
     import snowflake.snowpark as snowpark
@@ -204,3 +204,19 @@ def quote(s: str) -> str:
 
 def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
+
+
+def bytes_remaining(stream) -> int:
+    current_position = stream.tell()
+    stream.seek(0, os.SEEK_END)
+    total_size = stream.tell()
+    stream.seek(current_position)
+    return total_size - current_position
+
+
+def str_as_bytes(string: str) -> bytes:
+    return str.encode(string)
+
+
+def len_of_string_as_bytes(string: str) -> int:
+    return len(str_as_bytes(string))

@@ -1,6 +1,7 @@
 from abc import abstractmethod
 import contextlib
 import pathlib
+import time
 from typing import Optional, List, IO, Iterator
 
 
@@ -31,10 +32,16 @@ class DatasetSource:
         else:
             raise ValueError("Cannot return file object -- no filepath or fileobj available.")
 
-    def get_chunks(self, chunk_sizes: List[int]) -> Iterator[bytes]:
+    def get_chunks(self, chunk_sizes: List[int], measure_time=True) -> Iterator[bytes]:
+        if measure_time:
+            start_time = time.time()
+
         with self.fileobj() as f:
             for chunk_size in chunk_sizes:
                 yield f.read(chunk_size)
+
+        if measure_time:
+            print(f"Time to get chunks (TL): {time.time() - start_time}")
 
     @abstractmethod
     def get_filename(self) -> str:
