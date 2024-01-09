@@ -39,6 +39,10 @@ def upload_dataset(
         if modality is not None:
             schema["metadata"]["modality"] = modality
         if id_column is not None:
+            if id_column not in schema["fields"]:
+                raise ValueError(
+                    f"ID column {id_column} not found in dataset columns: {list(schema['fields'].keys())}"
+                )
             schema["metadata"]["id_column"] = id_column
 
     api.confirm_schema(api_key, schema, upload_id)
