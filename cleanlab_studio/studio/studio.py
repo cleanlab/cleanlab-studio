@@ -15,7 +15,6 @@ from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
-    check_none,
     apply_corrections_snowpark_df,
     apply_corrections_spark_df,
     apply_corrections_pd_df,
@@ -164,7 +163,9 @@ class Studio:
         project_name: str,
         modality: Literal["text", "tabular", "image"],
         *,
-        task_type: Literal["multi-class", "multi-label", "regression"] = "multi-class",
+        task_type: Optional[
+            Literal["multi-class", "multi-label", "regression", "unsupervised"]
+        ] = "multi-class",
         model_type: Literal["fast", "regular"] = "regular",
         label_column: Optional[str] = None,
         feature_columns: Optional[List[str]] = None,
@@ -193,7 +194,7 @@ class Studio:
                 raise ValueError(
                     f"Invalid label column '{label_column}' for task type '{task_type}'"
                 )
-        else:
+        elif task_type is not None and task_type != "unsupervised":
             label_column = str(dataset_details["label_column_guess"])
             print(f"Label column not supplied. Using best guess {label_column}")
 
@@ -204,7 +205,8 @@ class Studio:
         if feature_columns is None:
             if modality == "tabular":
                 feature_columns = dataset_details["distinct_columns"]
-                feature_columns.remove(label_column)
+                if label_column is not None:
+                    feature_columns.remove(label_column)
                 print(f"Feature columns not supplied. Using all valid feature columns")
 
         if text_column is not None:
