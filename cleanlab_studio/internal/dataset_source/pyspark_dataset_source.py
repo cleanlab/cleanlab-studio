@@ -17,12 +17,9 @@ from .lazy_loaded_dataset_source import LazyLoadedDatasetSource
 
 
 class PySparkDatasetSource(LazyLoadedDatasetSource[pyspark.sql.DataFrame]):
-    def _get_size_in_bytes(self, measure_time=True) -> int:
+    def _get_size_in_bytes(self) -> int:
         first = True
         size = 0
-
-        if measure_time:
-            start_time = time.time()
 
         for row in self.dataframe.toLocalIterator():
             if first:
@@ -33,18 +30,12 @@ class PySparkDatasetSource(LazyLoadedDatasetSource[pyspark.sql.DataFrame]):
 
         size += len_of_string_as_bytes("]")
 
-        if measure_time:
-            print(f"Time to get size: {time.time() - start_time}")
-
         return size
 
-    def get_chunks(self, chunk_sizes: List[int], measure_time=True) -> Iterator[bytes]:
+    def get_chunks(self, chunk_sizes: List[int]) -> Iterator[bytes]:
         first = True
         chunk = 0
         buffer = b""
-
-        if measure_time:
-            start_time = time.time()
 
         for row in self.dataframe.toLocalIterator():
             if first:
@@ -61,6 +52,3 @@ class PySparkDatasetSource(LazyLoadedDatasetSource[pyspark.sql.DataFrame]):
         buffer += str_as_bytes("]")
 
         yield buffer[: chunk_sizes[chunk]]
-
-        if measure_time:
-            print(f"Time to get chunks: {time.time() - start_time}")

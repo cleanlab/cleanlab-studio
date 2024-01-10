@@ -16,12 +16,9 @@ from .lazy_loaded_dataset_source import LazyLoadedDatasetSource
 
 
 class SnowparkDatasetSource(LazyLoadedDatasetSource[snowpark.DataFrame]):
-    def _get_size_in_bytes(self, measure_time=True) -> int:
+    def _get_size_in_bytes(self) -> int:
         first_batch = True
         size = 0
-
-        if measure_time:
-            start_time = time.time()
 
         for df in self.dataframe.to_pandas_batches():
             if first_batch:
@@ -32,18 +29,12 @@ class SnowparkDatasetSource(LazyLoadedDatasetSource[snowpark.DataFrame]):
 
         size += len_of_string_as_bytes("]")
 
-        if measure_time:
-            print(f"Time to get size: {time.time() - start_time}")
-
         return size
 
-    def get_chunks(self, chunk_sizes: List[int], measure_time=True) -> Iterator[bytes]:
+    def get_chunks(self, chunk_sizes: List[int]) -> Iterator[bytes]:
         first_batch = True
         chunk = 0
         buffer = b""
-
-        if measure_time:
-            start_time = time.time()
 
         for df in self.dataframe.to_pandas_batches():
             if first_batch:
@@ -60,6 +51,3 @@ class SnowparkDatasetSource(LazyLoadedDatasetSource[snowpark.DataFrame]):
         buffer += str_as_bytes("]")
 
         yield buffer[: chunk_sizes[chunk]]
-
-        if measure_time:
-            print(f"Time to get chunks: {time.time() - start_time}")
