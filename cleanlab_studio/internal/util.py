@@ -1,6 +1,8 @@
 import pathlib
 from typing import Any, Optional, TypeVar, Union, List
 import math
+import uuid
+
 
 import pandas as pd
 import os
@@ -204,6 +206,15 @@ def quote(s: str) -> str:
 
 def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
+
+  
+def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
+    try:
+        uuid.UUID(uuid_string)
+    except ValueError:
+        raise ValueError(
+            f"{uuid_string} is not a well-formed {id_name}, please double check and try again."
+        )
 
 
 def bytes_remaining(stream) -> int:
