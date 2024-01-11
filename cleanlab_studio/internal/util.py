@@ -1,6 +1,8 @@
 import pathlib
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union, List
 import math
+import uuid
+
 
 import os
 import numpy as np
@@ -36,7 +38,7 @@ DatasetSourceType = TypeVar("DatasetSourceType", bound=Union[tuple(dataset_sourc
 
 
 def init_dataset_source(
-    dataset_source: DatasetSourceType, dataset_name: Optional[str] = None
+    dataset_source: DatasetSourceType, dataset_name: Optional[str] = None  # type: ignore
 ) -> DatasetSource:
     if isinstance(dataset_source, pd.DataFrame):
         if dataset_name is None:
@@ -203,10 +205,19 @@ def quote(s: str) -> str:
     return f'"{s}"'
 
 
-def quote_list(l: list) -> list:
+def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
 
 
 def is_unzipped_databricks_imageset(path: str) -> bool:
     on_databricks = bool(os.environ.get("DATABRICKS_RUNTIME_VERSION"))
     return on_databricks and isinstance(path, str) and os.path.isdir(path)
+
+  
+def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
+    try:
+        uuid.UUID(uuid_string)
+    except ValueError:
+        raise ValueError(
+            f"{uuid_string} is not a well-formed {id_name}, please double check and try again."
+        )
