@@ -1,22 +1,21 @@
 import os
 import zipfile
+from tqdm import tqdm
 from datetime import datetime
-from ..studio.studio import Studio
 
 
-def upload_imageset_from_path(api_key, folder_path, dataset_name=None) -> str:
+def create_imageset_archive(folder_path, dataset_name=None) -> str:
     """
-    Uploads an imageset stored on Databricks to Cleanlab Studio.
+    Archives an imageset stored on Databricks which can then be uploaded Cleanlab Studio.
     The imageset folder should match the layout described in the Cleanlab Studio documentations.
     https://help.cleanlab.ai/guide/concepts/datasets/#image
 
     Args:
-        api_key: The same api_key used to initialize your Studio instance.
-        folder_path: The POSIX-style absolute path to your imageset.
+        folder_path: The POSIX-style path to your imageset.
         dataset_name: A name you choose to use on Cleanlab studio for the imageset.
 
     Returns:
-        ID of uploaded dataset.
+        The path to the archived imageset.
     """
     folder_name = os.path.basename(os.path.normpath(folder_path))
     dataset_name = (
@@ -29,7 +28,11 @@ def upload_imageset_from_path(api_key, folder_path, dataset_name=None) -> str:
     # Create a ZipFile object in write mode
     with zipfile.ZipFile(output_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
         # Walk through the directory
-        for root, _, files in os.walk(folder_path):
+        for root, _, files in tqdm(
+            os.walk(folder_path),
+            desc="Archiving Databricks imageset...",
+            bar_format="{desc}: {percentage:3.0f}%|{bar}|",
+        ):
             for file in files:
                 # Create a full path
                 full_path = os.path.join(root, file)
@@ -39,10 +42,4 @@ def upload_imageset_from_path(api_key, folder_path, dataset_name=None) -> str:
                 arcname = os.path.join(folder_name, relpath)
                 zipf.write(full_path, arcname=arcname)
 
-    studio = Studio(api_key)
-    dataset_id = studio.upload_dataset(
-        dataset=os.path.join(os.getcwd(), output_filename), dataset_name=dataset_name
-    )
-    os.remove(os.path.join(os.getcwd(), output_filename))
-
-    return dataset_id
+    return output_filename

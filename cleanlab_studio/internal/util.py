@@ -2,6 +2,7 @@ import pathlib
 from typing import Any, Optional, TypeVar, Union
 import math
 
+import os
 import numpy as np
 import pandas as pd
 
@@ -204,3 +205,8 @@ def quote(s: str) -> str:
 
 def quote_list(l: list) -> list:
     return [quote(i) for i in l]
+
+
+def is_unzipped_databricks_imageset(path: str) -> bool:
+    on_databricks = bool(os.environ.get("DATABRICKS_RUNTIME_VERSION"))
+    return on_databricks and isinstance(path, str) and os.path.isdir(path)

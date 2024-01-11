@@ -3,6 +3,7 @@ Python API for Cleanlab Studio.
 """
 from typing import Any, List, Literal, Optional, Union
 import warnings
+import os
 
 import numpy as np
 import numpy.typing as npt
@@ -10,6 +11,7 @@ import pandas as pd
 
 from . import inference
 from . import trustworthy_language_model
+from ..utils.databricks_utils import create_imageset_archive
 from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
@@ -18,6 +20,7 @@ from cleanlab_studio.internal.util import (
     apply_corrections_snowpark_df,
     apply_corrections_spark_df,
     apply_corrections_pd_df,
+    is_unzipped_databricks_imageset,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
@@ -70,7 +73,7 @@ class Studio:
         Uploads a dataset to Cleanlab Studio.
 
         Args:
-            dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas, snowflake, or pyspark DataFrame.
+            dataset: Object representing the dataset to upload. Currently supported formats include a pandas/snowflake/pyspark DataFrame, or `str` path to your dataset (this could be a path to a tabular/text csv, zipped image folder, or unzipped image folder on databricks).
             dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath).
             schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred. Format defined [here](/guide/concepts/datasets/#schema-overrides).
             modality: Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
@@ -79,14 +82,23 @@ class Studio:
         Returns:
             ID of uploaded dataset.
         """
+        create_databricks_archive = is_unzipped_databricks_imageset(dataset)
+        if create_databricks_archive:
+            dataset = create_imageset_archive(dataset, dataset_name)
+
         ds = init_dataset_source(dataset, dataset_name)
-        return upload_helpers.upload_dataset(
+        result = upload_helpers.upload_dataset(
             self._api_key,
             ds,
             schema_overrides=schema_overrides,
             modality=modality,
             id_column=id_column,
         )
+
+        if create_databricks_archive:
+            os.remove(dataset)
+
+        return result
 
     def download_cleanlab_columns(
         self,
