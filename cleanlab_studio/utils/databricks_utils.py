@@ -28,11 +28,7 @@ def create_imageset_archive(folder_path, dataset_name=None) -> str:
     # Create a ZipFile object in write mode
     with zipfile.ZipFile(output_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
         # Walk through the directory
-        for root, _, files in tqdm(
-            os.walk(folder_path),
-            desc="Archiving Databricks imageset...",
-            bar_format="{desc}: {percentage:3.0f}%|{bar}|",
-        ):
+        for root, _, files in os.walk(folder_path):
             for file in files:
                 # Create a full path
                 full_path = os.path.join(root, file)
