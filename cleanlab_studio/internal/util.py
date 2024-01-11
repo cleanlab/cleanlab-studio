@@ -213,7 +213,7 @@ def is_unzipped_databricks_imageset(path: str) -> bool:
     on_databricks = bool(os.environ.get("DATABRICKS_RUNTIME_VERSION"))
     return on_databricks and isinstance(path, str) and os.path.isdir(path)
 
-  
+
 def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
     try:
         uuid.UUID(uuid_string)
