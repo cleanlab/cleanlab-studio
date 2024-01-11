@@ -7,6 +7,7 @@ from tqdm import tqdm
 import aiohttp
 from multidict import CIMultiDictProxy
 import requests
+from requests.adapters import HTTPAdapter
 
 from .api import api
 from .dataset_source import DatasetSource
@@ -77,14 +78,22 @@ async def upload_file_parts_async(
 def upload_file_parts(
     dataset_source: DatasetSource, part_sizes: List[int], presigned_posts: List[str]
 ) -> List[JSONDict]:
-    responses = [
-        requests.put(presigned_post, data=chunk)
-        for chunk, presigned_post in tqdm(
-            list(zip(dataset_source.get_chunks(part_sizes), presigned_posts)),
-            desc="Uploading dataset...",
-            bar_format="{desc}: {percentage:3.0f}%|{bar}|",
+    session = requests.Session()
+    session.mount("https://", adapter=HTTPAdapter(max_retries=3))
+
+    responses = []
+    for chunk, presigned_post in tqdm(
+        list(zip(dataset_source.get_chunks(part_sizes), presigned_posts)),
+        desc="Uploading dataset...",
+        bar_format="{desc}: {percentage:3.0f}%|{bar}|",
+    ):
+        resp = session.put(
+            presigned_post,
+            data=chunk,
         )
-    ]
+        resp.raise_for_status()
+        responses.append(resp)
+
     return [
         {"ETag": json.loads(res.headers["etag"]), "PartNumber": i + 1}
         for i, res in enumerate(responses)
