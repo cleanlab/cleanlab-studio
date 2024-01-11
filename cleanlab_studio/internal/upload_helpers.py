@@ -7,7 +7,7 @@ from tqdm import tqdm
 import aiohttp
 from multidict import CIMultiDictProxy
 import requests
-from requests.adapters import HTTPAdapter
+from requests.adapters import HTTPAdapter, Retry
 
 from .api import api
 from .dataset_source import DatasetSource
@@ -79,7 +79,7 @@ def upload_file_parts(
     dataset_source: DatasetSource, part_sizes: List[int], presigned_posts: List[str]
 ) -> List[JSONDict]:
     session = requests.Session()
-    session.mount("https://", adapter=HTTPAdapter(max_retries=3))
+    session.mount("https://", adapter=HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1)))
 
     responses = []
     for chunk, presigned_post in tqdm(
