@@ -39,7 +39,7 @@ class Model(abc.ABC):
         self,
         batch: Batch,
         return_pred_proba: bool = False,
-        timeout: int = 930,
+        timeout: int = 930,  # default is 15 mins (lambdas time limit) + 30s
     ) -> Union[Predictions, Tuple[Predictions, ClassProbablities]]:
         """
         Gets predictions (and optionally, predicted probabilities) for batch of examples using deployed model.
@@ -48,7 +48,7 @@ class Model(abc.ABC):
         Args:
             batch: batch of examples to predict classes for
             return_pred_proba: whether to return predicted class probabilities for each example
-            timeout: optional parameter to set timeout for predictions in seconds (defaults to 930s, which is 15 mins for lambda time limit + 30s)
+            timeout: optional parameter to set timeout for predictions in seconds (defaults to 930s)
 
         Returns:
             Predictions: the predicted labels for the batch as a numpy array. For a multi-class model,
