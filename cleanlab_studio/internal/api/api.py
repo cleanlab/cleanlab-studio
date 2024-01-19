@@ -13,6 +13,13 @@ import numpy as np
 import numpy.typing as npt
 
 try:
+    import snowflake
+
+    snowflake_exists = True
+except ImportError:
+    snowflake_exists = False
+
+try:
     import pyspark.sql
 
     pyspark_exists = True
@@ -21,6 +28,7 @@ except ImportError:
 
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
+from ..util import check_uuid_well_formed
 
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
@@ -102,6 +110,7 @@ def initialize_upload(
 
 
 def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDict]) -> None:
+    check_uuid_well_formed(upload_id, "upload ID")
     request_json = dict(upload_id=upload_id, upload_parts=upload_parts)
     res = requests.post(
         f"{upload_base_url}/complete",
@@ -112,6 +121,7 @@ def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDi
 
 
 def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
+    check_uuid_well_formed(upload_id, "upload ID")
     res = requests.get(
         f"{upload_base_url}/proposed_schema",
         params=dict(upload_id=upload_id),
@@ -127,6 +137,7 @@ def confirm_schema(
     schema: Optional[JSONDict],
     upload_id: str,
 ) -> None:
+    check_uuid_well_formed(upload_id, "upload ID")
     request_json = dict(schema=schema, upload_id=upload_id)
     res = requests.post(
         f"{upload_base_url}/confirm_schema",
@@ -137,6 +148,7 @@ def confirm_schema(
 
 
 def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
+    check_uuid_well_formed(upload_id, "upload ID")
     res = requests.get(
         f"{upload_base_url}/ingestion_status",
         params=dict(upload_id=upload_id),
@@ -148,6 +160,7 @@ def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
 
 
 def get_dataset_id(api_key: str, upload_id: str) -> JSONDict:
+    check_uuid_well_formed(upload_id, "upload ID")
     res = requests.get(
         f"{upload_base_url}/dataset_id",
         params=dict(upload_id=upload_id),
@@ -159,6 +172,7 @@ def get_dataset_id(api_key: str, upload_id: str) -> JSONDict:
 
 
 def get_project_of_cleanset(api_key: str, cleanset_id: str) -> str:
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/project",
         headers=_construct_headers(api_key),
@@ -169,6 +183,7 @@ def get_project_of_cleanset(api_key: str, cleanset_id: str) -> str:
 
 
 def get_label_column_of_project(api_key: str, project_id: str) -> str:
+    check_uuid_well_formed(project_id, "project ID")
     res = requests.get(
         cli_base_url + f"/projects/{project_id}/label_column",
         headers=_construct_headers(api_key),
@@ -194,6 +209,7 @@ def download_cleanlab_columns(
     :param include_project_details: whether to download columns related to project status such as resolved rows, actions taken, etc.
     :return: return a dataframe, either pandas or spark. Type is Any because don't want to require spark installed
     """
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/columns",
         params=dict(
@@ -220,7 +236,8 @@ def download_cleanlab_columns(
         cleanset_pyspark = cleanset_pyspark.sort(id_col)
         return cleanset_pyspark
 
-    cleanset_pd: pd.DataFrame = pd.read_json(cleanset_json, orient="table")
+    cleanset_json_io = io.StringIO(cleanset_json)
+    cleanset_pd: pd.DataFrame = pd.read_json(cleanset_json_io, orient="table")
     cleanset_pd.rename(columns={"id": id_col}, inplace=True)
     cleanset_pd.sort_values(by=id_col, inplace=True)
     return cleanset_pd
@@ -229,6 +246,7 @@ def download_cleanlab_columns(
 def download_array(
     api_key: str, cleanset_id: str, name: str
 ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/{name}",
         headers=_construct_headers(api_key),
@@ -245,6 +263,7 @@ def download_array(
 
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/id_column",
         headers=_construct_headers(api_key),
@@ -255,6 +274,7 @@ def get_id_column(api_key: str, cleanset_id: str) -> str:
 
 
 def get_dataset_of_project(api_key: str, project_id: str) -> str:
+    check_uuid_well_formed(project_id, "project ID")
     res = requests.get(
         cli_base_url + f"/projects/{project_id}/dataset",
         headers=_construct_headers(api_key),
@@ -265,6 +285,7 @@ def get_dataset_of_project(api_key: str, project_id: str) -> str:
 
 
 def get_dataset_schema(api_key: str, dataset_id: str) -> JSONDict:
+    check_uuid_well_formed(dataset_id, "dataset ID")
     res = requests.get(
         cli_base_url + f"/datasets/{dataset_id}/schema",
         headers=_construct_headers(api_key),
@@ -274,9 +295,11 @@ def get_dataset_schema(api_key: str, dataset_id: str) -> JSONDict:
     return schema
 
 
-def get_dataset_details(api_key: str, dataset_id: str) -> JSONDict:
+def get_dataset_details(api_key: str, dataset_id: str, task_type: Optional[str]) -> JSONDict:
+    check_uuid_well_formed(dataset_id, "dataset ID")
     res = requests.get(
-        dataset_base_url + f"/details/{dataset_id}",
+        project_base_url + f"/dataset_details/{dataset_id}",
+        params=dict(tasktype=task_type),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -288,13 +311,14 @@ def clean_dataset(
     api_key: str,
     dataset_id: str,
     project_name: str,
-    task_type: str,
+    task_type: Optional[str],
     modality: str,
     model_type: str,
-    label_column: str,
+    label_column: Optional[str],
     feature_columns: List[str],
     text_column: Optional[str],
 ) -> str:
+    check_uuid_well_formed(dataset_id, "dataset ID")
     request_json = dict(
         name=project_name,
         dataset_id=dataset_id,
@@ -316,6 +340,7 @@ def clean_dataset(
 
 
 def get_latest_cleanset_id(api_key: str, project_id: str) -> str:
+    check_uuid_well_formed(project_id, "project ID")
     res = requests.get(
         cleanset_base_url + f"/project/{project_id}/latest_cleanset_id",
         headers=_construct_headers(api_key),
@@ -326,6 +351,7 @@ def get_latest_cleanset_id(api_key: str, project_id: str) -> str:
 
 
 def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cleanset_base_url + f"/{cleanset_id}/status",
         headers=_construct_headers(api_key),
@@ -336,6 +362,7 @@ def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
 
 
 def delete_project(api_key: str, project_id: str) -> None:
+    check_uuid_well_formed(project_id, "project ID")
     res = requests.delete(project_base_url + f"/{project_id}", headers=_construct_headers(api_key))
     handle_api_error(res)
 
@@ -357,6 +384,7 @@ def poll_progress(
 
 def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:
     """Uploads prediction batch and returns query ID."""
+    check_uuid_well_formed(model_id, "model ID")
     url = f"{model_base_url}/{model_id}/upload"
     res = requests.post(
         url,
@@ -374,6 +402,8 @@ def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str
 
 def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
     """Starts prediction for query."""
+    check_uuid_well_formed(model_id, "model ID")
+    check_uuid_well_formed(query_id, "query ID")
     res = requests.post(
         f"{model_base_url}/{model_id}/predict/{query_id}",
         headers=_construct_headers(api_key),
@@ -384,8 +414,21 @@ def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
 
 def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     """Gets status of model prediction query. Returns status, and optionally the result url or error message."""
+    check_uuid_well_formed(query_id, "query ID")
     res = requests.get(
         f"{model_base_url}/predict/{query_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+
+    return cast(Dict[str, str], res.json())
+
+
+def get_deployed_model_info(api_key: str, model_id: str) -> Dict[str, str]:
+    """Get info about deployed model, including model id, name, cleanset id, dataset id, projectid, updated_at, status, and tasktype"""
+    check_uuid_well_formed(model_id, "model ID")
+    res = requests.get(
+        f"{model_base_url}/{model_id}",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
