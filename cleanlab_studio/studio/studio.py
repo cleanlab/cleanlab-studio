@@ -318,7 +318,7 @@ class Studio:
         self,
         *,
         quality_preset: trustworthy_language_model.QualityPreset = "medium",
-        **kwargs,
+        **kwargs: Any,
     ) -> trustworthy_language_model.TLM:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 

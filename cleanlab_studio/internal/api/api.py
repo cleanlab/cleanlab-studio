@@ -436,10 +436,10 @@ def get_deployed_model_info(api_key: str, model_id: str) -> Dict[str, str]:
     return cast(Dict[str, str], res.json())
 
 
-def tlm_retry(func: Callable) -> Callable:
+def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
     """Implements TLM retry decorator, with special handling for rate limit retries."""
 
-    async def wrapper(*args, **kwargs) -> Any:
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
         # total number of tries = number of retries + original try
         retries = kwargs.pop("retries", 0)
         num_tries = retries + 1
