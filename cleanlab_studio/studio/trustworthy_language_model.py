@@ -5,6 +5,7 @@ import asyncio
 from typing import Coroutine, cast, List, Literal, Optional, TypedDict, Union
 
 import aiohttp
+import nest_asyncio
 
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.types import JSONDict
@@ -68,6 +69,7 @@ class TLM:
 
         self._quality_preset = quality_preset
 
+        nest_asyncio.apply()
         self._event_loop = asyncio.get_event_loop()
         self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
 
