@@ -1,4 +1,5 @@
 from .dataset_source import DatasetSource as DatasetSource
+from .local_dataset_source import LocalDatasetSource as LocalDatasetSource
 from .filepath_dataset_source import FilepathDatasetSource as FilepathDatasetSource
 from .pandas_dataset_source import PandasDatasetSource as PandasDatasetSource
 

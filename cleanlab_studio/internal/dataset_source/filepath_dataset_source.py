@@ -2,10 +2,10 @@ import mimetypes
 import pathlib
 from typing import Any, Optional
 
-from .dataset_source import DatasetSource
+from .local_dataset_source import LocalDatasetSource
 
 
-class FilepathDatasetSource(DatasetSource):
+class FilepathDatasetSource(LocalDatasetSource):
     def __init__(
         self,
         *args: Any,

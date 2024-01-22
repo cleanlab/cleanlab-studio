@@ -4,10 +4,10 @@ import pathlib
 from typing import IO, Any
 import pandas as pd
 
-from .dataset_source import DatasetSource
+from .local_dataset_source import LocalDatasetSource
 
 
-class PandasDatasetSource(DatasetSource):
+class PandasDatasetSource(LocalDatasetSource):
     def __init__(self, *args: Any, df: pd.DataFrame, dataset_name: str, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.dataset_name = dataset_name

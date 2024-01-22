@@ -1,6 +1,9 @@
 from abc import abstractmethod
 import pathlib
-from typing import IO, Any, Generic, Iterator, TypeVar, Union
+import json
+from ..util import str_as_bytes
+
+from typing import Any, Generic, Iterator, TypeVar, Union
 
 try:
     import pyspark.sql
@@ -35,13 +38,34 @@ class LazyLoadedDatasetSource(DatasetSource, Generic[DataFrame]):
         super().__init__(*args, **kwargs)
         self.dataframe = df
         self.dataset_name = dataset_name
-        self.file_size = self._get_size_in_bytes()
+        self.total_rows = self._get_rows()
         self.file_type = "application/json"
 
-    def fileobj(self) -> Iterator[IO[bytes]]:
-        # lazy loaded dataframes might be too large to fit in memory or disk
-        # so this class does not create a file object
-        yield None
+    def _get_rows(self) -> int:
+        return self.dataframe.count()
+
+    def get_chunks(self, chunk_size: int) -> Iterator[(bytes, int)]:
+        first = True
+        chunk = 0
+        rows = 0
+        buffer = b""
+
+        for row in self.dataframe.toLocalIterator():
+            if first:
+                buffer += str_as_bytes(f"[{json.dumps(row.asDict())}")
+                first = False
+            else:
+                buffer += str_as_bytes(f",{json.dumps(row.asDict())}")
+
+            if len(buffer) >= chunk_size:
+                yield buffer[:chunk_size], rows
+                buffer = buffer[chunk_size:]
+                chunk += 1
+            rows += 1
+
+        buffer += str_as_bytes("]")
+
+        yield buffer[:chunk_size], rows
 
     @abstractmethod
     def _get_size_in_bytes(self) -> int:

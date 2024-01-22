@@ -2,6 +2,7 @@ import io
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
+from requests.adapters import HTTPAdapter, Retry
 from cleanlab_studio.errors import APIError
 
 import requests
@@ -96,6 +97,33 @@ def initialize_upload(
     part_sizes: List[int] = res.json()["part_sizes"]
     presigned_posts: List[str] = res.json()["presigned_posts"]
     return upload_id, part_sizes, presigned_posts
+
+
+def initialize_segmented_upload(api_key: str, filename: str) -> (str, int):
+    res = requests.get(
+        f"{upload_base_url}/segmented",
+        params=dict(filename=filename),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    upload_id: str = res.json()["upload_id"]
+    part_size: int = res.json()["part_size"]
+    return upload_id, part_size
+
+
+def upload_segmented_part(api_key: str, upload_id: str, part_number: int, part: bytes) -> JSONDict:
+    session = requests.Session()
+    session.mount("https://", adapter=HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1)))
+
+    request_json = dict(upload_id=upload_id, part_number=part_number, part=part)
+    res = session.post(
+        f"{upload_base_url}/segmented_part",
+        json=request_json,
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    res_json: JSONDict = res.json()
+    return res_json
 
 
 def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDict]) -> None:

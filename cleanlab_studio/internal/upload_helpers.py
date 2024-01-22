@@ -2,7 +2,7 @@ import asyncio
 import functools
 import json
 from typing import List, Optional
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 import aiohttp
 from multidict import CIMultiDictProxy
@@ -10,7 +10,7 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 from .api import api
-from .dataset_source import DatasetSource
+from .dataset_source import DatasetSource, LazyLoadedDatasetSource
 from .types import FieldSchemaDict, JSONDict
 
 
@@ -100,14 +100,42 @@ def upload_file_parts(
     ]
 
 
+def upload_segmented_parts(
+    api_key: str, upload_id: str, dataset_source: LazyLoadedDatasetSource, part_size: int
+) -> List[JSONDict]:
+    responses = []
+    part_number = 0
+
+    t = trange(100, desc="Uploading dataset...", leave=True)
+
+    for chunk, rows in dataset_source.get_chunks(chunk_size=part_size):
+        resp = api.upload_segmented_part(api_key, upload_id, part_number, chunk)
+
+        responses.append(resp)
+        part_number += 1
+
+        t.update(rows // dataset_source.total_rows * 100)
+
+    t.close()
+
+    return [
+        {"ETag": json.loads(res.headers["etag"]), "PartNumber": i + 1}
+        for i, res in enumerate(responses)
+    ]
+
+
 def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
-    upload_id, part_sizes, presigned_posts = api.initialize_upload(
-        api_key,
-        dataset_source.get_filename(),
-        dataset_source.file_type,
-        dataset_source.file_size,
-    )
-    upload_parts = upload_file_parts(dataset_source, part_sizes, presigned_posts)
+    if isinstance(dataset_source, LazyLoadedDatasetSource):
+        upload_id, part_size = api.initialize_segmented_upload(api_key, dataset_source.dataset_name)
+        upload_parts = upload_segmented_parts(api_key, upload_id, dataset_source, part_size)
+    else:
+        upload_id, part_sizes, presigned_posts = api.initialize_upload(
+            api_key,
+            dataset_source.get_filename(),
+            dataset_source.file_type,
+            dataset_source.file_size,
+        )
+        upload_parts = upload_file_parts(dataset_source, part_sizes, presigned_posts)
     api.complete_file_upload(api_key, upload_id, upload_parts)
     return upload_id
 
