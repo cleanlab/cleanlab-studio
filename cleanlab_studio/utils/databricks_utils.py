@@ -1,8 +1,6 @@
 import os
 import zipfile
-from tqdm import tqdm
 from datetime import datetime
-import csv
 
 
 def create_path_based_imageset_archive(folder_path, dataset_name=None) -> str:
@@ -42,7 +40,7 @@ def create_path_based_imageset_archive(folder_path, dataset_name=None) -> str:
     return output_filename
 
 
-def create_df_based_archive(df, root="", dataset_name=None) -> str:
+def create_df_based_imageset_archive(df, root="", dataset_name=None) -> str:
     """
     Archives an imageset described by a pyspark DataFrame stored on Databricks which can then be uploaded Cleanlab Studio.
 
