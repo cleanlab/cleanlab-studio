@@ -83,14 +83,16 @@ class Studio:
         """
 
         ds = init_dataset_source(dataset, dataset_name)
-        result = upload_helpers.upload_dataset(
-            self._api_key,
-            ds,
-            schema_overrides=schema_overrides,
-            modality=modality,
-            id_column=id_column,
-        )
-        cleanup_temporary_files(dataset, ds)
+        try:
+            result = upload_helpers.upload_dataset(
+                self._api_key,
+                ds,
+                schema_overrides=schema_overrides,
+                modality=modality,
+                id_column=id_column,
+            )
+        finally:
+            cleanup_temporary_files(dataset, ds)
 
         return result
 
