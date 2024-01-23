@@ -11,7 +11,6 @@ import pandas as pd
 
 from . import inference
 from . import trustworthy_language_model
-from ..utils.databricks_utils import create_imageset_archive
 from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
