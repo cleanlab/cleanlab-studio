@@ -53,7 +53,7 @@ def init_dataset_source(
         return FilepathDatasetSource(filepath=dataset_source, dataset_name=dataset_name)
     elif isinstance(dataset_source, str):
         if is_unzipped_databricks_imageset(dataset_source):
-            dataset_source = create_path_based_imageset_archive(dataset_source, dataset_name)
+            dataset_source = create_path_based_imageset_archive(dataset_source)
         return FilepathDatasetSource(
             filepath=pathlib.Path(dataset_source), dataset_name=dataset_name
         )
@@ -69,7 +69,7 @@ def init_dataset_source(
         if dataset_name is None:
             raise ValueError("Must provide dataset name if uploading from a DataFrame")
         if is_meta_databricks_df(dataset_source):
-            archive = create_df_based_imageset_archive(dataset_source, dataset_name=dataset_name)
+            archive = create_df_based_imageset_archive(dataset_source)
             return FilepathDatasetSource(filepath=pathlib.Path(archive), dataset_name=dataset_name)
         return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     else:
