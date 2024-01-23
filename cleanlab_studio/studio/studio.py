@@ -17,10 +17,10 @@ from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
+    cleanup_temporary_files,
     apply_corrections_snowpark_df,
     apply_corrections_spark_df,
     apply_corrections_pd_df,
-    is_unzipped_databricks_imageset,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
@@ -82,9 +82,6 @@ class Studio:
         Returns:
             ID of uploaded dataset.
         """
-        create_databricks_archive = is_unzipped_databricks_imageset(dataset)
-        if create_databricks_archive:
-            dataset = create_imageset_archive(dataset, dataset_name)
 
         ds = init_dataset_source(dataset, dataset_name)
         result = upload_helpers.upload_dataset(
@@ -94,9 +91,7 @@ class Studio:
             modality=modality,
             id_column=id_column,
         )
-
-        if create_databricks_archive:
-            os.remove(dataset)
+        cleanup_temporary_files(dataset, ds)
 
         return result
 

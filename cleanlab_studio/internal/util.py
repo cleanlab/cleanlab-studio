@@ -8,6 +8,11 @@ import os
 import numpy as np
 import pandas as pd
 
+from cleanlab_studio.utils.databricks_utils import (
+    create_path_based_imageset_archive,
+    create_df_based_imageset_archive,
+)
+
 try:
     import snowflake.snowpark as snowpark
 
@@ -47,6 +52,8 @@ def init_dataset_source(
     elif isinstance(dataset_source, pathlib.Path):
         return FilepathDatasetSource(filepath=dataset_source, dataset_name=dataset_name)
     elif isinstance(dataset_source, str):
+        if is_unzipped_databricks_imageset(dataset_source):
+            dataset_source = create_path_based_imageset_archive(dataset_source, dataset_name)
         return FilepathDatasetSource(
             filepath=pathlib.Path(dataset_source), dataset_name=dataset_name
         )
@@ -61,9 +68,23 @@ def init_dataset_source(
 
         if dataset_name is None:
             raise ValueError("Must provide dataset name if uploading from a DataFrame")
+        if is_meta_databricks_df(dataset_source):
+            archive = create_df_based_imageset_archive(dataset_source, dataset_name)
+            return FilepathDatasetSource(filepath=pathlib.Path(archive), dataset_name=dataset_name)
         return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     else:
         raise ValueError("Invalid dataset source provided")
+
+
+def cleanup_temporary_files(dataset: Any, dataset_source: DatasetSource):
+    if is_unzipped_databricks_imageset(dataset):
+        os.remove(dataset_source.get_filename())
+    if (
+        pyspark_exists
+        and isinstance(dataset_source, pyspark.sql.DataFrame)
+        and is_meta_databricks_df(dataset_source)
+    ):
+        os.remove(dataset_source.get_filename())
 
 
 def apply_corrections_snowpark_df(
@@ -209,9 +230,16 @@ def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
 
 
+def on_databricks() -> bool:
+    return bool(os.environ.get("DATABRICKS_RUNTIME_VERSION"))
+
+
 def is_unzipped_databricks_imageset(path: str) -> bool:
-    on_databricks = bool(os.environ.get("DATABRICKS_RUNTIME_VERSION"))
-    return on_databricks and isinstance(path, str) and os.path.isdir(path)
+    return on_databricks() and isinstance(path, str) and os.path.isdir(path)
+
+
+def is_meta_databricks_df(df: Any) -> bool:
+    return on_databricks() and "filepath" in df.columns and "label" in df.columns
 
 
 def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
