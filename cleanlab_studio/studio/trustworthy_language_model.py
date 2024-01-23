@@ -4,10 +4,10 @@ Cleanlab TLM is a Large Language Model that gives more reliable answers and quan
 from __future__ import annotations
 
 import asyncio
+import sys
 from typing import Coroutine, List, Literal, Optional, Union, cast
 
 import aiohttp
-import nest_asyncio
 from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from cleanlab_studio.internal.api import api
@@ -73,7 +73,11 @@ class TLM:
 
         self._quality_preset = quality_preset
 
-        nest_asyncio.apply()
+        if is_notebook():
+            import nest_asyncio
+
+            nest_asyncio.apply()
+
         self._event_loop = asyncio.get_event_loop()
         self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
 
@@ -280,3 +284,15 @@ class TLM:
                     )
                 )["confidence_score"],
             )
+
+
+def is_notebook() -> bool:
+    """Returns True if running in a notebook, False otherwise."""
+    try:
+        get_ipython = sys.modules["IPython"].get_ipython
+        if "IPKernelApp" in get_ipython().config:
+            return True
+
+        return False
+    except:
+        return False
