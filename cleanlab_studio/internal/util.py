@@ -81,8 +81,8 @@ def cleanup_temporary_files(dataset: Any, dataset_source: DatasetSource):
         os.remove(dataset_source.get_filename())
     if (
         pyspark_exists
-        and isinstance(dataset_source, pyspark.sql.DataFrame)
-        and is_meta_databricks_df(dataset_source)
+        and isinstance(dataset, pyspark.sql.DataFrame)
+        and is_meta_databricks_df(dataset)
     ):
         os.remove(dataset_source.get_filename())
 
