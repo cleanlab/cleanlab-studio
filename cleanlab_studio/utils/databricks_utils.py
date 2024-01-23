@@ -67,8 +67,8 @@ def create_df_based_imageset_archive(df, root="", dataset_name=None) -> str:
         for row in df.toLocalIterator():
             row = row.asDict()
             original_path = row["filepath"]
-            file_name = os.path.basename(original_path)
-            row["filepath"] = f"{dataset_name}/{file_name}"
+            path_in_zip = f"{dataset_name}/{os.path.basename(original_path)}"
+            row["filepath"] = path_in_zip
 
             # write row to a csv file called metadata.csv
             if first_row:
@@ -80,10 +80,9 @@ def create_df_based_imageset_archive(df, root="", dataset_name=None) -> str:
         for row in df.toLocalIterator():
             row = row.asDict()
             original_path = row["filepath"]
-            file_name = os.path.basename(original_path)
-            row["filepath"] = f"{dataset_name}/{file_name}"
+            path_in_zip = f"{dataset_name}/{os.path.basename(original_path)}"
 
             # add row image to the zip file
-            zipf.write(os.path.join(root, original_path), arcname=row["filepath"])
+            zipf.write(os.path.join(root, original_path), arcname=path_in_zip)
 
     return output_filename
