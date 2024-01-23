@@ -288,5 +288,7 @@ def is_notebook() -> bool:
         get_ipython = sys.modules["IPython"].get_ipython
         if "IPKernelApp" in get_ipython().config:
             return True
-    finally:
+
+        return False
+    except:
         return False
