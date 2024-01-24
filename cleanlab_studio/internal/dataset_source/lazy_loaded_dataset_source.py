@@ -1,7 +1,6 @@
 from abc import abstractmethod
 import pathlib
 import json
-from ..util import str_as_bytes
 
 from typing import Any, Generic, Iterator, TypeVar, Union
 
@@ -44,18 +43,18 @@ class LazyLoadedDatasetSource(DatasetSource, Generic[DataFrame]):
     def _get_rows(self) -> int:
         return self.dataframe.count()
 
-    def get_chunks(self, chunk_size: int) -> Iterator[(bytes, int)]:
+    def get_chunks(self, chunk_size: int) -> Iterator[tuple[str, int]]:
         first = True
         chunk = 0
         rows = 0
-        buffer = b""
+        buffer = ""
 
         for row in self.dataframe.toLocalIterator():
             if first:
-                buffer += str_as_bytes(f"[{json.dumps(row.asDict())}")
+                buffer += f"[{json.dumps(row.asDict())}"
                 first = False
             else:
-                buffer += str_as_bytes(f",{json.dumps(row.asDict())}")
+                buffer += f",{json.dumps(row.asDict())}"
 
             if len(buffer) >= chunk_size:
                 yield buffer[:chunk_size], rows
@@ -63,7 +62,7 @@ class LazyLoadedDatasetSource(DatasetSource, Generic[DataFrame]):
                 chunk += 1
             rows += 1
 
-        buffer += str_as_bytes("]")
+        buffer += "]"
 
         yield buffer[:chunk_size], rows
 

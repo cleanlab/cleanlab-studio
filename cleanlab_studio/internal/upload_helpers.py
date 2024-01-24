@@ -1,7 +1,7 @@
 import asyncio
 import functools
 import json
-from typing import List, Optional
+from typing import List, Optional, Any
 from tqdm import tqdm, trange
 
 import aiohttp
@@ -10,8 +10,14 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 from .api import api
-from .dataset_source import DatasetSource, LazyLoadedDatasetSource
+from .dataset_source import DatasetSource
 from .types import FieldSchemaDict, JSONDict
+
+_snowflake_exists = api.snowflake_exists
+_pyspark_exists = api.pyspark_exists
+_lazy_loaded_dataset_source_exists = _snowflake_exists or _pyspark_exists
+if _lazy_loaded_dataset_source_exists:
+    from .dataset_source import LazyLoadedDatasetSource
 
 
 def upload_dataset(
@@ -101,32 +107,33 @@ def upload_file_parts(
 
 
 def upload_segmented_parts(
-    api_key: str, upload_id: str, dataset_source: LazyLoadedDatasetSource, part_size: int
+    api_key: str, upload_id: str, dataset_source: Any, part_size: int
 ) -> List[JSONDict]:
     responses = []
-    part_number = 0
+    part_number = 1
 
-    t = trange(100, desc="Uploading dataset...", leave=True)
+    t = trange(
+        100, desc="Uploading dataset...", leave=True, bar_format="{desc}: {percentage:3.0f}%|{bar}|"
+    )
 
     for chunk, rows in dataset_source.get_chunks(chunk_size=part_size):
         resp = api.upload_segmented_part(api_key, upload_id, part_number, chunk)
 
-        responses.append(resp)
+        responses.append(resp["ETag"])
         part_number += 1
 
         t.update(rows // dataset_source.total_rows * 100)
 
     t.close()
 
-    return [
-        {"ETag": json.loads(res.headers["etag"]), "PartNumber": i + 1}
-        for i, res in enumerate(responses)
-    ]
+    return [{"ETag": json.loads(etag), "PartNumber": i + 1} for i, etag in enumerate(responses)]
 
 
 def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
-    if isinstance(dataset_source, LazyLoadedDatasetSource):
-        upload_id, part_size = api.initialize_segmented_upload(api_key, dataset_source.dataset_name)
+    if _lazy_loaded_dataset_source_exists and isinstance(dataset_source, LazyLoadedDatasetSource):
+        upload_id, part_size = api.initialize_segmented_upload(
+            api_key, dataset_source.get_filename()
+        )
         upload_parts = upload_segmented_parts(api_key, upload_id, dataset_source, part_size)
     else:
         upload_id, part_sizes, presigned_posts = api.initialize_upload(

@@ -207,7 +207,7 @@ def quote(s: str) -> str:
 def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
 
-  
+
 def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
     try:
         uuid.UUID(uuid_string)

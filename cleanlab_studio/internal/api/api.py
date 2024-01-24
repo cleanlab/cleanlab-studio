@@ -111,12 +111,12 @@ def initialize_segmented_upload(api_key: str, filename: str) -> (str, int):
     return upload_id, part_size
 
 
-def upload_segmented_part(api_key: str, upload_id: str, part_number: int, part: bytes) -> JSONDict:
+def upload_segmented_part(api_key: str, upload_id: str, part_number: int, part: str) -> JSONDict:
     session = requests.Session()
     session.mount("https://", adapter=HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1)))
 
     request_json = dict(upload_id=upload_id, part_number=part_number, part=part)
-    res = session.post(
+    res = session.put(
         f"{upload_base_url}/segmented_part",
         json=request_json,
         headers=_construct_headers(api_key),
