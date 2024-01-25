@@ -1,6 +1,22 @@
 import os
 import zipfile
 from datetime import datetime
+from pathlib import Path
+
+from cleanlab_studio.internal.util import get_databricks_imageset_df_image_col
+
+
+def dbfs_to_posix_path(dbfs_path: str) -> str:
+    """
+    Converts a DBFS path to a POSIX path.
+
+    Args:
+        dbfs_path: The DBFS path to convert.
+
+    Returns:
+        The POSIX path.
+    """
+    return f"/dbfs{dbfs_path[5:]}"
 
 
 def create_path_based_imageset_archive(folder_path, archive_name=None) -> str:
@@ -16,7 +32,7 @@ def create_path_based_imageset_archive(folder_path, archive_name=None) -> str:
     Returns:
         The relative path to the archived imageset.
     """
-    folder_name = os.path.basename(os.path.normpath(folder_path))
+    folder_name = Path(folder_path).resolve(strict=False).name
     archive_name = (
         archive_name
         if archive_name is not None
@@ -30,23 +46,22 @@ def create_path_based_imageset_archive(folder_path, archive_name=None) -> str:
         for root, _, files in os.walk(folder_path):
             for file in files:
                 # Create a full path
-                full_path = os.path.join(root, file)
+                full_path = Path(root).joinpath(file).as_posix()
                 # Add file to the zip file
                 # The arcname argument sets the name within the zip file
-                relpath = os.path.relpath(full_path, folder_path)
-                arcname = os.path.join(folder_name, relpath)
+                relpath = Path(full_path).relative_to(Path(folder_path))
+                arcname = Path(folder_name).joinpath(relpath).as_posix()
                 zipf.write(full_path, arcname=arcname)
 
     return output_filename
 
 
-def create_df_based_imageset_archive(df, root="", archive_name=None) -> str:
+def create_df_based_imageset_archive(df, archive_name=None) -> str:
     """
     Archives an imageset described by a pyspark DataFrame stored on Databricks which can then be uploaded Cleanlab Studio.
 
     Args:
         df: PySpark DataFrame with columns `label` and `filepath`. `label` is the label of the image. `filepath` is the presigned URL of the image.
-        root: The POSIX-style path to the root of the imageset. If not provided, the paths in `filepath` are assumed to be absolute.
         archive_name: A name you choose for the imageset archive.
 
     Returns:
@@ -58,6 +73,7 @@ def create_df_based_imageset_archive(df, root="", archive_name=None) -> str:
         else f'upload_archive_{datetime.now().strftime("%d-%m-%Y_%H:%M:%S")}'
     )
     output_filename = f"{archive_name}.zip"
+    image_col = get_databricks_imageset_df_image_col(df)
 
     # Create a ZipFile object in write mode
     with zipfile.ZipFile(output_filename, "w", zipfile.ZIP_DEFLATED) as zipf, zipf.open(
@@ -66,9 +82,9 @@ def create_df_based_imageset_archive(df, root="", archive_name=None) -> str:
         first_row = True
         for row in df.toLocalIterator():
             row = row.asDict()
-            original_path = row["filepath"]
-            path_in_zip = f"{archive_name}/{os.path.basename(original_path)}"
-            row["filepath"] = path_in_zip
+            original_path = dbfs_to_posix_path(row[image_col].origin)
+            path_in_zip = Path(archive_name).joinpath(Path(original_path).name).as_posix()
+            row[image_col] = path_in_zip
 
             # write row to a csv file called metadata.csv
             if first_row:
@@ -79,10 +95,10 @@ def create_df_based_imageset_archive(df, root="", archive_name=None) -> str:
 
         for row in df.toLocalIterator():
             row = row.asDict()
-            original_path = row["filepath"]
-            path_in_zip = f"{archive_name}/{os.path.basename(original_path)}"
+            original_path = dbfs_to_posix_path(row[image_col].origin)
+            path_in_zip = Path(archive_name).joinpath(Path(original_path).name).as_posix()
 
             # add row image to the zip file
-            zipf.write(os.path.join(root, original_path), arcname=path_in_zip)
+            zipf.write(original_path, arcname=path_in_zip)
 
     return output_filename

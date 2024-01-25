@@ -238,8 +238,42 @@ def is_unzipped_databricks_imageset(path: str) -> bool:
     return on_databricks() and isinstance(path, str) and os.path.isdir(path)
 
 
-def is_meta_databricks_df(df: Any) -> bool:
-    return on_databricks() and "filepath" in df.columns and "label" in df.columns
+def get_databricks_imageset_df_image_col(df: Any) -> str:
+    if not pyspark_exists:
+        return None
+
+    from pyspark.sql.types import StructField, StructType
+    from pyspark.sql.types import StringType, IntegerType, BinaryType
+
+    # check for image column
+    required_image_fields = [
+        StructField("origin", StringType(), True),
+        StructField("height", IntegerType(), True),
+        StructField("width", IntegerType(), True),
+        StructField("nChannels", IntegerType(), True),
+        StructField("mode", IntegerType(), True),
+        StructField("data", BinaryType(), True),
+    ]
+
+    struct_col_schemas = [f for f in df.schema.fields if isinstance(f.dataType, StructType)]
+
+    for s in struct_col_schemas:
+        s_fields = s.dataType.fields
+        if all([f in s_fields for f in required_image_fields]):
+            return s.name
+
+    return None
+
+
+def is_databricks_imageset_df(df: Any) -> bool:
+    if not on_databricks() or not pyspark_exists or "label" not in df.columns:
+        return False
+
+    from pyspark.sql.types import StructField, StructType
+    from pyspark.sql.types import StringType, IntegerType, BinaryType
+
+    # check for image column
+    return get_databricks_imageset_df_image_col(df) is not None
 
 
 def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
