@@ -372,7 +372,7 @@ def get_dataset_id_for_name(
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
-    return res.json().get("dataset_id", None)
+    return cast(Optional[str], res.json().get("dataset_id", None))
 
 
 def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
