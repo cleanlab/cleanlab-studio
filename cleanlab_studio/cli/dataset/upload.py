@@ -52,7 +52,7 @@ def upload(
     dataset_id = upload_dataset(
         api_key,
         dataset_source,
-        schema_overrides=cast(Optional[List[SchemaOverride]], schema_overrides),
+        schema_overrides=schema_overrides,
     )
 
     click_helpers.success(
