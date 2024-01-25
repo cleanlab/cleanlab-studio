@@ -2,18 +2,19 @@
 Helper functions for working with schemas
 """
 import json
-from typing import List
+from typing import Any, cast, List
 
-from cleanlab_studio.internal.types import JSONDict
+from cleanlab_studio.internal.types import JSONDict, SchemaOverride
 
 
-def load_schema_overrides(filepath: str) -> List[JSONDict]:
+def load_schema_overrides(filepath: str) -> List[SchemaOverride]:
     with open(filepath, "r") as f:
-        schema_overrides = json.load(f)
-        return schema_overrides
+        schema_overrides: Any = json.load(f)
+        _validate_schema_overrides(schema_overrides)
+        return cast(List[SchemaOverride], schema_overrides)
 
 
-def validate_schema_overrides(schema_overrides: List[JSONDict]) -> None:
+def _validate_schema_overrides(schema_overrides: List[JSONDict]) -> None:
     """
     Checks that schema overrides are formed as a list of JSON objects, with each object
     containing the following keys:

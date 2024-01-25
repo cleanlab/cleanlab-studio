@@ -403,6 +403,7 @@ def poll_ingestion_progress(api_key: str, upload_id: str, description: str) -> s
         # mark progress as done
         pbar.update(float(1) - pbar.n)
 
+    assert isinstance(dataset_id, str), "dataset_id should be a string"
     return dataset_id
 
 
