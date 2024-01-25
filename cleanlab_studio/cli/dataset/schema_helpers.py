@@ -7,10 +7,10 @@ from typing import List
 from cleanlab_studio.internal.types import JSONDict
 
 
-def load_schema_overrides(filepath: str) -> JSONDict:
+def load_schema_overrides(filepath: str) -> List[JSONDict]:
     with open(filepath, "r") as f:
-        schema_dict: JSONDict = json.load(f)
-        return schema_dict
+        schema_overrides = json.load(f)
+        return schema_overrides
 
 
 def validate_schema_overrides(schema_overrides: List[JSONDict]) -> None:
