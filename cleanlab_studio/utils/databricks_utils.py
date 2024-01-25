@@ -99,7 +99,7 @@ def create_df_based_imageset_archive(df, archive_name=None) -> str:
 
     # Create a ZipFile object in write mode
     with zipfile.ZipFile(output_filename, "w", zipfile.ZIP_DEFLATED) as zipf, zipf.open(
-        Path(archive_name).joinpath("metadata.csv").as_posix()
+        Path(archive_name).joinpath("metadata.csv").as_posix(), "w"
     ) as metadata_file:
         first_row = True
         for row in df.toLocalIterator():
