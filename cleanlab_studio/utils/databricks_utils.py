@@ -105,6 +105,7 @@ def create_df_based_imageset_archive(df, archive_name=None) -> str:
         for row in df.toLocalIterator():
             row = row.asDict()
             original_path = dbfs_to_posix_path(row[image_col].origin)
+            del row[image_col]
             path_in_zip = (
                 Path(archive_name)
                 .joinpath(Path(original_path).resolve(strict=False).name)
