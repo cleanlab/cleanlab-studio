@@ -69,7 +69,7 @@ def init_dataset_source(
 
         if dataset_name is None:
             raise ValueError("Must provide dataset name if uploading from a DataFrame")
-        if is_meta_databricks_df(dataset_source):
+        if is_databricks_imageset_df(dataset_source):
             archive = create_df_based_imageset_archive(dataset_source)
             return FilepathDatasetSource(filepath=pathlib.Path(archive), dataset_name=dataset_name)
         return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
@@ -83,7 +83,7 @@ def cleanup_temporary_files(dataset: Any, dataset_source: DatasetSource):
     if (
         pyspark_exists
         and isinstance(dataset, pyspark.sql.DataFrame)
-        and is_meta_databricks_df(dataset)
+        and is_databricks_imageset_df(dataset)
     ):
         os.remove(dataset_source.get_filename())
 
