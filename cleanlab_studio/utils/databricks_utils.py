@@ -105,7 +105,11 @@ def create_df_based_imageset_archive(df, archive_name=None) -> str:
         for row in df.toLocalIterator():
             row = row.asDict()
             original_path = dbfs_to_posix_path(row[image_col].origin)
-            path_in_zip = Path(archive_name).joinpath(Path(original_path).name).as_posix()
+            path_in_zip = (
+                Path(archive_name)
+                .joinpath(Path(original_path).resolve(strict=False).name)
+                .as_posix()
+            )
             row[image_col] = path_in_zip
 
             # write row to a csv file called metadata.csv
@@ -118,7 +122,11 @@ def create_df_based_imageset_archive(df, archive_name=None) -> str:
         for row in df.toLocalIterator():
             row = row.asDict()
             original_path = dbfs_to_posix_path(row[image_col].origin)
-            path_in_zip = Path(archive_name).joinpath(Path(original_path).name).as_posix()
+            path_in_zip = (
+                Path(archive_name)
+                .joinpath(Path(original_path).resolve(strict=False).name)
+                .as_posix()
+            )
 
             # add row image to the zip file
             zipf.write(original_path, arcname=path_in_zip)
