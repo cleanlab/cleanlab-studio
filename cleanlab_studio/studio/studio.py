@@ -257,6 +257,22 @@ class Studio:
         """
         return api.get_latest_cleanset_id(self._api_key, project_id)
 
+    def poll_dataset_id_for_name(self, dataset_name: str, timeout: Optional[int] = None) -> str:
+        """
+        Polls for dataset ID for a dataset name.
+
+        Args:
+            dataset_name: Name of dataset to get ID for.
+            timeout: Optional timeout after which to stop polling for progress. If not provided, will block until dataset is ready.
+
+        Returns
+            ID of dataset.
+
+        Raises
+            TimeoutError: if dataset is not ready by end of timeout
+        """
+        return api.poll_dataset_id_for_name(self._api_key, dataset_name, timeout)
+
     def delete_project(self, project_id: str) -> None:
         """
         Deletes a project from Cleanlab Studio.
