@@ -11,14 +11,14 @@ from requests.adapters import HTTPAdapter, Retry
 
 from .api import api
 from .dataset_source import DatasetSource
-from .types import FieldSchemaDict, JSONDict
+from .types import JSONDict, SchemaOverride
 
 
 def upload_dataset(
     api_key: str,
     dataset_source: DatasetSource,
     *,
-    schema_overrides: Optional[FieldSchemaDict] = None,
+    schema_overrides: Optional[List[SchemaOverride]] = None,
 ) -> str:
     # perform file upload
     upload_id = upload_dataset_file(api_key, dataset_source)
@@ -31,8 +31,12 @@ def upload_dataset(
 
     # if schema overrides, update schema and wait for reingestion
     if schema_overrides:
-        # TODO
-        ...
+        api.update_schema(
+            api_key,
+            dataset_id,
+            schema_overrides,
+        )
+        api.poll_ingestion_progress(api_key, upload_id, "Updating Schema...")
 
     # return dataset id
     return dataset_id

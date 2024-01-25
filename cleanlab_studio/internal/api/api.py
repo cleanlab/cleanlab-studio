@@ -26,7 +26,7 @@ try:
 except ImportError:
     pyspark_exists = False
 
-from cleanlab_studio.internal.types import JSONDict
+from cleanlab_studio.internal.types import JSONDict, SchemaOverride
 from cleanlab_studio.version import __version__
 from ..util import check_uuid_well_formed
 
@@ -125,6 +125,21 @@ def confirm_upload(api_key: str, upload_id: str, dataset_name: str) -> None:
     request_json = dict(upload_id=upload_id)
     res = requests.post(
         f"{upload_base_url}/confirm",
+        json=request_json,
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+
+
+def update_schema(
+    api_key: str,
+    dataset_id: str,
+    schema_overrides: List[SchemaOverride],
+) -> None:
+    check_uuid_well_formed(dataset_id, "dataset ID")
+    request_json = dict(dataset_id=dataset_id, schema_updates=schema_overrides)
+    res = requests.patch(
+        f"{upload_base_url}/schema",
         json=request_json,
         headers=_construct_headers(api_key),
     )

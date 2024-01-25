@@ -20,7 +20,7 @@ from cleanlab_studio.internal.util import (
     apply_corrections_pd_df,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
-from cleanlab_studio.internal.types import FieldSchemaDict
+from cleanlab_studio.internal.types import SchemaOverride
 
 _snowflake_exists = api.snowflake_exists
 if _snowflake_exists:
@@ -62,7 +62,7 @@ class Studio:
         dataset: Any,
         dataset_name: Optional[str] = None,
         *,
-        schema_overrides: Optional[FieldSchemaDict] = None,
+        schema_overrides: Optional[List[SchemaOverride]] = None,
     ) -> str:
         """
         Uploads a dataset to Cleanlab Studio.
