@@ -33,7 +33,7 @@ from ..util import check_uuid_well_formed
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
-upload_base_url = f"{base_url}/upload/v0"
+upload_base_url = f"{base_url}/upload/v1"
 dataset_base_url = f"{base_url}/datasets"
 project_base_url = f"{base_url}/projects"
 cleanset_base_url = f"{base_url}/cleansets"
@@ -97,9 +97,9 @@ def is_valid_client_version() -> bool:
 def initialize_upload(
     api_key: str, filename: str, file_type: str, file_size: int
 ) -> Tuple[str, List[int], List[str]]:
-    res = requests.get(
-        f"{upload_base_url}/initialize",
-        params=dict(size_in_bytes=str(file_size), filename=filename, file_type=file_type),
+    res = requests.post(
+        f"{upload_base_url}/file/initialize",
+        json=dict(size_in_bytes=str(file_size), filename=filename, file_type=file_type),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -113,34 +113,18 @@ def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDi
     check_uuid_well_formed(upload_id, "upload ID")
     request_json = dict(upload_id=upload_id, upload_parts=upload_parts)
     res = requests.post(
-        f"{upload_base_url}/complete",
+        f"{upload_base_url}/file/complete",
         json=request_json,
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
 
 
-def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
+def confirm_upload(api_key: str, upload_id: str, dataset_name: str) -> None:
     check_uuid_well_formed(upload_id, "upload ID")
-    res = requests.get(
-        f"{upload_base_url}/proposed_schema",
-        params=dict(upload_id=upload_id),
-        headers=_construct_headers(api_key),
-    )
-    handle_api_error(res)
-    res_json: JSONDict = res.json()
-    return res_json
-
-
-def confirm_schema(
-    api_key: str,
-    schema: Optional[JSONDict],
-    upload_id: str,
-) -> None:
-    check_uuid_well_formed(upload_id, "upload ID")
-    request_json = dict(schema=schema, upload_id=upload_id)
+    request_json = dict(upload_id=upload_id)
     res = requests.post(
-        f"{upload_base_url}/confirm_schema",
+        f"{upload_base_url}/confirm",
         json=request_json,
         headers=_construct_headers(api_key),
     )
@@ -150,7 +134,7 @@ def confirm_schema(
 def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
     check_uuid_well_formed(upload_id, "upload ID")
     res = requests.get(
-        f"{upload_base_url}/ingestion_status",
+        f"{upload_base_url}/progress",
         params=dict(upload_id=upload_id),
         headers=_construct_headers(api_key),
     )
@@ -380,6 +364,31 @@ def poll_progress(
             res = request_function(progress_id)
         pbar.update(float(1) - pbar.n)
     return res
+
+
+def poll_ingestion_progress(api_key: str, upload_id: str, description: str) -> str:
+    """Polls for ingestion progress until complete, returns dataset ID."""
+    check_uuid_well_formed(upload_id, "upload ID")
+
+    with tqdm(total=1, desc=description, bar_format="{desc}: {percentage:3.0f}%|{bar}|") as pbar:
+        dataset_id = None
+        while True:
+            progress = get_ingestion_status(api_key, upload_id)
+            dataset_id = progress.get("dataset_id")
+
+            if dataset_id:
+                break
+
+            # convert progress to float
+            step_progresses = [step["progress"] for step in progress["progress_dict"].values()]
+            total_steps = progress["total_steps"]
+            pbar.update((sum(step_progresses) / total_steps) - pbar.n)
+            time.sleep(1)
+
+        # mark progress as done
+        pbar.update(float(1) - pbar.n)
+
+    return dataset_id
 
 
 def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:

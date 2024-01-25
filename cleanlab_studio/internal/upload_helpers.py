@@ -19,35 +19,22 @@ def upload_dataset(
     dataset_source: DatasetSource,
     *,
     schema_overrides: Optional[FieldSchemaDict] = None,
-    modality: Optional[str] = None,
-    id_column: Optional[str] = None,
 ) -> str:
+    # perform file upload
     upload_id = upload_dataset_file(api_key, dataset_source)
-    schema = get_proposed_schema(api_key, upload_id)
 
-    if (schema is None or schema.get("immutable", False)) and (
-        schema_overrides is not None or modality is not None or id_column is not None
-    ):
-        raise ValueError(
-            "Schema_overrides, modality, and id_column parameters cannot be provided for simple zip uploads"
-        )
+    # confirm upload (and kick off processing)
+    api.confirm_upload(api_key, upload_id, dataset_source.get_filename())
 
-    if schema is not None and not schema.get("immutable", False):
-        schema["metadata"]["name"] = dataset_source.dataset_name
-        if schema_overrides is not None:
-            for field in schema_overrides:
-                schema["fields"][field] = schema_overrides[field]
-        if modality is not None:
-            schema["metadata"]["modality"] = modality
-        if id_column is not None:
-            if id_column not in schema["fields"]:
-                raise ValueError(
-                    f"ID column {id_column} not found in dataset columns: {list(schema['fields'].keys())}"
-                )
-            schema["metadata"]["id_column"] = id_column
+    # wait for dataset upload
+    dataset_id = api.poll_ingestion_progress(api_key, upload_id, "Ingesting Dataset...")
 
-    api.confirm_schema(api_key, schema, upload_id)
-    dataset_id = get_ingestion_result(api_key, upload_id)
+    # if schema overrides, update schema and wait for reingestion
+    if schema_overrides:
+        # TODO
+        ...
+
+    # return dataset id
     return dataset_id
 
 
@@ -114,16 +101,6 @@ def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
     upload_parts = upload_file_parts(dataset_source, part_sizes, presigned_posts)
     api.complete_file_upload(api_key, upload_id, upload_parts)
     return upload_id
-
-
-def get_proposed_schema(api_key: str, upload_id: str) -> Optional[JSONDict]:
-    res = api.poll_progress(
-        upload_id,
-        functools.partial(api.get_proposed_schema, api_key),
-        "Generating schema...",
-    )
-    schema = res.get("schema")
-    return schema
 
 
 def get_ingestion_result(

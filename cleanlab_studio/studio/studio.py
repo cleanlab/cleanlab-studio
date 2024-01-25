@@ -63,8 +63,6 @@ class Studio:
         dataset_name: Optional[str] = None,
         *,
         schema_overrides: Optional[FieldSchemaDict] = None,
-        modality: Optional[str] = None,
-        id_column: Optional[str] = None,
     ) -> str:
         """
         Uploads a dataset to Cleanlab Studio.
@@ -84,8 +82,6 @@ class Studio:
             self._api_key,
             ds,
             schema_overrides=schema_overrides,
-            modality=modality,
-            id_column=id_column,
         )
 
     def download_cleanlab_columns(
