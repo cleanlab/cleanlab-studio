@@ -110,7 +110,7 @@ def create_df_based_imageset_archive(df, archive_name=None) -> str:
                 .joinpath(Path(original_path).resolve(strict=False).name)
                 .as_posix()
             )
-            row[image_col] = path_in_zip
+            row["filepath"] = path_in_zip
 
             # write row to a csv file called metadata.csv
             if first_row:
