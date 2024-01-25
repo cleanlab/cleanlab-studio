@@ -3,8 +3,6 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
-from cleanlab_studio.internal.util import get_databricks_imageset_df_image_col
-
 
 def dbfs_to_posix_path(dbfs_path: str) -> str:
     """
@@ -17,6 +15,30 @@ def dbfs_to_posix_path(dbfs_path: str) -> str:
         The POSIX path.
     """
     return f"/dbfs{dbfs_path[5:]}"
+
+
+def get_databricks_imageset_df_image_col(df) -> str:
+    from pyspark.sql.types import StructField, StructType
+    from pyspark.sql.types import StringType, IntegerType, BinaryType
+
+    # check for image column
+    required_image_fields = [
+        StructField("origin", StringType(), True),
+        StructField("height", IntegerType(), True),
+        StructField("width", IntegerType(), True),
+        StructField("nChannels", IntegerType(), True),
+        StructField("mode", IntegerType(), True),
+        StructField("data", BinaryType(), True),
+    ]
+
+    struct_col_schemas = [f for f in df.schema.fields if isinstance(f.dataType, StructType)]
+
+    for s in struct_col_schemas:
+        s_fields = s.dataType.fields
+        if all([f in s_fields for f in required_image_fields]):
+            return s.name
+
+    return None
 
 
 def create_path_based_imageset_archive(folder_path, archive_name=None) -> str:
@@ -77,7 +99,7 @@ def create_df_based_imageset_archive(df, archive_name=None) -> str:
 
     # Create a ZipFile object in write mode
     with zipfile.ZipFile(output_filename, "w", zipfile.ZIP_DEFLATED) as zipf, zipf.open(
-        f"{archive_name}/metadata.csv", "w"
+        Path(archive_name).joinpath("metadata.csv").as_posix()
     ) as metadata_file:
         first_row = True
         for row in df.toLocalIterator():
