@@ -350,6 +350,31 @@ def get_latest_cleanset_id(api_key: str, project_id: str) -> str:
     return str(cleanset_id)
 
 
+def poll_dataset_id_for_name(api_key: str, dataset_name: str, timeout: Optional[int]) -> str:
+    start_time = time.time()
+    while timeout is None or time.time() - start_time < timeout:
+        dataset_id = get_dataset_id_for_name(api_key, dataset_name, timeout)
+
+        if dataset_id is not None:
+            return dataset_id
+
+        time.sleep(5)
+
+    raise TimeoutError(f"Timed out waiting for dataset {dataset_name} to be created.")
+
+
+def get_dataset_id_for_name(
+    api_key: str, dataset_name: str, timeout: Optional[int]
+) -> Optional[str]:
+    res = requests.get(
+        dataset_base_url + f"/dataset_id_for_name",
+        params=dict(dataset_name=dataset_name),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return res.json().get("dataset_id", None)
+
+
 def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
     check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
