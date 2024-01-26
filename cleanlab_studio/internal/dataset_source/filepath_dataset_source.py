@@ -27,3 +27,6 @@ class FilepathDatasetSource(LocalDatasetSource):
     def get_filename(self) -> str:
         assert self._filepath is not None
         return self._filepath.name
+
+    def get_file_type(self) -> str:
+        return self.file_type

@@ -99,10 +99,10 @@ def initialize_upload(
     return upload_id, part_sizes, presigned_posts
 
 
-def initialize_segmented_upload(api_key: str, filename: str) -> (str, int):
+def initialize_stream_upload(api_key: str, filename: str, file_type: str) -> (str, int):
     res = requests.get(
-        f"{upload_base_url}/segmented",
-        params=dict(filename=filename),
+        f"{upload_base_url}/stream",
+        params=dict(filename=filename, file_type=file_type),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -111,13 +111,13 @@ def initialize_segmented_upload(api_key: str, filename: str) -> (str, int):
     return upload_id, part_size
 
 
-def upload_segmented_part(api_key: str, upload_id: str, part_number: int, part: str) -> JSONDict:
+def upload_stream_part(api_key: str, upload_id: str, part_number: int, part: str) -> JSONDict:
     session = requests.Session()
     session.mount("https://", adapter=HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1)))
 
     request_json = dict(upload_id=upload_id, part_number=part_number, part=part)
     res = session.put(
-        f"{upload_base_url}/segmented_part",
+        f"{upload_base_url}/stream_part",
         json=request_json,
         headers=_construct_headers(api_key),
     )

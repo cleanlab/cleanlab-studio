@@ -37,7 +37,3 @@ class LocalDatasetSource(DatasetSource):
         with self.fileobj() as f:
             for chunk_size in chunk_sizes:
                 yield f.read(chunk_size)
-
-    @abstractmethod
-    def get_filename(self) -> str:
-        pass

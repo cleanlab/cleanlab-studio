@@ -72,3 +72,6 @@ class LazyLoadedDatasetSource(DatasetSource, Generic[DataFrame]):
 
     def get_filename(self) -> str:
         return str(pathlib.Path(self.dataset_name).with_suffix(".json"))
+
+    def get_file_type(self) -> str:
+        return self.file_type

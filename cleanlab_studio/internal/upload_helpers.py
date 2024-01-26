@@ -106,7 +106,7 @@ def upload_file_parts(
     ]
 
 
-def upload_segmented_parts(
+def upload_stream_parts(
     api_key: str, upload_id: str, dataset_source: Any, part_size: int
 ) -> List[JSONDict]:
     responses = []
@@ -117,7 +117,7 @@ def upload_segmented_parts(
     )
 
     for chunk, rows in dataset_source.get_chunks(chunk_size=part_size):
-        resp = api.upload_segmented_part(api_key, upload_id, part_number, chunk)
+        resp = api.upload_stream_part(api_key, upload_id, part_number, chunk)
 
         responses.append(resp["ETag"])
         part_number += 1
@@ -131,10 +131,10 @@ def upload_segmented_parts(
 
 def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
     if _lazy_loaded_dataset_source_exists and isinstance(dataset_source, LazyLoadedDatasetSource):
-        upload_id, part_size = api.initialize_segmented_upload(
-            api_key, dataset_source.get_filename()
+        upload_id, part_size = api.initialize_stream_upload(
+            api_key, dataset_source.get_filename(), dataset_source.get_file_type()
         )
-        upload_parts = upload_segmented_parts(api_key, upload_id, dataset_source, part_size)
+        upload_parts = upload_stream_parts(api_key, upload_id, dataset_source, part_size)
     else:
         upload_id, part_sizes, presigned_posts = api.initialize_upload(
             api_key,

@@ -14,3 +14,7 @@ class DatasetSource:
     @abstractmethod
     def get_filename(self) -> str:
         pass
+
+    @abstractmethod
+    def get_file_type(self) -> str:
+        pass
