@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def dbfs_to_posix_path(dbfs_path: str) -> str:
+def dbfs_to_posix_path(dbfs_path: pathlib.Path) -> pathlib.Path:
     """
     Converts a DBFS path to a POSIX path.
 
@@ -14,7 +14,9 @@ def dbfs_to_posix_path(dbfs_path: str) -> str:
     Returns:
         The POSIX path.
     """
-    return f"/dbfs{dbfs_path[5:]}"
+    first_part = dbfs_path.parts[0]
+    if first_part == 'dbfs:':
+      return pathlib.Path('/dbfs').joinpath(dbfs_path.relative_to(first_part))
 
 
 def get_databricks_imageset_df_image_col(df) -> str:
