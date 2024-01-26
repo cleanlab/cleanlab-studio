@@ -1,10 +1,9 @@
-import os
 import zipfile
 from datetime import datetime
 from pathlib import Path
 
 
-def dbfs_to_posix_path(dbfs_path: pathlib.Path) -> pathlib.Path:
+def dbfs_to_posix_path(dbfs_path: Path) -> Path:
     """
     Converts a DBFS path to a POSIX path.
 
@@ -15,8 +14,8 @@ def dbfs_to_posix_path(dbfs_path: pathlib.Path) -> pathlib.Path:
         The POSIX path.
     """
     first_part = dbfs_path.parts[0]
-    if first_part == 'dbfs:':
-      return pathlib.Path('/dbfs').joinpath(dbfs_path.relative_to(first_part))
+    if first_part == "dbfs:":
+        return Path("/dbfs").joinpath(dbfs_path.relative_to(first_part))
 
 
 def get_databricks_imageset_df_image_col(df) -> str:
@@ -67,7 +66,7 @@ def create_path_based_imageset_archive(folder_path, archive_name=None) -> str:
     # Create a ZipFile object in write mode
     with zipfile.ZipFile(output_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
         # Walk through the directory
-        for root, _, files in os.walk(folder_path):
+        for root, _, files in Path(folder_path).walk():
             for file in files:
                 # Create a full path
                 full_path = Path(root).joinpath(file).as_posix()
@@ -109,9 +108,7 @@ def create_df_based_imageset_archive(df, archive_name=None) -> str:
             original_path = dbfs_to_posix_path(row[image_col].origin)
             del row[image_col]
             path_in_zip = (
-                Path(archive_name)
-                .joinpath(Path(original_path).resolve(strict=False).name)
-                .as_posix()
+                Path(archive_name).joinpath(original_path.resolve(strict=False).name).as_posix()
             )
             row["filepath"] = path_in_zip
 
@@ -126,12 +123,10 @@ def create_df_based_imageset_archive(df, archive_name=None) -> str:
             row = row.asDict()
             original_path = dbfs_to_posix_path(row[image_col].origin)
             path_in_zip = (
-                Path(archive_name)
-                .joinpath(Path(original_path).resolve(strict=False).name)
-                .as_posix()
+                Path(archive_name).joinpath(original_path.resolve(strict=False).name).as_posix()
             )
 
             # add row image to the zip file
-            zipf.write(original_path, arcname=path_in_zip)
+            zipf.write(original_path.as_posix(), arcname=path_in_zip)
 
     return output_filename
