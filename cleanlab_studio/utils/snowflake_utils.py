@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 import pandas as pd
 import snowflake
 
@@ -33,7 +34,7 @@ def get_snowflake_datarows(
 def get_snowflake_simple_imageset(
     snowflake_cursor: snowflake.connector.cursor,
     stage_name: str,
-    root: str = None,
+    root: Optional[str] = None,
     signed_url_expiration: int = 604800,
 ) -> pd.DataFrame:
     """

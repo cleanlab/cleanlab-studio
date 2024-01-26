@@ -1,3 +1,4 @@
+from typing import Optional
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -5,7 +6,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.types import StructField, StructType, StringType, IntegerType, BinaryType
 
 
-def dbfs_to_posix_path(dbfs_path: Path) -> Path:
+def dbfs_to_posix_path(dbfs_path: Path) -> Optional[Path]:
     """
     Converts a DBFS path to a POSIX path.
 
@@ -18,9 +19,10 @@ def dbfs_to_posix_path(dbfs_path: Path) -> Path:
     first_part = dbfs_path.parts[0]
     if first_part == "dbfs:":
         return Path("/dbfs").joinpath(dbfs_path.relative_to(first_part))
+    return None
 
 
-def get_databricks_imageset_df_image_col(df: DataFrame) -> str:
+def get_databricks_imageset_df_image_col(df: DataFrame) -> Optional[str]:
     # check for image column
     required_image_fields = [
         StructField("origin", StringType(), True),
@@ -41,7 +43,7 @@ def get_databricks_imageset_df_image_col(df: DataFrame) -> str:
     return None
 
 
-def create_path_based_imageset_archive(folder_path: str, archive_name: str = None) -> str:
+def create_path_based_imageset_archive(folder_path: str, archive_name: Optional[str] = None) -> str:
     """
     Archives an imageset stored on Databricks which can then be uploaded Cleanlab Studio.
     The imageset folder should match the layout described in the Cleanlab Studio documentations.
@@ -76,7 +78,7 @@ def create_path_based_imageset_archive(folder_path: str, archive_name: str = Non
     return output_filename
 
 
-def create_df_based_imageset_archive(df: DataFrame, archive_name: str = None) -> str:
+def create_df_based_imageset_archive(df: DataFrame, archive_name: Optional[str] = None) -> str:
     """
     Archives an imageset described by a pyspark DataFrame stored on Databricks which can then be uploaded Cleanlab Studio.
 
