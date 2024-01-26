@@ -48,6 +48,7 @@ setup(
         "aiohttp>=3.8.1",
         "Click>=8.1.0,<=8.1.3",
         "colorama>=0.4.4",
+        "nest_asyncio>=1.5.0",
         "pandas==2.*",
         "pyexcel>=0.7.0",
         "pyexcel-xls>=0.7.0",

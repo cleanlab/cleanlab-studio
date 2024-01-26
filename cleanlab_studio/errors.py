@@ -14,6 +14,12 @@ class APIError(Exception):
     pass
 
 
+class RateLimitError(APIError):
+    def __init__(self, message: str, retry_after: int):
+        self.message = message
+        self.retry_after = retry_after
+
+
 class UnsupportedVersionError(APIError):
     def __init__(self) -> None:
         super().__init__(
