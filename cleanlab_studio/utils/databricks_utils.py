@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.types import StructField, StructType, StringType, IntegerType, BinaryType
 
 
-def dbfs_to_posix_path(dbfs_path: Path) -> Optional[Path]:
+def dbfs_to_posix_path(dbfs_path: Path) -> Path:
     """
     Converts a DBFS path to a POSIX path.
 
@@ -14,12 +14,12 @@ def dbfs_to_posix_path(dbfs_path: Path) -> Optional[Path]:
         dbfs_path: The DBFS path to convert.
 
     Returns:
-        The POSIX path.
+        The POSIX path. Returns original path if it's not a dbfs path.
     """
     first_part = dbfs_path.parts[0]
     if first_part == "dbfs:":
         return Path("/dbfs").joinpath(dbfs_path.relative_to(first_part))
-    return None
+    return dbfs_path
 
 
 def get_databricks_imageset_df_image_col(df: DataFrame) -> Optional[str]:
