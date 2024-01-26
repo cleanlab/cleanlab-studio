@@ -1,8 +1,13 @@
 import os
 import pandas as pd
+import snowflake
 
 
-def get_snowflake_datarows(snowflake_cursor, stage_name, signed_url_expiration=604800):
+def get_snowflake_datarows(
+    snowflake_cursor: snowflake.connector.cursor,
+    stage_name: str,
+    signed_url_expiration: int = 604800,
+) -> pd.DataFrame:
     """
     Returns a pandas DataFrame listing the path and presigned URLs of files stored in a Snowflake stage.
     Original implemetation here https://github.com/Labelbox/labelsnow/blob/main/labelsnow/get_snowflake_datarows.py
@@ -26,8 +31,11 @@ def get_snowflake_datarows(snowflake_cursor, stage_name, signed_url_expiration=6
 
 
 def get_snowflake_simple_imageset(
-    snowflake_cursor, stage_name, root=None, signed_url_expiration=604800
-):
+    snowflake_cursor: snowflake.connector.cursor,
+    stage_name: str,
+    root: str = None,
+    signed_url_expiration: int = 604800,
+) -> pd.DataFrame:
     """
     Returns a pandas DataFrame listing the class and presigned URLs of images from an image dataset hosted on Snowflake.
     A dataset should be identified by its Snowflake stage and path from the stage to its root.
@@ -73,11 +81,11 @@ def get_snowflake_simple_imageset(
 
 
 def get_snowflake_metadata_imageset(
-    snowflake_cursor,
-    stage_name,
-    metadata_path="metadata.csv",
-    signed_url_expiration=604800,
-):
+    snowflake_cursor: snowflake.connector.cursor,
+    stage_name: str,
+    metadata_path: str = "metadata.csv",
+    signed_url_expiration: int = 604800,
+) -> pd.DataFrame:
     """
     Returns a pandas DataFrame, listing pre-signed url of images, from an image dataset stored on snowflake and described by a metadata file. The meta data file and directory storing it should match the description from https://help.cleanlab.ai/guide/concepts/datasets/#metadata-zip.
 
