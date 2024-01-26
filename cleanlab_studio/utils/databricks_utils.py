@@ -1,7 +1,6 @@
 import zipfile
 from datetime import datetime
 from pathlib import Path
-import os
 from pyspark.sql import DataFrame
 from pyspark.sql.types import StructField, StructType, StringType, IntegerType, BinaryType
 
@@ -66,15 +65,13 @@ def create_path_based_imageset_archive(folder_path: str, archive_name: str = Non
     # Create a ZipFile object in write mode
     with zipfile.ZipFile(output_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
         # Walk through the directory
-        for root, _, files in os.walk(folder_path):
-            for file in files:
-                # Create a full path
-                full_path = Path(root).joinpath(file).as_posix()
+        for file in Path(folder_path).glob("**/*"):
+            if file.is_file():
                 # Add file to the zip file
                 # The arcname argument sets the name within the zip file
-                relpath = Path(full_path).relative_to(Path(folder_path))
+                relpath = file.relative_to(Path(folder_path))
                 arcname = Path(folder_name).joinpath(relpath).as_posix()
-                zipf.write(full_path, arcname=arcname)
+                zipf.write(file, arcname=arcname)
 
     return output_filename
 
