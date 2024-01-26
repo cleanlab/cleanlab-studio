@@ -8,11 +8,6 @@ import os
 import numpy as np
 import pandas as pd
 
-from cleanlab_studio.utils.databricks_utils import (
-    create_path_based_imageset_archive,
-    create_df_based_imageset_archive,
-    get_databricks_imageset_df_image_col,
-)
 
 try:
     import snowflake.snowpark as snowpark
@@ -27,6 +22,15 @@ try:
     pyspark_exists = True
 except ImportError:
     pyspark_exists = False
+
+on_databricks = bool(os.environ.get("DATABRICKS_RUNTIME_VERSION"))
+
+if on_databricks and pyspark_exists:
+    from cleanlab_studio.utils.databricks_utils import (
+        create_path_based_imageset_archive,
+        create_df_based_imageset_archive,
+        get_databricks_imageset_df_image_col,
+    )
 
 from .dataset_source import (
     DatasetSource,
@@ -231,16 +235,12 @@ def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
 
 
-def on_databricks() -> bool:
-    return bool(os.environ.get("DATABRICKS_RUNTIME_VERSION"))
-
-
 def is_unzipped_databricks_imageset(path: str) -> bool:
-    return on_databricks() and isinstance(path, str) and os.path.isdir(path)
+    return on_databricks and isinstance(path, str) and os.path.isdir(path)
 
 
 def is_databricks_imageset_df(df: Any) -> bool:
-    if not on_databricks() or not pyspark_exists or "label" not in df.columns:
+    if not on_databricks or not pyspark_exists or "label" not in df.columns:
         return False
     # check for image column
     return get_databricks_imageset_df_image_col(df) is not None
