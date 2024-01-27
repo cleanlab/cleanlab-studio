@@ -1,6 +1,7 @@
 """
 Helper functions for working with schemas
 """
+
 import decimal
 import json
 import pathlib
