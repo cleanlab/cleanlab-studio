@@ -1,8 +1,8 @@
 import asyncio
 import functools
 import json
-from typing import List, Optional
-from tqdm import tqdm
+from typing import List, Optional, Any
+from tqdm import tqdm, trange
 
 import aiohttp
 from multidict import CIMultiDictProxy
@@ -10,8 +10,14 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 from .api import api
-from .dataset_source import DatasetSource
+from .dataset_source import DatasetSource, LocalDatasetSource
 from .types import FieldSchemaDict, JSONDict
+
+_snowflake_exists = api.snowflake_exists
+_pyspark_exists = api.pyspark_exists
+_lazy_loaded_dataset_source_exists = _snowflake_exists or _pyspark_exists
+if _lazy_loaded_dataset_source_exists:
+    from .dataset_source import LazyLoadedDatasetSource
 
 
 def upload_dataset(
@@ -61,7 +67,7 @@ async def _upload_file_chunk_async(
 
 
 async def upload_file_parts_async(
-    dataset_source: DatasetSource, part_sizes: List[int], presigned_posts: List[str]
+    dataset_source: LocalDatasetSource, part_sizes: List[int], presigned_posts: List[str]
 ) -> List[JSONDict]:
     tasks = []
     chunks = dataset_source.get_chunks(part_sizes)
@@ -80,7 +86,7 @@ async def upload_file_parts_async(
 
 
 def upload_file_parts(
-    dataset_source: DatasetSource, part_sizes: List[int], presigned_posts: List[str]
+    dataset_source: LocalDatasetSource, part_sizes: List[int], presigned_posts: List[str]
 ) -> List[JSONDict]:
     session = requests.Session()
     session.mount("https://", adapter=HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1)))
@@ -104,14 +110,44 @@ def upload_file_parts(
     ]
 
 
-def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
-    upload_id, part_sizes, presigned_posts = api.initialize_upload(
-        api_key,
-        dataset_source.get_filename(),
-        dataset_source.file_type,
-        dataset_source.file_size,
+def upload_stream_parts(
+    api_key: str, upload_id: str, dataset_source: Any, part_size: int
+) -> List[JSONDict]:
+    responses = []
+    part_number = 1
+
+    t = trange(
+        100, desc="Uploading dataset...", leave=True, bar_format="{desc}: {percentage:3.0f}%|{bar}|"
     )
-    upload_parts = upload_file_parts(dataset_source, part_sizes, presigned_posts)
+
+    for chunk, rows in dataset_source.get_chunks(chunk_size=part_size):
+        resp = api.upload_stream_part(api_key, upload_id, part_number, chunk)
+
+        responses.append(resp["ETag"])
+        part_number += 1
+
+        t.update(rows // dataset_source.total_rows * 100)
+
+    t.close()
+
+    return [{"ETag": json.loads(etag), "PartNumber": i + 1} for i, etag in enumerate(responses)]
+
+
+def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
+    if _lazy_loaded_dataset_source_exists and isinstance(dataset_source, LazyLoadedDatasetSource):
+        upload_id, part_size = api.initialize_stream_upload(
+            api_key, dataset_source.get_filename(), dataset_source.get_file_type()
+        )
+        upload_parts = upload_stream_parts(api_key, upload_id, dataset_source, part_size)
+    else:
+        assert isinstance(dataset_source, LocalDatasetSource)
+        upload_id, part_sizes, presigned_posts = api.initialize_upload(
+            api_key,
+            dataset_source.get_filename(),
+            dataset_source.get_file_type(),
+            dataset_source.file_size,
+        )
+        upload_parts = upload_file_parts(dataset_source, part_sizes, presigned_posts)
     api.complete_file_upload(api_key, upload_id, upload_parts)
     return upload_id
 

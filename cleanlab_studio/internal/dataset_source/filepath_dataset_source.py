@@ -2,10 +2,10 @@ import mimetypes
 import pathlib
 from typing import Any, Optional
 
-from .dataset_source import DatasetSource
+from .local_dataset_source import LocalDatasetSource
 
 
-class FilepathDatasetSource(DatasetSource):
+class FilepathDatasetSource(LocalDatasetSource):
     def __init__(
         self,
         *args: Any,
@@ -27,3 +27,6 @@ class FilepathDatasetSource(DatasetSource):
     def get_filename(self) -> str:
         assert self._filepath is not None
         return self._filepath.name
+
+    def get_file_type(self) -> str:
+        return self.file_type

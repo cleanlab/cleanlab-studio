@@ -1,7 +1,4 @@
-import io
-from typing import IO
-
-import pandas as pd
+from typing import Any
 
 try:
     import pyspark.sql
@@ -10,13 +7,17 @@ except ImportError:
         'Must install pyspark to upload from pyspark dataframe. Use "pip install pyspark"'
     )
 
-from .dataframe_dataset_source import DataFrameDatasetSource
+from pyspark.sql import DataFrame
+from .lazy_loaded_dataset_source import LazyLoadedDatasetSource
 
 
-class PySparkDatasetSource(DataFrameDatasetSource[pyspark.sql.DataFrame]):
-    def _init_fileobj_from_df(self, df: pyspark.sql.DataFrame) -> IO[bytes]:
-        fileobj = io.BytesIO()
-        pd_df: pd.DataFrame = df.toPandas()
-        pd_df.to_json(fileobj, orient="records")
-        fileobj.seek(0)
-        return fileobj
+class PySparkDatasetSource(LazyLoadedDatasetSource[pyspark.sql.DataFrame]):
+    def __init__(self, df: DataFrame, *args: Any, **kwargs: Any) -> None:
+        self.dataframe = df
+        super().__init__(*args, **kwargs)
+
+    def _get_rows(self) -> int:
+        return int(self.dataframe.count())
+
+    def get_rows_iterator(self) -> Any:
+        return self.dataframe.toLocalIterator()

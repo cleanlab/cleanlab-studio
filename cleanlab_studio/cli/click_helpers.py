@@ -7,6 +7,7 @@ Progress status: blue
 Information: default
 Success/completion: green
 """
+
 import os
 
 import click

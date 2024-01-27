@@ -1,7 +1,4 @@
-import io
-from typing import IO
-
-import pandas as pd
+from typing import Any
 
 try:
     import snowflake.snowpark as snowpark
@@ -10,13 +7,17 @@ except ImportError:
         'Must install snowpark to upload from snowpark dataframe. Use "pip install snowflake-snowpark-python"'
     )
 
-from .dataframe_dataset_source import DataFrameDatasetSource
+from snowflake.snowpark import DataFrame
+from .lazy_loaded_dataset_source import LazyLoadedDatasetSource
 
 
-class SnowparkDatasetSource(DataFrameDatasetSource[snowpark.DataFrame]):
-    def _init_fileobj_from_df(self, df: snowpark.DataFrame) -> IO[bytes]:
-        fileobj = io.BytesIO()
-        pd_df: pd.DataFrame = df.to_pandas()
-        pd_df.to_csv(fileobj, index=False)
-        fileobj.seek(0)
-        return fileobj
+class SnowparkDatasetSource(LazyLoadedDatasetSource[snowpark.DataFrame]):
+    def __init__(self, df: DataFrame, *args: Any, **kwargs: Any) -> None:
+        self.dataframe = df
+        super().__init__(*args, **kwargs)
+
+    def _get_rows(self) -> int:
+        return int(self.dataframe.count())
+
+    def get_rows_iterator(self) -> Any:
+        return self.dataframe.toLocalIterator()

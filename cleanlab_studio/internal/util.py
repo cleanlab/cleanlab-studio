@@ -1,11 +1,11 @@
 import pathlib
-from typing import Any, Optional, TypeVar, Union, List
+from typing import IO, Any, Optional, TypeVar, Union, List
 import math
 import uuid
 
 
-import numpy as np
 import pandas as pd
+import os
 
 try:
     import snowflake.snowpark as snowpark
@@ -215,3 +215,19 @@ def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
         raise ValueError(
             f"{uuid_string} is not a well-formed {id_name}, please double check and try again."
         )
+
+
+def bytes_remaining(stream: IO[bytes]) -> int:
+    current_position = stream.tell()
+    stream.seek(0, os.SEEK_END)
+    total_size = stream.tell()
+    stream.seek(current_position)
+    return total_size - current_position
+
+
+def str_as_bytes(string: str) -> bytes:
+    return str.encode(string)
+
+
+def len_of_string_as_bytes(string: str) -> int:
+    return len(str_as_bytes(string))
