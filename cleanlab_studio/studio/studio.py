@@ -266,6 +266,22 @@ class Studio:
         """
         return api.get_latest_cleanset_id(self._api_key, project_id)
 
+    def poll_dataset_id_for_name(self, dataset_name: str, timeout: Optional[int] = None) -> str:
+        """
+        Polls for dataset ID for a dataset name.
+
+        Args:
+            dataset_name: Name of dataset to get ID for.
+            timeout: Optional timeout after which to stop polling for progress. If not provided, will block until dataset is ready.
+
+        Returns
+            ID of dataset.
+
+        Raises
+            TimeoutError: if dataset is not ready by end of timeout
+        """
+        return api.poll_dataset_id_for_name(self._api_key, dataset_name, timeout)
+
     def delete_project(self, project_id: str) -> None:
         """
         Deletes a project from Cleanlab Studio.
@@ -324,17 +340,21 @@ class Studio:
         return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
 
     def TLM(
-        self, *, quality_preset: trustworthy_language_model.QualityPreset = "medium"
+        self,
+        *,
+        quality_preset: trustworthy_language_model.QualityPreset = "medium",
+        **kwargs: Any,
     ) -> trustworthy_language_model.TLM:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
         Args:
             quality_preset: quality preset to use for prompts
+            kwargs (Any): additional kwargs to pass to TLM class
 
         Returns:
             TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
         """
-        return trustworthy_language_model.TLM(self._api_key, quality_preset)
+        return trustworthy_language_model.TLM(self._api_key, quality_preset, **kwargs)
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
         """

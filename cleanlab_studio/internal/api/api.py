@@ -1,9 +1,11 @@
+import asyncio
 import io
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
-from cleanlab_studio.errors import APIError
+from cleanlab_studio.errors import APIError, RateLimitError
 
+import aiohttp
 import requests
 from tqdm import tqdm
 import pandas as pd
@@ -63,6 +65,15 @@ def handle_api_error_from_json(res_json: JSONDict) -> None:
             raise APIError(res_json["description"])
     if res_json.get("error", None) is not None:
         raise APIError(res_json["error"])
+
+
+def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+    """Catches 429 (rate limit) errors."""
+    if resp.status == 429:
+        print(f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0)))
+        raise RateLimitError(
+            f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0))
+        )
 
 
 def validate_api_key(api_key: str) -> bool:
@@ -339,6 +350,31 @@ def get_latest_cleanset_id(api_key: str, project_id: str) -> str:
     return str(cleanset_id)
 
 
+def poll_dataset_id_for_name(api_key: str, dataset_name: str, timeout: Optional[int]) -> str:
+    start_time = time.time()
+    while timeout is None or time.time() - start_time < timeout:
+        dataset_id = get_dataset_id_for_name(api_key, dataset_name, timeout)
+
+        if dataset_id is not None:
+            return dataset_id
+
+        time.sleep(5)
+
+    raise TimeoutError(f"Timed out waiting for dataset {dataset_name} to be created.")
+
+
+def get_dataset_id_for_name(
+    api_key: str, dataset_name: str, timeout: Optional[int]
+) -> Optional[str]:
+    res = requests.get(
+        dataset_base_url + f"/dataset_id_for_name",
+        params=dict(dataset_name=dataset_name),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(Optional[str], res.json().get("dataset_id", None))
+
+
 def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
     check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
@@ -425,11 +461,42 @@ def get_deployed_model_info(api_key: str, model_id: str) -> Dict[str, str]:
     return cast(Dict[str, str], res.json())
 
 
-def tlm_prompt(
+def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Implements TLM retry decorator, with special handling for rate limit retries."""
+
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # total number of tries = number of retries + original try
+        retries = kwargs.pop("retries", 0)
+        num_tries = retries + 1
+
+        sleep_time = 0
+        error_message = ""
+
+        for num_try in range(num_tries):
+            await asyncio.sleep(sleep_time)
+            try:
+                return await func(*args, **kwargs)
+            except RateLimitError as e:
+                sleep_time = e.retry_after
+                error_message = (
+                    "Try setting a smaller max_concurrent_requests or using a shorter prompt."
+                )
+            except Exception as e:
+                sleep_time = 2**num_try
+                error_message = str(e)
+        else:
+            raise APIError(f"TLM failed after {retries + 1} attempts. {error_message}", -1)
+
+    return wrapper
+
+
+@tlm_retry
+async def tlm_prompt(
     api_key: str,
     prompt: str,
     quality_preset: str,
     options: Optional[JSONDict],
+    client_session: Optional[aiohttp.ClientSession] = None,
 ) -> JSONDict:
     """
     Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
@@ -438,25 +505,43 @@ def tlm_prompt(
         api_key (str): studio API key for auth
         prompt (str): prompt for TLM to respond to
         quality_preset (str): quality preset to use to generate response
+        options (JSONDict): additional parameters for TLM
+        client_session (aiohttp.ClientSession): client session used to issue TLM request
 
     Returns:
         JSONDict: dictionary with TLM response and confidence score
     """
-    res = requests.post(
-        f"{tlm_base_url}/prompt",
-        json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
-        headers=_construct_headers(api_key),
-    )
-    handle_api_error(res)
-    return cast(JSONDict, res.json())
+    local_scoped_client = False
+    if not client_session:
+        client_session = aiohttp.ClientSession()
+        local_scoped_client = True
+
+    try:
+        res = await client_session.post(
+            f"{tlm_base_url}/prompt",
+            json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
+            headers=_construct_headers(api_key),
+        )
+        res_json = await res.json()
+
+        handle_rate_limit_error_from_resp(res)
+        handle_api_error_from_json(res_json)
+
+    finally:
+        if local_scoped_client:
+            await client_session.close()
+
+    return cast(JSONDict, res_json)
 
 
-def tlm_get_confidence_score(
+@tlm_retry
+async def tlm_get_confidence_score(
     api_key: str,
     prompt: str,
     response: str,
     quality_preset: str,
     options: Optional[JSONDict],
+    client_session: Optional[aiohttp.ClientSession] = None,
 ) -> JSONDict:
     """
     Query Trustworthy Language Model for a confidence score for the prompt-response pair.
@@ -466,14 +551,27 @@ def tlm_get_confidence_score(
         prompt (str): prompt for TLM to get confidence score for
         response (str): response for TLM to get confidence score for
         quality_preset (str): quality preset to use to generate confidence score
+        options (JSONDict): additional parameters for TLM
+        client_session (aiohttp.ClientSession): client session used to issue TLM request
 
     Returns:
         JSONDict: dictionary with TLM confidence score
     """
-    res = requests.post(
+    local_scoped_client = False
+    if not client_session:
+        client_session = aiohttp.ClientSession()
+        local_scoped_client = True
+
+    res = await client_session.post(
         f"{tlm_base_url}/get_confidence_score",
         json=dict(prompt=prompt, response=response, quality=quality_preset, options=options or {}),
         headers=_construct_headers(api_key),
     )
-    handle_api_error(res)
-    return cast(JSONDict, res.json())
+    res_json = await res.json()
+
+    if local_scoped_client:
+        await client_session.close()
+
+    handle_rate_limit_error_from_resp(res)
+    handle_api_error_from_json(res_json)
+    return cast(JSONDict, res_json)
