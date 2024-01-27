@@ -17,7 +17,7 @@ class PySparkDatasetSource(LazyLoadedDatasetSource[pyspark.sql.DataFrame]):
         super().__init__(*args, **kwargs)
 
     def _get_rows(self) -> int:
-        return self.dataframe.count()
+        return int(self.dataframe.count())
 
     def get_rows_iterator(self) -> Any:
         return self.dataframe.toLocalIterator()
