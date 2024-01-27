@@ -10,7 +10,7 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 from .api import api
-from .dataset_source import DatasetSource
+from .dataset_source import DatasetSource, LocalDatasetSource
 from .types import FieldSchemaDict, JSONDict
 
 _snowflake_exists = api.snowflake_exists
@@ -67,7 +67,7 @@ async def _upload_file_chunk_async(
 
 
 async def upload_file_parts_async(
-    dataset_source: DatasetSource, part_sizes: List[int], presigned_posts: List[str]
+    dataset_source: LocalDatasetSource, part_sizes: List[int], presigned_posts: List[str]
 ) -> List[JSONDict]:
     tasks = []
     chunks = dataset_source.get_chunks(part_sizes)
@@ -86,7 +86,7 @@ async def upload_file_parts_async(
 
 
 def upload_file_parts(
-    dataset_source: DatasetSource, part_sizes: List[int], presigned_posts: List[str]
+    dataset_source: LocalDatasetSource, part_sizes: List[int], presigned_posts: List[str]
 ) -> List[JSONDict]:
     session = requests.Session()
     session.mount("https://", adapter=HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1)))
@@ -140,10 +140,11 @@ def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
         )
         upload_parts = upload_stream_parts(api_key, upload_id, dataset_source, part_size)
     else:
+        assert isinstance(dataset_source, LocalDatasetSource)
         upload_id, part_sizes, presigned_posts = api.initialize_upload(
             api_key,
             dataset_source.get_filename(),
-            dataset_source.file_type,
+            dataset_source.get_file_type(),
             dataset_source.file_size,
         )
         upload_parts = upload_file_parts(dataset_source, part_sizes, presigned_posts)

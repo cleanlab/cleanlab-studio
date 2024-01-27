@@ -40,8 +40,13 @@ class LazyLoadedDatasetSource(DatasetSource, Generic[DataFrame]):
         self.total_rows = self._get_rows()
         self.file_type = "application/json"
 
+    @abstractmethod
     def _get_rows(self) -> int:
-        return self.dataframe.count()
+        pass
+
+    @abstractmethod
+    def get_rows_iterator(self) -> Any:
+        pass
 
     def get_chunks(self, chunk_size: int) -> Iterator[tuple[str, int]]:
         first = True
@@ -49,7 +54,7 @@ class LazyLoadedDatasetSource(DatasetSource, Generic[DataFrame]):
         rows = 0
         buffer = ""
 
-        for row in self.dataframe.toLocalIterator():
+        for row in self.get_rows_iterator():
             if first:
                 buffer += f"[{json.dumps(row.asDict())}"
                 first = False

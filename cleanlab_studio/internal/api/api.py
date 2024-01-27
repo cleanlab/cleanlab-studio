@@ -110,7 +110,7 @@ def initialize_upload(
     return upload_id, part_sizes, presigned_posts
 
 
-def initialize_stream_upload(api_key: str, filename: str, file_type: str) -> (str, int):
+def initialize_stream_upload(api_key: str, filename: str, file_type: str) -> Tuple[str, int]:
     res = requests.get(
         f"{upload_base_url}/stream",
         params=dict(filename=filename, file_type=file_type),
