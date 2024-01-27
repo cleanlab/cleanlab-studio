@@ -81,7 +81,7 @@ def init_dataset_source(
         raise ValueError("Invalid dataset source provided")
 
 
-def cleanup_temporary_files(dataset: Any, dataset_source: DatasetSource):
+def cleanup_temporary_files(dataset: Any, dataset_source: DatasetSource) -> None:
     if is_unzipped_databricks_imageset(dataset):
         os.remove(dataset_source.get_filename())
     if (
