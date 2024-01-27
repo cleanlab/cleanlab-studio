@@ -2,7 +2,7 @@ import os
 from typing import Optional
 import pandas as pd
 import snowflake
-from typing import Callable
+from typing import Callable, Any
 
 
 def get_snowflake_datarows(
@@ -110,7 +110,7 @@ def get_snowflake_metadata_imageset(
     snowflake_cursor.execute((f"get @{stage_name}/{metadata_path} file://."))
     df = pd.read_csv("metadata.csv")
 
-    def get_presigned_url(filepath: str) -> str:
+    def get_presigned_url(filepath: str) -> Any:
         snowflake_cursor.execute(
             f"select get_presigned_url(@{stage_name}, '{parent_of_parent}{filepath}', {signed_url_expiration})"
         )

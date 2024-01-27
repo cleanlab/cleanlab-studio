@@ -39,7 +39,7 @@ def get_databricks_imageset_df_image_col(df: DataFrame) -> Optional[str]:
     for s in struct_col_schemas:
         s_fields = s.dataType.fields
         if all([f in s_fields for f in required_image_fields]):
-            return s.name
+            return str(s.name)
 
     return None
 
