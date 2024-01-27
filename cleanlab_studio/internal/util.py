@@ -4,8 +4,10 @@ import math
 import uuid
 
 
+import os
 import numpy as np
 import pandas as pd
+
 
 try:
     import snowflake.snowpark as snowpark
@@ -20,6 +22,15 @@ try:
     pyspark_exists = True
 except ImportError:
     pyspark_exists = False
+
+on_databricks = bool(os.environ.get("DATABRICKS_RUNTIME_VERSION"))
+
+if on_databricks and pyspark_exists:
+    from cleanlab_studio.utils.databricks_utils import (
+        create_path_based_imageset_archive,
+        create_df_based_imageset_archive,
+        get_databricks_imageset_df_image_col,
+    )
 
 from .dataset_source import (
     DatasetSource,
@@ -46,6 +57,8 @@ def init_dataset_source(
     elif isinstance(dataset_source, pathlib.Path):
         return FilepathDatasetSource(filepath=dataset_source, dataset_name=dataset_name)
     elif isinstance(dataset_source, str):
+        if is_unzipped_databricks_imageset(dataset_source):
+            dataset_source = create_path_based_imageset_archive(dataset_source)
         return FilepathDatasetSource(
             filepath=pathlib.Path(dataset_source), dataset_name=dataset_name
         )
@@ -60,9 +73,23 @@ def init_dataset_source(
 
         if dataset_name is None:
             raise ValueError("Must provide dataset name if uploading from a DataFrame")
+        if is_databricks_imageset_df(dataset_source):
+            archive = create_df_based_imageset_archive(dataset_source)
+            return FilepathDatasetSource(filepath=pathlib.Path(archive), dataset_name=dataset_name)
         return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     else:
         raise ValueError("Invalid dataset source provided")
+
+
+def cleanup_temporary_files(dataset: Any, dataset_source: DatasetSource) -> None:
+    if is_unzipped_databricks_imageset(dataset):
+        os.remove(dataset_source.get_filename())
+    if (
+        pyspark_exists
+        and isinstance(dataset, pyspark.sql.DataFrame)
+        and is_databricks_imageset_df(dataset)
+    ):
+        os.remove(dataset_source.get_filename())
 
 
 def apply_corrections_snowpark_df(
@@ -206,6 +233,17 @@ def quote(s: str) -> str:
 
 def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
+
+
+def is_unzipped_databricks_imageset(path: str) -> bool:
+    return on_databricks and isinstance(path, str) and os.path.isdir(path)
+
+
+def is_databricks_imageset_df(df: Any) -> bool:
+    if not on_databricks or not pyspark_exists or "label" not in df.columns:
+        return False
+    # check for image column
+    return get_databricks_imageset_df_image_col(df) is not None
 
 
 def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
