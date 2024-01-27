@@ -1,6 +1,7 @@
 from typing import Optional
 import zipfile
 from datetime import datetime
+from tqdm import trange
 from pathlib import Path
 from pyspark.sql import DataFrame
 from pyspark.sql.types import StructField, StructType, StringType, IntegerType, BinaryType
@@ -102,6 +103,7 @@ def create_df_based_imageset_archive(df: DataFrame, archive_name: Optional[str] 
         Path(archive_name).joinpath("metadata.csv").as_posix(), "w"
     ) as metadata_file:
         first_row = True
+        total_rows = 0
         for row in df.toLocalIterator():
             row = row.asDict()
             original_path = dbfs_to_posix_path(Path(row[image_col].origin))
@@ -116,7 +118,18 @@ def create_df_based_imageset_archive(df: DataFrame, archive_name: Optional[str] 
                 metadata_file.write((",".join(map(str, row.keys())) + "\n").encode("utf-8"))
                 first_row = False
             metadata_file.write((",".join(map(str, row.values())) + "\n").encode("utf-8"))
+
+            total_rows += 1
+
         metadata_file.close()
+
+        t = trange(
+            100,
+            desc="Archiving dataset...",
+            leave=True,
+            bar_format="{desc}: {percentage:3.0f}%|{bar}|",
+        )
+        rows_written = 0
 
         for row in df.toLocalIterator():
             row = row.asDict()
@@ -127,5 +140,8 @@ def create_df_based_imageset_archive(df: DataFrame, archive_name: Optional[str] 
 
             # add row image to the zip file
             zipf.write(original_path.as_posix(), arcname=path_in_zip)
+
+            rows_written += 1
+            t.update(rows_written // total_rows * 100)
 
     return output_filename
