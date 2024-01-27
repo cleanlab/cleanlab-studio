@@ -33,9 +33,8 @@ DataFrame = TypeVar("DataFrame", bound=df_type_bound)  # type: ignore
 
 
 class LazyLoadedDatasetSource(DatasetSource, Generic[DataFrame]):
-    def __init__(self, *args: Any, df: DataFrame, dataset_name: str, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, dataset_name: str, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.dataframe = df
         self.dataset_name = dataset_name
         self.total_rows = self._get_rows()
         self.file_type = "application/json"

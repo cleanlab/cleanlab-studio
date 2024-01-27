@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, Optional, TypeVar, Union, List
+from typing import IO, Any, Optional, TypeVar, Union, List
 import math
 import uuid
 
@@ -217,7 +217,7 @@ def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
         )
 
 
-def bytes_remaining(stream) -> int:
+def bytes_remaining(stream: IO[bytes]) -> int:
     current_position = stream.tell()
     stream.seek(0, os.SEEK_END)
     total_size = stream.tell()
