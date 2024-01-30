@@ -8,6 +8,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+from . import cleanset
 from . import inference
 from . import trustworthy_language_model
 from cleanlab_studio.errors import CleansetError
@@ -282,6 +283,18 @@ class Studio:
         """
         api.delete_project(self._api_key, project_id)
         print(f"Successfully deleted project: {project_id}")
+
+    def get_cleanset(self, cleanset_id: str) -> cleanset.Cleanset:
+        """
+        Loads a cleanset from Cleanlab Studio.
+
+        Args:
+            cleanset_id: ID of cleanset to load.
+
+        Returns:
+            Cleanset: object representing the cleanset.
+        """
+        return cleanset.Cleanset(self._api_key, cleanset_id)
 
     def get_model(self, model_id: str) -> inference.Model:
         """

@@ -13,7 +13,7 @@ class Cleanset:
     - Cleanlab metadata columns generated during the analysis
     """
 
-    def __init__(self, api_key: str, cleanset_id: str, timeout: Optional[int]):
+    def __init__(self, api_key: str, cleanset_id: str, timeout: Optional[int] = None):
         """Initializes a Cleanset object with the given API key and cleanset ID.
 
         If cleanset is not ready, blocks until timeout is reached or cleanset is ready.
