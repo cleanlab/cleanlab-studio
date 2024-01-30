@@ -41,7 +41,7 @@ model_base_url = f"{base_url}/v1/deployment"
 tlm_base_url = f"{base_url}/v0/trustworthy_llm"
 
 
-def _construct_headers(
+def construct_headers(
     api_key: Optional[str], content_type: Optional[str] = "application/json"
 ) -> JSONDict:
     retval = dict()
@@ -80,7 +80,7 @@ def validate_api_key(api_key: str) -> bool:
     res = requests.get(
         cli_base_url + "/validate",
         json=dict(api_key=api_key),
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     valid: bool = res.json()["valid"]
@@ -100,7 +100,7 @@ def initialize_upload(
     res = requests.get(
         f"{upload_base_url}/initialize",
         params=dict(size_in_bytes=str(file_size), filename=filename, file_type=file_type),
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     upload_id: str = res.json()["upload_id"]
@@ -115,7 +115,7 @@ def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDi
     res = requests.post(
         f"{upload_base_url}/complete",
         json=request_json,
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
 
@@ -125,7 +125,7 @@ def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
     res = requests.get(
         f"{upload_base_url}/proposed_schema",
         params=dict(upload_id=upload_id),
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     res_json: JSONDict = res.json()
@@ -142,7 +142,7 @@ def confirm_schema(
     res = requests.post(
         f"{upload_base_url}/confirm_schema",
         json=request_json,
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
 
@@ -152,7 +152,7 @@ def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
     res = requests.get(
         f"{upload_base_url}/ingestion_status",
         params=dict(upload_id=upload_id),
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     res_json: JSONDict = res.json()
@@ -164,7 +164,7 @@ def get_dataset_id(api_key: str, upload_id: str) -> JSONDict:
     res = requests.get(
         f"{upload_base_url}/dataset_id",
         params=dict(upload_id=upload_id),
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     res_json: JSONDict = res.json()
@@ -175,7 +175,7 @@ def get_project_of_cleanset(api_key: str, cleanset_id: str) -> str:
     check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/project",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     project_id: str = res.json()["project_id"]
@@ -186,7 +186,7 @@ def get_label_column_of_project(api_key: str, project_id: str) -> str:
     check_uuid_well_formed(project_id, "project ID")
     res = requests.get(
         cli_base_url + f"/projects/{project_id}/label_column",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     label_column: str = res.json()["label_column"]
@@ -217,7 +217,7 @@ def download_cleanlab_columns(
             include_cleanlab_columns=include_cleanlab_columns,
             include_project_details=include_project_details,
         ),
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     id_col = get_id_column(api_key, cleanset_id)
@@ -249,7 +249,7 @@ def download_array(
     check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/{name}",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     res_json: JSONDict = res.json()
@@ -266,7 +266,7 @@ def get_id_column(api_key: str, cleanset_id: str) -> str:
     check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/id_column",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     id_column: str = res.json()["id_column"]
@@ -277,7 +277,7 @@ def get_dataset_of_project(api_key: str, project_id: str) -> str:
     check_uuid_well_formed(project_id, "project ID")
     res = requests.get(
         cli_base_url + f"/projects/{project_id}/dataset",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     dataset_id: str = res.json()["dataset_id"]
@@ -288,7 +288,7 @@ def get_dataset_schema(api_key: str, dataset_id: str) -> JSONDict:
     check_uuid_well_formed(dataset_id, "dataset ID")
     res = requests.get(
         cli_base_url + f"/datasets/{dataset_id}/schema",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     schema: JSONDict = res.json()["schema"]
@@ -300,7 +300,7 @@ def get_dataset_details(api_key: str, dataset_id: str, task_type: Optional[str])
     res = requests.get(
         project_base_url + f"/dataset_details/{dataset_id}",
         params=dict(tasktype=task_type),
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     dataset_details: JSONDict = res.json()
@@ -331,7 +331,7 @@ def clean_dataset(
     )
     res = requests.post(
         project_base_url + f"/clean",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
         json=request_json,
     )
     handle_api_error(res)
@@ -343,7 +343,7 @@ def get_latest_cleanset_id(api_key: str, project_id: str) -> str:
     check_uuid_well_formed(project_id, "project ID")
     res = requests.get(
         cleanset_base_url + f"/project/{project_id}/latest_cleanset_id",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     cleanset_id = res.json()["cleanset_id"]
@@ -369,7 +369,7 @@ def get_dataset_id_for_name(
     res = requests.get(
         dataset_base_url + f"/dataset_id_for_name",
         params=dict(dataset_name=dataset_name),
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     return cast(Optional[str], res.json().get("dataset_id", None))
@@ -379,7 +379,7 @@ def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
     check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cleanset_base_url + f"/{cleanset_id}/status",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
     status: JSONDict = res.json()
@@ -388,7 +388,7 @@ def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
 
 def delete_project(api_key: str, project_id: str) -> None:
     check_uuid_well_formed(project_id, "project ID")
-    res = requests.delete(project_base_url + f"/{project_id}", headers=_construct_headers(api_key))
+    res = requests.delete(project_base_url + f"/{project_id}", headers=construct_headers(api_key))
     handle_api_error(res)
 
 
@@ -413,7 +413,7 @@ def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str
     url = f"{model_base_url}/{model_id}/upload"
     res = requests.post(
         url,
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
 
     handle_api_error(res)
@@ -431,7 +431,7 @@ def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
     check_uuid_well_formed(query_id, "query ID")
     res = requests.post(
         f"{model_base_url}/{model_id}/predict/{query_id}",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
 
     handle_api_error(res)
@@ -442,7 +442,7 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     check_uuid_well_formed(query_id, "query ID")
     res = requests.get(
         f"{model_base_url}/predict/{query_id}",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
 
@@ -454,7 +454,7 @@ def get_deployed_model_info(api_key: str, model_id: str) -> Dict[str, str]:
     check_uuid_well_formed(model_id, "model ID")
     res = requests.get(
         f"{model_base_url}/{model_id}",
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     handle_api_error(res)
 
@@ -520,7 +520,7 @@ async def tlm_prompt(
         res = await client_session.post(
             f"{tlm_base_url}/prompt",
             json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
-            headers=_construct_headers(api_key),
+            headers=construct_headers(api_key),
         )
         res_json = await res.json()
 
@@ -565,7 +565,7 @@ async def tlm_get_confidence_score(
     res = await client_session.post(
         f"{tlm_base_url}/get_confidence_score",
         json=dict(prompt=prompt, response=response, quality=quality_preset, options=options or {}),
-        headers=_construct_headers(api_key),
+        headers=construct_headers(api_key),
     )
     res_json = await res.json()
 

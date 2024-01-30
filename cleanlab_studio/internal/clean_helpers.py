@@ -1,11 +1,15 @@
 import itertools
 import time
-from typing import Optional
+from typing import List, Optional, Union
 
 from tqdm import tqdm
 
 from cleanlab_studio.errors import CleansetError
-from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.api import api, actions_api
+
+
+RowId = Union[str, int]
+Label = Union[str, int, bool]
 
 
 def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[float] = None) -> None:
