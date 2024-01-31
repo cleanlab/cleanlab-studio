@@ -2,6 +2,7 @@
 Python API for Cleanlab Studio.
 """
 from typing import Any, List, Literal, Optional, Union
+from types import FunctionType
 import warnings
 
 import numpy as np
@@ -15,12 +16,16 @@ from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
+    check_none,
+    check_not_none,
+    telemetry,
     apply_corrections_snowpark_df,
     apply_corrections_spark_df,
     apply_corrections_pd_df,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
+from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
 
 _snowflake_exists = api.snowflake_exists
 if _snowflake_exists:
@@ -32,13 +37,11 @@ if _pyspark_exists:
 
 
 class Studio:
-    """Used to interact with Cleanlab Studio."""
-
     _api_key: str
 
     def __init__(self, api_key: Optional[str]):
         if not api.is_valid_client_version():
-            raise ValueError(
+            raise VersionError(
                 "CLI is out of date and must be updated. Run 'pip install --upgrade cleanlab-studio'."
             )
         if api_key is None:
@@ -47,7 +50,7 @@ class Studio:
                 if api_key is None:
                     raise ValueError
             except (FileNotFoundError, KeyError, ValueError):
-                raise ValueError(
+                raise MissingAPIKeyError(
                     "No API key found; either specify API key or log in with 'cleanlab login' first"
                 )
         if not api.validate_api_key(api_key):
@@ -153,8 +156,8 @@ class Studio:
             return apply_corrections_pd_df(dataset, cl_cols, id_col, label_col, keep_excluded)
 
         else:
-            raise ValueError(
-                f"Provided unsupported dataset of type: {type(dataset)}. We currently support applying corrections to pandas, snowpark, or pyspark dataframes"
+            raise InvalidDatasetError(
+                f"Provided unsupported dataset of type: {type(dataset)}. We currently support applying corrections to pandas or pyspark dataframes"
             )
 
     def create_project(
@@ -191,8 +194,8 @@ class Studio:
 
         if label_column is not None:
             if label_column not in dataset_details["label_columns"]:
-                raise ValueError(
-                    f"Invalid label column '{label_column}' for task type '{task_type}'"
+                raise InvalidDatasetError(
+                    f"Invalid label column: {label_column}. Label column must have categorical feature type"
                 )
         elif task_type is not None and task_type != "unsupervised":
             label_column = str(dataset_details["label_column_guess"])
@@ -200,8 +203,10 @@ class Studio:
 
         if feature_columns is not None and modality != "tabular":
             if label_column in feature_columns:
-                raise ValueError("Label column cannot be included in feature columns")
-            raise ValueError("Feature columns supplied, but project modality is not tabular")
+                raise InvalidDatasetError("Label column cannot be included in feature columns")
+            raise InvalidDatasetError(
+                "Feature columns supplied, but project modality is not tabular"
+            )
         if feature_columns is None:
             if modality == "tabular":
                 feature_columns = dataset_details["distinct_columns"]
@@ -211,9 +216,9 @@ class Studio:
 
         if text_column is not None:
             if modality != "text":
-                raise ValueError("Text column supplied, but project modality is not text")
+                raise InvalidDatasetError("Text column supplied, but project modality is not text")
             elif text_column not in dataset_details["text_columns"]:
-                raise ValueError(
+                raise InvalidDatasetError(
                     f"Invalid text column: {text_column}. Column must have text feature type"
                 )
         if text_column is None and modality == "text":
@@ -355,3 +360,9 @@ class Studio:
 
         except (TimeoutError, CleansetError):
             return False
+
+
+# decorate all functions of self
+for name, method in Studio.__dict__.items():
+    if isinstance(method, FunctionType):
+        setattr(Studio, name, (telemetry(track_all_frames=False))(method))

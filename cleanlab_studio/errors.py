@@ -10,7 +10,39 @@ class ColumnMismatchError(InvalidDatasetError):
     pass
 
 
+class InvalidSchemaError(InvalidDatasetError):
+    pass
+
+
+class MissingPathError(ValueError):
+    pass
+
+
+class NotInstalledError(ImportError):
+    pass
+
+
+class SettingsError(ValueError):
+    pass
+
+
+class UploadError(ValueError):
+    pass
+
+
+class VersionError(ValueError):
+    pass
+
+
+class MissingAPIKeyError(ValueError):
+    pass
+
+
 class APIError(Exception):
+    pass
+
+
+class APITimeoutError(APIError):
     pass
 
 

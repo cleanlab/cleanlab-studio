@@ -1,11 +1,22 @@
 import pathlib
-from typing import Any, Optional, TypeVar, Union, List
+from typing import Any, Optional, TypeVar, Union, Callable, Dict, List
 import math
-import uuid
+import functools
+import sys
+import traceback
+import contextlib
+import subprocess
+import platform
+import requests
+import re
 
 
 import numpy as np
 import pandas as pd
+
+from cleanlab_studio.internal.api.api import cli_base_url
+from cleanlab_studio.internal.settings import CleanlabSettings
+from cleanlab_studio.errors import InvalidDatasetError
 
 try:
     import snowflake.snowpark as snowpark
@@ -41,7 +52,7 @@ def init_dataset_source(
 ) -> DatasetSource:
     if isinstance(dataset_source, pd.DataFrame):
         if dataset_name is None:
-            raise ValueError("Must provide dataset name if uploading from a DataFrame")
+            raise InvalidDatasetError("Must provide dataset name if uploading from a DataFrame")
         return PandasDatasetSource(df=dataset_source, dataset_name=dataset_name)
     elif isinstance(dataset_source, pathlib.Path):
         return FilepathDatasetSource(filepath=dataset_source, dataset_name=dataset_name)
@@ -59,10 +70,10 @@ def init_dataset_source(
         from .dataset_source import PySparkDatasetSource
 
         if dataset_name is None:
-            raise ValueError("Must provide dataset name if uploading from a DataFrame")
+            raise InvalidDatasetError("Must provide dataset name if uploading from a DataFrame")
         return PySparkDatasetSource(df=dataset_source, dataset_name=dataset_name)
     else:
-        raise ValueError("Invalid dataset source provided")
+        raise InvalidDatasetError("Invalid dataset source provided")
 
 
 def apply_corrections_snowpark_df(
@@ -200,18 +211,111 @@ def check_not_none(x: Any) -> bool:
     return not check_none(x)
 
 
+def telemetry(
+    load_api_key: bool = False,
+    track_all_frames: bool = True,
+) -> Callable[..., Any]:
+    """
+    return a decorator to send user info and stack trace to backend if an exception is raised
+
+    Args:
+    load_api_key:
+        if True, the decorator will try to load the api_key using CleanlabSettings.load()
+        This is currently used to track the cli commands
+        If False, then we assume we are tracking a method of the Studio class for the python app
+        and we will load the api_key from the first arg of the function, will will be self of the Studio class
+    track_all_frames:
+        If True, return stack trace of all stack frames. Used for cli commands, because there is no
+        end-user code running.
+        If False, only return stack trace of cleanlab functions. Used for python app, so we don't track user code.
+    """
+    api_key: Optional[str] = None
+    if load_api_key:
+        with contextlib.suppress(Exception):
+            api_key = CleanlabSettings.load().api_key
+
+    def track(func: Callable[..., Any]) -> Callable[..., Any]:
+        """
+        Decorator to send stack trace to backend if an exception is raised
+
+        Can only use on functions whose first arg is api_key
+        """
+
+        @functools.wraps(func)
+        def tracked_func(*args: Any, **kwargs: Any) -> Any:
+            try:
+                result = func(*args, **kwargs)
+                return result
+            except Exception as err:
+                with contextlib.suppress(Exception):
+                    user_info = get_basic_info()
+                    user_info["func_name"] = func.__name__
+                    # if not load_api_key, then calling function from Studio class
+                    # first arg is self, get _api_key from self
+                    user_info["api_key"] = api_key if load_api_key else args[0]._api_key
+                    trace_str = traceback.format_exc()
+                    # only send stack trace for cleanlab functions
+                    if track_all_frames:
+                        cleanlab_traceback = trace_str
+                    else:
+                        cleanlab_match = re.search("File.*cleanlab", trace_str)
+                        cleanlab_traceback = (
+                            trace_str[cleanlab_match.start() :] if cleanlab_match else ""
+                        )
+
+                    user_info["stack_trace"] = cleanlab_traceback
+                    user_info["error_type"] = type(err).__name__
+                    _ = requests.post(
+                        f"{cli_base_url}/telemetry",
+                        json=user_info,
+                    )
+                raise err
+
+        return tracked_func
+
+    return track
+
+
+def get_basic_info() -> Dict[str, Any]:
+    user_info: Dict[str, Any] = {}
+    # get OS
+    user_info["os"] = platform.system()
+    user_info["os_release"] = platform.release()
+    # get python version
+    user_info["python_version"] = sys.version
+    # get CLI version and dependencies
+    studio_info = (
+        subprocess.check_output(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "show",
+                "cleanlab-studio",
+            ]
+        )
+        .decode("utf-8")
+        .split("\n")
+    )
+    dependencies = []
+    for line in studio_info:
+        if line.startswith("Version:"):
+            user_info["cli_version"] = line.split(" ")[1]
+        elif line.startswith("Requires:"):
+            dependencies = line.split(": ")[1].split(", ")
+    all_packages = (
+        subprocess.check_output([sys.executable, "-m", "pip", "freeze"]).decode("utf-8").split("\n")
+    )
+    package_versions = dict([package.split("==") for package in all_packages if "==" in package])
+    user_info["dependencies"] = {
+        dependency: package_versions.get(dependency) for dependency in dependencies
+    }
+    return user_info
+
+
 def quote(s: str) -> str:
     return f'"{s}"'
 
 
 def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
-
-
-def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
-    try:
-        uuid.UUID(uuid_string)
-    except ValueError:
-        raise ValueError(
-            f"{uuid_string} is not a well-formed {id_name}, please double check and try again."
-        )

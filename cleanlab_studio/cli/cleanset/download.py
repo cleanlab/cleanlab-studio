@@ -15,7 +15,7 @@ from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.types import RecordType, DatasetFileExtension
 from cleanlab_studio.internal.settings import CleanlabSettings
-from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.util import telemetry
 
 
 @click.command(help="download Cleanlab columns")
@@ -67,6 +67,7 @@ from cleanlab_studio.internal.api import api
 )
 @previous_state
 @auth_config
+@telemetry(load_api_key=True)
 def download(
     config: AuthConfig,
     prev_state: PreviousState,

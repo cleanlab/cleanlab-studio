@@ -63,6 +63,7 @@ from cleanlab_studio.cli.util import (
     init_dataset_from_fileobj,
     get_file_size,
 )
+from cleanlab_studio.errors import MissingPathError, InvalidDatasetError
 
 
 def get_value_type(val: Any) -> str:
@@ -370,7 +371,7 @@ def check_filepath_column(
     dataset_dir = pathlib.Path(dataset_filepath).parent
 
     if filepath_column not in dataset.get_columns():
-        raise ValueError(
+        raise InvalidDatasetError(
             f"No filepath column '{filepath_column}' found in dataset at {dataset_filepath}."
         )
     nonexistent_filepaths = []
@@ -602,7 +603,7 @@ def group_feature_types(schema: Schema) -> Dict[FeatureType, List[str]]:
 
 def save_warning_log(warning_log: WarningLog, filename: str) -> None:
     if not filename:
-        raise ValueError("No filepath provided for saving warning_log")
+        raise MissingPathError("No filepath provided for saving warning_log")
     progress(f"Writing issues to {filename}...")
     dump_json(filename, warning_log.to_dict(readable=True))
     success("Saved.\n")
