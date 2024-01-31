@@ -3,6 +3,7 @@ from typing import Dict
 
 from cleanlab_studio.cli.types import RecordType, DatasetFileExtension
 from cleanlab_studio.cli.util import get_dataset_file_extension, get_dataset_chunks, append_rows
+from cleanlab_studio.errors import InvalidDatasetError
 
 
 def combine_fields_with_dataset(
@@ -33,4 +34,4 @@ def combine_fields_with_dataset(
         ):
             append_rows(chunk, output_filepath)
     else:
-        raise ValueError(f"Invalid file type: {output_extension}.")
+        raise InvalidDatasetError(f"Invalid file type: {output_extension}.")

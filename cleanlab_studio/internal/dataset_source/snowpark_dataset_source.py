@@ -3,10 +3,12 @@ from typing import IO
 
 import pandas as pd
 
+from cleanlab_studio.errors import NotInstalledError
+
 try:
     import snowflake.snowpark as snowpark
 except ImportError:
-    raise ImportError(
+    raise NotInstalledError(
         'Must install snowpark to upload from snowpark dataframe. Use "pip install snowflake-snowpark-python"'
     )
 

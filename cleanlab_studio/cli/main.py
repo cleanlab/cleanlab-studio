@@ -9,6 +9,7 @@ from cleanlab_studio.cli.cleanset.commands import cleanset
 from cleanlab_studio.cli.login.login import login
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.version import __version__
+from cleanlab_studio.internal.util import telemetry
 
 
 @click.group()
@@ -26,6 +27,7 @@ def cli(ctx: click.Context) -> None:
 
 
 @click.command(name="version", help="get version of cleanlab-studio")
+@telemetry(load_api_key=True)
 def version() -> None:
     # detect if user has installed the package from source in editable mode
     try:

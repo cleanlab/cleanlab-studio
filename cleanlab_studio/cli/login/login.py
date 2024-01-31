@@ -5,6 +5,7 @@ from cleanlab_studio.cli.decorators.previous_state import PreviousState
 from cleanlab_studio.cli.decorators import previous_state
 from cleanlab_studio.internal.settings import CleanlabSettings
 import click
+from cleanlab_studio.internal.util import telemetry
 
 
 @click.command(help="authentication for Cleanlab Studio")
@@ -16,6 +17,7 @@ import click
     help="API key for CLI uploads. You can get this from https://app.cleanlab.ai/upload.",
 )
 @previous_state
+@telemetry(load_api_key=True)
 def login(prev_state: PreviousState, key: str) -> None:
     prev_state.init_state(dict(command="login", args=dict(key=key)))
     CleanlabSettings.init_cleanlab_dir()

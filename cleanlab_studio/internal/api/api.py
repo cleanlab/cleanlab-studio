@@ -28,7 +28,8 @@ except ImportError:
 
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
-from ..util import check_uuid_well_formed
+from cleanlab_studio.errors import NotInstalledError
+from cleanlab_studio.internal.api.api_helper import check_uuid_well_formed
 
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
@@ -224,7 +225,7 @@ def download_cleanlab_columns(
     cleanset_json: str = res.json()["cleanset_json"]
     if to_spark:
         if not pyspark_exists:
-            raise ImportError(
+            raise NotInstalledError(
                 "pyspark is not installed. Please install pyspark to download cleanlab columns as a pyspark DataFrame."
             )
         from pyspark.sql import SparkSession

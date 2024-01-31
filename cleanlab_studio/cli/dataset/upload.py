@@ -22,6 +22,7 @@ from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.internal import api
 from cleanlab_studio.internal.dataset_source import FilepathDatasetSource
 from cleanlab_studio.internal.types import JSONDict
+from cleanlab_studio.internal.util import telemetry
 
 
 @click.command(help="upload your dataset to Cleanlab Studio")
@@ -38,6 +39,7 @@ from cleanlab_studio.internal.types import JSONDict
     help="If uploading with a schema, specify the JSON schema filepath.",
 )
 @auth_config
+@telemetry(load_api_key=True)
 def upload(
     config: AuthConfig,
     filepath: Optional[str],
