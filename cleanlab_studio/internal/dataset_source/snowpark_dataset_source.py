@@ -19,6 +19,6 @@ class SnowparkDatasetSource(DataFrameDatasetSource[snowpark.DataFrame]):
     def _init_fileobj_from_df(self, df: snowpark.DataFrame) -> IO[bytes]:
         fileobj = io.BytesIO()
         pd_df: pd.DataFrame = df.to_pandas()
-        pd_df.to_csv(fileobj, index=False)
+        pd_df.to_json(fileobj, index=False, orient="records")
         fileobj.seek(0)
         return fileobj
