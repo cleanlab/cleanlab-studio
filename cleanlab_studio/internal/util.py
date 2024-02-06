@@ -258,10 +258,16 @@ def telemetry(
                     if track_all_frames:
                         cleanlab_traceback = trace_str
                     else:
+                        # remove stack frames for user code
                         cleanlab_match = re.search("File.*cleanlab", trace_str)
                         cleanlab_traceback = (
                             trace_str[cleanlab_match.start() :] if cleanlab_match else ""
                         )
+                        # then remove the user file path from the stack trace
+                        pattern = re.compile(r".*?(File).*?(cleanlab-studio.*)")
+                        lines = cleanlab_traceback.split("\n")
+                        modified_lines = [pattern.sub(r"\1 \2", line) for line in lines]
+                        cleanlab_traceback = "\n".join(modified_lines)
 
                     user_info["stack_trace"] = cleanlab_traceback
                     user_info["error_type"] = type(err).__name__
