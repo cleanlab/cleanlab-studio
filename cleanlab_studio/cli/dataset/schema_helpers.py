@@ -24,7 +24,12 @@ from cleanlab_studio.cli.dataset.schema_types import (
 )
 from cleanlab_studio.cli.types import Modality
 from cleanlab_studio.cli.util import dump_json
-from cleanlab_studio.errors import ColumnMismatchError, EmptyDatasetError
+from cleanlab_studio.errors import (
+    ColumnMismatchError,
+    EmptyDatasetError,
+    InvalidSchemaError,
+    InvalidDatasetError,
+)
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import MAX_SCHEMA_VERSION, MIN_SCHEMA_VERSION, SCHEMA_VERSION
 
@@ -75,7 +80,7 @@ def validate_schema(schema: Schema) -> None:
     (2) all schema column types are recognized
     Note that schema initialization already checks that all keys are present and that fields are valid.
     :param schema:
-    :return: raises a ValueError if any checks fail
+    :return: raises a InvalidSchemaError if any checks fail
     """
 
     # check schema version validity
@@ -83,12 +88,12 @@ def validate_schema(schema: Schema) -> None:
     if (
         semver.VersionInfo.parse(MIN_SCHEMA_VERSION).compare(schema_version) == 1
     ):  # min schema > schema_version
-        raise ValueError(
+        raise InvalidSchemaError(
             "This schema version is incompatible with this version of the CLI. "
             "A new schema should be generated using 'cleanlab dataset schema generate'"
         )
     elif semver.VersionInfo.parse(MAX_SCHEMA_VERSION).compare(schema_version) == -1:
-        raise ValueError(
+        raise InvalidSchemaError(
             "CLI is not up to date with your schema version. Run 'pip install --upgrade cleanlab-studio'."
         )
 
@@ -99,7 +104,7 @@ def validate_schema(schema: Schema) -> None:
     id_column_name = metadata.id_column
     id_column_spec_feature_type = schema.fields[id_column_name].feature_type
     if id_column_spec_feature_type != FeatureType.identifier:
-        raise ValueError(
+        raise InvalidSchemaError(
             f"ID column field {id_column_name} must have feature type: 'identifier', but has"
             f" feature type: '{id_column_spec_feature_type}'"
         )
@@ -109,7 +114,7 @@ def validate_schema(schema: Schema) -> None:
         spec.feature_type == FeatureType.categorical for spec in schema.fields.values()
     )
     if not has_categorical:
-        raise ValueError(
+        raise InvalidSchemaError(
             "Dataset does not seem to contain a label column. (None of the fields is categorical.)"
         )
 
@@ -121,7 +126,7 @@ def validate_schema(schema: Schema) -> None:
             int(spec.feature_type in variable_fields) for spec in schema.fields.values()
         )
         if num_variable_columns < 2:
-            raise ValueError(
+            raise InvalidDatasetError(
                 "Dataset modality is tabular; there must be at least one categorical field and one"
                 " other variable field (i.e. categorical, numeric, or datetime)."
             )
@@ -130,18 +135,22 @@ def validate_schema(schema: Schema) -> None:
     elif modality == Modality.text:
         has_text = any(spec.feature_type == FeatureType.text for spec in schema.fields.values())
         if not has_text:
-            raise ValueError("Dataset modality is text, but none of the fields is a text column.")
+            raise InvalidDatasetError(
+                "Dataset modality is text, but none of the fields is a text column."
+            )
 
     elif modality == Modality.image:
         image_columns = [
             col for col, spec in schema.fields.items() if spec.feature_type == FeatureType.image
         ]
         if not image_columns:
-            raise ValueError(
+            raise InvalidDatasetError(
                 "Dataset modality is image, but none of the fields is an image column."
             )
         if len(image_columns) > 1:
-            raise ValueError("More than one image column in a dataset is not currently supported.")
+            raise InvalidDatasetError(
+                "More than one image column in a dataset is not currently supported."
+            )
 
 
 def multiple_separate_words_detected(values: Collection[Any]) -> bool:
@@ -247,7 +256,7 @@ def infer_types(values: Collection[Any]) -> Tuple[DataType, FeatureType]:
         elif isinstance(v, decimal.Decimal):  # loading from JSONs can produce Decimal values
             counts[DataType.float] += 1
         else:
-            raise ValueError(f"Value {v} has an unrecognized type: {type(v)}")
+            raise InvalidSchemaError(f"Value {v} has an unrecognized type: {type(v)}")
 
     ratios: Dict[DataType, float] = {k: v / len(values) for k, v in counts.items()}
     max_count_type = max(ratios, key=lambda k: ratios[k])

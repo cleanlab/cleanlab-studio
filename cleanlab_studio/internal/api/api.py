@@ -1,14 +1,23 @@
+import asyncio
 import io
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
-from cleanlab_studio.errors import APIError
+from cleanlab_studio.errors import APIError, RateLimitError
 
+import aiohttp
 import requests
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import numpy.typing as npt
+
+try:
+    import snowflake
+
+    snowflake_exists = True
+except ImportError:
+    snowflake_exists = False
 
 try:
     import pyspark.sql
@@ -19,6 +28,8 @@ except ImportError:
 
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.version import __version__
+from cleanlab_studio.errors import NotInstalledError
+from cleanlab_studio.internal.api.api_helper import check_uuid_well_formed
 
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
@@ -57,6 +68,15 @@ def handle_api_error_from_json(res_json: JSONDict) -> None:
         raise APIError(res_json["error"])
 
 
+def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+    """Catches 429 (rate limit) errors."""
+    if resp.status == 429:
+        print(f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0)))
+        raise RateLimitError(
+            f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0))
+        )
+
+
 def validate_api_key(api_key: str) -> bool:
     res = requests.get(
         cli_base_url + "/validate",
@@ -91,6 +111,7 @@ def initialize_upload(
 
 
 def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDict]) -> None:
+    check_uuid_well_formed(upload_id, "upload ID")
     request_json = dict(upload_id=upload_id, upload_parts=upload_parts)
     res = requests.post(
         f"{upload_base_url}/complete",
@@ -101,6 +122,7 @@ def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDi
 
 
 def get_proposed_schema(api_key: str, upload_id: str) -> JSONDict:
+    check_uuid_well_formed(upload_id, "upload ID")
     res = requests.get(
         f"{upload_base_url}/proposed_schema",
         params=dict(upload_id=upload_id),
@@ -116,6 +138,7 @@ def confirm_schema(
     schema: Optional[JSONDict],
     upload_id: str,
 ) -> None:
+    check_uuid_well_formed(upload_id, "upload ID")
     request_json = dict(schema=schema, upload_id=upload_id)
     res = requests.post(
         f"{upload_base_url}/confirm_schema",
@@ -126,6 +149,7 @@ def confirm_schema(
 
 
 def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
+    check_uuid_well_formed(upload_id, "upload ID")
     res = requests.get(
         f"{upload_base_url}/ingestion_status",
         params=dict(upload_id=upload_id),
@@ -137,6 +161,7 @@ def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
 
 
 def get_dataset_id(api_key: str, upload_id: str) -> JSONDict:
+    check_uuid_well_formed(upload_id, "upload ID")
     res = requests.get(
         f"{upload_base_url}/dataset_id",
         params=dict(upload_id=upload_id),
@@ -148,6 +173,7 @@ def get_dataset_id(api_key: str, upload_id: str) -> JSONDict:
 
 
 def get_project_of_cleanset(api_key: str, cleanset_id: str) -> str:
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/project",
         headers=_construct_headers(api_key),
@@ -158,6 +184,7 @@ def get_project_of_cleanset(api_key: str, cleanset_id: str) -> str:
 
 
 def get_label_column_of_project(api_key: str, project_id: str) -> str:
+    check_uuid_well_formed(project_id, "project ID")
     res = requests.get(
         cli_base_url + f"/projects/{project_id}/label_column",
         headers=_construct_headers(api_key),
@@ -183,6 +210,7 @@ def download_cleanlab_columns(
     :param include_project_details: whether to download columns related to project status such as resolved rows, actions taken, etc.
     :return: return a dataframe, either pandas or spark. Type is Any because don't want to require spark installed
     """
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/columns",
         params=dict(
@@ -197,7 +225,7 @@ def download_cleanlab_columns(
     cleanset_json: str = res.json()["cleanset_json"]
     if to_spark:
         if not pyspark_exists:
-            raise ImportError(
+            raise NotInstalledError(
                 "pyspark is not installed. Please install pyspark to download cleanlab columns as a pyspark DataFrame."
             )
         from pyspark.sql import SparkSession
@@ -209,7 +237,8 @@ def download_cleanlab_columns(
         cleanset_pyspark = cleanset_pyspark.sort(id_col)
         return cleanset_pyspark
 
-    cleanset_pd: pd.DataFrame = pd.read_json(cleanset_json, orient="table")
+    cleanset_json_io = io.StringIO(cleanset_json)
+    cleanset_pd: pd.DataFrame = pd.read_json(cleanset_json_io, orient="table")
     cleanset_pd.rename(columns={"id": id_col}, inplace=True)
     cleanset_pd.sort_values(by=id_col, inplace=True)
     return cleanset_pd
@@ -218,6 +247,7 @@ def download_cleanlab_columns(
 def download_array(
     api_key: str, cleanset_id: str, name: str
 ) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/{name}",
         headers=_construct_headers(api_key),
@@ -234,6 +264,7 @@ def download_array(
 
 
 def get_id_column(api_key: str, cleanset_id: str) -> str:
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/id_column",
         headers=_construct_headers(api_key),
@@ -244,6 +275,7 @@ def get_id_column(api_key: str, cleanset_id: str) -> str:
 
 
 def get_dataset_of_project(api_key: str, project_id: str) -> str:
+    check_uuid_well_formed(project_id, "project ID")
     res = requests.get(
         cli_base_url + f"/projects/{project_id}/dataset",
         headers=_construct_headers(api_key),
@@ -254,6 +286,7 @@ def get_dataset_of_project(api_key: str, project_id: str) -> str:
 
 
 def get_dataset_schema(api_key: str, dataset_id: str) -> JSONDict:
+    check_uuid_well_formed(dataset_id, "dataset ID")
     res = requests.get(
         cli_base_url + f"/datasets/{dataset_id}/schema",
         headers=_construct_headers(api_key),
@@ -263,9 +296,11 @@ def get_dataset_schema(api_key: str, dataset_id: str) -> JSONDict:
     return schema
 
 
-def get_dataset_details(api_key: str, dataset_id: str) -> JSONDict:
+def get_dataset_details(api_key: str, dataset_id: str, task_type: Optional[str]) -> JSONDict:
+    check_uuid_well_formed(dataset_id, "dataset ID")
     res = requests.get(
-        dataset_base_url + f"/details/{dataset_id}",
+        project_base_url + f"/dataset_details/{dataset_id}",
+        params=dict(tasktype=task_type),
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
@@ -277,13 +312,14 @@ def clean_dataset(
     api_key: str,
     dataset_id: str,
     project_name: str,
-    task_type: str,
+    task_type: Optional[str],
     modality: str,
     model_type: str,
-    label_column: str,
+    label_column: Optional[str],
     feature_columns: List[str],
     text_column: Optional[str],
 ) -> str:
+    check_uuid_well_formed(dataset_id, "dataset ID")
     request_json = dict(
         name=project_name,
         dataset_id=dataset_id,
@@ -305,6 +341,7 @@ def clean_dataset(
 
 
 def get_latest_cleanset_id(api_key: str, project_id: str) -> str:
+    check_uuid_well_formed(project_id, "project ID")
     res = requests.get(
         cleanset_base_url + f"/project/{project_id}/latest_cleanset_id",
         headers=_construct_headers(api_key),
@@ -314,7 +351,33 @@ def get_latest_cleanset_id(api_key: str, project_id: str) -> str:
     return str(cleanset_id)
 
 
+def poll_dataset_id_for_name(api_key: str, dataset_name: str, timeout: Optional[int]) -> str:
+    start_time = time.time()
+    while timeout is None or time.time() - start_time < timeout:
+        dataset_id = get_dataset_id_for_name(api_key, dataset_name, timeout)
+
+        if dataset_id is not None:
+            return dataset_id
+
+        time.sleep(5)
+
+    raise TimeoutError(f"Timed out waiting for dataset {dataset_name} to be created.")
+
+
+def get_dataset_id_for_name(
+    api_key: str, dataset_name: str, timeout: Optional[int]
+) -> Optional[str]:
+    res = requests.get(
+        dataset_base_url + f"/dataset_id_for_name",
+        params=dict(dataset_name=dataset_name),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(Optional[str], res.json().get("dataset_id", None))
+
+
 def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cleanset_base_url + f"/{cleanset_id}/status",
         headers=_construct_headers(api_key),
@@ -325,6 +388,7 @@ def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
 
 
 def delete_project(api_key: str, project_id: str) -> None:
+    check_uuid_well_formed(project_id, "project ID")
     res = requests.delete(project_base_url + f"/{project_id}", headers=_construct_headers(api_key))
     handle_api_error(res)
 
@@ -346,6 +410,7 @@ def poll_progress(
 
 def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:
     """Uploads prediction batch and returns query ID."""
+    check_uuid_well_formed(model_id, "model ID")
     url = f"{model_base_url}/{model_id}/upload"
     res = requests.post(
         url,
@@ -363,6 +428,8 @@ def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str
 
 def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
     """Starts prediction for query."""
+    check_uuid_well_formed(model_id, "model ID")
+    check_uuid_well_formed(query_id, "query ID")
     res = requests.post(
         f"{model_base_url}/{model_id}/predict/{query_id}",
         headers=_construct_headers(api_key),
@@ -373,6 +440,7 @@ def start_prediction(api_key: str, model_id: str, query_id: str) -> None:
 
 def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     """Gets status of model prediction query. Returns status, and optionally the result url or error message."""
+    check_uuid_well_formed(query_id, "query ID")
     res = requests.get(
         f"{model_base_url}/predict/{query_id}",
         headers=_construct_headers(api_key),
@@ -382,11 +450,54 @@ def get_prediction_status(api_key: str, query_id: str) -> Dict[str, str]:
     return cast(Dict[str, str], res.json())
 
 
-def tlm_prompt(
+def get_deployed_model_info(api_key: str, model_id: str) -> Dict[str, str]:
+    """Get info about deployed model, including model id, name, cleanset id, dataset id, projectid, updated_at, status, and tasktype"""
+    check_uuid_well_formed(model_id, "model ID")
+    res = requests.get(
+        f"{model_base_url}/{model_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+
+    return cast(Dict[str, str], res.json())
+
+
+def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Implements TLM retry decorator, with special handling for rate limit retries."""
+
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # total number of tries = number of retries + original try
+        retries = kwargs.pop("retries", 0)
+        num_tries = retries + 1
+
+        sleep_time = 0
+        error_message = ""
+
+        for num_try in range(num_tries):
+            await asyncio.sleep(sleep_time)
+            try:
+                return await func(*args, **kwargs)
+            except RateLimitError as e:
+                sleep_time = e.retry_after
+                error_message = (
+                    "Try setting a smaller max_concurrent_requests or using a shorter prompt."
+                )
+            except Exception as e:
+                sleep_time = 2**num_try
+                error_message = str(e)
+        else:
+            raise APIError(f"TLM failed after {retries + 1} attempts. {error_message}", -1)
+
+    return wrapper
+
+
+@tlm_retry
+async def tlm_prompt(
     api_key: str,
     prompt: str,
     quality_preset: str,
     options: Optional[JSONDict],
+    client_session: Optional[aiohttp.ClientSession] = None,
 ) -> JSONDict:
     """
     Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
@@ -395,25 +506,43 @@ def tlm_prompt(
         api_key (str): studio API key for auth
         prompt (str): prompt for TLM to respond to
         quality_preset (str): quality preset to use to generate response
+        options (JSONDict): additional parameters for TLM
+        client_session (aiohttp.ClientSession): client session used to issue TLM request
 
     Returns:
         JSONDict: dictionary with TLM response and confidence score
     """
-    res = requests.post(
-        f"{tlm_base_url}/prompt",
-        json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
-        headers=_construct_headers(api_key),
-    )
-    handle_api_error(res)
-    return cast(JSONDict, res.json())
+    local_scoped_client = False
+    if not client_session:
+        client_session = aiohttp.ClientSession()
+        local_scoped_client = True
+
+    try:
+        res = await client_session.post(
+            f"{tlm_base_url}/prompt",
+            json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
+            headers=_construct_headers(api_key),
+        )
+        res_json = await res.json()
+
+        handle_rate_limit_error_from_resp(res)
+        handle_api_error_from_json(res_json)
+
+    finally:
+        if local_scoped_client:
+            await client_session.close()
+
+    return cast(JSONDict, res_json)
 
 
-def tlm_get_confidence_score(
+@tlm_retry
+async def tlm_get_confidence_score(
     api_key: str,
     prompt: str,
     response: str,
     quality_preset: str,
     options: Optional[JSONDict],
+    client_session: Optional[aiohttp.ClientSession] = None,
 ) -> JSONDict:
     """
     Query Trustworthy Language Model for a confidence score for the prompt-response pair.
@@ -423,14 +552,27 @@ def tlm_get_confidence_score(
         prompt (str): prompt for TLM to get confidence score for
         response (str): response for TLM to get confidence score for
         quality_preset (str): quality preset to use to generate confidence score
+        options (JSONDict): additional parameters for TLM
+        client_session (aiohttp.ClientSession): client session used to issue TLM request
 
     Returns:
         JSONDict: dictionary with TLM confidence score
     """
-    res = requests.post(
+    local_scoped_client = False
+    if not client_session:
+        client_session = aiohttp.ClientSession()
+        local_scoped_client = True
+
+    res = await client_session.post(
         f"{tlm_base_url}/get_confidence_score",
         json=dict(prompt=prompt, response=response, quality=quality_preset, options=options or {}),
         headers=_construct_headers(api_key),
     )
-    handle_api_error(res)
-    return cast(JSONDict, res.json())
+    res_json = await res.json()
+
+    if local_scoped_client:
+        await client_session.close()
+
+    handle_rate_limit_error_from_resp(res)
+    handle_api_error_from_json(res_json)
+    return cast(JSONDict, res_json)

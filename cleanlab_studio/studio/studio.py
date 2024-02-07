@@ -2,6 +2,7 @@
 Python API for Cleanlab Studio.
 """
 from typing import Any, List, Literal, Optional, Union
+from types import FunctionType
 import warnings
 
 import numpy as np
@@ -17,9 +18,18 @@ from cleanlab_studio.internal.util import (
     init_dataset_source,
     check_none,
     check_not_none,
+    telemetry,
+    apply_corrections_snowpark_df,
+    apply_corrections_spark_df,
+    apply_corrections_pd_df,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import FieldSchemaDict
+from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
+
+_snowflake_exists = api.snowflake_exists
+if _snowflake_exists:
+    import snowflake.snowpark as snowpark
 
 _pyspark_exists = api.pyspark_exists
 if _pyspark_exists:
@@ -27,13 +37,11 @@ if _pyspark_exists:
 
 
 class Studio:
-    """Used to interact with Cleanlab Studio."""
-
     _api_key: str
 
     def __init__(self, api_key: Optional[str]):
         if not api.is_valid_client_version():
-            raise ValueError(
+            raise VersionError(
                 "CLI is out of date and must be updated. Run 'pip install --upgrade cleanlab-studio'."
             )
         if api_key is None:
@@ -42,7 +50,7 @@ class Studio:
                 if api_key is None:
                     raise ValueError
             except (FileNotFoundError, KeyError, ValueError):
-                raise ValueError(
+                raise MissingAPIKeyError(
                     "No API key found; either specify API key or log in with 'cleanlab login' first"
                 )
         if not api.validate_api_key(api_key):
@@ -65,9 +73,9 @@ class Studio:
         Uploads a dataset to Cleanlab Studio.
 
         Args:
-            dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas DataFrame, a pyspark DataFrame.
+            dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas, snowflake, or pyspark DataFrame.
             dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath).
-            schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred. Format defined here: https://cleanlab-studio.readthedocs.io/en/latest/concepts/datasets.html#schemas
+            schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred. Format defined [here](/guide/concepts/datasets/#schema-overrides).
             modality: Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
             id_column: Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated.
 
@@ -117,78 +125,40 @@ class Studio:
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
         """
-        Applies corrections from a Cleanlab Studio cleanset to your dataset. Corrections can be made by viewing your project in the Cleanlab Studio webapp (see [Cleanlab Studio web quickstart](/guide/quickstart/web#review-issues-detected-in-your-dataset-and-correct-them)).
+        Applies corrections from a Cleanlab Studio cleanset to your dataset. This function takes in your local copy of the original dataset, as well as the `cleanset_id` for the cleanset generated from this dataset in the Project web interface. The function returns a copy of your original dataset, where the label column has been substituted with corrected labels that you selected (either manually or via auto-fix) in the Cleanlab Studio web interface Project, and the rows you marked as excluded will be excluded from the returned copy of your original dataset. Corrections should have been made by viewing your Project in the Cleanlab Studio web interface (see [Cleanlab Studio web quickstart](/guide/quickstart/web#review-issues-detected-in-your-dataset-and-correct-them)).
+
+        The intended workflow is: create a Project, correct your Dataset automatically/manually in the web interface to generate a Cleanset (cleaned dataset), then call this function to make your original dataset locally look like the current Cleanset.
 
         Args:
             cleanset_id: ID of cleanset to apply corrections from.
-            dataset: Dataset to apply corrections to. Supported formats include pandas DataFrame and pyspark DataFrame. Dataset should have the same number of rows as the dataset used to create the project. It should also contain a label column with the same name as the label column for the project.
+            dataset: Dataset to apply corrections to. Supported formats include pandas, snowpark, and pyspark DataFrame. Dataset should have the same number of rows as the dataset used to create the project. It should also contain a label column with the same name as the label column for the project.
             keep_excluded: Whether to retain rows with an "exclude" action. By default these rows will be removed from the dataset.
 
         Returns:
             A copy of the dataset with corrections applied.
         """
         project_id = api.get_project_of_cleanset(self._api_key, cleanset_id)
-        label_column = api.get_label_column_of_project(self._api_key, project_id)
+        label_col = api.get_label_column_of_project(self._api_key, project_id)
         id_col = api.get_id_column(self._api_key, cleanset_id)
-        if _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
-            from pyspark.sql.functions import row_number, monotonically_increasing_id, when, col
-            from pyspark.sql.window import Window
 
+        if _snowflake_exists and isinstance(dataset, snowpark.DataFrame):
             cl_cols = self.download_cleanlab_columns(
-                cleanset_id, include_project_details=True, to_spark=True
+                cleanset_id, to_spark=False, include_project_details=True
             )
-            corrected_ds_spark = dataset.alias("corrected_ds")
-            if id_col not in corrected_ds_spark.columns:
-                corrected_ds_spark = corrected_ds_spark.withColumn(
-                    id_col,
-                    row_number().over(Window.orderBy(monotonically_increasing_id())) - 1,
-                )
-            both = cl_cols.select([id_col, "action", "corrected_label"]).join(
-                corrected_ds_spark.select([id_col, label_column]),
-                on=id_col,
-                how="left",
-            )
-            final = both.withColumn(
-                "__cleanlab_final_label",
-                when(col("corrected_label").isNull(), col(label_column)).otherwise(
-                    col("corrected_label")
-                ),
-            )
-            new_labels = final.select(
-                [id_col, "action", "__cleanlab_final_label"]
-            ).withColumnRenamed("__cleanlab_final_label", label_column)
+            return apply_corrections_snowpark_df(dataset, cl_cols, id_col, label_col, keep_excluded)
 
-            res = corrected_ds_spark.drop(label_column).join(new_labels, on=id_col, how="right")
-            res = (
-                res.where((col("action").isNull()) | (col("action") != "exclude"))
-                if not keep_excluded
-                else res
-            ).drop("action")
-
-            return res
+        elif _pyspark_exists and isinstance(dataset, pyspark.sql.DataFrame):
+            cl_cols = self.download_cleanlab_columns(
+                cleanset_id, to_spark=True, include_project_details=True
+            )
+            return apply_corrections_spark_df(dataset, cl_cols, id_col, label_col, keep_excluded)
 
         elif isinstance(dataset, pd.DataFrame):
             cl_cols = self.download_cleanlab_columns(cleanset_id, include_project_details=True)
-            joined_ds: pd.DataFrame
-            if id_col in dataset.columns:
-                joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
-            else:
-                joined_ds = dataset.join(cl_cols.set_index(id_col).sort_values(by=id_col))
-            joined_ds["__cleanlab_final_label"] = joined_ds["corrected_label"].where(
-                joined_ds["corrected_label"].notnull().tolist(),
-                dataset[label_column].tolist(),
-            )
-
-            corrected_ds: pd.DataFrame = dataset.copy()
-            corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
-            if not keep_excluded:
-                corrected_ds = corrected_ds.loc[(joined_ds["action"] != "exclude").fillna(True)]
-            else:
-                corrected_ds["action"] = joined_ds["action"]
-            return corrected_ds
+            return apply_corrections_pd_df(dataset, cl_cols, id_col, label_col, keep_excluded)
 
         else:
-            raise ValueError(
+            raise InvalidDatasetError(
                 f"Provided unsupported dataset of type: {type(dataset)}. We currently support applying corrections to pandas or pyspark dataframes"
             )
 
@@ -198,7 +168,9 @@ class Studio:
         project_name: str,
         modality: Literal["text", "tabular", "image"],
         *,
-        task_type: Literal["multi-class", "multi-label"] = "multi-class",
+        task_type: Optional[
+            Literal["multi-class", "multi-label", "regression", "unsupervised"]
+        ] = "multi-class",
         model_type: Literal["fast", "regular"] = "regular",
         label_column: Optional[str] = None,
         feature_columns: Optional[List[str]] = None,
@@ -211,7 +183,7 @@ class Studio:
             dataset_id: ID of dataset to create project for.
             project_name: Name for resulting project.
             modality: Modality of project (i.e. text, tabular, image).
-            task_type: Type of classification to perform (i.e. multi-class, multi-label).
+            task_type: Type of ML task to perform (i.e. multi-class, multi-label, regression).
             model_type: Type of model to train (i.e. fast, regular).
             label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess).
             feature_columns: List of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns).
@@ -220,32 +192,35 @@ class Studio:
         Returns:
             ID of created project.
         """
-        dataset_details = api.get_dataset_details(self._api_key, dataset_id)
+        dataset_details = api.get_dataset_details(self._api_key, dataset_id, task_type)
 
         if label_column is not None:
             if label_column not in dataset_details["label_columns"]:
-                raise ValueError(
+                raise InvalidDatasetError(
                     f"Invalid label column: {label_column}. Label column must have categorical feature type"
                 )
-        else:
+        elif task_type is not None and task_type != "unsupervised":
             label_column = str(dataset_details["label_column_guess"])
             print(f"Label column not supplied. Using best guess {label_column}")
 
         if feature_columns is not None and modality != "tabular":
             if label_column in feature_columns:
-                raise ValueError("Label column cannot be included in feature columns")
-            raise ValueError("Feature columns supplied, but project modality is not tabular")
+                raise InvalidDatasetError("Label column cannot be included in feature columns")
+            raise InvalidDatasetError(
+                "Feature columns supplied, but project modality is not tabular"
+            )
         if feature_columns is None:
             if modality == "tabular":
                 feature_columns = dataset_details["distinct_columns"]
-                feature_columns.remove(label_column)
+                if label_column is not None:
+                    feature_columns.remove(label_column)
                 print(f"Feature columns not supplied. Using all valid feature columns")
 
         if text_column is not None:
             if modality != "text":
-                raise ValueError("Text column supplied, but project modality is not text")
+                raise InvalidDatasetError("Text column supplied, but project modality is not text")
             elif text_column not in dataset_details["text_columns"]:
-                raise ValueError(
+                raise InvalidDatasetError(
                     f"Invalid text column: {text_column}. Column must have text feature type"
                 )
         if text_column is None and modality == "text":
@@ -288,6 +263,22 @@ class Studio:
             ID of latest associated cleanset.
         """
         return api.get_latest_cleanset_id(self._api_key, project_id)
+
+    def poll_dataset_id_for_name(self, dataset_name: str, timeout: Optional[int] = None) -> str:
+        """
+        Polls for dataset ID for a dataset name.
+
+        Args:
+            dataset_name: Name of dataset to get ID for.
+            timeout: Optional timeout after which to stop polling for progress. If not provided, will block until dataset is ready.
+
+        Returns
+            ID of dataset.
+
+        Raises
+            TimeoutError: if dataset is not ready by end of timeout
+        """
+        return api.poll_dataset_id_for_name(self._api_key, dataset_name, timeout)
 
     def delete_project(self, project_id: str) -> None:
         """
@@ -347,17 +338,21 @@ class Studio:
         return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
 
     def TLM(
-        self, *, quality_preset: trustworthy_language_model.QualityPreset = "medium"
+        self,
+        *,
+        quality_preset: trustworthy_language_model.QualityPreset = "medium",
+        **kwargs: Any,
     ) -> trustworthy_language_model.TLM:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
         Args:
-            quality_preset ([QualityPreset](../trustworthy_language_model#QualityPreset)): quality preset to use for prompts
+            quality_preset: quality preset to use for prompts
+            kwargs (Any): additional kwargs to pass to TLM class
 
         Returns:
             TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
         """
-        return trustworthy_language_model.TLM(self._api_key, quality_preset)
+        return trustworthy_language_model.TLM(self._api_key, quality_preset, **kwargs)
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
         """
@@ -383,3 +378,9 @@ class Studio:
 
         except (TimeoutError, CleansetError):
             return False
+
+
+# decorate all functions of self
+for name, method in Studio.__dict__.items():
+    if isinstance(method, FunctionType):
+        setattr(Studio, name, (telemetry(track_all_frames=False))(method))

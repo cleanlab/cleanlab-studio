@@ -3,6 +3,7 @@ import pathlib
 from typing import Any, Optional
 
 from .dataset_source import DatasetSource
+from cleanlab_studio.errors import InvalidDatasetError
 
 
 class FilepathDatasetSource(DatasetSource):
@@ -18,7 +19,7 @@ class FilepathDatasetSource(DatasetSource):
         self.file_size = filepath.stat().st_size
         maybe_file_type = mimetypes.guess_type(filepath)[0]
         if maybe_file_type is None:
-            raise ValueError(
+            raise InvalidDatasetError(
                 f"Could not identify type of file at {filepath}. Make sure file name has valid extension"
             )
         self.file_type = maybe_file_type

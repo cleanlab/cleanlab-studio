@@ -15,6 +15,7 @@ from cleanlab_studio.cli.types import (
     DatasetFileExtension,
     ImageFileExtension,
 )
+from cleanlab_studio.errors import InvalidDatasetError
 
 
 def get_dataset_file_extension(filename: str) -> DatasetFileExtension:
@@ -75,7 +76,7 @@ def init_dataset_from_filepath(filepath: str) -> Union[Dataset[IO[str]], Dataset
     elif ext == DatasetFileExtension.json:
         return JsonDataset(filepath)
 
-    raise ValueError(f"filepath {filepath} does not have supported extension.")
+    raise InvalidDatasetError(f"filepath {filepath} does not have supported extension.")
 
 
 def init_dataset_from_fileobj(
@@ -92,7 +93,7 @@ def init_dataset_from_fileobj(
         assert isinstance(fileobj, io.BufferedIOBase)
         return JsonDataset(fileobj=fileobj)
 
-    raise ValueError(f"Extension {ext.value} is not supported.")
+    raise InvalidDatasetError(f"Extension {ext.value} is not supported.")
 
 
 def dump_json(filepath: str, obj: object) -> None:
