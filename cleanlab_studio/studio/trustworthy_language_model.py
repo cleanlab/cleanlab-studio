@@ -1,7 +1,9 @@
 """
 Cleanlab TLM is a Large Language Model that gives more reliable answers and quantifies its uncertainty in these answers
 """
-from typing import cast, Literal, Optional, TypedDict
+from typing import cast, Literal, Optional
+from typing_extensions import NotRequired, TypedDict
+
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.types import JSONDict
 
@@ -26,12 +28,17 @@ class TLMOptions(TypedDict):
     """Trustworthy language model options.
 
     Attributes:
-        max_tokens (int): the maximum number of tokens to generate in the TLM response
-        use_self_reflection (bool): Optional flag to turn on/off asking the TLM self_reflection questions
+        max_tokens (int):
+            The maximum number of tokens used to generate in the TLM response. If you do not specify a value, a reasonable number of max tokens is chosen for you.
+
+        use_self_reflection (bool):
+            This controls whether self-reflection is used to to have the LLM reflect upon the response it is generating and explicitly self-evaluate whether it seems good or not.
+            This is a big part of the confidence score, in particular for ensure low scores for responses that are obviously incorrect/bad for a standard prompt that LLMs should be able to handle.
+            Setting this to False disables the use of self-reflection and may produce worse TLM confidence scores, but can reduce costs/runtimes.
     """
 
-    max_tokens: int
-    use_self_reflection: bool
+    max_tokens: NotRequired[int]
+    use_self_reflection: NotRequired[bool]
 
 
 class TLM:
