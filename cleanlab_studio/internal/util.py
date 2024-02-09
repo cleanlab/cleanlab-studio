@@ -264,7 +264,7 @@ def telemetry(
                             trace_str[cleanlab_match.start() :] if cleanlab_match else ""
                         )
 
-                        def replace_file_newline(match: re.Match):
+                        def replace_file_newline(match: re.Match[str]) -> str:
                             if 'cleanlab-studio' not in match.group(0):
                                 return "File\n"
                             else:
