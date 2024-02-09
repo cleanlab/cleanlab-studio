@@ -270,11 +270,10 @@ def telemetry(
                             else:
                                 return match.group(0)
                         # First filter out "File" followed by any characters except newline until a newline, without cleanlab-studio
-                        # this gets rid of the user file path from the stack trace
                         pattern1 = re.compile(r"File.*?\n")
                         cleanlab_traceback = pattern1.sub(replace_file_newline, cleanlab_traceback)
 
-                        # Second pattern: File followed by any characters (no newline) until 'cleanlab-studio'
+                        # Then filter out anything between "File" followed by any characters (no newline) until 'cleanlab-studio'
                         pattern2 = re.compile(r"File([^\n]*?)cleanlab-studio")
                         cleanlab_traceback = pattern2.sub(r"File cleanlab-studio", cleanlab_traceback)
 
