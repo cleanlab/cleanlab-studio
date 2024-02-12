@@ -316,7 +316,7 @@ class Studio:
 
         Returns:
             `pd.DataFrame`: a DataFrame of probabilities of shape `N` by `M`, where `N` is the number of rows in the original dataset, and `M` is the total number of classes in the original dataset.
-            Every row of the returned DataFrame corresponds to the predicted probabilities for the corresponding row in the original dataset.
+            Every row of the returned DataFrame corresponds to the predicted probability of each class for the corresponding row in the original dataset.
             If `keep_id` is `True`, the DataFrame will include an extra ID column that can be used for database joins/merges with
             the original dataset or downloaded Cleanlab columns.
 
