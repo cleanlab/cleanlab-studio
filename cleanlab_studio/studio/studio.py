@@ -346,6 +346,7 @@ class Studio:
     ) -> npt.NDArray[np.float_]:
         """
         Downloads feature embeddings for a cleanset (available only for text and image projects).
+        These are numeric vectors produced via neural network representations of each data point in your dataset.
 
         Args:
             cleanset_id (str): the ID of the cleanset from which you want to download feature embeddings.
