@@ -352,7 +352,7 @@ class Studio:
             cleanset_id (str): the ID of the cleanset from which you want to download feature embeddings.
 
         Returns:
-            `np.NDArray[float64]`: a numpy array of feature embeddings of shape `N` by `N_EMBED`, where `N` is the number of rows in the original dataset, and `N_EMBED` is the dimension of the feature embeddings.
+            `np.NDArray[float64]`: a 2D numpy array of feature embeddings of shape `N` by `N_EMBED`, where `N` is the number of rows in the original dataset, and `N_EMBED` is the dimension of the feature embeddings. The embedding-dimension depends on which neural network is used to represent your data (Cleanlab automatically identifies the best type of neural network for your data).
 
         For image projects, a few images in the original dataset might fail to be processed due to pooly formatted data or invalid image file paths.
         Feature embeddings are not computed for those rows. The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/guide/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
