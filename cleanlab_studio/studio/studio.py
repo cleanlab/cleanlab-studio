@@ -308,7 +308,7 @@ class Studio:
         keep_id: bool = False,
     ) -> pd.DataFrame:
         """
-        Downloads predicted probabilities for a cleanset.
+        Downloads predicted probabilities for a cleanset (only for classification datasets).
 
         Args:
             cleanset_id (str): the ID of the cleanset from which you want to download probabilities.
