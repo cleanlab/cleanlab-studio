@@ -311,7 +311,7 @@ class Studio:
         Downloads predicted probabilities for a cleanset (only for classification datasets).
 
         Args:
-            cleanset_id (str): the ID of the cleanset from which you want to download probabilities.
+            cleanset_id (str): the ID of the cleanset for which to download the corresponding predicted class probabilities.
             keep_id (bool): whether to include the ID column in the returned DataFrame to enable easy join/merge operations with original dataset.
 
         Returns:
