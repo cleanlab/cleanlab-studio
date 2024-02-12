@@ -308,11 +308,23 @@ class Studio:
         keep_id: bool = False,
     ) -> pd.DataFrame:
         """
-        Downloads predicted probabilities for a cleanset
+        Downloads predicted probabilities for a cleanset (only for classification datasets).
 
-        The probabilities will be returned as a `pd.DataFrame`. If `keep_id` is `True`,
-        the DataFrame will include an ID column that can be used for database joins/merges with
-        the original dataset or downloaded Cleanlab columns.
+        Args:
+            cleanset_id (str): the ID of the cleanset for which to download the corresponding predicted class probabilities.
+            keep_id (bool): whether to include the ID column in the returned DataFrame to enable easy join/merge operations with original dataset.
+
+        Returns:
+            `pd.DataFrame`: a DataFrame of probabilities of shape `N` by `M`, where `N` is the number of rows in the original dataset, and `M` is the total number of classes in the original dataset.
+            Every row of the returned DataFrame corresponds to the predicted probability of each class for the corresponding row in the original dataset.
+            If `keep_id` is `True`, the DataFrame will include an extra ID column that can be used for database joins/merges with
+            the original dataset or downloaded Cleanlab columns.
+
+        For image projects, a few images in the original dataset might fail to be processed due to poorly formatted data or invalid image file paths. Predicted probabilities will not be calculated for those rows.
+        The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/guide/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
+
+        If you want to work with predicted probabilities for an image project, the recommended workflow is to download probabilities with the option `keep_id=True`, and then do a join with the original dataset on the ID column.
+        Alternatively, you can follow the steps [here](/reference/python/studio#method-download_embeddings), and filter out the rows that were not analyzed. The filtered dataset will then have rows that align with the predicted probabilities DataFrame.
         """
         pred_probs: Union[npt.NDArray[np.float_], pd.DataFrame] = api.download_array(
             self._api_key, cleanset_id, "pred_probs"
@@ -333,7 +345,24 @@ class Studio:
         cleanset_id: str,
     ) -> npt.NDArray[np.float_]:
         """
-        Downloads embeddings for a cleanset
+        Downloads feature embeddings for a cleanset (available only for text and image projects).
+        These are numeric vectors produced via neural network representations of each data point in your dataset.
+
+        Args:
+            cleanset_id (str): the ID of the cleanset from which you want to download feature embeddings.
+
+        Returns:
+            `np.NDArray[float64]`: a 2D numpy array of feature embeddings of shape `N` by `N_EMBED`, where `N` is the number of rows in the original dataset, and `N_EMBED` is the dimension of the feature embeddings. The embedding-dimension depends on which neural network is used to represent your data (Cleanlab automatically identifies the best type of neural network for your data).
+
+        For image projects, a few images in the original dataset might fail to be processed due to pooly formatted data or invalid image file paths.
+        Feature embeddings are not computed for those rows. The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/guide/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
+        If you want to work with feature embeddings for an image project, the recommended workflow is as follows:
+
+            1. When the image project completes, download the cleaset via `studio.download_cleanlab_columns`, and check whether the `is_not_analyzed` boolean column has any `True` values.
+
+            2. If no rows are flaged as `is_not_analyzed`, it means that all the rows were processed successfully. In this case, the rows of the feature embeddings will correspond to the rows of the original dataset, and downstream analysis can be carried out with no further preparation.
+
+            3. If there are rows flagged as `is_not_analyzed`, the rows of the feature embeddings will correspond to the rows of the original dataset after filtering out the rows that are not analyzed.
         """
         return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
 
