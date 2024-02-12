@@ -264,18 +264,15 @@ def telemetry(
                             trace_str[cleanlab_match.start() :] if cleanlab_match else ""
                         )
 
-                        def replace_file_newline(match: re.Match[str]) -> str:
-                            if 'cleanlab-studio' not in match.group(0):
-                                return "File\n"
-                            else:
-                                return match.group(0)
                         # First filter out "File" followed by any characters except newline until a newline, without cleanlab-studio
-                        pattern1 = re.compile(r"File.*?\n")
-                        cleanlab_traceback = pattern1.sub(replace_file_newline, cleanlab_traceback)
+                        pattern1 = re.compile(r"File \"((?!cleanlab-studio).)*\n")
+                        cleanlab_traceback = pattern1.sub("File \n", cleanlab_traceback)
 
                         # Then filter out anything between "File" followed by any characters (no newline) until 'cleanlab-studio'
                         pattern2 = re.compile(r"File([^\n]*?)cleanlab-studio")
-                        cleanlab_traceback = pattern2.sub(r"File cleanlab-studio", cleanlab_traceback)
+                        cleanlab_traceback = pattern2.sub(
+                            'File "cleanlab-studio', cleanlab_traceback
+                        )
 
                     user_info["stack_trace"] = cleanlab_traceback
                     user_info["error_type"] = type(err).__name__
