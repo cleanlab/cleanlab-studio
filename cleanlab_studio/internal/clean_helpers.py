@@ -8,7 +8,12 @@ from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal.api import api
 
 
-def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[float] = None) -> None:
+def poll_cleanset_status(
+    api_key: str,
+    cleanset_id: str,
+    timeout: Optional[float] = None,
+    show_cleanset_link: bool = False,
+) -> None:
     start_time = time.time()
     res = api.get_cleanset_status(api_key, cleanset_id)
     spinner = itertools.cycle("|/-\\")
@@ -37,7 +42,12 @@ def poll_cleanset_status(api_key: str, cleanset_id: str, timeout: Optional[float
 
         if res["is_ready"]:
             pbar.update(pbar.total - pbar.n)
-            pbar.set_postfix_str(res["step_description"])
+            ready_description = res["step_description"]
+            if show_cleanset_link:
+                ready_description += (
+                    f" View your cleanset at: https://app.cleanlab.ai/cleansets/{cleanset_id}"
+                )
+            pbar.set_postfix_str(ready_description)
             return
 
         if res["has_error"]:
