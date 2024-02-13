@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Dict, List, Set, Optional, Any
 
 from cleanlab_studio.cli.types import Modality
+from cleanlab_studio.errors import InvalidSchemaError
 
 SchemaMetadataDictType = Dict[str, Optional[str]]
 SchemaFieldsDictType = Dict[str, Dict[str, str]]
@@ -59,7 +60,7 @@ class FieldSpecification:
         feature_type_ = FeatureType(feature_type)
 
         if feature_type_ not in DATA_TYPES_TO_FEATURE_TYPES[data_type_]:
-            raise ValueError(
+            raise InvalidSchemaError(
                 f"Invalid column feature type: '{feature_type_.value}' for data type: '{data_type_.value}'. "
                 f"Accepted categories for type '{data_type_.value}' are: {', '.join(t.value for t in DATA_TYPES_TO_FEATURE_TYPES[data_type_])}"
             )
@@ -104,11 +105,11 @@ class Schema:
         fields_ = dict()
         for field, field_spec in fields.items():
             if not isinstance(field, str):
-                raise ValueError(
+                raise InvalidSchemaError(
                     f"All schema columns must be strings. Found non-string column: {field}"
                 )
             if field == "":
-                raise ValueError(
+                raise InvalidSchemaError(
                     "Found empty string for schema column name. Schema columns cannot be empty strings."
                 )
             fields_[field] = FieldSpecification.create(

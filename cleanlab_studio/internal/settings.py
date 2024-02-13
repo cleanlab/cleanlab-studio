@@ -5,6 +5,7 @@ import semver
 
 from cleanlab_studio.version import SETTINGS_VERSION, MIN_SETTINGS_VERSION, MAX_SETTINGS_VERSION
 from cleanlab_studio.internal.types import CleanlabSettingsDict
+from cleanlab_studio.errors import SettingsError
 
 
 class CleanlabSettings:
@@ -74,9 +75,9 @@ class CleanlabSettings:
     def validate_version(self) -> None:
         if semver.compare(MIN_SETTINGS_VERSION, self.version) == 1:
             # TODO add proper settings migrations
-            raise ValueError("Settings file must be migrated or re-generated.")
+            raise SettingsError("Settings file must be migrated or re-generated.")
         elif semver.compare(MAX_SETTINGS_VERSION, self.version) == -1:
-            raise ValueError(
+            raise SettingsError(
                 "CLI is not up to date with your settings version. Run 'pip install --upgrade cleanlab-studio'."
             )
 

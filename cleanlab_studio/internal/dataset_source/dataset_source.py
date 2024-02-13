@@ -3,6 +3,8 @@ import contextlib
 import pathlib
 from typing import Optional, List, IO, Iterator
 
+from cleanlab_studio.errors import MissingPathError
+
 
 class DatasetSource:
     dataset_name: str
@@ -29,7 +31,7 @@ class DatasetSource:
                 self._fileobj.seek(0)
 
         else:
-            raise ValueError("Cannot return file object -- no filepath or fileobj available.")
+            raise MissingPathError("Cannot return file object -- no filepath or fileobj available.")
 
     def get_chunks(self, chunk_sizes: List[int]) -> Iterator[bytes]:
         with self.fileobj() as f:
