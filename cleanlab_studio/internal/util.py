@@ -264,11 +264,11 @@ def telemetry(
                             trace_str[cleanlab_match.start() :] if cleanlab_match else ""
                         )
 
-                        # First filter out "File" followed by any characters except newline until a newline, without cleanlab-studio
+                        # clean up paths that don't contain "cleanlab-studio" which may contain local paths
                         pattern1 = re.compile(r"File \"((?!cleanlab-studio).)*\n")
                         cleanlab_traceback = pattern1.sub("File \n", cleanlab_traceback)
 
-                        # Then filter out anything between "File" followed by any characters (no newline) until 'cleanlab-studio'
+                        # remove portios of paths preceding cleanlab-studio that may contain local paths
                         pattern2 = re.compile(r"File([^\n]*?)cleanlab-studio")
                         cleanlab_traceback = pattern2.sub(
                             'File "cleanlab-studio', cleanlab_traceback
