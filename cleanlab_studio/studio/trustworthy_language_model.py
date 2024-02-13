@@ -33,7 +33,8 @@ class TLMResponse(TypedDict):
 
 
 class TLMOptions(TypedDict):
-    """Trustworthy language model options.
+    """Trustworthy language model options. The TLM quality-preset determines many of these settings automatically, but
+    specifying other values here will over-ride the setting from the quality-preset.
 
     Parameters
     ----------
