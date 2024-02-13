@@ -1,6 +1,7 @@
 """
 Python API for Cleanlab Studio.
 """
+
 from typing import Any, List, Literal, Optional, Union
 from types import FunctionType
 import warnings
@@ -251,6 +252,7 @@ class Studio:
             CleansetError: if cleanset errored while running
         """
         clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+        print(f"View your cleanset at: https://app.cleanlab.ai/cleansets/{cleanset_id}")
 
     def get_latest_cleanset_id(self, project_id: str) -> str:
         """
