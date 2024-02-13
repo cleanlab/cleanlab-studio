@@ -258,9 +258,20 @@ def telemetry(
                     if track_all_frames:
                         cleanlab_traceback = trace_str
                     else:
+                        # remove stack frames for user code
                         cleanlab_match = re.search("File.*cleanlab", trace_str)
                         cleanlab_traceback = (
                             trace_str[cleanlab_match.start() :] if cleanlab_match else ""
+                        )
+
+                        # clean up paths that don't contain "cleanlab-studio" which may contain local paths
+                        pattern1 = re.compile(r"File \"((?!cleanlab-studio).)*\n")
+                        cleanlab_traceback = pattern1.sub("File \n", cleanlab_traceback)
+
+                        # remove portios of paths preceding cleanlab-studio that may contain local paths
+                        pattern2 = re.compile(r"File([^\n]*?)cleanlab-studio")
+                        cleanlab_traceback = pattern2.sub(
+                            'File "cleanlab-studio', cleanlab_traceback
                         )
 
                     user_info["stack_trace"] = cleanlab_traceback
