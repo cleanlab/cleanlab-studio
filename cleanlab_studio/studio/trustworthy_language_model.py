@@ -57,17 +57,18 @@ class TLMOptions(TypedDict):
        This controls whether self-reflection is used to have the LLM reflect upon the response it is generating and explicitly self-evaluate whether it seems good or not.
        This is a big part of the confidence score, in particular for ensure low scores for responses that are obviously incorrect/bad for a standard prompt that LLMs should be able to handle.
        Setting this to False disables the use of self-reflection and may produce worse TLM confidence scores, but can reduce costs/runtimes.
+
     model: str, default = "gpt-3.5-turbo-16k"
         ID of the model to use. Other options: "gpt-4"
 
     """
 
-    max_tokens: int
+    max_tokens: NotRequired[int]
     model: NotRequired[str]
-    max_timeout: int
-    num_candidate_responses: int
-    num_consistency_samples: int
-    use_self_reflection: bool
+    max_timeout: NotRequired[int]
+    num_candidate_responses: NotRequired[int]
+    num_consistency_samples: NotRequired[int]
+    use_self_reflection: NotRequired[bool]
 
 
 class TLM:
