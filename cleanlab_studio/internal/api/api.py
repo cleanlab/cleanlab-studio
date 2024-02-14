@@ -149,7 +149,7 @@ def update_schema(
 def get_ingestion_status(api_key: str, upload_id: str) -> JSONDict:
     check_uuid_well_formed(upload_id, "upload ID")
     res = requests.get(
-        f"{upload_base_url}/progress",
+        f"{upload_base_url}/total_progress",
         params=dict(upload_id=upload_id),
         headers=_construct_headers(api_key),
     )
@@ -386,24 +386,20 @@ def poll_ingestion_progress(api_key: str, upload_id: str, description: str) -> s
     check_uuid_well_formed(upload_id, "upload ID")
 
     with tqdm(total=1, desc=description, bar_format="{desc}: {percentage:3.0f}%|{bar}|") as pbar:
-        dataset_id = None
-        while True:
+        done = False
+        while not done:
             progress = get_ingestion_status(api_key, upload_id)
-            dataset_id = progress.get("dataset_id")
-
-            if dataset_id:
-                break
+            done = progress.get("status") == "complete"
 
             # convert progress to float
-            step_progresses = [step["progress"] for step in progress["progress_dict"].values()]
-            total_steps = progress["total_steps"]
-            pbar.update((sum(step_progresses) / total_steps) - pbar.n)
+            pbar.update(float(progress.get("progress", 0)) - pbar.n)
             time.sleep(1)
 
         # mark progress as done
         pbar.update(float(1) - pbar.n)
 
-    assert isinstance(dataset_id, str), "dataset_id should be a string"
+    # get dataset ID
+    dataset_id = get_dataset_id(api_key, upload_id)["dataset_id"]
     return dataset_id
 
 
