@@ -1,6 +1,7 @@
 """
 Python API for Cleanlab Studio.
 """
+
 from typing import Any, List, Literal, Optional, Union
 from types import FunctionType
 import warnings
@@ -239,18 +240,21 @@ class Studio:
             text_column=text_column,
         )
 
-    def wait_until_cleanset_ready(self, cleanset_id: str, timeout: Optional[float] = None) -> None:
+    def wait_until_cleanset_ready(
+        self, cleanset_id: str, timeout: Optional[float] = None, show_cleanset_link: bool = False
+    ) -> None:
         """Blocks until a cleanset is ready or the timeout is reached.
 
         Args:
             cleanset_id (str): ID of cleanset to check status for.
             timeout (Optional[float], optional): timeout for polling, in seconds. Defaults to None.
+            show_cleanset_link (bool, optional): whether to print a link to view the cleanset in the Cleanlab Studio web UI when the cleanset is ready. Defaults to False.
 
         Raises:
             TimeoutError: if cleanset is not ready by end of timeout
             CleansetError: if cleanset errored while running
         """
-        clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+        clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout, show_cleanset_link)
 
     def get_latest_cleanset_id(self, project_id: str) -> str:
         """
