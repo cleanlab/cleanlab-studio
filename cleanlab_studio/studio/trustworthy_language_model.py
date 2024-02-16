@@ -6,12 +6,14 @@ from __future__ import annotations
 import asyncio
 import sys
 from typing import Coroutine, List, Literal, Optional, Union, cast
+from tqdm.asyncio import tqdm_asyncio
 
 import aiohttp
 from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.types import JSONDict
+
 
 valid_quality_presets = ["best", "high", "medium", "low", "base"]
 QualityPreset = Literal["best", "high", "medium", "low", "base"]
@@ -171,8 +173,7 @@ class TLM:
         timeout: Optional[float],
     ) -> Union[List[TLMResponse], List[float]]:
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
-
-        return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=timeout)  # type: ignore[arg-type]
+        return await asyncio.wait_for(tqdm_asyncio.gather(*tlm_query_tasks, total=len(tlm_query_tasks), desc="Querying TLM...", bar_format="{desc}: {percentage:3.0f}%|{bar}|"), timeout=timeout)  # type: ignore[arg-type]
 
     def prompt(self, prompt: str, options: Optional[TLMOptions] = None) -> TLMResponse:
         """
