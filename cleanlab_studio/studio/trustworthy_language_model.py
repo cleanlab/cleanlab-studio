@@ -18,6 +18,10 @@ from cleanlab_studio.internal.types import JSONDict
 valid_quality_presets = ["best", "high", "medium", "low", "base"]
 QualityPreset = Literal["best", "high", "medium", "low", "base"]
 
+valid_tlm_models = ["gpt-3.5-turbo-16k", "gpt-4"]
+TLMModel = Literal["gpt-3.5-turbo-16k", "gpt-4"]
+
+DEFAULT_VERBOSITY: bool = True
 DEFAULT_MAX_CONCURRENT_TLM_REQUESTS: int = 16
 MAX_CONCURRENT_TLM_REQUESTS_LIMIT: int = 128
 
@@ -60,14 +64,9 @@ class TLMOptions(TypedDict):
        This controls whether self-reflection is used to have the LLM reflect upon the response it is generating and explicitly self-evaluate whether it seems good or not.
        This is a big part of the confidence score, in particular for ensure low scores for responses that are obviously incorrect/bad for a standard prompt that LLMs should be able to handle.
        Setting this to False disables the use of self-reflection and may produce worse TLM confidence scores, but can reduce costs/runtimes.
-
-    model: str, default = "gpt-3.5-turbo-16k"
-        ID of the model to use. Other options: "gpt-4"
-
     """
 
     max_tokens: NotRequired[int]
-    model: NotRequired[str]
     max_timeout: NotRequired[int]
     num_candidate_responses: NotRequired[int]
     num_consistency_samples: NotRequired[int]
@@ -81,14 +80,24 @@ class TLM:
         self,
         api_key: str,
         quality_preset: QualityPreset,
+        model: TLMModel,
+        verbosity: bool,
         max_concurrent_requests: int = DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
     ) -> None:
         """Initializes TLM interface.
 
-        Args:
-            api_key (str): API key used to authenticate TLM client
-            quality_preset (QualityPreset): quality preset to use for TLM queries
-            max_concurrent_requests (int): maximum number of concurrent requests when issuing batch queries. Default is 16.
+        Parameters
+        ----------
+            api_key: str
+                API key used to authenticate TLM client
+            quality_preset: QualityPreset, default = "low"
+                Quality preset to use for TLM queries
+            max_concurrent_requests: int, default = 16
+                Maximum number of concurrent requests when issuing batch queries. Default is 16.
+            model: TLMModel, default = "gpt-3.5-turbo-16k"
+                ID of the model to use. Other options: "gpt-4"
+            verbosity: bool, default = True
+                Verbosity level for TLM queries. Default is True which will print progress bars for TLM queries. For silent TLM progress, set to False.
         """
         self._api_key = api_key
 
@@ -100,8 +109,11 @@ class TLM:
             raise ValueError(
                 f"Invalid quality preset {quality_preset} -- must be one of {valid_quality_presets}"
             )
-
         self._quality_preset = quality_preset
+
+        if model not in valid_tlm_models:
+            raise ValueError(f"Invalid model {model} -- must be one of {valid_tlm_models}")
+        self._model = model
 
         if is_notebook():
             import nest_asyncio
@@ -110,6 +122,7 @@ class TLM:
 
         self._event_loop = asyncio.get_event_loop()
         self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
+        self._verbosity = verbosity
 
     def batch_prompt(
         self,
@@ -201,15 +214,22 @@ class TLM:
         timeout: Optional[float],
     ) -> Union[List[TLMResponse], List[float]]:
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
-        return await asyncio.wait_for(
-            tqdm_asyncio.gather(
-                *tlm_query_tasks,
-                total=len(tlm_query_tasks),
-                desc="Querying TLM...",
-                bar_format="{desc}: {percentage:3.0f}%|{bar}|",
-            ),
-            timeout=timeout,
-        )
+
+        if self._verbosity:
+            return await asyncio.wait_for(
+                tqdm_asyncio.gather(
+                    *tlm_query_tasks,
+                    total=len(tlm_query_tasks),
+                    desc="Querying TLM...",
+                    bar_format="{desc}: {percentage:3.0f}%|{bar}|",
+                ),
+                timeout=timeout,
+            )
+        else:
+            return await asyncio.wait_for(
+                asyncio.gather(*tlm_query_tasks),
+                timeout=timeout,
+            )
 
     def prompt(self, prompt: str, options: Optional[TLMOptions] = None) -> TLMResponse:
         """
