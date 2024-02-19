@@ -8,3 +8,7 @@ def check_uuid_well_formed(uuid_string: str, id_name: str) -> None:
         raise ValueError(
             f"{uuid_string} is not a well-formed {id_name}, please double check and try again."
         )
+
+
+def is_collection(obj: object) -> bool:
+    return hasattr(obj, "__iter__") and hasattr(obj, "__len__")
