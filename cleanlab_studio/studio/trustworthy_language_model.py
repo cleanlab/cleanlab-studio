@@ -144,11 +144,11 @@ class TLM:
         Returns:
             List[float]: TLM confidence score for each prompt (in supplied order)
         """
-        if not is_collection(options):
+        if is_collection(options):
+            options_collection = cast(Collection[Union[TLMOptions, None]], options)
+        else:
             options = cast(Union[None, TLMOptions], options)
             options_collection = [options for _ in prompts]
-        else:
-            options_collection = cast(Collection[Union[TLMOptions, None]], options)
 
         assert len(prompts) == len(responses), "Length of prompts and responses must match."
         assert len(prompts) == len(options_collection), "Length of prompts and options must match."
