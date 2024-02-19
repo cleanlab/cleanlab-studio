@@ -395,7 +395,7 @@ class Studio:
             TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
         """
         return trustworthy_language_model.TLM(
-            self._api_key, quality_preset, model, verbosity**kwargs
+            self._api_key, quality_preset, model, verbosity, **kwargs
         )
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
