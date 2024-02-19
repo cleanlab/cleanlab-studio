@@ -211,10 +211,9 @@ class TLM:
             if not isinstance(options, dict):
                 raise ValueError("options must be a single TLMOptions object for single prompt.")
 
-            prompt = cast(str, prompt)
             return self._event_loop.run_until_complete(
                 self.prompt_async(
-                    cast(str, prompt),
+                    prompt,
                     cast(Union[None, TLMOptions], options),
                     retries=retries,
                 )
@@ -296,16 +295,13 @@ class TLM:
             if not isinstance(response, str):
                 raise ValueError("responses must be a single string for single prompt.")
 
-            return cast(
-                float,
-                self._event_loop.run_until_complete(
-                    self.get_confidence_score_async(
-                        cast(str, prompt),
-                        response,
-                        cast(Union[None, TLMOptions], options),
-                        retries=retries,
-                    )
-                ),
+            return self._event_loop.run_until_complete(
+                self.get_confidence_score_async(
+                    prompt,
+                    response,
+                    cast(Union[None, TLMOptions], options),
+                    retries=retries,
+                )
             )
 
         else:
