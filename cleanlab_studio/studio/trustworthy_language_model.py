@@ -100,7 +100,7 @@ class TLM:
             List[TLMResponse]: TLM responses for each prompt (in supplied order)
         """
         if isinstance(options, list):
-            options_collection = cast(List[Union[TLMOptions, None]], options)
+            options_collection = options
         else:
             options = cast(Union[None, TLMOptions], options)
             options_collection = [options for _ in prompts]
@@ -144,7 +144,7 @@ class TLM:
             List[float]: TLM confidence score for each prompt (in supplied order)
         """
         if isinstance(options, list):
-            options_collection = cast(List[Union[TLMOptions, None]], options)
+            options_collection = options
         else:
             options = cast(Union[None, TLMOptions], options)
             options_collection = [options for _ in prompts]
