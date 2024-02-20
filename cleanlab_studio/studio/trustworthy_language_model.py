@@ -82,7 +82,7 @@ class TLM:
         self._event_loop = asyncio.get_event_loop()
         self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
 
-    def batch_prompt(
+    def _batch_prompt(
         self,
         prompts: Collection[str],
         options: Union[None, TLMOptions, Collection[Union[TLMOptions, None]]] = None,
@@ -124,7 +124,7 @@ class TLM:
 
         return cast(List[TLMResponse], tlm_responses)
 
-    def batch_get_confidence_score(
+    def _batch_get_confidence_score(
         self,
         prompts: Collection[str],
         responses: Collection[str],
@@ -192,15 +192,21 @@ class TLM:
         Get response and confidence from TLM.
 
         Args:
-            prompt (str): prompt (or list of prompts) for the TLM
+            prompt (str | Collection[str]): prompt (or list/iterable of multiple prompts) for the TLM
             options (None | TLMOptions | Collection[TLMOptions |  None], optional): collection of options (or instance of options) to pass to prompt method. Defaults to None.
-            timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
+            timeout (Optional[float], optional): maximum allowed time (in seconds) to run all prompts. Defaults to None.
+                If the timeout is hit, this method will throw a `TimeoutError`.
+                Larger values give TLM a higher chance to return outputs for all of your prompts.
+                Smaller values ensure this method does not take too long.
             retries (int): number of retries to attempt for each individual prompt in case of error. Defaults to 1.
+                Larger values give TLM a higher chance of returning outputs for all of your prompts,
+                but this method will also take longer to alert you in cases of an unrecoverable error.
+                Set to 0 to never attempt any retries.
         Returns:
             TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
         """
         if is_collection(prompt):
-            return self.batch_prompt(
+            return self._batch_prompt(
                 prompt,
                 options,
                 timeout=timeout,
@@ -257,8 +263,8 @@ class TLM:
 
     def get_confidence_score(
         self,
-        prompt: Union[str, List[str]],
-        response: Union[str, List[str]],
+        prompt: Union[str, Collection[str]],
+        response: Union[str, Collection[str]],
         options: Union[None, TLMOptions, Collection[Union[TLMOptions, None]]] = None,
         timeout: Optional[float] = None,
         retries: int = 1,
@@ -266,11 +272,17 @@ class TLM:
         """Gets confidence score for prompt-response pair(s).
 
         Args:
-            prompt: prompt (or list/iterable of prompts) for the TLM
-            response: response (or list/iterable of responses) for the TLM to evaluate
+            prompt (str | Collection[str]): prompt (or list/iterable of multiple prompts) for the TLM
+            response (str | Collection[str]): response (or list/iterable of multiple responses) for the TLM to evaluate
             options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to get confidence score method. Defaults to None.
             timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
+                If the timeout is hit, this method will throw a `TimeoutError`.
+                Larger values give TLM a higher chance to return outputs for all of your prompts.
+                Smaller values ensure this method does not take too long.
             retries (int): number of retries to attempt for each individual prompt in case of error. Defaults to 1.
+                Larger values give TLM a higher chance of returning outputs for all of your prompts,
+                but this method will also take longer to alert you in cases of an unrecoverable error.
+                Set to 0 to never attempt any retries.
         Returns:
             float or list of floats corresponding to the TLM's confidence score
         """
@@ -280,7 +292,7 @@ class TLM:
                     "responses must be a list or iterable of strings when prompt is a list or iterable."
                 )
 
-            return self.batch_get_confidence_score(
+            return self._batch_get_confidence_score(
                 prompt,
                 response,
                 options,
