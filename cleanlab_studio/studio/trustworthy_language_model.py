@@ -215,7 +215,7 @@ class TLM:
             )
 
         elif isinstance(prompt, str):
-            if not isinstance(options, dict):
+            if not (options is None or isinstance(options, dict)):
                 raise ValueError("options must be a single TLMOptions object for single prompt.")
 
             return self._event_loop.run_until_complete(
@@ -303,7 +303,7 @@ class TLM:
             )
 
         elif isinstance(prompt, str):
-            if not isinstance(options, dict):
+            if not (options is None or isinstance(options, dict)):
                 raise ValueError("options must be a single TLMOptions object for single prompt.")
 
             if not isinstance(response, str):
