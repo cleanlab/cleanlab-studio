@@ -477,11 +477,8 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
             try:
                 return await func(*args, **kwargs)
             except RateLimitError as e:
-                sleep_time = e.retry_after
                 # note: we don't increment num_try here, because we don't want rate limit retries to count against the total number of retries
-                error_message = (
-                    "Try setting a smaller max_concurrent_requests or using a shorter prompt."
-                )
+                sleep_time = e.retry_after
             except Exception as e:
                 sleep_time = 2**num_try
                 num_try += 1
