@@ -278,8 +278,8 @@ class TLM:
         """Gets confidence score for prompt-response pair(s).
 
         Args:
-            prompt (str | List[str]): prompt (or list/iterable of multiple prompts) for the TLM
-            response (str | List[str]): response (or list/iterable of multiple responses) for the TLM to evaluate
+            prompt (str | List[str]): prompt (or list of multiple prompts) for the TLM
+            response (str | List[str]): response (or list of multiple responses) for the TLM to evaluate
             options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to get confidence score method. Defaults to None.
             timeout (Optional[float], optional): maximum allowed time (in seconds) to run all prompts and evaluate all responses. Defaults to None.
                 If the timeout is hit, this method will throw a `TimeoutError`.
