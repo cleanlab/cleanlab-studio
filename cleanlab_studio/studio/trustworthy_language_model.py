@@ -194,16 +194,17 @@ class TLM:
         Args:
             prompt (str | Collection[str]): prompt (or list/iterable of multiple prompts) for the TLM
             options (None | TLMOptions | Collection[TLMOptions |  None], optional): collection of options (or instance of options) to pass to prompt method. Defaults to None.
-            timeout (Optional[float], optional): maximum allowed time (in seconds) to run all prompts. Defaults to None.
+            timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
                 If the timeout is hit, this method will throw a `TimeoutError`.
                 Larger values give TLM a higher chance to return outputs for all of your prompts.
                 Smaller values ensure this method does not take too long.
-            retries (int): number of retries to attempt for each individual prompt in case of error. Defaults to 1.
+            retries (int): number of retries to attempt for each individual prompt in case of internal error. Defaults to 1.
                 Larger values give TLM a higher chance of returning outputs for all of your prompts,
                 but this method will also take longer to alert you in cases of an unrecoverable error.
                 Set to 0 to never attempt any retries.
         Returns:
-            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
+            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and confidence score.
+                    If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
         """
         if is_collection(prompt):
             return self._batch_prompt(
@@ -275,16 +276,17 @@ class TLM:
             prompt (str | Collection[str]): prompt (or list/iterable of multiple prompts) for the TLM
             response (str | Collection[str]): response (or list/iterable of multiple responses) for the TLM to evaluate
             options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to get confidence score method. Defaults to None.
-            timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
+            timeout (Optional[float], optional): maximum allowed time (in seconds) to run all prompts and evaluate all responses. Defaults to None.
                 If the timeout is hit, this method will throw a `TimeoutError`.
-                Larger values give TLM a higher chance to return outputs for all of your prompts.
+                Larger values give TLM a higher chance to return outputs for all of your prompts + responses.
                 Smaller values ensure this method does not take too long.
-            retries (int): number of retries to attempt for each individual prompt in case of error. Defaults to 1.
+            retries (int): number of retries to attempt for each individual prompt in case of internal error. Defaults to 1.
                 Larger values give TLM a higher chance of returning outputs for all of your prompts,
                 but this method will also take longer to alert you in cases of an unrecoverable error.
                 Set to 0 to never attempt any retries.
         Returns:
-            float or list of floats corresponding to the TLM's confidence score
+            float (or list of floats if multiple prompt-responses were provided) corresponding to the TLM's confidence score.
+                    The score quantifies how confident TLM is that the given response is good for the given prompt.
         """
         if is_collection(prompt):
             if not is_collection(response):
