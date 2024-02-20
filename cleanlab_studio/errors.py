@@ -38,3 +38,7 @@ class InternalError(Exception):
 
 class CleansetError(InternalError):
     pass
+
+
+class InvalidSchemaTypeError(ValueError):
+    pass

@@ -12,6 +12,7 @@ from requests.adapters import HTTPAdapter, Retry
 from .api import api
 from .dataset_source import DatasetSource
 from .types import JSONDict, SchemaOverride
+from errors import InvalidSchemaTypeError
 
 
 def upload_dataset(
@@ -141,7 +142,7 @@ def _old_schema_to_column_type(data_type: str, feature_type: str) -> str:
         return _float_data_type_to_column_type(data_type, feature_type)
     if data_type == "boolean":
         return _boolean_data_type_to_column_type(data_type, feature_type)
-    raise ValueError(f"Unsupported data type: {data_type}.")
+    raise InvalidSchemaTypeError(f"Unsupported data type: {data_type}.")
 
 
 def _string_data_type_to_column_type(data_type: str, feature_type: str) -> str:
@@ -150,10 +151,10 @@ def _string_data_type_to_column_type(data_type: str, feature_type: str) -> str:
     if feature_type == "image":
         return "image_external"
     if feature_type in ["datetime", "identifier"]:
-        raise ValueError(
+        raise InvalidSchemaTypeError(
             f"Cannot convert old schema feature type '{feature_type}' to new schema type."
         )
-    raise ValueError(
+    raise InvalidSchemaTypeError(
         f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
     )
 
@@ -162,10 +163,10 @@ def _integer_data_type_to_column_type(data_type: str, feature_type: str) -> str:
     if feature_type in ["categorical", "numeric"]:
         return "integer"
     if feature_type in ["datetime", "identifier"]:
-        raise ValueError(
+        raise InvalidSchemaTypeError(
             f"Cannot convert old schema feature type '{feature_type}' to new schema type."
         )
-    raise ValueError(
+    raise InvalidSchemaTypeError(
         f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
     )
 
@@ -174,10 +175,10 @@ def _float_data_type_to_column_type(data_type: str, feature_type: str) -> str:
     if feature_type == "numeric":
         return "float"
     if feature_type == "datetime":
-        raise ValueError(
+        raise InvalidSchemaTypeError(
             f"Cannot convert old schema feature type '{feature_type}' to new schema type."
         )
-    raise ValueError(
+    raise InvalidSchemaTypeError(
         f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
     )
 
@@ -185,6 +186,6 @@ def _float_data_type_to_column_type(data_type: str, feature_type: str) -> str:
 def _boolean_data_type_to_column_type(data_type: str, feature_type: str) -> str:
     if feature_type == "boolean":
         return "boolean"
-    raise ValueError(
+    raise InvalidSchemaTypeError(
         f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
     )
