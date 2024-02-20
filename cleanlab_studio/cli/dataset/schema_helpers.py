@@ -1,6 +1,7 @@
 """
 Helper functions for working with schemas
 """
+
 import json
 from typing import Any, cast, List
 
