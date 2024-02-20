@@ -31,8 +31,6 @@ _pyspark_exists = api.pyspark_exists
 if _pyspark_exists:
     import pyspark.sql
 
-warnings.simplefilter("always", DeprecationWarning)
-
 
 class Studio:
     """Used to interact with Cleanlab Studio."""
@@ -85,21 +83,18 @@ class Studio:
         if kwargs.get("modality") is not None:
             warnings.warn(
                 "Ignoring `modality` parameter which is deprecated and will be removed in a future release.",
-                DeprecationWarning,
             )
         if kwargs.get("id_column") is not None:
             warnings.warn(
                 "Ignoring `id_column` parameter which is deprecated and will be removed in a future release.",
-                DeprecationWarning,
             )
 
         if isinstance(schema_overrides, dict):
             # TODO: link to documentation for schema override format
+            schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
             warnings.warn(
                 "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
-                DeprecationWarning,
             )
-            schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
 
         return upload_helpers.upload_dataset(
             self._api_key,
