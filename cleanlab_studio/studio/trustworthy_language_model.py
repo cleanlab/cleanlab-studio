@@ -206,6 +206,9 @@ class TLM:
                     If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
         """
         if isinstance(prompt, list):
+            if any(not isinstance(p, str) for p in prompt):
+                raise ValueError("All prompts must be strings.")
+
             return self._batch_prompt(
                 prompt,
                 options,
@@ -229,7 +232,7 @@ class TLM:
             )
 
         else:
-            raise ValueError("prompt must be a string or list/iterable of strings.")
+            raise ValueError("prompt must be a string or list of strings.")
 
     async def prompt_async(
         self,
@@ -291,6 +294,11 @@ class TLM:
                     The score quantifies how confident TLM is that the given response is good for the given prompt.
         """
         if isinstance(prompt, list):
+            if any(not isinstance(p, str) for p in prompt):
+                raise ValueError("All prompts must be strings.")
+            if any(not isinstance(r, str) for r in response):
+                raise ValueError("All responses must be strings.")
+
             if not isinstance(response, list):
                 raise ValueError(
                     "responses must be a list or iterable of strings when prompt is a list or iterable."
