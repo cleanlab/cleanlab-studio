@@ -17,6 +17,9 @@ from cleanlab_studio.internal.types import JSONDict
 valid_quality_presets = ["best", "high", "medium", "low", "base"]
 QualityPreset = Literal["best", "high", "medium", "low", "base"]
 
+valid_tlm_models = ["gpt-3.5-turbo-16k", "gpt-4"]
+TLMModel = Literal["gpt-3.5-turbo-16k", "gpt-4"]
+
 DEFAULT_MAX_CONCURRENT_TLM_REQUESTS: int = 16
 MAX_CONCURRENT_TLM_REQUESTS_LIMIT: int = 128
 
@@ -80,14 +83,21 @@ class TLM:
         self,
         api_key: str,
         quality_preset: QualityPreset,
+        model: TLMModel,
         max_concurrent_requests: int = DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
     ) -> None:
         """Initializes TLM interface.
 
-        Args:
-            api_key (str): API key used to authenticate TLM client
-            quality_preset (QualityPreset): quality preset to use for TLM queries
-            max_concurrent_requests (int): maximum number of concurrent requests when issuing batch queries. Default is 16.
+        Parameters
+        ----------
+            api_key: str
+                API key used to authenticate TLM client
+            quality_preset: QualityPreset, default = "low"
+                Quality preset to use for TLM queries
+            max_concurrent_requests: int, default = 16
+                Maximum number of concurrent requests when issuing batch queries.
+            model: TLMModel, default = "gpt-3.5-turbo-16k"
+                ID of the model to use. Other options: "gpt-4"
         """
         self._api_key = api_key
 
@@ -101,6 +111,10 @@ class TLM:
             )
 
         self._quality_preset = quality_preset
+
+        if model not in valid_tlm_models:
+            raise ValueError(f"Invalid model {model} -- must be one of {valid_tlm_models}")
+        self._model = model
 
         if is_notebook():
             import nest_asyncio

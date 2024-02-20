@@ -374,18 +374,24 @@ class Studio:
         self,
         *,
         quality_preset: trustworthy_language_model.QualityPreset = "medium",
+        model: trustworthy_language_model.TLMModel = "gpt-3.5-turbo-16k",
         **kwargs: Any,
     ) -> trustworthy_language_model.TLM:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
-        Args:
-            quality_preset: quality preset to use for prompts
-            kwargs (Any): additional kwargs to pass to TLM class
+        Parameters
+        ----------
+            quality_preset: QualityPreset, default = "low"
+                Quality preset to use for TLM queries
+            model: TLMModel, default = "gpt-3.5-turbo-16k"
+                ID of the model to use. Other options: "gpt-4"
+            kwargs (Any):
+                Additional kwargs to pass to TLM class
 
         Returns:
             TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
         """
-        return trustworthy_language_model.TLM(self._api_key, quality_preset, **kwargs)
+        return trustworthy_language_model.TLM(self._api_key, quality_preset, model, **kwargs)
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
         """
