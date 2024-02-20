@@ -215,7 +215,10 @@ class TLM:
 
         elif isinstance(prompt, str):
             if not (options is None or isinstance(options, dict)):
-                raise ValueError("options must be a single TLMOptions object for single prompt.")
+                raise ValueError(
+                    "options must be a single TLMOptions object for single prompt.\n"
+                    "See: https://help.cleanlab.ai/reference/python/trustworthy_language_model/#class-tlmoptions"
+                )
 
             return self._event_loop.run_until_complete(
                 self.prompt_async(
@@ -303,7 +306,10 @@ class TLM:
 
         elif isinstance(prompt, str):
             if not (options is None or isinstance(options, dict)):
-                raise ValueError("options must be a single TLMOptions object for single prompt.")
+                raise ValueError(
+                    "options must be a single TLMOptions object for single prompt.\n"
+                    "See: https://help.cleanlab.ai/reference/python/trustworthy_language_model/#class-tlmoptions"
+                )
 
             if not isinstance(response, str):
                 raise ValueError("responses must be a single string for single prompt.")
