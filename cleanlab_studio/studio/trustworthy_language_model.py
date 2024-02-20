@@ -110,12 +110,12 @@ class TLM:
         self._event_loop = asyncio.get_event_loop()
         self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
 
-    def batch_prompt(
+    def _batch_prompt(
         self,
         prompts: List[str],
         options: Union[None, TLMOptions, List[Union[TLMOptions, None]]] = None,
         timeout: Optional[float] = None,
-        retries: int = 0,
+        retries: int = 1,
     ) -> List[TLMResponse]:
         """Run batch of TLM prompts.
 
@@ -123,15 +123,18 @@ class TLM:
             prompts (List[str]): list of prompts to run
             options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to prompt method. Defaults to None.
             timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
-            retries (int): number of retries to attempt for each individual prompt. Defaults to 0.
+            retries (int): number of retries to attempt for each individual prompt in case of error. Defaults to 1.
 
         Returns:
             List[TLMResponse]: TLM responses for each prompt (in supplied order)
         """
-        if not isinstance(options, list):
-            options = [options for _ in prompts]
+        if isinstance(options, list):
+            options_collection = options
+        else:
+            options = cast(Union[None, TLMOptions], options)
+            options_collection = [options for _ in prompts]
 
-        assert len(prompts) == len(options), "Length of prompts and options must match."
+        assert len(prompts) == len(options_collection), "Length of prompts and options must match."
 
         tlm_responses = self._event_loop.run_until_complete(
             self._batch_async(
@@ -141,7 +144,7 @@ class TLM:
                         option_dict,
                         retries=retries,
                     )
-                    for prompt, option_dict in zip(prompts, options)
+                    for prompt, option_dict in zip(prompts, options_collection)
                 ],
                 timeout=timeout,
             )
@@ -149,13 +152,13 @@ class TLM:
 
         return cast(List[TLMResponse], tlm_responses)
 
-    def batch_get_confidence_score(
+    def _batch_get_confidence_score(
         self,
         prompts: List[str],
         responses: List[str],
         options: Union[None, TLMOptions, List[Union[TLMOptions, None]]] = None,
         timeout: Optional[float] = None,
-        retries: int = 0,
+        retries: int = 1,
     ) -> List[float]:
         """Run batch of TLM get confidence score.
 
@@ -164,16 +167,19 @@ class TLM:
             responses (List[str]): list of responses to run get confidence score for
             options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to get confidence score method. Defaults to None.
             timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
-            retries (int): number of retries to attempt for each individual prompt. Defaults to 0.
+            retries (int): number of retries to attempt for each individual prompt in case of error. Defaults to 1.
 
         Returns:
             List[float]: TLM confidence score for each prompt (in supplied order)
         """
-        if not isinstance(options, list):
-            options = [options for _ in prompts]
+        if isinstance(options, list):
+            options_collection = options
+        else:
+            options = cast(Union[None, TLMOptions], options)
+            options_collection = [options for _ in prompts]
 
         assert len(prompts) == len(responses), "Length of prompts and responses must match."
-        assert len(prompts) == len(options), "Length of prompts and options must match."
+        assert len(prompts) == len(options_collection), "Length of prompts and options must match."
 
         tlm_responses = self._event_loop.run_until_complete(
             self._batch_async(
@@ -184,7 +190,7 @@ class TLM:
                         option_dict,
                         retries=retries,
                     )
-                    for prompt, response, option_dict in zip(prompts, responses, options)
+                    for prompt, response, option_dict in zip(prompts, responses, options_collection)
                 ],
                 timeout=timeout,
             )
@@ -203,22 +209,59 @@ class TLM:
 
         return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=timeout)  # type: ignore[arg-type]
 
-    def prompt(self, prompt: str, options: Optional[TLMOptions] = None) -> TLMResponse:
+    def prompt(
+        self,
+        prompt: Union[str, List[str]],
+        options: Union[None, TLMOptions, List[Union[TLMOptions, None]]] = None,
+        timeout: Optional[float] = None,
+        retries: int = 1,
+    ) -> Union[TLMResponse, List[TLMResponse]]:
         """
         Get response and confidence from TLM.
 
         Args:
-            prompt (str): prompt for the TLM
-            options (Optional[TLMOptions]): options to parameterize TLM with. Defaults to None.
+            prompt (str | List[str]): prompt (or list of multiple prompts) for the TLM
+            options (None | TLMOptions | List[TLMOptions |  None], optional): list of options (or instance of options) to pass to prompt method. Defaults to None.
+            timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
+                If the timeout is hit, this method will throw a `TimeoutError`.
+                Larger values give TLM a higher chance to return outputs for all of your prompts.
+                Smaller values ensure this method does not take too long.
+            retries (int): number of retries to attempt for each individual prompt in case of internal error. Defaults to 1.
+                Larger values give TLM a higher chance of returning outputs for all of your prompts,
+                but this method will also take longer to alert you in cases of an unrecoverable error.
+                Set to 0 to never attempt any retries.
         Returns:
-            TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
+            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and confidence score.
+                    If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
         """
-        return self._event_loop.run_until_complete(
-            self.prompt_async(
+        if isinstance(prompt, list):
+            if any(not isinstance(p, str) for p in prompt):
+                raise ValueError("All prompts must be strings.")
+
+            return self._batch_prompt(
                 prompt,
                 options,
+                timeout=timeout,
+                retries=retries,
             )
-        )
+
+        elif isinstance(prompt, str):
+            if not (options is None or isinstance(options, dict)):
+                raise ValueError(
+                    "options must be a single TLMOptions object for single prompt.\n"
+                    "See: https://help.cleanlab.ai/reference/python/trustworthy_language_model/#class-tlmoptions"
+                )
+
+            return self._event_loop.run_until_complete(
+                self.prompt_async(
+                    prompt,
+                    cast(Union[None, TLMOptions], options),
+                    retries=retries,
+                )
+            )
+
+        else:
+            raise ValueError("prompt must be a string or list of strings.")
 
     async def prompt_async(
         self,
@@ -254,24 +297,71 @@ class TLM:
         }
 
     def get_confidence_score(
-        self, prompt: str, response: str, options: Optional[TLMOptions] = None
-    ) -> float:
-        """Gets confidence score for prompt-response pair.
+        self,
+        prompt: Union[str, List[str]],
+        response: Union[str, List[str]],
+        options: Union[None, TLMOptions, List[Union[TLMOptions, None]]] = None,
+        timeout: Optional[float] = None,
+        retries: int = 1,
+    ) -> Union[float, List[float]]:
+        """Gets confidence score for prompt-response pair(s).
 
         Args:
-            prompt: prompt for the TLM
-            response: response for the TLM to evaluate
-            options (Optional[TLMOptions]): options to parameterize TLM with. Defaults to None.
+            prompt (str | List[str]): prompt (or list of multiple prompts) for the TLM
+            response (str | List[str]): response (or list of multiple responses) for the TLM to evaluate
+            options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to get confidence score method. Defaults to None.
+            timeout (Optional[float], optional): maximum allowed time (in seconds) to run all prompts and evaluate all responses. Defaults to None.
+                If the timeout is hit, this method will throw a `TimeoutError`.
+                Larger values give TLM a higher chance to return outputs for all of your prompts + responses.
+                Smaller values ensure this method does not take too long.
+            retries (int): number of retries to attempt for each individual prompt in case of internal error. Defaults to 1.
+                Larger values give TLM a higher chance of returning outputs for all of your prompts,
+                but this method will also take longer to alert you in cases of an unrecoverable error.
+                Set to 0 to never attempt any retries.
         Returns:
-            float corresponding to the TLM's confidence score
+            float (or list of floats if multiple prompt-responses were provided) corresponding to the TLM's confidence score.
+                    The score quantifies how confident TLM is that the given response is good for the given prompt.
         """
-        return self._event_loop.run_until_complete(
-            self.get_confidence_score_async(
+        if isinstance(prompt, list):
+            if any(not isinstance(p, str) for p in prompt):
+                raise ValueError("All prompts must be strings.")
+            if any(not isinstance(r, str) for r in response):
+                raise ValueError("All responses must be strings.")
+
+            if not isinstance(response, list):
+                raise ValueError(
+                    "responses must be a list or iterable of strings when prompt is a list or iterable."
+                )
+
+            return self._batch_get_confidence_score(
                 prompt,
                 response,
                 options,
+                timeout=timeout,
+                retries=retries,
             )
-        )
+
+        elif isinstance(prompt, str):
+            if not (options is None or isinstance(options, dict)):
+                raise ValueError(
+                    "options must be a single TLMOptions object for single prompt.\n"
+                    "See: https://help.cleanlab.ai/reference/python/trustworthy_language_model/#class-tlmoptions"
+                )
+
+            if not isinstance(response, str):
+                raise ValueError("responses must be a single string for single prompt.")
+
+            return self._event_loop.run_until_complete(
+                self.get_confidence_score_async(
+                    prompt,
+                    response,
+                    cast(Union[None, TLMOptions], options),
+                    retries=retries,
+                )
+            )
+
+        else:
+            raise ValueError("prompt must be a string or list/iterable of strings.")
 
     async def get_confidence_score_async(
         self,

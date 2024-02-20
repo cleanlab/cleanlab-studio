@@ -71,7 +71,6 @@ def handle_api_error_from_json(res_json: JSONDict) -> None:
 def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
     """Catches 429 (rate limit) errors."""
     if resp.status == 429:
-        print(f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0)))
         raise RateLimitError(
             f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0))
         )
@@ -468,22 +467,21 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         # total number of tries = number of retries + original try
         retries = kwargs.pop("retries", 0)
-        num_tries = retries + 1
 
         sleep_time = 0
         error_message = ""
 
-        for num_try in range(num_tries):
+        num_try = 0
+        while num_try <= retries:
             await asyncio.sleep(sleep_time)
             try:
                 return await func(*args, **kwargs)
             except RateLimitError as e:
+                # note: we don't increment num_try here, because we don't want rate limit retries to count against the total number of retries
                 sleep_time = e.retry_after
-                error_message = (
-                    "Try setting a smaller max_concurrent_requests or using a shorter prompt."
-                )
             except Exception as e:
                 sleep_time = 2**num_try
+                num_try += 1
                 error_message = str(e)
         else:
             raise APIError(f"TLM failed after {retries + 1} attempts. {error_message}", -1)
