@@ -1,6 +1,7 @@
 """
 Python API for Cleanlab Studio.
 """
+
 from typing import Any, List, Literal, Optional, Union
 import warnings
 
@@ -29,6 +30,8 @@ if _snowflake_exists:
 _pyspark_exists = api.pyspark_exists
 if _pyspark_exists:
     import pyspark.sql
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 class Studio:
@@ -63,6 +66,7 @@ class Studio:
         dataset_name: Optional[str] = None,
         *,
         schema_overrides: Optional[List[SchemaOverride]] = None,
+        **kwargs: Any,
     ) -> str:
         """
         Uploads a dataset to Cleanlab Studio.
@@ -70,14 +74,33 @@ class Studio:
         Args:
             dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas, snowflake, or pyspark DataFrame.
             dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath).
-            schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred. Format defined [here](/guide/concepts/datasets/#schema-overrides).
-            modality: Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
-            id_column: Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated.
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-overrides).
+            modality: [DEPRECATED] Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
+            id_column: [DEPRECATED] Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated.
 
         Returns:
             ID of uploaded dataset.
         """
         ds = init_dataset_source(dataset, dataset_name)
+        if kwargs.get("modality") is not None:
+            warnings.warn(
+                "Ignoring `modality` parameter which is deprecated and will be removed in a future release.",
+                DeprecationWarning,
+            )
+        if kwargs.get("id_column") is not None:
+            warnings.warn(
+                "Ignoring `id_column` parameter which is deprecated and will be removed in a future release.",
+                DeprecationWarning,
+            )
+
+        if isinstance(schema_overrides, dict):
+            # TODO: link to documentation for schema override format
+            warnings.warn(
+                "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
+                DeprecationWarning,
+            )
+            schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
+
         return upload_helpers.upload_dataset(
             self._api_key,
             ds,

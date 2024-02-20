@@ -1,7 +1,7 @@
 import asyncio
 import functools
 import json
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from tqdm import tqdm
 
 import aiohttp
@@ -118,3 +118,73 @@ def get_ingestion_result(
     )
     res = api.get_dataset_id(api_key, upload_id)
     return str(res["dataset_id"])
+
+
+def convert_schema_overrides(schema_overrides: Dict[str, Dict[str, Any]]) -> List[SchemaOverride]:
+    return [
+        SchemaOverride(
+            name=col,
+            column_type=_old_schema_to_column_type(
+                old_schema["data_type"], old_schema["feature_type"]
+            ),
+        )
+        for col, old_schema in schema_overrides.items()
+    ]
+
+
+def _old_schema_to_column_type(data_type: str, feature_type: str) -> str:
+    if data_type == "string":
+        return _string_data_type_to_column_type(data_type, feature_type)
+    if data_type == "integer":
+        return _integer_data_type_to_column_type(data_type, feature_type)
+    if data_type == "float":
+        return _float_data_type_to_column_type(data_type, feature_type)
+    if data_type == "boolean":
+        return _boolean_data_type_to_column_type(data_type, feature_type)
+    raise ValueError(f"Unsupported data type: {data_type}.")
+
+
+def _string_data_type_to_column_type(data_type: str, feature_type: str) -> str:
+    if feature_type in ["text", "categorical"]:
+        return "string"
+    if feature_type == "image":
+        return "image_external"
+    if feature_type in ["datetime", "identifier"]:
+        raise ValueError(
+            f"Cannot convert old schema feature type '{feature_type}' to new schema type."
+        )
+    raise ValueError(
+        f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
+    )
+
+
+def _integer_data_type_to_column_type(data_type: str, feature_type: str) -> str:
+    if feature_type in ["categorical", "numeric"]:
+        return "integer"
+    if feature_type in ["datetime", "identifier"]:
+        raise ValueError(
+            f"Cannot convert old schema feature type '{feature_type}' to new schema type."
+        )
+    raise ValueError(
+        f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
+    )
+
+
+def _float_data_type_to_column_type(data_type: str, feature_type: str) -> str:
+    if feature_type == "numeric":
+        return "float"
+    if feature_type == "datetime":
+        raise ValueError(
+            f"Cannot convert old schema feature type '{feature_type}' to new schema type."
+        )
+    raise ValueError(
+        f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
+    )
+
+
+def _boolean_data_type_to_column_type(data_type: str, feature_type: str) -> str:
+    if feature_type == "boolean":
+        return "boolean"
+    raise ValueError(
+        f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
+    )
