@@ -532,7 +532,6 @@ async def tlm_prompt(
         )
         res_json = await res.json()
 
-        print(f"{res.status=}, {type(res.status)=}")
         handle_prompt_too_long_error_from_resp(res_json, res.status)
         handle_rate_limit_error_from_resp(res)
         handle_api_error_from_json(res_json)
