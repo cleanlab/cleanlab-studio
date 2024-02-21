@@ -3,7 +3,7 @@ import io
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
-from cleanlab_studio.errors import APIError, RateLimitError
+from cleanlab_studio.errors import APIError, RateLimitError, TlmPromptTooLargeError
 
 import aiohttp
 import requests
@@ -74,6 +74,13 @@ def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
         raise RateLimitError(
             f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0))
         )
+
+
+async def handle_prompt_too_long_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+    """Catches 413 (prompt too large) errors."""
+    if resp.status == 413:
+        resp_json = await resp.json()
+        raise TlmPromptTooLargeError(resp_json["description"])
 
 
 def validate_api_key(api_key: str) -> bool:
@@ -523,6 +530,7 @@ async def tlm_prompt(
         )
         res_json = await res.json()
 
+        await handle_prompt_too_long_error_from_resp(res)
         handle_rate_limit_error_from_resp(res)
         handle_api_error_from_json(res_json)
 
@@ -561,16 +569,25 @@ async def tlm_get_confidence_score(
         client_session = aiohttp.ClientSession()
         local_scoped_client = True
 
-    res = await client_session.post(
-        f"{tlm_base_url}/get_confidence_score",
-        json=dict(prompt=prompt, response=response, quality=quality_preset, options=options or {}),
-        headers=_construct_headers(api_key),
-    )
-    res_json = await res.json()
+    try:
+        res = await client_session.post(
+            f"{tlm_base_url}/get_confidence_score",
+            json=dict(
+                prompt=prompt, response=response, quality=quality_preset, options=options or {}
+            ),
+            headers=_construct_headers(api_key),
+        )
+        res_json = await res.json()
 
-    if local_scoped_client:
-        await client_session.close()
+        if local_scoped_client:
+            await client_session.close()
 
-    handle_rate_limit_error_from_resp(res)
-    handle_api_error_from_json(res_json)
+        await handle_prompt_too_long_error_from_resp(res)
+        handle_rate_limit_error_from_resp(res)
+        handle_api_error_from_json(res_json)
+
+    finally:
+        if local_scoped_client:
+            await client_session.close()
+
     return cast(JSONDict, res_json)

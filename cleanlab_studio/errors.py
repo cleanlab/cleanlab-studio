@@ -52,6 +52,10 @@ class RateLimitError(APIError):
         self.retry_after = retry_after
 
 
+class TlmPromptTooLargeError(APIError):
+    pass
+
+
 class UnsupportedVersionError(APIError):
     def __init__(self) -> None:
         super().__init__(
