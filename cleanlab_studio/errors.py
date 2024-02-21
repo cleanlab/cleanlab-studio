@@ -38,3 +38,11 @@ class InternalError(Exception):
 
 class CleansetError(InternalError):
     pass
+
+
+class InvalidSchemaTypeError(ValueError):
+    def __init__(self, msg: str) -> None:
+        self.msg = msg
+
+    def __str__(self) -> str:
+        return f"{self.msg}\nSee [TODO: insert docs] link for more information."

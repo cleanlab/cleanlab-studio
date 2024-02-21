@@ -2,6 +2,7 @@
 Methods for interacting with the command line server API
 1:1 mapping with command_line_api.py
 """
+
 import os
 from typing import List, Optional
 
