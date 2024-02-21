@@ -24,7 +24,7 @@ def upload_dataset(
     upload_id = upload_dataset_file(api_key, dataset_source)
 
     # confirm upload (and kick off processing)
-    api.confirm_upload(api_key, upload_id, dataset_source.get_filename())
+    api.confirm_upload(api_key, upload_id)
 
     # wait for dataset upload
     dataset_id = api.poll_ingestion_progress(api_key, upload_id, "Ingesting Dataset...")

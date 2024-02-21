@@ -120,7 +120,7 @@ def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDi
     handle_api_error(res)
 
 
-def confirm_upload(api_key: str, upload_id: str, dataset_name: str) -> None:
+def confirm_upload(api_key: str, upload_id: str) -> None:
     check_uuid_well_formed(upload_id, "upload ID")
     request_json = dict(upload_id=upload_id)
     res = requests.post(
