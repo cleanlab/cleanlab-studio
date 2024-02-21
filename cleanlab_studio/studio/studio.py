@@ -83,10 +83,12 @@ class Studio:
         if kwargs.get("modality") is not None:
             warnings.warn(
                 "Ignoring `modality` parameter which is deprecated and will be removed in a future release.",
+                FutureWarning,
             )
         if kwargs.get("id_column") is not None:
             warnings.warn(
                 "Ignoring `id_column` parameter which is deprecated and will be removed in a future release.",
+                FutureWarning,
             )
 
         if isinstance(schema_overrides, dict):
@@ -94,6 +96,7 @@ class Studio:
             schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
             warnings.warn(
                 "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
+                FutureWarning,
             )
 
         return upload_helpers.upload_dataset(
