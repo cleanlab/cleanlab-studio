@@ -52,7 +52,7 @@ class RateLimitError(APIError):
         self.retry_after = retry_after
 
 
-class TlmPromptTooLargeError(APIError):
+class TlmQueryTooLargeError(APIError):
     pass
 
 

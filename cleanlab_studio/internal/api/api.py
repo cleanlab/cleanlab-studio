@@ -3,7 +3,7 @@ import io
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
-from cleanlab_studio.errors import APIError, RateLimitError, TlmPromptTooLargeError
+from cleanlab_studio.errors import APIError, RateLimitError, TlmQueryTooLargeError
 
 import aiohttp
 import requests
@@ -76,11 +76,10 @@ def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
         )
 
 
-async def handle_prompt_too_long_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+def handle_prompt_too_long_error_from_resp(res_json: JSONDict, status: int) -> None:
     """Catches 413 (prompt too large) errors."""
-    if resp.status == 413:
-        resp_json = await resp.json()
-        raise TlmPromptTooLargeError(resp_json["description"])
+    if status == 413:
+        raise TlmQueryTooLargeError(res_json["error"])
 
 
 def validate_api_key(api_key: str) -> bool:
@@ -486,6 +485,9 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
             except RateLimitError as e:
                 # note: we don't increment num_try here, because we don't want rate limit retries to count against the total number of retries
                 sleep_time = e.retry_after
+            except TlmQueryTooLargeError as e:
+                # don't retry here -- if the query is too large, it's too large
+                raise e
             except Exception as e:
                 sleep_time = 2**num_try
                 num_try += 1
@@ -530,7 +532,8 @@ async def tlm_prompt(
         )
         res_json = await res.json()
 
-        await handle_prompt_too_long_error_from_resp(res)
+        print(f"{res.status=}, {type(res.status)=}")
+        handle_prompt_too_long_error_from_resp(res_json, res.status)
         handle_rate_limit_error_from_resp(res)
         handle_api_error_from_json(res_json)
 
@@ -582,7 +585,7 @@ async def tlm_get_confidence_score(
         if local_scoped_client:
             await client_session.close()
 
-        await handle_prompt_too_long_error_from_resp(res)
+        handle_prompt_too_long_error_from_resp(res_json, res.status)
         handle_rate_limit_error_from_resp(res)
         handle_api_error_from_json(res_json)
 
