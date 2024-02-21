@@ -120,9 +120,13 @@ def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDi
     handle_api_error(res)
 
 
-def confirm_upload(api_key: str, upload_id: str) -> None:
+def confirm_upload(
+    api_key: str,
+    upload_id: str,
+    schema_overrides: Optional[List[SchemaOverride]],
+) -> None:
     check_uuid_well_formed(upload_id, "upload ID")
-    request_json = dict(upload_id=upload_id)
+    request_json = dict(upload_id=upload_id, schema_overrides=schema_overrides)
     res = requests.post(
         f"{upload_base_url}/confirm",
         json=request_json,
