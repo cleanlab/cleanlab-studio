@@ -14,6 +14,15 @@ class APIError(Exception):
     pass
 
 
+class IngestionError(APIError):
+    def __init__(self, error_type: str, message: str) -> None:
+        self.error_type = error_type
+        self.message = message
+
+    def __str__(self) -> str:
+        return f"{self.error_type}: {self.message}"
+
+
 class RateLimitError(APIError):
     def __init__(self, message: str, retry_after: int):
         self.message = message
