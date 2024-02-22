@@ -6,19 +6,18 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Coroutine, List, Literal, Optional, Union, cast
+from typing import Coroutine, List, Optional, Union, cast
 
 import aiohttp
 from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.types import JSONDict
-
-valid_quality_presets = ["best", "high", "medium", "low", "base"]
-QualityPreset = Literal["best", "high", "medium", "low", "base"]
-
-DEFAULT_MAX_CONCURRENT_TLM_REQUESTS: int = 16
-MAX_CONCURRENT_TLM_REQUESTS_LIMIT: int = 128
+from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
+from cleanlab_studio.internal.constants import (
+    _DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
+    _MAX_CONCURRENT_TLM_REQUESTS_LIMIT,
+    _VALID_TLM_QUALITY_PRESETS,
+)
 
 
 class TLMResponse(TypedDict):
@@ -37,31 +36,24 @@ class TLMOptions(TypedDict):
     """Trustworthy language model options. The TLM quality-preset determines many of these settings automatically, but
     specifying other values here will over-ride the setting from the quality-preset.
 
-    Parameters
-    ----------
-    max_tokens: int, default = 512
-       The maximum number of tokens to generate in the TLM response.
+    Args:
+        max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
 
-    max_timeout: int, optional
-       The maximum timeout to query from TLM in seconds. If a max_timeout is not specified, then timeout is calculated based on number of tokens.
+        max_timeout (int, optional): the maximum timeout to query from TLM in seconds. If a max_timeout is not specified, then timeout is calculated based on number of tokens.
 
-    num_candidate_responses: int, default = 1
-       This controls how many candidate responses are internally generated.
-       TLM scores the confidence of each candidate response, and then returns the most confident one.
-       A higher value here can produce better (more accurate) responses from the TLM, but at higher costs/runtimes.
+        num_candidate_responses (int, default = 1): this controls how many candidate responses are internally generated.
+        TLM scores the confidence of each candidate response, and then returns the most confident one.
+        A higher value here can produce better (more accurate) responses from the TLM, but at higher costs/runtimes.
 
-    num_consistency_samples: int, default = 5
-       This controls how many samples are internally generated to evaluate the LLM-response-consistency.
-       This is a big part of the returned confidence_score, in particular for ensuring lower scores for strange input prompts or those that are too open-ended to receive a well-defined 'good' response.
-       Higher values here produce better (more reliable) TLM confidence scores, but at higher costs/runtimes.
+        num_consistency_samples (int, default = 5): this controls how many samples are internally generated to evaluate the LLM-response-consistency.
+        This is a big part of the returned confidence_score, in particular for ensuring lower scores for strange input prompts or those that are too open-ended to receive a well-defined 'good' response.
+        Higher values here produce better (more reliable) TLM confidence scores, but at higher costs/runtimes.
 
-    use_self_reflection: bool, default = True
-       This controls whether self-reflection is used to have the LLM reflect upon the response it is generating and explicitly self-evaluate whether it seems good or not.
-       This is a big part of the confidence score, in particular for ensure low scores for responses that are obviously incorrect/bad for a standard prompt that LLMs should be able to handle.
-       Setting this to False disables the use of self-reflection and may produce worse TLM confidence scores, but can reduce costs/runtimes.
+        use_self_reflection (bool, default = `True`): this controls whether self-reflection is used to have the LLM reflect upon the response it is generating and explicitly self-evaluate whether it seems good or not.
+        This is a big part of the confidence score, in particular for ensure low scores for responses that are obviously incorrect/bad for a standard prompt that LLMs should be able to handle.
+        Setting this to False disables the use of self-reflection and may produce worse TLM confidence scores, but can reduce costs/runtimes.
 
-    model: str, default = "gpt-3.5-turbo-16k"
-        ID of the model to use. Other options: "gpt-4"
+        model (str, default = "gpt-3.5-turbo-16k"): ID of the model to use. Other options: "gpt-4"
 
     """
 
@@ -79,25 +71,25 @@ class TLM:
     def __init__(
         self,
         api_key: str,
-        quality_preset: QualityPreset,
-        max_concurrent_requests: int = DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
+        quality_preset: TLMQualityPreset,
+        max_concurrent_requests: int = _DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
     ) -> None:
         """Initializes TLM interface.
 
         Args:
             api_key (str): API key used to authenticate TLM client
-            quality_preset (QualityPreset): quality preset to use for TLM queries
+            quality_preset (TLMQualityPreset): quality preset to use for TLM queries
             max_concurrent_requests (int): maximum number of concurrent requests when issuing batch queries. Default is 16.
         """
         self._api_key = api_key
 
         assert (
-            max_concurrent_requests < MAX_CONCURRENT_TLM_REQUESTS_LIMIT
-        ), f"max_concurrent_requests must be less than {MAX_CONCURRENT_TLM_REQUESTS_LIMIT}"
+            max_concurrent_requests < _MAX_CONCURRENT_TLM_REQUESTS_LIMIT
+        ), f"max_concurrent_requests must be less than {_MAX_CONCURRENT_TLM_REQUESTS_LIMIT}"
 
-        if quality_preset not in valid_quality_presets:
+        if quality_preset not in _VALID_TLM_QUALITY_PRESETS:
             raise ValueError(
-                f"Invalid quality preset {quality_preset} -- must be one of {valid_quality_presets}"
+                f"Invalid quality preset {quality_preset} -- must be one of {_VALID_TLM_QUALITY_PRESETS}"
             )
 
         self._quality_preset = quality_preset
@@ -406,7 +398,10 @@ class TLM:
 
 
 def is_notebook() -> bool:
-    """Returns True if running in a notebook, False otherwise."""
+    """Returns True if running in a notebook, False otherwise.
+
+    lazydocs: ignore
+    """
     try:
         get_ipython = sys.modules["IPython"].get_ipython
         if "IPKernelApp" in get_ipython().config:
