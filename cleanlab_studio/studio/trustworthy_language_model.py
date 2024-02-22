@@ -18,6 +18,7 @@ from cleanlab_studio.internal.constants import (
     _MAX_CONCURRENT_TLM_REQUESTS_LIMIT,
     _VALID_TLM_QUALITY_PRESETS,
     _VALID_TLM_MODELS,
+    _MUTABLE_PARAMS_SET_AT_INIT,
 )
 
 
@@ -108,6 +109,18 @@ class TLM:
 
         self._event_loop = asyncio.get_event_loop()
         self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
+
+    def _update_options(self, options: TLMOptions) -> TLMOptions:
+        """Update options dictionary with values set at initialization.
+        If options dictionary has that dictionary key already set, then that takes precedence over the value set at initialization.
+        If value at initialization is not set, default value set in studio.py is used."""
+        if options is None:
+            options = TLMOptions()
+
+        for param in _MUTABLE_PARAMS_SET_AT_INIT:
+            if options.get(param) is None:
+                options[param] = getattr(self, f"_{param}")
+        return options
 
     def _batch_prompt(
         self,
@@ -233,6 +246,8 @@ class TLM:
             TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and confidence score.
                     If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
         """
+        options = self._update_options(options)
+
         if isinstance(prompt, list):
             if any(not isinstance(p, str) for p in prompt):
                 raise ValueError("All prompts must be strings.")
@@ -321,6 +336,8 @@ class TLM:
             float (or list of floats if multiple prompt-responses were provided) corresponding to the TLM's confidence score.
                     The score quantifies how confident TLM is that the given response is good for the given prompt.
         """
+        options = self._update_options(options)
+
         if isinstance(prompt, list):
             if any(not isinstance(p, str) for p in prompt):
                 raise ValueError("All prompts must be strings.")
