@@ -25,7 +25,7 @@ from cleanlab_studio.internal.util import (
     apply_corrections_pd_df,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
-from cleanlab_studio.internal.types import FieldSchemaDict, TLMQualityPreset
+from cleanlab_studio.internal.types import FieldSchemaDict, TLMQualityPreset, TLMModel
 from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
 
 _snowflake_exists = api.snowflake_exists
@@ -374,7 +374,7 @@ class Studio:
         self,
         *,
         quality_preset: TLMQualityPreset = "medium",
-        model: trustworthy_language_model.TLMModel = "gpt-3.5-turbo-16k",
+        model: TLMModel = "gpt-3.5-turbo-16k",
         **kwargs: Any,
     ) -> trustworthy_language_model.TLM:
         """Gets Trustworthy Language Model (TLM) object to prompt.

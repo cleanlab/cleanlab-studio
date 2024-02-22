@@ -12,15 +12,14 @@ import aiohttp
 from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
+from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset, TLMModel
 from cleanlab_studio.internal.constants import (
     _DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
     _MAX_CONCURRENT_TLM_REQUESTS_LIMIT,
     _VALID_TLM_QUALITY_PRESETS,
+    _VALID_TLM_MODELS,
 )
 
-valid_tlm_models = ["gpt-3.5-turbo-16k", "gpt-4"]
-TLMModel = Literal["gpt-3.5-turbo-16k", "gpt-4"]
 
 class TLMResponse(TypedDict):
     """Trustworthy Language Model response.
@@ -98,8 +97,8 @@ class TLM:
 
         self._quality_preset = quality_preset
 
-        if model not in valid_tlm_models:
-            raise ValueError(f"Invalid model {model} -- must be one of {valid_tlm_models}")
+        if model not in _VALID_TLM_MODELS:
+            raise ValueError(f"Invalid model {model} -- must be one of {_VALID_TLM_MODELS}")
         self._model = model
 
         if is_notebook():
