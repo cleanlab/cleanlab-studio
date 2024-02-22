@@ -25,7 +25,7 @@ from cleanlab_studio.internal.util import (
     apply_corrections_pd_df,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
-from cleanlab_studio.internal.types import FieldSchemaDict
+from cleanlab_studio.internal.types import FieldSchemaDict, TLMQualityPreset
 from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
 
 _snowflake_exists = api.snowflake_exists
@@ -373,7 +373,7 @@ class Studio:
     def TLM(
         self,
         *,
-        quality_preset: trustworthy_language_model.QualityPreset = "medium",
+        quality_preset: TLMQualityPreset = "medium",
         model: trustworthy_language_model.TLMModel = "gpt-3.5-turbo-16k",
         **kwargs: Any,
     ) -> trustworthy_language_model.TLM:
