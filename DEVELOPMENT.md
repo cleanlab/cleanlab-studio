@@ -165,3 +165,8 @@ If you are deprecating a method, please add the method name to `deprecated_metho
 
 - To link to other functions in the `studio` module within a docstring, use the following format: `[link text](#method-function_name)`
 - To link to another page in Cleanlab Studio docs use `[link text](/{path within cleanlab-studio-docs/docs})`
+
+
+### Ignoring Functions/Classes in API Documentation
+
+If there any function/class docstrings that you would like to hide from the API documentation page, include `lazydocs: ignore` in the docstring of that function/class to let our docs build know to ignore displaying that function.
