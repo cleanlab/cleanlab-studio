@@ -3,7 +3,7 @@ import io
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
-from cleanlab_studio.errors import APIError, RateLimitError
+from cleanlab_studio.errors import APIError, IngestionError, RateLimitError
 
 import aiohttp
 import requests
@@ -389,7 +389,16 @@ def poll_ingestion_progress(api_key: str, upload_id: str, description: str) -> s
         done = False
         while not done:
             progress = get_ingestion_status(api_key, upload_id)
-            done = progress.get("status") == "complete"
+            status = progress.get("status")
+            done = status == "complete"
+
+            if status == "error":
+                raise IngestionError(
+                    progress.get("error_type", "Internal Server Error"),
+                    progress.get(
+                        "error_message", "Please try again or contact support@cleanlab.ai"
+                    ),
+                )
 
             # convert progress to float
             pbar.update(float(progress.get("progress", 0)) - pbar.n)
