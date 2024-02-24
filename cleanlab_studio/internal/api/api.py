@@ -413,7 +413,7 @@ def poll_ingestion_progress(api_key: str, upload_id: str, description: str) -> s
 
     # get dataset ID
     dataset_id = get_dataset_id(api_key, upload_id)["dataset_id"]
-    return dataset_id
+    return str(dataset_id)
 
 
 def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:
