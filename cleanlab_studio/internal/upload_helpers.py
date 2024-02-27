@@ -12,7 +12,7 @@ from requests.adapters import HTTPAdapter, Retry
 from .api import api
 from .dataset_source import DatasetSource
 from .types import JSONDict, SchemaOverride
-from errors import InvalidSchemaTypeError
+from cleanlab_studio.errors import InvalidSchemaTypeError
 
 
 def upload_dataset(
@@ -25,19 +25,10 @@ def upload_dataset(
     upload_id = upload_dataset_file(api_key, dataset_source)
 
     # confirm upload (and kick off processing)
-    api.confirm_upload(api_key, upload_id)
+    api.confirm_upload(api_key, upload_id, schema_overrides)
 
     # wait for dataset upload
     dataset_id = api.poll_ingestion_progress(api_key, upload_id, "Ingesting Dataset...")
-
-    # if schema overrides, update schema and wait for reingestion
-    if schema_overrides:
-        api.update_schema(
-            api_key,
-            dataset_id,
-            schema_overrides,
-        )
-        api.poll_ingestion_progress(api_key, upload_id, "Updating Schema...")
 
     # return dataset id
     return dataset_id
