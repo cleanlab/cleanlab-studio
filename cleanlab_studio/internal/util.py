@@ -182,10 +182,7 @@ def apply_corrections_pd_df(
         joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
     else:
         joined_ds = dataset.join(cl_cols.set_index(id_col).sort_values(by=id_col))
-    joined_ds["__cleanlab_final_label"] = joined_ds["corrected_label"].where(
-        joined_ds["corrected_label"].notnull().tolist(),
-        dataset[label_column].tolist(),
-    )
+    joined_ds["__cleanlab_final_label"] = joined_ds["corrected_label"].fillna(dataset[label_column])
 
     corrected_ds: pd.DataFrame = dataset.copy()
     corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
