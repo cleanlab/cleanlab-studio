@@ -1,9 +1,10 @@
 import asyncio
 import io
+from math import e
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
-from cleanlab_studio.errors import APIError, RateLimitError, TlmQueryTooLargeError
+from cleanlab_studio.errors import APIError, RateLimitError, TlmBadRequest
 
 import aiohttp
 import requests
@@ -76,10 +77,16 @@ def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
         )
 
 
-def handle_prompt_too_long_error_from_resp(res_json: JSONDict, status: int) -> None:
-    """Catches 413 (prompt too large) errors."""
-    if status == 413:
-        raise TlmQueryTooLargeError(res_json["error"])
+async def handle_tlm_client_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+    """Catches 4XX (client error) errors."""
+    if 400 <= resp.status < 500:
+        try:
+            res_json = await resp.json()
+            error_message = res_json["error"]
+        except Exception:
+            error_message = "Client error occurred."
+
+        raise APIError(error_message)
 
 
 def validate_api_key(api_key: str) -> bool:
@@ -485,8 +492,8 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
             except RateLimitError as e:
                 # note: we don't increment num_try here, because we don't want rate limit retries to count against the total number of retries
                 sleep_time = e.retry_after
-            except TlmQueryTooLargeError as e:
-                # don't retry here -- if the query is too large, it's too large
+            except TlmBadRequest as e:
+                # dont retry for client-side errors
                 raise e
             except Exception as e:
                 sleep_time = 2**num_try
@@ -532,7 +539,7 @@ async def tlm_prompt(
         )
         res_json = await res.json()
 
-        handle_prompt_too_long_error_from_resp(res_json, res.status)
+        await handle_tlm_client_error_from_resp(res)
         handle_rate_limit_error_from_resp(res)
         handle_api_error_from_json(res_json)
 
@@ -584,7 +591,7 @@ async def tlm_get_confidence_score(
         if local_scoped_client:
             await client_session.close()
 
-        handle_prompt_too_long_error_from_resp(res_json, res.status)
+        await handle_tlm_client_error_from_resp(res)
         handle_rate_limit_error_from_resp(res)
         handle_api_error_from_json(res_json)
 
