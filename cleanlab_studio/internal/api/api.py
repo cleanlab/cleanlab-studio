@@ -28,7 +28,8 @@ except ImportError:
 
 from cleanlab_studio.internal.types import JSONDict, SchemaOverride
 from cleanlab_studio.version import __version__
-from ..util import check_uuid_well_formed
+from cleanlab_studio.errors import NotInstalledError
+from cleanlab_studio.internal.api.api_helper import check_uuid_well_formed
 
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
@@ -227,7 +228,7 @@ def download_cleanlab_columns(
     cleanset_json: str = res.json()["cleanset_json"]
     if to_spark:
         if not pyspark_exists:
-            raise ImportError(
+            raise NotInstalledError(
                 "pyspark is not installed. Please install pyspark to download cleanlab columns as a pyspark DataFrame."
             )
         from pyspark.sql import SparkSession
@@ -351,6 +352,31 @@ def get_latest_cleanset_id(api_key: str, project_id: str) -> str:
     handle_api_error(res)
     cleanset_id = res.json()["cleanset_id"]
     return str(cleanset_id)
+
+
+def poll_dataset_id_for_name(api_key: str, dataset_name: str, timeout: Optional[int]) -> str:
+    start_time = time.time()
+    while timeout is None or time.time() - start_time < timeout:
+        dataset_id = get_dataset_id_for_name(api_key, dataset_name, timeout)
+
+        if dataset_id is not None:
+            return dataset_id
+
+        time.sleep(5)
+
+    raise TimeoutError(f"Timed out waiting for dataset {dataset_name} to be created.")
+
+
+def get_dataset_id_for_name(
+    api_key: str, dataset_name: str, timeout: Optional[int]
+) -> Optional[str]:
+    res = requests.get(
+        dataset_base_url + f"/dataset_id_for_name",
+        params=dict(dataset_name=dataset_name),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(Optional[str], res.json().get("dataset_id", None))
 
 
 def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:

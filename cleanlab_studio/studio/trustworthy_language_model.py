@@ -2,15 +2,17 @@
 Cleanlab TLM is a Large Language Model that gives more reliable answers and quantifies its uncertainty in these answers
 """
 
+from __future__ import annotations
+
 import asyncio
 import sys
-from typing import Coroutine, cast, List, Literal, Optional, TypedDict, Union
+from typing import Coroutine, List, Literal, Optional, Union, cast
 
 import aiohttp
+from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.types import JSONDict
-
 
 valid_quality_presets = ["best", "high", "medium", "low", "base"]
 QualityPreset = Literal["best", "high", "medium", "low", "base"]
@@ -36,9 +38,11 @@ class TLMOptions(TypedDict):
 
     Attributes:
         max_tokens (int): the maximum number of tokens to generate in the TLM response
+        model (str): ID of the model to use. Default: "gpt-3.5-turbo-16k". Other options: "gpt-4"
     """
 
     max_tokens: int
+    model: NotRequired[str]
 
 
 class TLM:

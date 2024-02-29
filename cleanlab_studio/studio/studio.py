@@ -3,6 +3,7 @@ Python API for Cleanlab Studio.
 """
 
 from typing import Any, List, Literal, Optional, Union
+from types import FunctionType
 import warnings
 
 import numpy as np
@@ -16,12 +17,14 @@ from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
+    telemetry,
     apply_corrections_snowpark_df,
     apply_corrections_spark_df,
     apply_corrections_pd_df,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import SchemaOverride
+from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
 
 _snowflake_exists = api.snowflake_exists
 if _snowflake_exists:
@@ -33,13 +36,11 @@ if _pyspark_exists:
 
 
 class Studio:
-    """Used to interact with Cleanlab Studio."""
-
     _api_key: str
 
     def __init__(self, api_key: Optional[str]):
         if not api.is_valid_client_version():
-            raise ValueError(
+            raise VersionError(
                 "CLI is out of date and must be updated. Run 'pip install --upgrade cleanlab-studio'."
             )
         if api_key is None:
@@ -48,7 +49,7 @@ class Studio:
                 if api_key is None:
                     raise ValueError
             except (FileNotFoundError, KeyError, ValueError):
-                raise ValueError(
+                raise MissingAPIKeyError(
                     "No API key found; either specify API key or log in with 'cleanlab login' first"
                 )
         if not api.validate_api_key(api_key):
@@ -139,7 +140,9 @@ class Studio:
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
         """
-        Applies corrections from a Cleanlab Studio cleanset to your dataset. Corrections can be made by viewing your project in the Cleanlab Studio webapp (see [Cleanlab Studio web quickstart](/guide/quickstart/web#review-issues-detected-in-your-dataset-and-correct-them)).
+        Applies corrections from a Cleanlab Studio cleanset to your dataset. This function takes in your local copy of the original dataset, as well as the `cleanset_id` for the cleanset generated from this dataset in the Project web interface. The function returns a copy of your original dataset, where the label column has been substituted with corrected labels that you selected (either manually or via auto-fix) in the Cleanlab Studio web interface Project, and the rows you marked as excluded will be excluded from the returned copy of your original dataset. Corrections should have been made by viewing your Project in the Cleanlab Studio web interface (see [Cleanlab Studio web quickstart](/guide/quickstart/web#review-issues-detected-in-your-dataset-and-correct-them)).
+
+        The intended workflow is: create a Project, correct your Dataset automatically/manually in the web interface to generate a Cleanset (cleaned dataset), then call this function to make your original dataset locally look like the current Cleanset.
 
         Args:
             cleanset_id: ID of cleanset to apply corrections from.
@@ -170,8 +173,8 @@ class Studio:
             return apply_corrections_pd_df(dataset, cl_cols, id_col, label_col, keep_excluded)
 
         else:
-            raise ValueError(
-                f"Provided unsupported dataset of type: {type(dataset)}. We currently support applying corrections to pandas, snowpark, or pyspark dataframes"
+            raise InvalidDatasetError(
+                f"Provided unsupported dataset of type: {type(dataset)}. We currently support applying corrections to pandas or pyspark dataframes"
             )
 
     def create_project(
@@ -208,8 +211,8 @@ class Studio:
 
         if label_column is not None:
             if label_column not in dataset_details["label_columns"]:
-                raise ValueError(
-                    f"Invalid label column '{label_column}' for task type '{task_type}'"
+                raise InvalidDatasetError(
+                    f"Invalid label column: {label_column}. Label column must have categorical feature type"
                 )
         elif task_type is not None and task_type != "unsupervised":
             label_column = str(dataset_details["label_column_guess"])
@@ -217,8 +220,10 @@ class Studio:
 
         if feature_columns is not None and modality != "tabular":
             if label_column in feature_columns:
-                raise ValueError("Label column cannot be included in feature columns")
-            raise ValueError("Feature columns supplied, but project modality is not tabular")
+                raise InvalidDatasetError("Label column cannot be included in feature columns")
+            raise InvalidDatasetError(
+                "Feature columns supplied, but project modality is not tabular"
+            )
         if feature_columns is None:
             if modality == "tabular":
                 feature_columns = dataset_details["distinct_columns"]
@@ -228,9 +233,9 @@ class Studio:
 
         if text_column is not None:
             if modality != "text":
-                raise ValueError("Text column supplied, but project modality is not text")
+                raise InvalidDatasetError("Text column supplied, but project modality is not text")
             elif text_column not in dataset_details["text_columns"]:
-                raise ValueError(
+                raise InvalidDatasetError(
                     f"Invalid text column: {text_column}. Column must have text feature type"
                 )
         if text_column is None and modality == "text":
@@ -274,6 +279,22 @@ class Studio:
         """
         return api.get_latest_cleanset_id(self._api_key, project_id)
 
+    def poll_dataset_id_for_name(self, dataset_name: str, timeout: Optional[int] = None) -> str:
+        """
+        Polls for dataset ID for a dataset name.
+
+        Args:
+            dataset_name: Name of dataset to get ID for.
+            timeout: Optional timeout after which to stop polling for progress. If not provided, will block until dataset is ready.
+
+        Returns
+            ID of dataset.
+
+        Raises
+            TimeoutError: if dataset is not ready by end of timeout
+        """
+        return api.poll_dataset_id_for_name(self._api_key, dataset_name, timeout)
+
     def delete_project(self, project_id: str) -> None:
         """
         Deletes a project from Cleanlab Studio.
@@ -302,11 +323,23 @@ class Studio:
         keep_id: bool = False,
     ) -> pd.DataFrame:
         """
-        Downloads predicted probabilities for a cleanset
+        Downloads predicted probabilities for a cleanset (only for classification datasets).
 
-        The probabilities will be returned as a `pd.DataFrame`. If `keep_id` is `True`,
-        the DataFrame will include an ID column that can be used for database joins/merges with
-        the original dataset or downloaded Cleanlab columns.
+        Args:
+            cleanset_id (str): the ID of the cleanset for which to download the corresponding predicted class probabilities.
+            keep_id (bool): whether to include the ID column in the returned DataFrame to enable easy join/merge operations with original dataset.
+
+        Returns:
+            `pd.DataFrame`: a DataFrame of probabilities of shape `N` by `M`, where `N` is the number of rows in the original dataset, and `M` is the total number of classes in the original dataset.
+            Every row of the returned DataFrame corresponds to the predicted probability of each class for the corresponding row in the original dataset.
+            If `keep_id` is `True`, the DataFrame will include an extra ID column that can be used for database joins/merges with
+            the original dataset or downloaded Cleanlab columns.
+
+        For image projects, a few images in the original dataset might fail to be processed due to poorly formatted data or invalid image file paths. Predicted probabilities will not be calculated for those rows.
+        The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/guide/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
+
+        If you want to work with predicted probabilities for an image project, the recommended workflow is to download probabilities with the option `keep_id=True`, and then do a join with the original dataset on the ID column.
+        Alternatively, you can follow the steps [here](/reference/python/studio#method-download_embeddings), and filter out the rows that were not analyzed. The filtered dataset will then have rows that align with the predicted probabilities DataFrame.
         """
         pred_probs: Union[npt.NDArray[np.float_], pd.DataFrame] = api.download_array(
             self._api_key, cleanset_id, "pred_probs"
@@ -327,7 +360,24 @@ class Studio:
         cleanset_id: str,
     ) -> npt.NDArray[np.float_]:
         """
-        Downloads embeddings for a cleanset
+        Downloads feature embeddings for a cleanset (available only for text and image projects).
+        These are numeric vectors produced via neural network representations of each data point in your dataset.
+
+        Args:
+            cleanset_id (str): the ID of the cleanset from which you want to download feature embeddings.
+
+        Returns:
+            `np.NDArray[float64]`: a 2D numpy array of feature embeddings of shape `N` by `N_EMBED`, where `N` is the number of rows in the original dataset, and `N_EMBED` is the dimension of the feature embeddings. The embedding-dimension depends on which neural network is used to represent your data (Cleanlab automatically identifies the best type of neural network for your data).
+
+        For image projects, a few images in the original dataset might fail to be processed due to pooly formatted data or invalid image file paths.
+        Feature embeddings are not computed for those rows. The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/guide/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
+        If you want to work with feature embeddings for an image project, the recommended workflow is as follows:
+
+            1. When the image project completes, download the cleaset via `studio.download_cleanlab_columns`, and check whether the `is_not_analyzed` boolean column has any `True` values.
+
+            2. If no rows are flaged as `is_not_analyzed`, it means that all the rows were processed successfully. In this case, the rows of the feature embeddings will correspond to the rows of the original dataset, and downstream analysis can be carried out with no further preparation.
+
+            3. If there are rows flagged as `is_not_analyzed`, the rows of the feature embeddings will correspond to the rows of the original dataset after filtering out the rows that are not analyzed.
         """
         return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
 
@@ -372,3 +422,9 @@ class Studio:
 
         except (TimeoutError, CleansetError):
             return False
+
+
+# decorate all functions of self
+for name, method in Studio.__dict__.items():
+    if isinstance(method, FunctionType):
+        setattr(Studio, name, (telemetry(track_all_frames=False))(method))

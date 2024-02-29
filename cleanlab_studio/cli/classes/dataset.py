@@ -5,6 +5,7 @@ from typing import Optional, List, IO, Generator, Any, Iterator, Dict, Generic, 
 import pandas as pd
 
 from cleanlab_studio.cli.types import RecordType
+from cleanlab_studio.errors import InvalidDatasetError, MissingPathError
 
 
 FileObj = TypeVar("FileObj", bound=Union[IO[str], IO[bytes]])
@@ -15,7 +16,7 @@ class Dataset(Generic[FileObj]):
 
     def __init__(self, filepath: Optional[str] = None, fileobj: Optional[FileObj] = None):
         if filepath is None and fileobj is None:
-            raise ValueError(
+            raise InvalidDatasetError(
                 "One of `filepath` or `fileobj` must be provided to initialize `Dataset`."
             )
 
@@ -38,7 +39,7 @@ class Dataset(Generic[FileObj]):
                 self._fileobj.seek(0)
 
         else:
-            raise ValueError("Cannot return file object -- no filepath or fileobj available.")
+            raise MissingPathError("Cannot return file object -- no filepath or fileobj available.")
 
     def __len__(self) -> int:
         if self._num_rows is None:

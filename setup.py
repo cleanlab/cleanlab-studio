@@ -59,8 +59,8 @@ setup(
         "jsonstreams>=0.6.0",
         "semver>=2.13.0,<3.0.0",
         "Pillow>=9.2.0",
-        "typing_extensions==4.2.0",
-        "openpyxl==3.0.10",
+        "typing_extensions>=4.2.0",
+        "openpyxl>=3.0.0,!=3.1.0",
         "validators>=0.20.0",
     ],
     entry_points="""

@@ -14,6 +14,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from cleanlab_studio.internal.api import api
+from cleanlab_studio.errors import APITimeoutError
 
 
 TextBatch = Union[List[str], npt.NDArray[np.str_], pd.Series]
@@ -124,7 +125,7 @@ class Model(abc.ABC):
             time.sleep(1)
 
         else:
-            raise TimeoutError(f"Timeout of {timeout}s expired while waiting for prediction")
+            raise APITimeoutError(f"Timeout of {timeout}s expired while waiting for prediction")
 
     @staticmethod
     def _convert_batch_to_csv(batch: Batch) -> io.StringIO:
