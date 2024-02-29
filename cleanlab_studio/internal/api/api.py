@@ -86,7 +86,7 @@ async def handle_tlm_client_error_from_resp(resp: aiohttp.ClientResponse) -> Non
         except Exception:
             error_message = "Client error occurred."
 
-        raise APIError(error_message)
+        raise TlmBadRequest(error_message)
 
 
 def validate_api_key(api_key: str) -> bool:
