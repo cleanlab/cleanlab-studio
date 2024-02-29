@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, TypedDict
+from typing import Any, Dict, Optional, TypedDict, Literal
 
 
 JSONDict = Dict[str, Any]
@@ -7,6 +7,9 @@ JSONDict = Dict[str, Any]
 class SchemaOverride(TypedDict):
     name: str
     column_type: str
+
+
+TLMQualityPreset = Literal["best", "high", "medium", "low", "base"]
 
 
 class CleanlabSettingsDict(TypedDict):

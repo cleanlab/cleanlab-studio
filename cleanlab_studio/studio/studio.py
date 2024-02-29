@@ -23,7 +23,7 @@ from cleanlab_studio.internal.util import (
     apply_corrections_pd_df,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
-from cleanlab_studio.internal.types import SchemaOverride
+from cleanlab_studio.internal.types import SchemaOverride, TLMQualityPreset
 from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
 
 _snowflake_exists = api.snowflake_exists
@@ -254,18 +254,21 @@ class Studio:
             text_column=text_column,
         )
 
-    def wait_until_cleanset_ready(self, cleanset_id: str, timeout: Optional[float] = None) -> None:
+    def wait_until_cleanset_ready(
+        self, cleanset_id: str, timeout: Optional[float] = None, show_cleanset_link: bool = False
+    ) -> None:
         """Blocks until a cleanset is ready or the timeout is reached.
 
         Args:
             cleanset_id (str): ID of cleanset to check status for.
             timeout (Optional[float], optional): timeout for polling, in seconds. Defaults to None.
+            show_cleanset_link (bool, optional): whether to print a link to view the cleanset in the Cleanlab Studio web UI when the cleanset is ready. Defaults to False.
 
         Raises:
             TimeoutError: if cleanset is not ready by end of timeout
             CleansetError: if cleanset errored while running
         """
-        clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout)
+        clean_helpers.poll_cleanset_status(self._api_key, cleanset_id, timeout, show_cleanset_link)
 
     def get_latest_cleanset_id(self, project_id: str) -> str:
         """
@@ -384,7 +387,7 @@ class Studio:
     def TLM(
         self,
         *,
-        quality_preset: trustworthy_language_model.QualityPreset = "medium",
+        quality_preset: TLMQualityPreset = "medium",
         **kwargs: Any,
     ) -> trustworthy_language_model.TLM:
         """Gets Trustworthy Language Model (TLM) object to prompt.

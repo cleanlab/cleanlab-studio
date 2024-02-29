@@ -182,10 +182,7 @@ def apply_corrections_pd_df(
         joined_ds = dataset.join(cl_cols.set_index(id_col), on=id_col)
     else:
         joined_ds = dataset.join(cl_cols.set_index(id_col).sort_values(by=id_col))
-    joined_ds["__cleanlab_final_label"] = joined_ds["corrected_label"].where(
-        joined_ds["corrected_label"].notnull().tolist(),
-        dataset[label_column].tolist(),
-    )
+    joined_ds["__cleanlab_final_label"] = joined_ds["corrected_label"].fillna(dataset[label_column])
 
     corrected_ds: pd.DataFrame = dataset.copy()
     corrected_ds[label_column] = joined_ds["__cleanlab_final_label"]
@@ -258,9 +255,20 @@ def telemetry(
                     if track_all_frames:
                         cleanlab_traceback = trace_str
                     else:
+                        # remove stack frames for user code
                         cleanlab_match = re.search("File.*cleanlab", trace_str)
                         cleanlab_traceback = (
                             trace_str[cleanlab_match.start() :] if cleanlab_match else ""
+                        )
+
+                        # clean up paths that don't contain "cleanlab-studio" which may contain local paths
+                        pattern1 = re.compile(r"File \"((?!cleanlab-studio).)*\n")
+                        cleanlab_traceback = pattern1.sub("File \n", cleanlab_traceback)
+
+                        # remove portios of paths preceding cleanlab-studio that may contain local paths
+                        pattern2 = re.compile(r"File([^\n]*?)cleanlab-studio")
+                        cleanlab_traceback = pattern2.sub(
+                            'File "cleanlab-studio', cleanlab_traceback
                         )
 
                     user_info["stack_trace"] = cleanlab_traceback

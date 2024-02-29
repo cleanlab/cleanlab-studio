@@ -3,7 +3,7 @@ import io
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
-from cleanlab_studio.errors import APIError, IngestionError, RateLimitError
+from cleanlab_studio.errors import APIError, IngestionError, RateLimitError, TlmQueryTooLargeError
 
 import aiohttp
 import requests
@@ -71,10 +71,15 @@ def handle_api_error_from_json(res_json: JSONDict) -> None:
 def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
     """Catches 429 (rate limit) errors."""
     if resp.status == 429:
-        print(f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0)))
         raise RateLimitError(
             f"Rate limit exceeded on {resp.url}", int(resp.headers.get("Retry-After", 0))
         )
+
+
+def handle_prompt_too_long_error_from_resp(res_json: JSONDict, status: int) -> None:
+    """Catches 413 (prompt too large) errors."""
+    if status == 413:
+        raise TlmQueryTooLargeError(res_json["error"])
 
 
 def validate_api_key(api_key: str) -> bool:
@@ -502,22 +507,24 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         # total number of tries = number of retries + original try
         retries = kwargs.pop("retries", 0)
-        num_tries = retries + 1
 
         sleep_time = 0
         error_message = ""
 
-        for num_try in range(num_tries):
+        num_try = 0
+        while num_try <= retries:
             await asyncio.sleep(sleep_time)
             try:
                 return await func(*args, **kwargs)
             except RateLimitError as e:
+                # note: we don't increment num_try here, because we don't want rate limit retries to count against the total number of retries
                 sleep_time = e.retry_after
-                error_message = (
-                    "Try setting a smaller max_concurrent_requests or using a shorter prompt."
-                )
+            except TlmQueryTooLargeError as e:
+                # don't retry here -- if the query is too large, it's too large
+                raise e
             except Exception as e:
                 sleep_time = 2**num_try
+                num_try += 1
                 error_message = str(e)
         else:
             raise APIError(f"TLM failed after {retries + 1} attempts. {error_message}", -1)
@@ -559,6 +566,7 @@ async def tlm_prompt(
         )
         res_json = await res.json()
 
+        handle_prompt_too_long_error_from_resp(res_json, res.status)
         handle_rate_limit_error_from_resp(res)
         handle_api_error_from_json(res_json)
 
@@ -597,16 +605,25 @@ async def tlm_get_confidence_score(
         client_session = aiohttp.ClientSession()
         local_scoped_client = True
 
-    res = await client_session.post(
-        f"{tlm_base_url}/get_confidence_score",
-        json=dict(prompt=prompt, response=response, quality=quality_preset, options=options or {}),
-        headers=_construct_headers(api_key),
-    )
-    res_json = await res.json()
+    try:
+        res = await client_session.post(
+            f"{tlm_base_url}/get_confidence_score",
+            json=dict(
+                prompt=prompt, response=response, quality=quality_preset, options=options or {}
+            ),
+            headers=_construct_headers(api_key),
+        )
+        res_json = await res.json()
 
-    if local_scoped_client:
-        await client_session.close()
+        if local_scoped_client:
+            await client_session.close()
 
-    handle_rate_limit_error_from_resp(res)
-    handle_api_error_from_json(res_json)
+        handle_prompt_too_long_error_from_resp(res_json, res.status)
+        handle_rate_limit_error_from_resp(res)
+        handle_api_error_from_json(res_json)
+
+    finally:
+        if local_scoped_client:
+            await client_session.close()
+
     return cast(JSONDict, res_json)
