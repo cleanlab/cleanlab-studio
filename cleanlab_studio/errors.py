@@ -1,3 +1,7 @@
+class InvalidUUIDError(ValueError):
+    pass
+
+
 class InvalidDatasetError(ValueError):
     pass
 
