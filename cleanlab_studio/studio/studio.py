@@ -184,9 +184,12 @@ class Studio:
             dataset_id: ID of dataset to create project for.
             project_name: Name for resulting project.
             modality: Modality of project (i.e. text, tabular, image).
-            task_type: Type of ML task to perform (i.e. multi-class, multi-label, regression).
-            model_type: Type of model to train (i.e. fast, regular).
-            label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess).
+            task_type: Type of ML task to perform. Select a supervised task type (i.e. "multi-class", "multi-label", "regression") if your dataset
+                has a label column you would like to predict values for or detect erroneous values in. Select "unsupervised" if your dataset has
+                no specific label column. See the [Projects Guide](/guide/concepts/projects/#machine-learning-task--dataset-type) for more
+                information on task types.
+            model_type: Type of model to train (i.e. "fast", "regular"). See the [Projects Guide](/guide/concepts/projects/#model-type) for more information on model types.
+            label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess). For "unsupervised" tasks, this should be `None`.
             feature_columns: List of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns).
             text_column: Name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess).
 
