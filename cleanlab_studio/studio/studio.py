@@ -375,9 +375,11 @@ class Studio:
 
     def TLM(
         self,
-        *,
         quality_preset: TLMQualityPreset = "medium",
-        **kwargs: Any,
+        *,
+        options: Optional[trustworthy_language_model.TLMOptions] = None,
+        timeout: Optional[float] = None,
+        verbose: Optional[bool] = None,
     ) -> trustworthy_language_model.TLM:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
@@ -388,7 +390,9 @@ class Studio:
         Returns:
             TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
         """
-        return trustworthy_language_model.TLM(self._api_key, quality_preset, **kwargs)
+        return trustworthy_language_model.TLM(
+            self._api_key, quality_preset, options=options, timeout=timeout, verbose=verbose
+        )
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
         """

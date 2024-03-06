@@ -511,7 +511,6 @@ async def tlm_prompt(
     prompt: str,
     quality_preset: str,
     options: Optional[JSONDict],
-    client_session: Optional[aiohttp.ClientSession] = None,
 ) -> JSONDict:
     """
     Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
@@ -526,10 +525,7 @@ async def tlm_prompt(
     Returns:
         JSONDict: dictionary with TLM response and confidence score
     """
-    local_scoped_client = False
-    if not client_session:
-        client_session = aiohttp.ClientSession()
-        local_scoped_client = True
+    client_session = aiohttp.ClientSession()
 
     try:
         res = await client_session.post(
@@ -544,8 +540,7 @@ async def tlm_prompt(
         handle_api_error_from_json(res_json)
 
     finally:
-        if local_scoped_client:
-            await client_session.close()
+        await client_session.close()
 
     return cast(JSONDict, res_json)
 
@@ -557,7 +552,6 @@ async def tlm_get_confidence_score(
     response: str,
     quality_preset: str,
     options: Optional[JSONDict],
-    client_session: Optional[aiohttp.ClientSession] = None,
 ) -> JSONDict:
     """
     Query Trustworthy Language Model for a confidence score for the prompt-response pair.
@@ -568,15 +562,11 @@ async def tlm_get_confidence_score(
         response (str): response for TLM to get confidence score for
         quality_preset (str): quality preset to use to generate confidence score
         options (JSONDict): additional parameters for TLM
-        client_session (aiohttp.ClientSession): client session used to issue TLM request
 
     Returns:
         JSONDict: dictionary with TLM confidence score
     """
-    local_scoped_client = False
-    if not client_session:
-        client_session = aiohttp.ClientSession()
-        local_scoped_client = True
+    client_session = aiohttp.ClientSession()
 
     try:
         res = await client_session.post(
@@ -588,15 +578,11 @@ async def tlm_get_confidence_score(
         )
         res_json = await res.json()
 
-        if local_scoped_client:
-            await client_session.close()
-
         await handle_tlm_client_error_from_resp(res)
         handle_rate_limit_error_from_resp(res)
         handle_api_error_from_json(res_json)
 
     finally:
-        if local_scoped_client:
-            await client_session.close()
+        await client_session.close()
 
     return cast(JSONDict, res_json)
