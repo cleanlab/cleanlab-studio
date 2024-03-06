@@ -124,7 +124,7 @@ class TLM:
 
     def _batch_prompt(
         self,
-        prompts: List[str],
+        prompts: Sequence[str],
     ) -> List[TLMResponse]:
         """Run batch of TLM prompts.
 
@@ -142,14 +142,14 @@ class TLM:
 
     def _batch_get_trustworthiness_score(
         self,
-        prompts: List[str],
-        responses: List[str],
+        prompts: Sequence[str],
+        responses: Sequence[str],
     ) -> List[float]:
         """Run batch of TLM get confidence score.
 
         Args:
-            prompts (List[str]): list of prompts to run get confidence score for
-            responses (List[str]): list of responses to run get confidence score for
+            prompts (Sequence[str]): list of prompts to run get confidence score for
+            responses (Sequence[str]): list of responses to run get confidence score for
 
         Returns:
             List[float]: TLM confidence score for each prompt (in supplied order)
@@ -225,7 +225,9 @@ class TLM:
         if isinstance(prompt, str):
             return await self._prompt_async(prompt)
 
-        return await self._batch_async([self._prompt_async(p) for p in prompt])
+        return cast(
+            List[TLMResponse], await self._batch_async([self._prompt_async(p) for p in prompt])
+        )
 
     async def _prompt_async(
         self,
@@ -270,7 +272,7 @@ class TLM:
         """
         validate_tlm_prompt_response(prompt, response)
 
-        if isinstance(prompt, str):
+        if isinstance(prompt, str) and isinstance(response, str):
             return self._event_loop.run_until_complete(
                 self._get_trustworthiness_score_async(
                     prompt,
@@ -296,11 +298,14 @@ class TLM:
         """
         validate_tlm_prompt_response(prompt, response)
 
-        if isinstance(prompt, Sequence):
+        if isinstance(prompt, str) and isinstance(response, str):
             return await self._get_trustworthiness_score_async(prompt, response)
 
-        return await self._batch_async(
-            [self._get_trustworthiness_score_async(p, r) for p, r in zip(prompt, response)]
+        return cast(
+            List[float],
+            await self._batch_async(
+                [self._get_trustworthiness_score_async(p, r) for p, r in zip(prompt, response)]
+            ),
         )
 
     async def _get_trustworthiness_score_async(

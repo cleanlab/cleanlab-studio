@@ -26,7 +26,7 @@ def validate_tlm_prompt_response(
                 "responses must be a list or iterable of strings when prompt is a list or iterable."
             )
         if len(prompt) != len(response):
-            raise "Length of prompt and response must match."
+            raise ValueError("Length of prompt and response must match.")
 
         if any(not isinstance(p, str) for p in prompt):
             raise ValueError("All prompts must be strings.")
