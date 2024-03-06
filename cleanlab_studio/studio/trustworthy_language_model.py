@@ -13,8 +13,13 @@ import aiohttp
 from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.tlm_helpers import validate_tlm_prompt, validate_tlm_prompt_response
+from cleanlab_studio.internal.tlm_helpers import (
+    validate_tlm_prompt,
+    validate_tlm_prompt_response,
+    validate_tlm_options,
+)
 from cleanlab_studio.internal.types import TLMQualityPreset
+from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.constants import (
     _DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
     _VALID_TLM_QUALITY_PRESETS,
@@ -80,36 +85,32 @@ class TLM:
         Args:
             api_key (str): API key used to authenticate TLM client
             quality_preset (TLMQualityPreset): quality preset to use for TLM queries
-            options (None | TLMOptions, optional): dictionary of options to pass to prompt method, defaults to None
-            timeout (float, optional): timeout (in seconds) to run all prompts, defaults to None
+            options (TLMOptions, optional): dictionary of options to pass to prompt method, defaults to None
+            timeout (float, optional): timeout (in seconds) to run each prompt, defaults to None
             verbose (bool, optional): verbosity level for TLM queries, default to True which will print progress bars for TLM queries. For silent TLM progress, set to False.
         """
         self._api_key = api_key
 
         if quality_preset not in _VALID_TLM_QUALITY_PRESETS:
-            raise ValueError(
+            raise ValidationError(
                 f"Invalid quality preset {quality_preset} -- must be one of {_VALID_TLM_QUALITY_PRESETS}"
             )
 
-        self._quality_preset = quality_preset
+        if options is not None:
+            validate_tlm_options(options)
 
-        # TODO: validate options args at initialization?
-        if not (options is None or isinstance(options, dict)):
-            raise ValueError(
-                "options must be a TLMOptions object.\n"
-                "See: https://help.cleanlab.ai/reference/python/trustworthy_language_model/#class-tlmoptions"
-            )
+        if timeout is not None and not (isinstance(timeout, int) or isinstance(timeout, float)):
+            raise ValidationError("timeout must be a integer or float value")
 
-        self._options = options
-
-        if timeout is not None:
-            self._timeout = None if timeout <= 0 else timeout
-        else:
-            # TODO: figure out how to compute appropriate timeout
-            self._timeout = 3600
+        if verbose is not None and not isinstance(verbose, bool):
+            raise ValidationError("timeout must be a boolean value")
 
         is_notebook_flag = is_notebook()
 
+        self._quality_preset = quality_preset
+        self._options = options
+        # TODO: how we handle timeout might still change
+        self._per_prompt_timeout = timeout if timeout is not None and timeout > 0 else None
         self._verbose = verbose if verbose is not None else is_notebook_flag
 
         if is_notebook_flag:
@@ -173,18 +174,23 @@ class TLM:
         ],
     ) -> Union[List[TLMResponse], List[float]]:
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
+        num_tasks = len(tlm_query_tasks)
+        if self._per_prompt_timeout:
+            timeout = self._per_prompt_timeout * num_tasks
+        else:
+            timeout = None
 
         if self._verbose:
             return await asyncio.wait_for(
                 tqdm_asyncio.gather(
                     *tlm_query_tasks,
-                    total=len(tlm_query_tasks),
+                    total=num_tasks,
                     desc="Querying TLM...",
                     bar_format="{desc} {percentage:3.0f}%|{bar}|",
                 ),
-                timeout=self._timeout,
+                timeout=timeout,
             )
-        return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=self._timeout)  # type: ignore[arg-type]
+        return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=timeout)  # type: ignore[arg-type]
 
     def prompt(
         self,

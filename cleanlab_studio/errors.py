@@ -34,6 +34,10 @@ class UploadError(ValueError):
     pass
 
 
+class ValidationError(ValueError):
+    pass
+
+
 class VersionError(ValueError):
     pass
 

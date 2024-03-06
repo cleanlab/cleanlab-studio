@@ -384,8 +384,10 @@ class Studio:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
         Args:
-            quality_preset: quality preset to use for prompts
-            kwargs (Any): additional kwargs to pass to TLM class
+            quality_preset (TLMQualityPreset): quality preset to use for TLM queries, defaults to "medium"
+            options (TLMOptions, optional): dictionary of options to pass to prompt method, defaults to None
+            timeout (float, optional): timeout (in seconds) to run all prompts, defaults to None
+            verbose (bool, optional): verbosity level for TLM queries, default to True which will print progress bars for TLM queries. For silent TLM progress, set to False.
 
         Returns:
             TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
