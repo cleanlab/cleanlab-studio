@@ -9,6 +9,7 @@ import sys
 from typing import Coroutine, List, Optional, Union, cast, Sequence
 from tqdm.asyncio import tqdm_asyncio
 
+import aiohttp
 from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from cleanlab_studio.internal.api import api
@@ -222,16 +223,19 @@ class TLM:
         """
         validate_tlm_prompt(prompt)
 
-        if isinstance(prompt, str):
-            return await self._prompt_async(prompt)
+        async with aiohttp.ClientSession() as session:
+            if isinstance(prompt, str):
+                return await self._prompt_async(prompt, session)
 
-        return cast(
-            List[TLMResponse], await self._batch_async([self._prompt_async(p) for p in prompt])
-        )
+            return cast(
+                List[TLMResponse],
+                await self._batch_async([self._prompt_async(p, session) for p in prompt]),
+            )
 
     async def _prompt_async(
         self,
         prompt: str,
+        client_session: Optional[aiohttp.ClientSession] = None,
     ) -> TLMResponse:
         """
         Private asynchronous method to get response and trustworthiness score from TLM.
@@ -248,6 +252,7 @@ class TLM:
                 prompt,
                 self._quality_preset,
                 self._options,
+                client_session,
                 retries=_TLM_MAX_RETRIES,
             )
 
@@ -274,10 +279,7 @@ class TLM:
 
         if isinstance(prompt, str) and isinstance(response, str):
             return self._event_loop.run_until_complete(
-                self._get_trustworthiness_score_async(
-                    prompt,
-                    response,
-                )
+                self._get_trustworthiness_score_async(prompt, response)
             )
 
         return self._batch_get_trustworthiness_score(prompt, response)
@@ -298,26 +300,32 @@ class TLM:
         """
         validate_tlm_prompt_response(prompt, response)
 
-        if isinstance(prompt, str) and isinstance(response, str):
-            return await self._get_trustworthiness_score_async(prompt, response)
+        async with aiohttp.ClientSession() as session:
+            if isinstance(prompt, str) and isinstance(response, str):
+                return await self._get_trustworthiness_score_async(prompt, response, session)
 
-        return cast(
-            List[float],
-            await self._batch_async(
-                [self._get_trustworthiness_score_async(p, r) for p, r in zip(prompt, response)]
-            ),
-        )
+            return cast(
+                List[float],
+                await self._batch_async(
+                    [
+                        self._get_trustworthiness_score_async(p, r, session)
+                        for p, r in zip(prompt, response)
+                    ]
+                ),
+            )
 
     async def _get_trustworthiness_score_async(
         self,
         prompt: str,
         response: str,
+        client_session: Optional[aiohttp.ClientSession] = None,
     ) -> float:
         """Private asynchronous method to get trustworthiness score for prompt-response pair.
 
         Args:
             prompt: prompt for the TLM
             response: response for the TLM to evaluate
+            client_session: async HTTP session to use for TLM query. Defaults to None.
         Returns:
             float corresponding to the TLM's trustworthiness score
 
@@ -337,6 +345,7 @@ class TLM:
                         response,
                         self._quality_preset,
                         self._options,
+                        client_session,
                         retries=_TLM_MAX_RETRIES,
                     )
                 )["confidence_score"],
