@@ -59,7 +59,7 @@ def validate_tlm_prompt_response(
         )
 
 
-def validate_tlm_options(options: Any):
+def validate_tlm_options(options: Any) -> None:
     from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
 
     if not isinstance(options, dict):
