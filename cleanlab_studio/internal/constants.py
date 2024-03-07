@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-# TLM constats
+# TLM constants
 # prepend constants with _ so that they don't show up in help.cleanlab.ai docs
 _DEFAULT_MAX_CONCURRENT_TLM_REQUESTS: int = 16
 _VALID_TLM_QUALITY_PRESETS: List[str] = ["best", "high", "medium", "low", "base"]
