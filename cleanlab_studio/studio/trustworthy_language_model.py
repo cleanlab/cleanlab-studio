@@ -86,7 +86,7 @@ class TLM:
             api_key (str): API key used to authenticate TLM client
             quality_preset (TLMQualityPreset): quality preset to use for TLM queries
             options (TLMOptions, optional): dictionary of options to pass to prompt method, defaults to None
-            timeout (float, optional): timeout (in seconds) to run each prompt, defaults to None
+            timeout (float, optional): timeout (in seconds) to run all prompts, defaults to None
             verbose (bool, optional): verbosity level for TLM queries, default to True which will print progress bars for TLM queries. For silent TLM progress, set to False.
         """
         self._api_key = api_key
@@ -109,8 +109,7 @@ class TLM:
 
         self._quality_preset = quality_preset
         self._options = options
-        # TODO: how we handle timeout might still change
-        self._per_prompt_timeout = timeout if timeout is not None and timeout > 0 else None
+        self._timeout = timeout if timeout is not None and timeout > 0 else None
         self._verbose = verbose if verbose is not None else is_notebook_flag
 
         if is_notebook_flag:
@@ -174,23 +173,18 @@ class TLM:
         ],
     ) -> Union[List[TLMResponse], List[float]]:
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
-        num_tasks = len(tlm_query_tasks)
-        if self._per_prompt_timeout:
-            timeout = self._per_prompt_timeout * num_tasks
-        else:
-            timeout = None
 
         if self._verbose:
             return await asyncio.wait_for(
                 tqdm_asyncio.gather(
                     *tlm_query_tasks,
-                    total=num_tasks,
+                    total=len(tlm_query_tasks),
                     desc="Querying TLM...",
                     bar_format="{desc} {percentage:3.0f}%|{bar}|",
                 ),
-                timeout=timeout,
+                timeout=self._timeout,
             )
-        return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=timeout)  # type: ignore[arg-type]
+        return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=self._timeout)  # type: ignore[arg-type]
 
     def prompt(
         self,
@@ -209,7 +203,9 @@ class TLM:
         validate_tlm_prompt(prompt)
 
         if isinstance(prompt, str):
-            return self._event_loop.run_until_complete(self._prompt_async(prompt))
+            return self._event_loop.run_until_complete(
+                asyncio.wait_for(self._prompt_async(prompt), timeout=self._timeout)
+            )
 
         return self._batch_prompt(prompt)
 
@@ -231,7 +227,9 @@ class TLM:
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str):
-                return await self._prompt_async(prompt, session)
+                return await asyncio.wait_for(
+                    self._prompt_async(prompt, session), timeout=self._timeout
+                )
 
             return cast(
                 List[TLMResponse],
@@ -285,7 +283,9 @@ class TLM:
 
         if isinstance(prompt, str) and isinstance(response, str):
             return self._event_loop.run_until_complete(
-                self._get_trustworthiness_score_async(prompt, response)
+                asyncio.wait_for(
+                    self._get_trustworthiness_score_async(prompt, response), timeout=self._timeout
+                )
             )
 
         return self._batch_get_trustworthiness_score(prompt, response)
@@ -308,7 +308,10 @@ class TLM:
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str) and isinstance(response, str):
-                return await self._get_trustworthiness_score_async(prompt, response, session)
+                return await asyncio.wait_for(
+                    self._get_trustworthiness_score_async(prompt, response, session),
+                    timeout=self._timeout,
+                )
 
             return cast(
                 List[float],
