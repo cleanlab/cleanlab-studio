@@ -24,6 +24,22 @@ def validate_tlm_prompt(prompt: Union[str, Sequence[str]]) -> None:
         )
 
 
+def validate_tlm_try_prompt(prompt: Sequence[str]) -> None:
+    if isinstance(prompt, str):
+        raise ValidationError(f"Invalid type str, prompt must be a list/iterable of strings.")
+
+    elif isinstance(prompt, Sequence):
+        if any(not isinstance(p, str) for p in prompt):
+            raise ValidationError(
+                "Some items in prompt are of invalid types, all items in the prompt list must be of type str."
+            )
+
+    else:
+        raise ValidationError(
+            f"Invalid type {type(prompt)}, prompt must be a list/iterable of strings."
+        )
+
+
 def validate_tlm_prompt_response(
     prompt: Union[str, Sequence[str]], response: Union[str, Sequence[str]]
 ) -> None:
@@ -56,6 +72,35 @@ def validate_tlm_prompt_response(
     else:
         raise ValidationError(
             f"Invalid type {type(prompt)}, prompt must either be strings or list/iterable of strings."
+        )
+
+
+def validate_try_tlm_prompt_response(prompt: Sequence[str], response: Sequence[str]) -> None:
+    if isinstance(prompt, str):
+        raise ValidationError(f"Invalid type str, prompt must be a list/iterable of strings.")
+
+    elif isinstance(prompt, Sequence):
+        if not isinstance(response, Sequence):
+            raise ValidationError(
+                "response type must match prompt type. "
+                f"prompt was provided as type {type(prompt)} but response is of type {type(response)}"
+            )
+
+        if len(prompt) != len(response):
+            raise ValidationError("Length of the prompt and response lists must match.")
+
+        if any(not isinstance(p, str) for p in prompt):
+            raise ValidationError(
+                "Some items in prompt are of invalid types, all items in the prompt list must be of type str."
+            )
+        if any(not isinstance(r, str) for r in response):
+            raise ValidationError(
+                "Some items in response are of invalid types, all items in the response list must be of type str."
+            )
+
+    else:
+        raise ValidationError(
+            f"Invalid type {type(prompt)}, prompt must be a list/iterable of strings."
         )
 
 

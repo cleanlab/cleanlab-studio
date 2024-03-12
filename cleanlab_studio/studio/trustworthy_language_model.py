@@ -8,6 +8,7 @@ import asyncio
 import sys
 from typing import Coroutine, List, Optional, Union, cast, Sequence
 from tqdm.asyncio import tqdm_asyncio
+from tqdm import tqdm
 
 import aiohttp
 from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
@@ -15,7 +16,9 @@ from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (N
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.tlm_helpers import (
     validate_tlm_prompt,
+    validate_tlm_try_prompt,
     validate_tlm_prompt_response,
+    validate_try_tlm_prompt_response,
     validate_tlm_options,
 )
 from cleanlab_studio.internal.types import TLMQualityPreset
@@ -141,6 +144,27 @@ class TLM:
 
         return cast(List[TLMResponse], tlm_responses)
 
+    def _batch_prompt_with_handled_errors(
+        self,
+        prompts: Sequence[str],
+    ) -> List[Optional[TLMResponse]]:
+        """Run batch of TLM prompts. The list returned will have the same length as the input list,
+        with None in place of any errors.
+
+        Args:
+            prompts (List[str]): list of prompts to run
+
+        Returns:
+            List[Optional[TLMResponse]]: TLM responses for each prompt (in supplied order)
+        """
+        tlm_responses = self._event_loop.run_until_complete(
+            self._batch_async_with_handled_errors(
+                [self._prompt_async(prompt) for prompt in prompts],
+            )
+        )
+
+        return cast(List[Optional[TLMResponse]], tlm_responses)
+
     def _batch_get_trustworthiness_score(
         self,
         prompts: Sequence[str],
@@ -166,6 +190,30 @@ class TLM:
 
         return cast(List[float], tlm_responses)
 
+    def _batch_get_trustworthiness_score_with_handled_errors(
+        self,
+        prompts: Sequence[str],
+        responses: Sequence[str],
+    ) -> List[Optional[float]]:
+        """Run batch of TLM get confidence score.
+
+        Args:
+            prompts (Sequence[str]): list of prompts to run get confidence score for
+            responses (Sequence[str]): list of responses to run get confidence score for
+
+        Returns:
+            List[float]: TLM confidence score for each prompt (in supplied order)
+        """
+        tlm_responses = self._event_loop.run_until_complete(
+            self._batch_async_with_handled_errors(
+                [
+                    self._get_trustworthiness_score_async(prompt, response)
+                    for prompt, response in zip(prompts, responses)
+                ]
+            )
+        )
+        return cast(List[Optional[float]], tlm_responses)
+
     async def _batch_async(
         self,
         tlm_coroutines: List[
@@ -185,6 +233,33 @@ class TLM:
                 timeout=self._timeout,
             )
         return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=self._timeout)  # type: ignore[arg-type]
+
+    async def _batch_async_with_handled_errors(
+        self,
+        tlm_coroutines: List[
+            Union[Coroutine[None, None, TLMResponse], Coroutine[None, None, float]]
+        ],
+    ) -> Union[List[Optional[TLMResponse]], List[Optional[float]]]:
+        tlm_query_tasks = [
+            asyncio.wait_for(asyncio.create_task(tlm_coro), timeout=self._timeout)
+            for tlm_coro in tlm_coroutines
+        ]
+
+        if self._verbose:
+            results = []
+            with tqdm(total=len(tlm_query_tasks)) as pbar:
+                for task in asyncio.as_completed(tlm_query_tasks):
+                    try:
+                        result = await asyncio.wait_for(task, timeout=self._timeout)
+                        results.append(result)
+                    except Exception:
+                        results.append(None)
+                    pbar.update(1)
+
+            return results  # type: ignore[return-value]
+
+        responses = await asyncio.gather(*tlm_query_tasks, return_exceptions=True)
+        return [r if not isinstance(r, Exception) else None for r in responses]  # type: ignore[return-value]
 
     def prompt(
         self,
@@ -208,6 +283,27 @@ class TLM:
             )
 
         return self._batch_prompt(prompt)
+
+    def try_prompt(
+        self,
+        prompt: Sequence[str],
+        /,
+    ) -> List[Optional[TLMResponse]]:
+        """
+        Get response and trustworthiness score from TLM.
+        The list returned will have the same length as the input list, if there are any
+        failures (errors or timeout) processing some inputs, the list will contain None
+        in place of the response.
+
+        Args:
+            prompt (Sequence[str]): list of multiple prompts for the TLM
+        Returns:
+            List[Optional[TLMResponse]]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
+                Entries of the list will be None for prompts that fail (due to any errors or timeout).
+        """
+        validate_tlm_try_prompt(prompt)
+
+        return self._batch_prompt_with_handled_errors(prompt)
 
     async def prompt_async(
         self,
@@ -271,6 +367,9 @@ class TLM:
         response: Union[str, Sequence[str]],
     ) -> Union[float, List[float]]:
         """Gets trustworthiness score for prompt-response pair(s).
+        The list returned will have the same length as the input list, if there are any
+        failures (errors or timeout) processing some inputs, the list will contain None
+        in place of the response.
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
@@ -278,6 +377,7 @@ class TLM:
         Returns:
             float (or list of floats if multiple prompt-responses were provided) corresponding to the TLM's trustworthiness score.
                     The score quantifies how confident TLM is that the given response is good for the given prompt.
+                    Entries of the list will be None for prompts that fail (due to any errors or timeout).
         """
         validate_tlm_prompt_response(prompt, response)
 
@@ -289,6 +389,24 @@ class TLM:
             )
 
         return self._batch_get_trustworthiness_score(prompt, response)
+
+    def try_get_trustworthiness_score(
+        self,
+        prompt: Sequence[str],
+        response: Sequence[str],
+    ) -> List[Optional[float]]:
+        """Gets trustworthiness score for prompt-response pair(s).
+
+        Args:
+            prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
+            response (str | Sequence[str]): response (or list of multiple responses) for the TLM to evaluate
+        Returns:
+            list of floats if multiple prompt-responses were provided corresponding to the TLM's trustworthiness score.
+                    The score quantifies how confident TLM is that the given response is good for the given prompt.
+        """
+        validate_try_tlm_prompt_response(prompt, response)
+
+        return self._batch_get_trustworthiness_score_with_handled_errors(prompt, response)
 
     async def get_trustworthiness_score_async(
         self,
