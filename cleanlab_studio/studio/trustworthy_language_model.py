@@ -71,6 +71,12 @@ class TLMOptions(TypedDict):
     use_self_reflection: NotRequired[bool]
 
 
+BatchPromptResponse = List[TLMResponse]
+TryBatchPromptResponse = List[Optional[TLMResponse]]
+BatchGetTrustworthinessScoreResponse = List[float]
+TryBatchGetTrustworthinessScoreResponse = List[Optional[float]]
+
+
 class TLM:
     """TLM interface class."""
 
@@ -126,140 +132,121 @@ class TLM:
         self._event_loop = asyncio.get_event_loop()
         self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
 
-    def _batch_prompt(
+    async def _batch_prompt(
         self,
         prompts: Sequence[str],
-    ) -> List[TLMResponse]:
-        """Run batch of TLM prompts.
-
-        Args:
-            prompts (List[str]): list of prompts to run
-
-        Returns:
-            List[TLMResponse]: TLM responses for each prompt (in supplied order)
-        """
-        tlm_responses = self._event_loop.run_until_complete(
-            self._batch_async([self._prompt_async(prompt) for prompt in prompts])
-        )
-
-        return cast(List[TLMResponse], tlm_responses)
-
-    def _batch_prompt_with_handled_errors(
-        self,
-        prompts: Sequence[str],
-    ) -> List[Optional[TLMResponse]]:
+        capture_exceptions: bool = False,
+    ) -> Union[BatchPromptResponse, TryBatchPromptResponse]:
         """Run batch of TLM prompts. The list returned will have the same length as the input list,
-        with None in place of any errors.
+
+        If capture_exceptions is True, the list will contain None in place of the response for any errors or timeout processing some inputs.
+        Otherwise, the method will raise an exception for any errors or timeout processing some inputs.
 
         Args:
             prompts (List[str]): list of prompts to run
+            capture_exceptions (bool): if should return None in place of the response for any errors or timeout processing some inputs
 
         Returns:
-            List[Optional[TLMResponse]]: TLM responses for each prompt (in supplied order)
+            Union[BatchPromptResponse, TryBatchPromptResponse]: TLM responses for each prompt (in supplied order)
         """
-        tlm_responses = self._event_loop.run_until_complete(
-            self._batch_async_with_handled_errors(
-                [self._prompt_async(prompt) for prompt in prompts],
-            )
+        if capture_exceptions:
+            per_query_timeout, per_batch_timeout = self._timeout, None
+        else:
+            per_query_timeout, per_batch_timeout = None, self._timeout
+
+        # run batch of TLM
+        tlm_responses = await self._batch_async(
+            [
+                self._prompt_async(
+                    prompt, timeout=per_query_timeout, capture_exceptions=capture_exceptions
+                )
+                for prompt in prompts
+            ],
+            per_batch_timeout,
         )
 
-        return cast(List[Optional[TLMResponse]], tlm_responses)
+        if capture_exceptions:
+            return cast(TryBatchPromptResponse, tlm_responses)
 
-    def _batch_get_trustworthiness_score(
+        return cast(BatchPromptResponse, tlm_responses)
+
+    async def _batch_get_trustworthiness_score(
         self,
         prompts: Sequence[str],
         responses: Sequence[str],
-    ) -> List[float]:
+        capture_exceptions: bool = False,
+    ) -> Union[BatchGetTrustworthinessScoreResponse, TryBatchGetTrustworthinessScoreResponse]:
         """Run batch of TLM get confidence score.
+
+        capture_exceptions behavior:
+        - If true, the list will contain None in place of the response for any errors or timeout processing some inputs.
+        - Otherwise, the method will raise an exception for any errors or timeout processing some inputs.
+
+        capture_exceptions interaction with timeout:
+        - If true, timeouts are applied on a per-query basis (i.e. some queries may succeed while others fail)
+        - If false, a single timeout is applied to the entire batch (i.e. all queries will fail if the timeout is reached)
 
         Args:
             prompts (Sequence[str]): list of prompts to run get confidence score for
             responses (Sequence[str]): list of responses to run get confidence score for
+            capture_exceptions (bool): if should return None in place of the response for any errors or timeout processing some inputs
 
         Returns:
-            List[float]: TLM confidence score for each prompt (in supplied order)
+            Union[List[float], List[Optional[float]]: TLM confidence score for each prompt (in supplied order)
         """
-        tlm_responses = self._event_loop.run_until_complete(
-            self._batch_async(
-                [
-                    self._get_trustworthiness_score_async(prompt, response)
-                    for prompt, response in zip(prompts, responses)
-                ]
-            )
+        if capture_exceptions:
+            per_query_timeout, per_batch_timeout = self._timeout, None
+        else:
+            per_query_timeout, per_batch_timeout = None, self._timeout
+
+        # run batch of TLM get confidence score
+        tlm_responses = await self._batch_async(
+            [
+                self._get_trustworthiness_score_async(
+                    prompt,
+                    response,
+                    timeout=per_query_timeout,
+                    capture_exceptions=capture_exceptions,
+                )
+                for prompt, response in zip(prompts, responses)
+            ],
+            per_batch_timeout,
         )
 
-        return cast(List[float], tlm_responses)
+        if capture_exceptions:
+            return cast(TryBatchGetTrustworthinessScoreResponse, tlm_responses)
 
-    def _batch_get_trustworthiness_score_with_handled_errors(
-        self,
-        prompts: Sequence[str],
-        responses: Sequence[str],
-    ) -> List[Optional[float]]:
-        """Run batch of TLM get confidence score.
-
-        Args:
-            prompts (Sequence[str]): list of prompts to run get confidence score for
-            responses (Sequence[str]): list of responses to run get confidence score for
-
-        Returns:
-            List[float]: TLM confidence score for each prompt (in supplied order)
-        """
-        tlm_responses = self._event_loop.run_until_complete(
-            self._batch_async_with_handled_errors(
-                [
-                    self._get_trustworthiness_score_async(prompt, response)
-                    for prompt, response in zip(prompts, responses)
-                ]
-            )
-        )
-        return cast(List[Optional[float]], tlm_responses)
+        return cast(BatchGetTrustworthinessScoreResponse, tlm_responses)
 
     async def _batch_async(
         self,
-        tlm_coroutines: List[
-            Union[Coroutine[None, None, TLMResponse], Coroutine[None, None, float]]
-        ],
-    ) -> Union[List[TLMResponse], List[float]]:
+        tlm_coroutines: List[Coroutine[None, None, Union[TLMResponse, float, None]]],
+        batch_timeout: Optional[float] = None,
+    ) -> Union[List[TLMResponse], List[float], List[None]]:
+        """Runs batch of TLM queries.
+
+        Args:
+            tlm_coroutines (List[Coroutine[None, None, Union[TLMResponse, float, None]]]): list of query coroutines to run, returning TLM responses or confidence scores (or None if capture_exceptions is True)
+            batch_timeout (Optional[float], optional): timeout (in seconds) to run all queries, defaults to None (no timeout)
+
+        Returns:
+            Union[List[TLMResponse], List[float], List[None]]: list of coroutine results, with preserved order
+        """
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
 
         if self._verbose:
-            return await asyncio.wait_for(
+            gather_task = (
                 tqdm_asyncio.gather(
                     *tlm_query_tasks,
                     total=len(tlm_query_tasks),
                     desc="Querying TLM...",
                     bar_format="{desc} {percentage:3.0f}%|{bar}|",
                 ),
-                timeout=self._timeout,
             )
-        return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=self._timeout)  # type: ignore[arg-type]
+        else:
+            gather_task = asyncio.gather(*tlm_query_tasks)
 
-    async def _batch_async_with_handled_errors(
-        self,
-        tlm_coroutines: List[
-            Union[Coroutine[None, None, TLMResponse], Coroutine[None, None, float]]
-        ],
-    ) -> Union[List[Optional[TLMResponse]], List[Optional[float]]]:
-        tlm_query_tasks = [
-            asyncio.wait_for(asyncio.create_task(tlm_coro), timeout=self._timeout)
-            for tlm_coro in tlm_coroutines
-        ]
-
-        if self._verbose:
-            results = []
-            with tqdm(total=len(tlm_query_tasks)) as pbar:
-                for task in asyncio.as_completed(tlm_query_tasks):
-                    try:
-                        result = await asyncio.wait_for(task, timeout=self._timeout)
-                        results.append(result)
-                    except Exception:
-                        results.append(None)
-                    pbar.update(1)
-
-            return results  # type: ignore[return-value]
-
-        responses = await asyncio.gather(*tlm_query_tasks, return_exceptions=True)
-        return [r if not isinstance(r, Exception) else None for r in responses]  # type: ignore[return-value]
+        return await asyncio.wait_for(gather_task, timeout=batch_timeout)  # type: ignore[arg-type]
 
     def prompt(
         self,
@@ -278,11 +265,19 @@ class TLM:
         validate_tlm_prompt(prompt)
 
         if isinstance(prompt, str):
-            return self._event_loop.run_until_complete(
-                asyncio.wait_for(self._prompt_async(prompt), timeout=self._timeout)
+            return cast(
+                TLMResponse,
+                self._event_loop.run_until_complete(
+                    self._prompt_async(prompt, timeout=self._timeout, capture_exceptions=False),
+                ),
             )
 
-        return self._batch_prompt(prompt)
+        return cast(
+            List[TLMResponse],
+            self._event_loop.run_until_complete(
+                self._batch_prompt(prompt, capture_exceptions=False),
+            ),
+        )
 
     def try_prompt(
         self,
@@ -303,7 +298,12 @@ class TLM:
         """
         validate_tlm_try_prompt(prompt)
 
-        return self._batch_prompt_with_handled_errors(prompt)
+        return cast(
+            List[Optional[TLMResponse]],
+            self._event_loop.run_until_complete(
+                self._batch_prompt(prompt, capture_exceptions=True),
+            ),
+        )
 
     async def prompt_async(
         self,
@@ -323,25 +323,29 @@ class TLM:
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str):
-                return await asyncio.wait_for(
-                    self._prompt_async(prompt, session), timeout=self._timeout
+                tlm_response = await self._prompt_async(
+                    prompt, session, timeout=self._timeout, capture_exceptions=False
                 )
+                return cast(TLMResponse, tlm_response)
 
             return cast(
                 List[TLMResponse],
-                await self._batch_async([self._prompt_async(p, session) for p in prompt]),
+                await self._batch_prompt(prompt, capture_exceptions=False),
             )
 
     async def _prompt_async(
         self,
         prompt: str,
         client_session: Optional[aiohttp.ClientSession] = None,
-    ) -> TLMResponse:
+        timeout: Optional[float] = None,
+        capture_exceptions: bool = False,
+    ) -> Optional[TLMResponse]:
         """
         Private asynchronous method to get response and trustworthiness score from TLM.
 
         Args:
             prompt (str): prompt for the TLM
+            # TODO -- document parameters
         Returns:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score
         """
@@ -355,6 +359,22 @@ class TLM:
                 client_session,
                 retries=_TLM_MAX_RETRIES,
             )
+            try:
+                tlm_response = await asyncio.wait_for(
+                    api.tlm_prompt(
+                        self._api_key,
+                        prompt,
+                        self._quality_preset,
+                        self._options,
+                        client_session,
+                        retries=_TLM_MAX_RETRIES,
+                    ),
+                    timeout=timeout,
+                )
+            except Exception as e:
+                if capture_exceptions:
+                    return None
+                raise e
 
         return {
             "response": tlm_response["response"],
@@ -382,13 +402,21 @@ class TLM:
         validate_tlm_prompt_response(prompt, response)
 
         if isinstance(prompt, str) and isinstance(response, str):
-            return self._event_loop.run_until_complete(
-                asyncio.wait_for(
-                    self._get_trustworthiness_score_async(prompt, response), timeout=self._timeout
-                )
+            return cast(
+                float,
+                self._event_loop.run_until_complete(
+                    self._get_trustworthiness_score_async(
+                        prompt, response, timeout=self._timeout, capture_exceptions=False
+                    )
+                ),
             )
 
-        return self._batch_get_trustworthiness_score(prompt, response)
+        return cast(
+            List[float],
+            self._event_loop.run_until_complete(
+                self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=False)
+            ),
+        )
 
     def try_get_trustworthiness_score(
         self,
@@ -406,7 +434,12 @@ class TLM:
         """
         validate_try_tlm_prompt_response(prompt, response)
 
-        return self._batch_get_trustworthiness_score_with_handled_errors(prompt, response)
+        return cast(
+            List[Optional[float]],
+            self._event_loop.run_until_complete(
+                self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=True)
+            ),
+        )
 
     async def get_trustworthiness_score_async(
         self,
@@ -426,18 +459,15 @@ class TLM:
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str) and isinstance(response, str):
-                return await asyncio.wait_for(
-                    self._get_trustworthiness_score_async(prompt, response, session),
-                    timeout=self._timeout,
+                trustworthiness_score = await self._get_trustworthiness_score_async(
+                    prompt, response, session, timeout=self._timeout, capture_exceptions=False
                 )
+                return cast(float, trustworthiness_score)
 
             return cast(
                 List[float],
-                await self._batch_async(
-                    [
-                        self._get_trustworthiness_score_async(p, r, session)
-                        for p, r in zip(prompt, response)
-                    ]
+                await self._batch_get_trustworthiness_score(
+                    prompt, response, capture_exceptions=False
                 ),
             )
 
@@ -446,13 +476,17 @@ class TLM:
         prompt: str,
         response: str,
         client_session: Optional[aiohttp.ClientSession] = None,
-    ) -> float:
+        timeout: Optional[float] = None,
+        capture_exceptions: bool = False,
+    ) -> Optional[float]:
         """Private asynchronous method to get trustworthiness score for prompt-response pair.
 
         Args:
             prompt: prompt for the TLM
             response: response for the TLM to evaluate
             client_session: async HTTP session to use for TLM query. Defaults to None.
+            timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
+            capture_exceptions: if should return None in place of the response for any errors
         Returns:
             float corresponding to the TLM's trustworthiness score
 
@@ -463,20 +497,28 @@ class TLM:
             )
 
         async with self._query_semaphore:
-            return cast(
-                float,
-                (
-                    await api.tlm_get_confidence_score(
-                        self._api_key,
-                        prompt,
-                        response,
-                        self._quality_preset,
-                        self._options,
-                        client_session,
-                        retries=_TLM_MAX_RETRIES,
-                    )
-                )["confidence_score"],
-            )
+            try:
+                return cast(
+                    float,
+                    (
+                        await asyncio.wait_for(
+                            api.tlm_get_confidence_score(
+                                self._api_key,
+                                prompt,
+                                response,
+                                self._quality_preset,
+                                self._options,
+                                client_session,
+                                retries=_TLM_MAX_RETRIES,
+                            ),
+                            timeout=timeout,
+                        )
+                    )["confidence_score"],
+                )
+            except Exception as e:
+                if capture_exceptions:
+                    return None
+                raise e
 
 
 def is_notebook() -> bool:
