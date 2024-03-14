@@ -198,9 +198,12 @@ class Studio:
             dataset_id: ID of dataset to create project for.
             project_name: Name for resulting project.
             modality: Modality of project (i.e. text, tabular, image).
-            task_type: Type of ML task to perform (i.e. multi-class, multi-label, regression).
-            model_type: Type of model to train (i.e. fast, regular).
-            label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess).
+            task_type: Type of ML task to perform. Select a supervised task type (i.e. "multi-class", "multi-label", "regression") if your dataset
+                has a label column you would like to predict values for or detect erroneous values in. Select "unsupervised" if your dataset has
+                no specific label column. See the [Projects Guide](/guide/concepts/projects/#machine-learning-task--dataset-type) for more
+                information on task types.
+            model_type: Type of model to train (i.e. "fast", "regular"). See the [Projects Guide](/guide/concepts/projects/#model-type) for more information on model types.
+            label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess). For "unsupervised" tasks, this should be `None`.
             feature_columns: List of columns to use as features when training tabular modality project (if not supplied and modality is "tabular" we'll use all valid feature columns).
             text_column: Name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess).
 
@@ -372,7 +375,7 @@ class Studio:
         Returns:
             `np.NDArray[float64]`: a 2D numpy array of feature embeddings of shape `N` by `N_EMBED`, where `N` is the number of rows in the original dataset, and `N_EMBED` is the dimension of the feature embeddings. The embedding-dimension depends on which neural network is used to represent your data (Cleanlab automatically identifies the best type of neural network for your data).
 
-        For image projects, a few images in the original dataset might fail to be processed due to pooly formatted data or invalid image file paths.
+        For image projects, a few images in the original dataset might fail to be processed due to poorly formatted data or invalid image file paths.
         Feature embeddings are not computed for those rows. The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/guide/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
         If you want to work with feature embeddings for an image project, the recommended workflow is as follows:
 

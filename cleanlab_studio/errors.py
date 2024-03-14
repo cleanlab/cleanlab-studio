@@ -1,3 +1,7 @@
+class InvalidUUIDError(ValueError):
+    pass
+
+
 class InvalidDatasetError(ValueError):
     pass
 
@@ -61,7 +65,7 @@ class RateLimitError(APIError):
         self.retry_after = retry_after
 
 
-class TlmQueryTooLargeError(APIError):
+class TlmBadRequest(APIError):
     pass
 
 
