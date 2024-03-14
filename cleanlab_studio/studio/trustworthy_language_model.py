@@ -220,9 +220,9 @@ class TLM:
 
     async def _batch_async(
         self,
-        tlm_coroutines: List[Coroutine[None, None, Union[TLMResponse, float, None]]],
+        tlm_coroutines: Sequence[Coroutine[None, None, Union[TLMResponse, float, None]]],
         batch_timeout: Optional[float] = None,
-    ) -> Union[List[TLMResponse], List[float], List[None]]:
+    ) -> Sequence[Union[TLMResponse, float, None]]:
         """Runs batch of TLM queries.
 
         Args:
@@ -235,18 +235,24 @@ class TLM:
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
 
         if self._verbose:
-            gather_task = (
-                tqdm_asyncio.gather(
-                    *tlm_query_tasks,
-                    total=len(tlm_query_tasks),
-                    desc="Querying TLM...",
-                    bar_format="{desc} {percentage:3.0f}%|{bar}|",
-                ),
+            gather_task = tqdm_asyncio.gather(
+                *tlm_query_tasks,
+                total=len(tlm_query_tasks),
+                desc="Querying TLM...",
+                bar_format="{desc} {percentage:3.0f}%|{bar}|",
             )
         else:
             gather_task = asyncio.gather(*tlm_query_tasks)
 
-        return await asyncio.wait_for(gather_task, timeout=batch_timeout)  # type: ignore[arg-type]
+        wait_task = asyncio.wait_for(gather_task, timeout=batch_timeout)
+        try:
+            return await wait_task
+        except Exception:
+            # if exception occurs while awaiting batch results, cancel remaining tasks
+            for query_task in tlm_query_tasks:
+                query_task.cancel()
+
+            raise
 
     def prompt(
         self,
