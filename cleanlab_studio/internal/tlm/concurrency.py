@@ -97,7 +97,6 @@ class TlmRateHandler:
         self._congestion_window //= multiplicative_decrease_factor
 
         # acquire congestion window decrease from send semaphore
-        congestion_window_decrease = self._congestion_window - prev_congestion_window
+        congestion_window_decrease = prev_congestion_window - self._congestion_window
         for _ in range(congestion_window_decrease):
-            async with self._send_semaphore:
-                pass
+            await self._send_semaphore.acquire()
