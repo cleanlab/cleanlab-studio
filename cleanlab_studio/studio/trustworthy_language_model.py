@@ -8,13 +8,13 @@ import asyncio
 import sys
 from typing import Coroutine, List, Optional, Union, cast, Sequence
 from tqdm.asyncio import tqdm_asyncio
-from tqdm import tqdm
 
 import aiohttp
 from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.tlm_helpers import (
+from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
+from cleanlab_studio.internal.tlm.validation import (
     validate_tlm_prompt,
     validate_tlm_try_prompt,
     validate_tlm_prompt_response,
@@ -24,7 +24,6 @@ from cleanlab_studio.internal.tlm_helpers import (
 from cleanlab_studio.internal.types import TLMQualityPreset
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.constants import (
-    _DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
     _VALID_TLM_QUALITY_PRESETS,
     _TLM_MAX_RETRIES,
 )
@@ -126,11 +125,8 @@ class TLM:
 
             nest_asyncio.apply()
 
-        # TODO: figure out this how to compute appropriate max_concurrent_requests
-        max_concurrent_requests = _DEFAULT_MAX_CONCURRENT_TLM_REQUESTS
-
         self._event_loop = asyncio.get_event_loop()
-        self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
+        self._rate_handler = TlmRateHandler()
 
     async def _batch_prompt(
         self,
@@ -359,31 +355,23 @@ class TLM:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score
         """
 
-        async with self._query_semaphore:
-            tlm_response = await api.tlm_prompt(
-                self._api_key,
-                prompt,
-                self._quality_preset,
-                self._options,
-                client_session,
-                retries=_TLM_MAX_RETRIES,
+        try:
+            tlm_response = await asyncio.wait_for(
+                api.tlm_prompt(
+                    self._api_key,
+                    prompt,
+                    self._quality_preset,
+                    self._options,
+                    self._rate_handler,
+                    client_session,
+                    retries=_TLM_MAX_RETRIES,
+                ),
+                timeout=timeout,
             )
-            try:
-                tlm_response = await asyncio.wait_for(
-                    api.tlm_prompt(
-                        self._api_key,
-                        prompt,
-                        self._quality_preset,
-                        self._options,
-                        client_session,
-                        retries=_TLM_MAX_RETRIES,
-                    ),
-                    timeout=timeout,
-                )
-            except Exception as e:
-                if capture_exceptions:
-                    return None
-                raise e
+        except Exception as e:
+            if capture_exceptions:
+                return None
+            raise e
 
         return {
             "response": tlm_response["response"],
@@ -505,29 +493,27 @@ class TLM:
                 "Cannot get confidence score with `base` quality_preset -- choose a higher preset."
             )
 
-        async with self._query_semaphore:
-            try:
-                return cast(
-                    float,
-                    (
-                        await asyncio.wait_for(
-                            api.tlm_get_confidence_score(
-                                self._api_key,
-                                prompt,
-                                response,
-                                self._quality_preset,
-                                self._options,
-                                client_session,
-                                retries=_TLM_MAX_RETRIES,
-                            ),
-                            timeout=timeout,
-                        )
-                    )["confidence_score"],
-                )
-            except Exception as e:
-                if capture_exceptions:
-                    return None
-                raise e
+        try:
+            tlm_response = await asyncio.wait_for(
+                api.tlm_get_confidence_score(
+                    self._api_key,
+                    prompt,
+                    response,
+                    self._quality_preset,
+                    self._options,
+                    self._rate_handler,
+                    client_session,
+                    retries=_TLM_MAX_RETRIES,
+                ),
+                timeout=timeout,
+            )
+
+            return cast(float, tlm_response["confidence_score"])
+
+        except Exception as e:
+            if capture_exceptions:
+                return None
+            raise e
 
 
 def is_notebook() -> bool:
