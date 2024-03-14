@@ -16,7 +16,7 @@ import pandas as pd
 
 from cleanlab_studio.internal.api.api import cli_base_url
 from cleanlab_studio.internal.settings import CleanlabSettings
-from cleanlab_studio.errors import InvalidDatasetError
+from cleanlab_studio.errors import InvalidDatasetError, HandledError
 
 try:
     import snowflake.snowpark as snowpark
@@ -273,6 +273,7 @@ def telemetry(
 
                     user_info["stack_trace"] = cleanlab_traceback
                     user_info["error_type"] = type(err).__name__
+                    user_info["is_handled_error"] = isinstance(err, HandledError)
                     _ = requests.post(
                         f"{cli_base_url}/telemetry",
                         json=user_info,

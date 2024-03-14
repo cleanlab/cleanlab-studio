@@ -1,44 +1,48 @@
-class InvalidUUIDError(ValueError):
+class HandledError(Exception):
     pass
 
 
-class InvalidDatasetError(ValueError):
+class InvalidUUIDError(HandledError):
     pass
 
 
-class EmptyDatasetError(InvalidDatasetError):
+class InvalidDatasetError(HandledError):
     pass
 
 
-class ColumnMismatchError(InvalidDatasetError):
+class EmptyDatasetError(HandledError):
     pass
 
 
-class InvalidSchemaError(InvalidDatasetError):
+class ColumnMismatchError(HandledError):
     pass
 
 
-class MissingPathError(ValueError):
+class InvalidSchemaError(HandledError):
     pass
 
 
-class NotInstalledError(ImportError):
+class MissingPathError(HandledError):
     pass
 
 
-class SettingsError(ValueError):
+class NotInstalledError(HandledError):
     pass
 
 
-class UploadError(ValueError):
+class SettingsError(HandledError):
     pass
 
 
-class VersionError(ValueError):
+class UploadError(HandledError):
     pass
 
 
-class MissingAPIKeyError(ValueError):
+class VersionError(HandledError):
+    pass
+
+
+class MissingAPIKeyError(HandledError):
     pass
 
 
@@ -46,7 +50,7 @@ class APIError(Exception):
     pass
 
 
-class APITimeoutError(APIError):
+class APITimeoutError(HandledError):
     pass
 
 
@@ -60,19 +64,19 @@ class TlmBadRequest(APIError):
     pass
 
 
-class UnsupportedVersionError(APIError):
+class UnsupportedVersionError(HandledError):
     def __init__(self) -> None:
         super().__init__(
             "cleanlab-studio is out of date and must be upgraded. Run 'pip install --upgrade cleanlab-studio'."
         )
 
 
-class AuthError(APIError):
+class AuthError(HandledError):
     def __init__(self) -> None:
         super().__init__("invalid API key")
 
 
-class InternalError(Exception):
+class InternalError(HandledError):
     pass
 
 
