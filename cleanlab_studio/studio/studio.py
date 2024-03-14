@@ -199,9 +199,16 @@ class Studio:
         dataset_details = api.get_dataset_details(self._api_key, dataset_id, task_type)
 
         if label_column is not None:
-            if label_column not in dataset_details["label_columns"]:
+            if label_column not in dataset_details["label_columns"] and task_type != "regression":
                 raise InvalidDatasetError(
                     f"Invalid label column: {label_column}. Label column must have categorical feature type"
+                )
+            if (
+                label_column not in dataset_details["possible_numeric_columns"]
+                and task_type == "regression"
+            ):
+                raise InvalidDatasetError(
+                    f"Invalid target column: {label_column}. Regression target column must have numerical feature type"
                 )
         elif task_type is not None and task_type != "unsupervised":
             label_column = str(dataset_details["label_column_guess"])
