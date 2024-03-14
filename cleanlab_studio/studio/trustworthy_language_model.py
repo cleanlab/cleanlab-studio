@@ -188,7 +188,7 @@ class TLM:
             capture_exceptions (bool): if should return None in place of the response for any errors or timeout processing some inputs
 
         Returns:
-            Union[List[float], List[Optional[float]]: TLM confidence score for each prompt (in supplied order)
+            Union[BatchGetTrustworthinessScoreResponse, TryBatchGetTrustworthinessScoreResponse]: TLM confidence score for each prompt (in supplied order)
         """
         if capture_exceptions:
             per_query_timeout, per_batch_timeout = self._timeout, None
@@ -226,7 +226,7 @@ class TLM:
             batch_timeout (Optional[float], optional): timeout (in seconds) to run all queries, defaults to None (no timeout)
 
         Returns:
-            Union[List[TLMResponse], List[float], List[None]]: list of coroutine results, with preserved order
+            Sequence[Union[TLMResponse, float, None]]: list of coroutine results, with preserved order
         """
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
 
@@ -257,14 +257,14 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         /,
-    ) -> Union[TLMResponse, List[TLMResponse]]:
+    ) -> Union[TLMResponse, BatchPromptResponse]:
         """
         Get response and trustworthiness score from TLM.
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
         Returns:
-            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
+            TLMResponse | BatchPromptResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                     If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
         """
         validate_tlm_prompt(prompt)
@@ -288,7 +288,7 @@ class TLM:
         self,
         prompt: Sequence[str],
         /,
-    ) -> List[Optional[TLMResponse]]:
+    ) -> TryBatchPromptResponse:
         """
         Get response and trustworthiness score from TLM.
         The list returned will have the same length as the input list, if there are any
@@ -298,7 +298,7 @@ class TLM:
         Args:
             prompt (Sequence[str]): list of multiple prompts for the TLM
         Returns:
-            List[Optional[TLMResponse]]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
+            TryBatchPromptResponse: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
                 Entries of the list will be None for prompts that fail (due to any errors or timeout).
         """
         validate_tlm_try_prompt(prompt)
@@ -314,14 +314,14 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         /,
-    ) -> Union[TLMResponse, List[TLMResponse]]:
+    ) -> Union[TLMResponse, BatchPromptResponse]:
         """
         (Asynchronously) Get response and trustworthiness score from TLM.
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
         Returns:
-            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
+            TLMResponse | BatchPromptResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                     If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
         """
         validate_tlm_prompt(prompt)
@@ -350,7 +350,9 @@ class TLM:
 
         Args:
             prompt (str): prompt for the TLM
-            # TODO -- document parameters
+            client_session (aiohttp.ClientSession, optional): async HTTP session to use for TLM query. Defaults to None (creates a new session).
+            timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
+            capture_exceptions: if should return None in place of the response for any errors
         Returns:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score
         """
@@ -382,7 +384,7 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
-    ) -> Union[float, List[float]]:
+    ) -> Union[float, BatchGetTrustworthinessScoreResponse]:
         """Gets trustworthiness score for prompt-response pair(s).
         The list returned will have the same length as the input list, if there are any
         failures (errors or timeout) processing some inputs, the list will contain None
@@ -409,7 +411,7 @@ class TLM:
             )
 
         return cast(
-            List[float],
+            BatchGetTrustworthinessScoreResponse,
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=False)
             ),
@@ -419,7 +421,7 @@ class TLM:
         self,
         prompt: Sequence[str],
         response: Sequence[str],
-    ) -> List[Optional[float]]:
+    ) -> TryBatchGetTrustworthinessScoreResponse:
         """Gets trustworthiness score for prompt-response pair(s).
 
         Args:
@@ -432,7 +434,7 @@ class TLM:
         validate_try_tlm_prompt_response(prompt, response)
 
         return cast(
-            List[Optional[float]],
+            TryBatchGetTrustworthinessScoreResponse,
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=True)
             ),
@@ -442,7 +444,7 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
-    ) -> Union[float, List[float]]:
+    ) -> Union[float, BatchGetTrustworthinessScoreResponse]:
         """(Asynchronously) gets trustworthiness score for prompt-response pair.
 
         Args:
@@ -462,7 +464,7 @@ class TLM:
                 return cast(float, trustworthiness_score)
 
             return cast(
-                List[float],
+                BatchGetTrustworthinessScoreResponse,
                 await self._batch_get_trustworthiness_score(
                     prompt, response, capture_exceptions=False
                 ),
