@@ -29,6 +29,8 @@ jobs:
           pip install -r tests/requirements_test.txt
       - name: Install Cleanlab Studio client
         run: pip install -e .
+      - name: Cleanlab login
+        run: cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
           pytest --verbose
