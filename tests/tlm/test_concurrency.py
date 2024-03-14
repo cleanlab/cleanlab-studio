@@ -98,13 +98,13 @@ async def test_rate_handler_rate_limit_error(
         async with tlm_rate_handler:
             raise RateLimitError("", 0)
 
-        assert (
-            tlm_rate_handler._congestion_window
-            == initial_congestion_window // tlm_rate_handler.MULTIPLICATIVE_DECREASE_FACTOR
-        ), "Congestion window is not decreased multiplicatively in congestion avoidance"
-        assert (
-            tlm_rate_handler._send_semaphore._value == tlm_rate_handler._congestion_window
-        ), "Send semaphore value does not match congestion window in congestion avoidance"
+    assert (
+        tlm_rate_handler._congestion_window
+        == initial_congestion_window // tlm_rate_handler.MULTIPLICATIVE_DECREASE_FACTOR
+    ), "Congestion window is not decreased multiplicatively in congestion avoidance"
+    assert (
+        tlm_rate_handler._send_semaphore._value == tlm_rate_handler._congestion_window
+    ), "Send semaphore value does not match congestion window in congestion avoidance"
 
 
 @pytest.mark.parametrize("initial_congestion_window", [4, 5, 10, 101])
@@ -132,9 +132,9 @@ async def test_rate_handler_non_rate_limit_error(
         async with tlm_rate_handler:
             raise ValueError
 
-        assert (
-            tlm_rate_handler._congestion_window == initial_congestion_window
-        ), "Congestion window is kept same for non rate limit error"
-        assert (
-            tlm_rate_handler._send_semaphore._value == tlm_rate_handler._congestion_window
-        ), "Send semaphore value does not match congestion window after non rate limit error"
+    assert (
+        tlm_rate_handler._congestion_window == initial_congestion_window
+    ), "Congestion window is kept same for non rate limit error"
+    assert (
+        tlm_rate_handler._send_semaphore._value == tlm_rate_handler._congestion_window
+    ), "Send semaphore value does not match congestion window after non rate limit error"
