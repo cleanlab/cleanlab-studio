@@ -1,12 +1,11 @@
 import asyncio
-import contextlib
 from types import TracebackType
 from typing import Optional, Type
 
 from cleanlab_studio.errors import RateLimitError
 
 
-class TlmRateHandler(contextlib.AbstractAsyncContextManager):
+class TlmRateHandler:
     """Concurrency handler for TLM queries.
 
     Implements additive increase / multiplicative decrease congestion control algorithm.
@@ -31,7 +30,7 @@ class TlmRateHandler(contextlib.AbstractAsyncContextManager):
         # create send semaphore and seed w/ initial congestion window
         self._send_semaphore = asyncio.Semaphore(value=self._congestion_window)
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Acquires send semaphore, blocking until it can be acquired."""
         await self._send_semaphore.acquire()
         return
