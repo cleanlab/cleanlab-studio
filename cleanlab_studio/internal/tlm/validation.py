@@ -1,3 +1,4 @@
+import os
 from typing import Union, Sequence, Any
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.constants import (
@@ -6,6 +7,9 @@ from cleanlab_studio.internal.constants import (
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
 )
+
+
+SKIP_VALIDATE_TLM_OPTIONS = os.environ.get("CLEANLAB_STUDIO_SKIP_VALIDATE_TLM_OPTIONS", False)
 
 
 def validate_tlm_prompt(prompt: Union[str, Sequence[str]]) -> None:
@@ -106,6 +110,9 @@ def validate_try_tlm_prompt_response(prompt: Sequence[str], response: Sequence[s
 
 def validate_tlm_options(options: Any) -> None:
     from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
+
+    if SKIP_VALIDATE_TLM_OPTIONS:
+        return
 
     if not isinstance(options, dict):
         raise ValidationError(
