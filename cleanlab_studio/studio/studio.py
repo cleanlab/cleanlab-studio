@@ -73,7 +73,7 @@ class Studio:
         Args:
             dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas, snowflake, or pyspark DataFrame.
             dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath).
-            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-overrides).
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
             modality: [DEPRECATED] Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
             id_column: [DEPRECATED] Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated.
 
