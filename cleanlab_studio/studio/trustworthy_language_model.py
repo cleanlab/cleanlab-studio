@@ -246,7 +246,10 @@ class TLM:
 
         wait_task = asyncio.wait_for(gather_task, timeout=batch_timeout)
         try:
-            return await wait_task
+            return cast(
+                Sequence[Union[TLMResponse, float, None]],
+                await wait_task,
+            )
         except Exception:
             # if exception occurs while awaiting batch results, cancel remaining tasks
             for query_task in tlm_query_tasks:
