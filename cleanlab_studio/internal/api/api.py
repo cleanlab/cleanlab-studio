@@ -4,7 +4,7 @@ import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
 
-from cleanlab_studio.errors import APIError, RateLimitError, TlmBadRequest
+from cleanlab_studio.errors import APIError, RateLimitError, TlmBadRequest, TlmServerError
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 
 import aiohttp
@@ -85,9 +85,21 @@ async def handle_tlm_client_error_from_resp(resp: aiohttp.ClientResponse) -> Non
             res_json = await resp.json()
             error_message = res_json["error"]
         except Exception:
-            error_message = "Client error occurred."
+            error_message = "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
 
         raise TlmBadRequest(error_message)
+
+
+async def handle_tlm_api_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+    """Catches 5XX (server error) errors."""
+    if 500 <= resp.status < 600:
+        try:
+            res_json = await resp.json()
+            error_message = res_json["error"]
+        except Exception:
+            error_message = "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
+
+        raise TlmServerError(error_message)
 
 
 def validate_api_key(api_key: str) -> bool:
@@ -545,7 +557,7 @@ async def tlm_prompt(
 
         handle_rate_limit_error_from_resp(res)
         await handle_tlm_client_error_from_resp(res)
-        handle_api_error_from_json(res_json)
+        await handle_tlm_api_error_from_resp(res_json)
 
     finally:
         if local_scoped_client:
@@ -600,7 +612,7 @@ async def tlm_get_confidence_score(
 
         handle_rate_limit_error_from_resp(res)
         await handle_tlm_client_error_from_resp(res)
-        handle_api_error_from_json(res_json)
+        await handle_tlm_api_error_from_resp(res_json)
 
     finally:
         if local_scoped_client:

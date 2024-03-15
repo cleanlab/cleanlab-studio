@@ -64,6 +64,10 @@ class TlmBadRequest(APIError):
     pass
 
 
+class TlmServerError(APIError):
+    pass
+
+
 class UnsupportedVersionError(APIError):
     def __init__(self) -> None:
         super().__init__(
