@@ -17,15 +17,13 @@ from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
-    check_none,
-    check_not_none,
     telemetry,
     apply_corrections_snowpark_df,
     apply_corrections_spark_df,
     apply_corrections_pd_df,
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
-from cleanlab_studio.internal.types import FieldSchemaDict, TLMQualityPreset
+from cleanlab_studio.internal.types import SchemaOverride, TLMQualityPreset
 from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
 
 _snowflake_exists = api.snowflake_exists
@@ -66,9 +64,8 @@ class Studio:
         dataset: Any,
         dataset_name: Optional[str] = None,
         *,
-        schema_overrides: Optional[FieldSchemaDict] = None,
-        modality: Optional[str] = None,
-        id_column: Optional[str] = None,
+        schema_overrides: Optional[List[SchemaOverride]] = None,
+        **kwargs: Any,
     ) -> str:
         """
         Uploads a dataset to Cleanlab Studio.
@@ -76,20 +73,37 @@ class Studio:
         Args:
             dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas, snowflake, or pyspark DataFrame.
             dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath).
-            schema_overrides: Optional dictionary of overrides you would like to make to the schema of your dataset. If not provided, schema will be inferred. Format defined [here](/guide/concepts/datasets/#schema-overrides).
-            modality: Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
-            id_column: Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated.
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+            modality: [DEPRECATED] Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
+            id_column: [DEPRECATED] Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated.
 
         Returns:
             ID of uploaded dataset.
         """
         ds = init_dataset_source(dataset, dataset_name)
+        if kwargs.get("modality") is not None:
+            warnings.warn(
+                "Ignoring `modality` parameter which is deprecated and will be removed in a future release.",
+                FutureWarning,
+            )
+        if kwargs.get("id_column") is not None:
+            warnings.warn(
+                "Ignoring `id_column` parameter which is deprecated and will be removed in a future release.",
+                FutureWarning,
+            )
+
+        if isinstance(schema_overrides, dict):
+            # TODO: link to documentation for schema override format
+            schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
+            warnings.warn(
+                "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
+                FutureWarning,
+            )
+
         return upload_helpers.upload_dataset(
             self._api_key,
             ds,
             schema_overrides=schema_overrides,
-            modality=modality,
-            id_column=id_column,
         )
 
     def download_cleanlab_columns(

@@ -1,27 +1,20 @@
-import json
 import pathlib
-from typing import Optional
+from typing import cast, List, Optional
 import os
 
-from cleanlab_studio.internal.upload_helpers import (
-    get_ingestion_result,
-    get_proposed_schema,
-    upload_dataset_file,
-)
+from cleanlab_studio.internal.types import SchemaOverride
+from cleanlab_studio.internal.upload_helpers import upload_dataset
 
 import click
 
 from cleanlab_studio.cli import click_helpers
-from cleanlab_studio.cli.click_helpers import abort, info, log
+from cleanlab_studio.cli.click_helpers import abort
 from cleanlab_studio.cli.dataset.schema_helpers import (
-    load_schema,
-    save_schema,
+    load_schema_overrides,
 )
 from cleanlab_studio.cli.decorators import auth_config
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
-from cleanlab_studio.internal import api
 from cleanlab_studio.internal.dataset_source import FilepathDatasetSource
-from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.internal.util import telemetry
 
 
@@ -53,45 +46,17 @@ def upload(
         abort(f"cannot upload '{filepath}': no such file or directory")
 
     dataset_source = FilepathDatasetSource(filepath=pathlib.Path(filepath))
-    upload_id = upload_dataset_file(api_key, dataset_source)
 
-    schema: Optional[JSONDict]
+    schema_overrides = None
+    if schema_path:
+        schema_overrides = load_schema_overrides(schema_path)
 
-    # Check if uploading with schema
-    if schema_path is not None:
-        schema = load_schema(schema_path)
-        proceed_upload = True
+    dataset_id = upload_dataset(
+        api_key,
+        dataset_source,
+        schema_overrides=schema_overrides,
+    )
 
-    ### Propose schema
-    else:
-        schema = get_proposed_schema(api_key, upload_id)
-        proceed_upload = None
-        if schema is None or schema.get("immutable", False):
-            proceed_upload = True
-        else:
-            log(json.dumps(schema, indent=2))
-            info(f"No schema was provided. We propose the above schema based on your dataset.")
-
-            proceed_upload = click.confirm("\nUse this schema?", default=True)
-            if not proceed_upload:
-                info(
-                    "Proposed schema rejected. Please submit your own schema using --schema.\n",
-                )
-
-            save_filepath = click_helpers.confirm_save_prompt_filepath(
-                save_message="Save the generated schema?",
-                save_default=None,
-                prompt_message="Specify a filename for the schema. Leave this blank to use default",
-                prompt_default="schema.json",
-                no_save_message="Schema was not saved.",
-            )
-            if save_filepath:
-                save_schema(schema, save_filepath)
-
-    if proceed_upload or schema is None:
-        api.confirm_schema(api_key, schema, upload_id)
-        dataset_id = get_ingestion_result(api_key, upload_id)
-        log(f"Successfully uploaded dataset with ID: {dataset_id}")
-        click_helpers.success(
-            "Upload completed. View your uploaded dataset at https://app.cleanlab.ai"
-        )
+    click_helpers.success(
+        f"Upload completed (dataset ID = {dataset_id}). View your uploaded dataset at https://app.cleanlab.ai"
+    )
