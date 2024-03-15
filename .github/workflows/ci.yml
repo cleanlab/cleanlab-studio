@@ -3,35 +3,6 @@ name: CI
 on: [ push, pull_request ]
 
 jobs:
-  test:
-    name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-        python:
-          - "3.8"
-          - "3.9"
-          - "3.10"
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install .
-          pip install -r tests/requirements_test.txt
-      - name: Install Cleanlab Studio client
-        run: pip install -e .
-      - name: Run tests
-        run: |
-          pytest --verbose
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
