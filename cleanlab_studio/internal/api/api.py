@@ -99,7 +99,7 @@ async def handle_tlm_api_error_from_resp(resp: aiohttp.ClientResponse) -> None:
         except Exception:
             error_message = "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
 
-        raise TlmServerError(error_message)
+        raise TlmServerError(error_message, resp.status)
 
 
 def validate_api_key(api_key: str) -> bool:
