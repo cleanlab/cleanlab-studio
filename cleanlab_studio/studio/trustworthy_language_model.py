@@ -271,6 +271,9 @@ class TLM:
             for query_task in tlm_query_tasks:
                 query_task.cancel()
 
+            # await remaining tasks to ensure they are cancelled
+            await asyncio.gather(*tlm_query_tasks, return_exceptions=True)
+
             raise
 
     def prompt(
