@@ -384,9 +384,6 @@ class Studio:
         """Gets Trustworthy Language Model (TLM) object to prompt.
 
         Args:
-            api_key (str): API key used to authenticate TLM client.
-            Cleanlab Studio API keys can be obtained on the [Account](app.cleanlab.ai/account?tab=General) page.
-
             quality_preset (TLMQualityPreset): quality preset to use for TLM queries, which will determine the quality of the output responses and trustworthiness scores.
             Supported presets include "best", "high", "medium", "low", "base".
             The "best" and "high" presets will improve the LLM responses themselves, with "best" also returning the most reliable trustworthiness scores.
@@ -395,12 +392,12 @@ class Studio:
             The "base" preset will not return any confidence score, just a standard LLM output response, this option is similar to using your favorite LLM API.
 
             options (TLMOptions, optional): a typed dictionary of options to pass to prompt method, defaults to None.
-            For available options, see the documentation for [TLMOptions](#class-tlmoptions).
+            Options that can be passed in include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
+            For more details about the options, see the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
 
             timeout (float, optional): timeout (in seconds) to run all prompts, defaults to None which does not apply a timeout.
 
-            verbose (bool, optional): verbosity level for TLM queries, defaults to True which will print progress bars for TLM queries.
-            For silent TLM progress, set to False.
+            verbose (bool, optional): verbosity level for TLM queries. For silent TLM progress, set to False.
 
         Returns:
             TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
