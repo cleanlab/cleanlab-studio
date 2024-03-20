@@ -133,7 +133,7 @@ class TLM:
             raise ValidationError("timeout must be a integer or float value")
 
         if verbose is not None and not isinstance(verbose, bool):
-            raise ValidationError("timeout must be a boolean value")
+            raise ValidationError("verbose must be a boolean value")
 
         is_notebook_flag = is_notebook()
 
@@ -176,9 +176,12 @@ class TLM:
         tlm_responses = await self._batch_async(
             [
                 self._prompt_async(
-                    prompt, timeout=per_query_timeout, capture_exceptions=capture_exceptions
+                    prompt,
+                    timeout=per_query_timeout,
+                    capture_exceptions=capture_exceptions,
+                    batch_index=batch_index,
                 )
-                for prompt in prompts
+                for batch_index, prompt in enumerate(prompts)
             ],
             per_batch_timeout,
         )
@@ -225,8 +228,9 @@ class TLM:
                     response,
                     timeout=per_query_timeout,
                     capture_exceptions=capture_exceptions,
+                    batch_index=batch_index,
                 )
-                for prompt, response in zip(prompts, responses)
+                for batch_index, (prompt, response) in enumerate(zip(prompts, responses))
             ],
             per_batch_timeout,
         )
@@ -385,6 +389,7 @@ class TLM:
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,
+        batch_index: Optional[int] = None,
     ) -> Optional[TLMResponse]:
         """
         Private asynchronous method to get response and trustworthiness score from TLM.
@@ -394,6 +399,7 @@ class TLM:
             client_session (aiohttp.ClientSession, optional): async HTTP session to use for TLM query. Defaults to None (creates a new session).
             timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
             capture_exceptions: if should return None in place of the response for any errors
+            batch_index: index of the prompt in the batch, used for error messages
         Returns:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
         """
@@ -407,6 +413,7 @@ class TLM:
                     self._options,
                     self._rate_handler,
                     client_session,
+                    batch_index=batch_index,
                     retries=_TLM_MAX_RETRIES,
                 ),
                 timeout=timeout,
@@ -532,6 +539,7 @@ class TLM:
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,
+        batch_index: Optional[int] = None,
     ) -> Optional[float]:
         """Private asynchronous method to get trustworthiness score for prompt-response pairs.
 
@@ -541,6 +549,7 @@ class TLM:
             client_session: async HTTP session to use for TLM query. Defaults to None.
             timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
             capture_exceptions: if should return None in place of the response for any errors
+            batch_index: index of the prompt in the batch, used for error messages
         Returns:
             float corresponding to the TLM's trustworthiness score
 
@@ -560,6 +569,7 @@ class TLM:
                     self._options,
                     self._rate_handler,
                     client_session,
+                    batch_index=batch_index,
                     retries=_TLM_MAX_RETRIES,
                 ),
                 timeout=timeout,

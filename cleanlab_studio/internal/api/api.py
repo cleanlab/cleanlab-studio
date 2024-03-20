@@ -78,7 +78,9 @@ def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
         )
 
 
-async def handle_tlm_client_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+async def handle_tlm_client_error_from_resp(
+    resp: aiohttp.ClientResponse, batch_index: Optional[int]
+) -> None:
     """Catches 4XX (client error) errors."""
     if 400 <= resp.status < 500:
         try:
@@ -87,10 +89,15 @@ async def handle_tlm_client_error_from_resp(resp: aiohttp.ClientResponse) -> Non
         except Exception:
             error_message = "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
 
+        if batch_index is not None:
+            error_message = f"Error executing query at index {batch_index}:\n{error_message}"
+
         raise TlmBadRequest(error_message)
 
 
-async def handle_tlm_api_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+async def handle_tlm_api_error_from_resp(
+    resp: aiohttp.ClientResponse, batch_index: Optional[int]
+) -> None:
     """Catches 5XX (server error) errors."""
     if 500 <= resp.status < 600:
         try:
@@ -98,6 +105,9 @@ async def handle_tlm_api_error_from_resp(resp: aiohttp.ClientResponse) -> None:
             error_message = res_json["error"]
         except Exception:
             error_message = "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
+
+        if batch_index is not None:
+            error_message = f"Error executing query at index {batch_index}:\n{error_message}"
 
         raise TlmServerError(error_message, resp.status)
 
@@ -526,6 +536,7 @@ async def tlm_prompt(
     options: Optional[JSONDict],
     rate_handler: TlmRateHandler,
     client_session: Optional[aiohttp.ClientSession] = None,
+    batch_index: Optional[int] = None,
 ) -> JSONDict:
     """
     Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
@@ -537,6 +548,7 @@ async def tlm_prompt(
         options (JSONDict): additional parameters for TLM
         rate_handler (TlmRateHandler): concurrency handler used to manage TLM request rate
         client_session (aiohttp.ClientSession): client session used to issue TLM request
+        batch_index (Optional[int], optional): index of prompt in batch, used for error messages. Defaults to None if not in batch.
 
     Returns:
         JSONDict: dictionary with TLM response and confidence score
@@ -557,8 +569,8 @@ async def tlm_prompt(
             res_json = await res.json()
 
         handle_rate_limit_error_from_resp(res)
-        await handle_tlm_client_error_from_resp(res)
-        await handle_tlm_api_error_from_resp(res)
+        await handle_tlm_client_error_from_resp(res, batch_index)
+        await handle_tlm_api_error_from_resp(res, batch_index)
 
     finally:
         if local_scoped_client:
@@ -576,6 +588,7 @@ async def tlm_get_confidence_score(
     options: Optional[JSONDict],
     rate_handler: TlmRateHandler,
     client_session: Optional[aiohttp.ClientSession] = None,
+    batch_index: Optional[int] = None,
 ) -> JSONDict:
     """
     Query Trustworthy Language Model for a confidence score for the prompt-response pair.
@@ -588,6 +601,7 @@ async def tlm_get_confidence_score(
         options (JSONDict): additional parameters for TLM
         rate_handler (TlmRateHandler): concurrency handler used to manage TLM request rate
         client_session (aiohttp.ClientSession): client session used to issue TLM request
+        batch_index (Optional[int], optional): index of prompt in batch, used for error messages. Defaults to None if not in batch.
 
     Returns:
         JSONDict: dictionary with TLM confidence score
@@ -610,8 +624,8 @@ async def tlm_get_confidence_score(
             res_json = await res.json()
 
         handle_rate_limit_error_from_resp(res)
-        await handle_tlm_client_error_from_resp(res)
-        await handle_tlm_api_error_from_resp(res)
+        await handle_tlm_client_error_from_resp(res, batch_index)
+        await handle_tlm_api_error_from_resp(res, batch_index)
 
     finally:
         if local_scoped_client:
