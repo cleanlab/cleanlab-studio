@@ -1,7 +1,7 @@
 import asyncio
 import functools
 import json
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from tqdm import tqdm
 
 import aiohttp
@@ -11,43 +11,26 @@ from requests.adapters import HTTPAdapter, Retry
 
 from .api import api
 from .dataset_source import DatasetSource
-from .types import FieldSchemaDict, JSONDict
+from .types import JSONDict, SchemaOverride
+from cleanlab_studio.errors import InvalidSchemaTypeError
 
 
 def upload_dataset(
     api_key: str,
     dataset_source: DatasetSource,
     *,
-    schema_overrides: Optional[FieldSchemaDict] = None,
-    modality: Optional[str] = None,
-    id_column: Optional[str] = None,
+    schema_overrides: Optional[List[SchemaOverride]] = None,
 ) -> str:
+    # perform file upload
     upload_id = upload_dataset_file(api_key, dataset_source)
-    schema = get_proposed_schema(api_key, upload_id)
 
-    if (schema is None or schema.get("immutable", False)) and (
-        schema_overrides is not None or modality is not None or id_column is not None
-    ):
-        raise ValueError(
-            "Schema_overrides, modality, and id_column parameters cannot be provided for simple zip uploads"
-        )
+    # confirm upload (and kick off processing)
+    api.confirm_upload(api_key, upload_id, schema_overrides)
 
-    if schema is not None and not schema.get("immutable", False):
-        schema["metadata"]["name"] = dataset_source.dataset_name
-        if schema_overrides is not None:
-            for field in schema_overrides:
-                schema["fields"][field] = schema_overrides[field]
-        if modality is not None:
-            schema["metadata"]["modality"] = modality
-        if id_column is not None:
-            if id_column not in schema["fields"]:
-                raise ValueError(
-                    f"ID column {id_column} not found in dataset columns: {list(schema['fields'].keys())}"
-                )
-            schema["metadata"]["id_column"] = id_column
+    # wait for dataset upload
+    dataset_id = api.poll_ingestion_progress(api_key, upload_id, "Ingesting Dataset...")
 
-    api.confirm_schema(api_key, schema, upload_id)
-    dataset_id = get_ingestion_result(api_key, upload_id)
+    # return dataset id
     return dataset_id
 
 
@@ -116,16 +99,6 @@ def upload_dataset_file(api_key: str, dataset_source: DatasetSource) -> str:
     return upload_id
 
 
-def get_proposed_schema(api_key: str, upload_id: str) -> Optional[JSONDict]:
-    res = api.poll_progress(
-        upload_id,
-        functools.partial(api.get_proposed_schema, api_key),
-        "Generating schema...",
-    )
-    schema = res.get("schema")
-    return schema
-
-
 def get_ingestion_result(
     api_key: str,
     upload_id: str,
@@ -137,3 +110,73 @@ def get_ingestion_result(
     )
     res = api.get_dataset_id(api_key, upload_id)
     return str(res["dataset_id"])
+
+
+def convert_schema_overrides(schema_overrides: Dict[str, Dict[str, Any]]) -> List[SchemaOverride]:
+    return [
+        SchemaOverride(
+            name=col,
+            column_type=_old_schema_to_column_type(
+                old_schema["data_type"], old_schema["feature_type"]
+            ),
+        )
+        for col, old_schema in schema_overrides.items()
+    ]
+
+
+def _old_schema_to_column_type(data_type: str, feature_type: str) -> str:
+    if data_type == "string":
+        return _string_data_type_to_column_type(data_type, feature_type)
+    if data_type == "integer":
+        return _integer_data_type_to_column_type(data_type, feature_type)
+    if data_type == "float":
+        return _float_data_type_to_column_type(data_type, feature_type)
+    if data_type == "boolean":
+        return _boolean_data_type_to_column_type(data_type, feature_type)
+    raise InvalidSchemaTypeError(f"Unsupported data type: {data_type}.")
+
+
+def _string_data_type_to_column_type(data_type: str, feature_type: str) -> str:
+    if feature_type in ["text", "categorical"]:
+        return "string"
+    if feature_type == "image":
+        return "image_external"
+    if feature_type in ["datetime", "identifier"]:
+        raise InvalidSchemaTypeError(
+            f"Cannot convert old schema feature type '{feature_type}' to new schema type."
+        )
+    raise InvalidSchemaTypeError(
+        f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
+    )
+
+
+def _integer_data_type_to_column_type(data_type: str, feature_type: str) -> str:
+    if feature_type in ["categorical", "numeric"]:
+        return "integer"
+    if feature_type in ["datetime", "identifier"]:
+        raise InvalidSchemaTypeError(
+            f"Cannot convert old schema feature type '{feature_type}' to new schema type."
+        )
+    raise InvalidSchemaTypeError(
+        f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
+    )
+
+
+def _float_data_type_to_column_type(data_type: str, feature_type: str) -> str:
+    if feature_type == "numeric":
+        return "float"
+    if feature_type == "datetime":
+        raise InvalidSchemaTypeError(
+            f"Cannot convert old schema feature type '{feature_type}' to new schema type."
+        )
+    raise InvalidSchemaTypeError(
+        f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
+    )
+
+
+def _boolean_data_type_to_column_type(data_type: str, feature_type: str) -> str:
+    if feature_type == "boolean":
+        return "boolean"
+    raise InvalidSchemaTypeError(
+        f"Unsupported data type, feature type combination: {data_type}, {feature_type}."
+    )

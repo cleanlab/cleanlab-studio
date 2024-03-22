@@ -1,36 +1,36 @@
-class InvalidUUIDError(ValueError):
+class HandledError(Exception):
     pass
 
 
-class InvalidDatasetError(ValueError):
+class InvalidUUIDError(HandledError):
     pass
 
 
-class EmptyDatasetError(InvalidDatasetError):
+class InvalidDatasetError(HandledError):
     pass
 
 
-class ColumnMismatchError(InvalidDatasetError):
+class EmptyDatasetError(HandledError):
     pass
 
 
-class InvalidSchemaError(InvalidDatasetError):
+class ColumnMismatchError(HandledError):
     pass
 
 
-class MissingPathError(ValueError):
+class InvalidSchemaError(HandledError):
     pass
 
 
-class NotInstalledError(ImportError):
+class MissingPathError(HandledError):
     pass
 
 
-class SettingsError(ValueError):
+class NotInstalledError(HandledError):
     pass
 
 
-class UploadError(ValueError):
+class SettingsError(HandledError):
     pass
 
 
@@ -38,11 +38,15 @@ class ValidationError(ValueError):
     pass
 
 
-class VersionError(ValueError):
+class UploadError(HandledError):
     pass
 
 
-class MissingAPIKeyError(ValueError):
+class VersionError(HandledError):
+    pass
+
+
+class MissingAPIKeyError(HandledError):
     pass
 
 
@@ -50,17 +54,26 @@ class APIError(Exception):
     pass
 
 
-class APITimeoutError(APIError):
+class IngestionError(APIError):
+    def __init__(self, error_type: str, message: str) -> None:
+        self.error_type = error_type
+        self.message = message
+
+    def __str__(self) -> str:
+        return f"{self.error_type}: {self.message}"
+
+
+class APITimeoutError(HandledError):
     pass
 
 
-class RateLimitError(APIError):
+class RateLimitError(HandledError):
     def __init__(self, message: str, retry_after: int):
         self.message = message
         self.retry_after = retry_after
 
 
-class TlmBadRequest(APIError):
+class TlmBadRequest(HandledError):
     pass
 
 
@@ -70,21 +83,29 @@ class TlmServerError(APIError):
         self.status_code = status_code
 
 
-class UnsupportedVersionError(APIError):
+class UnsupportedVersionError(HandledError):
     def __init__(self) -> None:
         super().__init__(
             "cleanlab-studio is out of date and must be upgraded. Run 'pip install --upgrade cleanlab-studio'."
         )
 
 
-class AuthError(APIError):
+class AuthError(HandledError):
     def __init__(self) -> None:
         super().__init__("invalid API key")
 
 
-class InternalError(Exception):
+class InternalError(HandledError):
     pass
 
 
 class CleansetError(InternalError):
     pass
+
+
+class InvalidSchemaTypeError(ValueError):
+    def __init__(self, msg: str) -> None:
+        self.msg = msg
+
+    def __str__(self) -> str:
+        return f"{self.msg}\nSee [TODO: insert docs] link for more information."
