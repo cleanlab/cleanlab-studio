@@ -1,3 +1,6 @@
+from asyncio import Handle
+
+
 class HandledError(Exception):
     pass
 
@@ -34,7 +37,7 @@ class SettingsError(HandledError):
     pass
 
 
-class ValidationError(ValueError):
+class ValidationError(HandledError):
     pass
 
 
