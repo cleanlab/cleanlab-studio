@@ -29,63 +29,6 @@ from cleanlab_studio.internal.constants import (
 )
 
 
-class TLMResponse(TypedDict):
-    """A typed dict containing the response and trustworthiness score from the Trustworthy Language Model.
-
-    Attributes:
-        response (str): text response from the Trustworthy Language Model
-        trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
-        A higher score indicates a higher confidence that the response is correct/trustworthy.
-    """
-
-    response: str
-    trustworthiness_score: Optional[float]
-
-
-class TLMOptions(TypedDict):
-    """Typed dict containing options for the Trustworthy Language Model.
-    Many of these arguments are automatically determined by the quality preset selected
-    (see the arguments in the TLM [initialization method](#method-__init__) to learn more about the various quality presets),
-    but specifying custom values here will override any default values from the quality preset.
-
-    Args:
-        model (str, default = "gpt-3.5-turbo-16k"): underlying LLM to use (better models will yield better results).
-        Models currently supported include "gpt-3.5-turbo-16k", "gpt-4".
-
-        max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
-        The minimum value for this parameter is 64, and the maximum is 512.
-
-        num_candidate_responses (int, default = 1): this controls how many candidate responses are internally generated.
-        TLM scores the trustworthiness of each candidate response, and then returns the most trustworthy one.
-        Higher values here can produce better (more accurate) responses from the TLM, but at higher costs/runtimes.
-        The minimum value for this parameter is 1, and the maximum is 20.
-
-        num_consistency_samples (int, default = 5): this controls how many samples are internally generated to evaluate the LLM-response-consistency.
-        This is a big part of the returned trustworthiness_score, in particular to evaluate strange input prompts or prompts that are too open-ended
-        to receive a clearly defined 'good' response.
-        Higher values here produce better (more reliable) TLM confidence scores, but at higher costs/runtimes.
-        The minimum value for this parameter is 0, and the maximum is 20.
-
-        use_self_reflection (bool, default = `True`): this controls whether self-reflection is used to have the LLM reflect upon the response it is
-        generating and explicitly self-evaluate the accuracy of that response.
-        This is a big part of the trustworthiness score, in particular for evaluating responses that are obviously incorrect/bad for a
-        standard prompt (with well-defined answers) that LLMs should be able to handle.
-        Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
-    """
-
-    model: NotRequired[str]
-    max_tokens: NotRequired[int]
-    num_candidate_responses: NotRequired[int]
-    num_consistency_samples: NotRequired[int]
-    use_self_reflection: NotRequired[bool]
-
-
-BatchPromptResponse = List[TLMResponse]
-TryBatchPromptResponse = List[Optional[TLMResponse]]
-BatchGetTrustworthinessScoreResponse = List[float]
-TryBatchGetTrustworthinessScoreResponse = List[Optional[float]]
-
-
 class TLM:
     """TLM interface class."""
 
@@ -581,6 +524,63 @@ class TLM:
             if capture_exceptions:
                 return None
             raise e
+
+
+class TLMResponse(TypedDict):
+    """A typed dict containing the response and trustworthiness score from the Trustworthy Language Model.
+
+    Attributes:
+        response (str): text response from the Trustworthy Language Model
+        trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
+        A higher score indicates a higher confidence that the response is correct/trustworthy.
+    """
+
+    response: str
+    trustworthiness_score: Optional[float]
+
+
+class TLMOptions(TypedDict):
+    """Typed dict containing options for the Trustworthy Language Model.
+    Many of these arguments are automatically determined by the quality preset selected
+    (see the arguments in the TLM [initialization method](#method-__init__) to learn more about the various quality presets),
+    but specifying custom values here will override any default values from the quality preset.
+
+    Args:
+        model (str, default = "gpt-3.5-turbo-16k"): underlying LLM to use (better models will yield better results).
+        Models currently supported include "gpt-3.5-turbo-16k", "gpt-4".
+
+        max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
+        The minimum value for this parameter is 64, and the maximum is 512.
+
+        num_candidate_responses (int, default = 1): this controls how many candidate responses are internally generated.
+        TLM scores the trustworthiness of each candidate response, and then returns the most trustworthy one.
+        Higher values here can produce better (more accurate) responses from the TLM, but at higher costs/runtimes.
+        The minimum value for this parameter is 1, and the maximum is 20.
+
+        num_consistency_samples (int, default = 5): this controls how many samples are internally generated to evaluate the LLM-response-consistency.
+        This is a big part of the returned trustworthiness_score, in particular to evaluate strange input prompts or prompts that are too open-ended
+        to receive a clearly defined 'good' response.
+        Higher values here produce better (more reliable) TLM confidence scores, but at higher costs/runtimes.
+        The minimum value for this parameter is 0, and the maximum is 20.
+
+        use_self_reflection (bool, default = `True`): this controls whether self-reflection is used to have the LLM reflect upon the response it is
+        generating and explicitly self-evaluate the accuracy of that response.
+        This is a big part of the trustworthiness score, in particular for evaluating responses that are obviously incorrect/bad for a
+        standard prompt (with well-defined answers) that LLMs should be able to handle.
+        Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
+    """
+
+    model: NotRequired[str]
+    max_tokens: NotRequired[int]
+    num_candidate_responses: NotRequired[int]
+    num_consistency_samples: NotRequired[int]
+    use_self_reflection: NotRequired[bool]
+
+
+BatchPromptResponse = List[TLMResponse]
+TryBatchPromptResponse = List[Optional[TLMResponse]]
+BatchGetTrustworthinessScoreResponse = List[float]
+TryBatchGetTrustworthinessScoreResponse = List[Optional[float]]
 
 
 def is_notebook() -> bool:
