@@ -608,9 +608,9 @@ async def tlm_prompt(
 
             res_json = await res.json()
 
-        handle_rate_limit_error_from_resp(res)
-        await handle_tlm_client_error_from_resp(res, batch_index)
-        await handle_tlm_api_error_from_resp(res, batch_index)
+            handle_rate_limit_error_from_resp(res)
+            await handle_tlm_client_error_from_resp(res, batch_index)
+            await handle_tlm_api_error_from_resp(res, batch_index)
 
     finally:
         if local_scoped_client:
@@ -663,9 +663,9 @@ async def tlm_get_confidence_score(
 
             res_json = await res.json()
 
-        handle_rate_limit_error_from_resp(res)
-        await handle_tlm_client_error_from_resp(res, batch_index)
-        await handle_tlm_api_error_from_resp(res, batch_index)
+            handle_rate_limit_error_from_resp(res)
+            await handle_tlm_client_error_from_resp(res, batch_index)
+            await handle_tlm_api_error_from_resp(res, batch_index)
 
     finally:
         if local_scoped_client:
