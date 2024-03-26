@@ -14,6 +14,7 @@ from cleanlab_studio.errors import (
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 
 import aiohttp
+import aiohttp.client_exceptions
 import requests
 from tqdm import tqdm
 import pandas as pd
@@ -552,6 +553,9 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
             await asyncio.sleep(sleep_time)
             try:
                 return await func(*args, **kwargs)
+            except aiohttp.client_exceptions.ClientConnectorError as e:
+                # note: we don't increment num_try here, because we don't want connection errors to count against the total number of retries
+                sleep_time = 2**num_try
             except RateLimitError as e:
                 # note: we don't increment num_try here, because we don't want rate limit retries to count against the total number of retries
                 sleep_time = e.retry_after
