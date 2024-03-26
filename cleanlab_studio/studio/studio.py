@@ -395,7 +395,11 @@ class Studio:
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
     ) -> trustworthy_language_model.TLM:
-        """Gets Trustworthy Language Model (TLM) object to prompt.
+        """Gets a configured instance of Trustworthy Language Model (TLM).
+
+        The returned TLM object can then be used as a drop-in replacement for an LLM, for estimating trustworthiness scores for LLM prompt/response pairs, and more. See the documentation for the [TLM](../trustworthy_language_model#class-TLM) class for more on what you can do with TLM.
+
+        For advanced use cases, TLM supports a number of configuration options. The documentation below summarizes the options, and the [TLM tutorial](/tutorials/tlm) explains the tradeoffs in more detail.
 
         Args:
             quality_preset (TLMQualityPreset): quality preset to use for TLM queries, which will determine the quality of the output responses and trustworthiness scores.
@@ -404,14 +408,15 @@ class Studio:
             The "medium" and "low" presets will return standard LLM responses along with associated confidence scores,
             with "medium" producing more reliable trustworthiness scores than low.
             The "base" preset will not return any confidence score, just a standard LLM output response, this option is similar to using your favorite LLM API.
+            Higher presets have increased runtime and cost.
 
-            options (TLMOptions, optional): a typed dictionary of options to pass to prompt method, defaults to None.
+            options (TLMOptions, optional): a typed dict of advanced configuration options.
             Options that can be passed in include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
             For more details about the options, see the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
 
-            timeout (float, optional): timeout (in seconds) to run all prompts, defaults to None which does not apply a timeout.
+            timeout (float, optional): timeout (in seconds) to apply to each method call. If a result is not produced within the timeout, a TimeoutError will be raised. Defaults to None, which does not apply a timeout.
 
-            verbose (bool, optional): verbosity level for TLM queries. For silent TLM progress, set to False.
+            verbose (bool, optional): whether to run in verbose mode, i.e., whether to show a tqdm progress bar when TLM is prompted with batches of data. If None, this will be determined automatically based on whether the code is running in an interactive environment such as a notebook.
 
         Returns:
             TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object

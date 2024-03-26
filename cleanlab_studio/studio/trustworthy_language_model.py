@@ -1,5 +1,9 @@
 """
-Cleanlab TLM is a Large Language Model that gives more reliable answers and quantifies its uncertainty in these answers
+Cleanlab's Trustworthy Language Model (TLM) is a large language model that gives more reliable answers and quantifies its uncertainty in these answers.
+
+**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLM()`](/reference/python/studio/#method-tlm) to instantiate a [TLM](#class-TLM) object, and then you can use the methods like [`prompt()`](#method-prompt) and [`get_trustworthiness_score()`](#method-get_trustworthiness_score) documented in this page.
+
+The [Trustworthy Language Model tutorial](/tutorials/tlm/) further explains TLM and its use cases.
 """
 
 from __future__ import annotations
@@ -30,7 +34,10 @@ from cleanlab_studio.internal.constants import (
 
 
 class TLM:
-    """TLM interface class."""
+    """Represents a Trustworthy Language Model (TLM) instance, bound to a Cleanlab Studio account.
+
+    TLM should be configured and instantiated using the [`Studio.TLM()`](../studio/#method-tlm) method. Then, using the TLM object, you can [`prompt()`](#method-prompt) the language model, etc.
+    """
 
     def __init__(
         self,
@@ -41,27 +48,9 @@ class TLM:
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
     ) -> None:
-        """Initializes TLM interface.
+        """Initializes a Trustworthy Language Model.
 
-        Args:
-            api_key (str): API key used to authenticate TLM client.
-            Cleanlab Studio API keys can be obtained on the [Account](app.cleanlab.ai/account?tab=General) page.
-
-            quality_preset (TLMQualityPreset): quality preset to use for TLM queries, which will determine the quality of the output responses and trustworthiness scores.
-            Supported presets include "best", "high", "medium", "low", "base".
-            The "best" and "high" presets will improve the LLM responses themselves, with "best" also returning the most reliable trustworthiness scores.
-            The "medium" and "low" presets will return standard LLM responses along with associated confidence scores,
-            with "medium" producing more reliable trustworthiness scores than low.
-            The "base" preset will not return any confidence score, just a standard LLM output response, this option is similar to using your favorite LLM API.
-
-            options (TLMOptions, optional): a typed dictionary of options to pass to prompt method, defaults to None.
-            Options that can be passed in include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
-            For more details about the options, see the documentation for [TLMOptions](#class-tlmoptions).
-
-            timeout (float, optional): timeout (in seconds) to run all prompts, defaults to None which does not apply a timeout.
-
-            verbose (bool, optional): verbosity level for TLM queries. For silent TLM progress, set to False.
-        """
+        **Objects of this class are not meant to be constructed directly.** Instead, use [`Studio.TLM()`](../studio/#method-tlm), whose documentation also explains the different configuration options."""
         self._api_key = api_key
 
         if quality_preset not in _VALID_TLM_QUALITY_PRESETS:
@@ -97,7 +86,7 @@ class TLM:
         self,
         prompts: Sequence[str],
         capture_exceptions: bool = False,
-    ) -> Union[BatchPromptResponse, TryBatchPromptResponse]:
+    ) -> Union[List[TLMResponse], List[Optional[TLMResponse]]]:
         """Run batch of TLM prompts. The list returned will have the same length as the input list.
 
         If capture_exceptions is True, the list will contain None in place of the response for any errors or timeout processing some inputs.
@@ -108,7 +97,7 @@ class TLM:
             capture_exceptions (bool): if should return None in place of the response for any errors or timeout processing some inputs
 
         Returns:
-            Union[BatchPromptResponse, TryBatchPromptResponse]: TLM responses for each prompt (in supplied order)
+            Union[List[TLMResponse], List[Optional[TLMResponse]]]: TLM responses for each prompt (in supplied order)
         """
         if capture_exceptions:
             per_query_timeout, per_batch_timeout = self._timeout, None
@@ -130,16 +119,16 @@ class TLM:
         )
 
         if capture_exceptions:
-            return cast(TryBatchPromptResponse, tlm_responses)
+            return cast(List[Optional[TLMResponse]], tlm_responses)
 
-        return cast(BatchPromptResponse, tlm_responses)
+        return cast(List[TLMResponse], tlm_responses)
 
     async def _batch_get_trustworthiness_score(
         self,
         prompts: Sequence[str],
         responses: Sequence[str],
         capture_exceptions: bool = False,
-    ) -> Union[BatchGetTrustworthinessScoreResponse, TryBatchGetTrustworthinessScoreResponse]:
+    ) -> Union[List[float], List[Optional[float]]]:
         """Run batch of TLM get confidence score.
 
         capture_exceptions behavior:
@@ -156,7 +145,7 @@ class TLM:
             capture_exceptions (bool): if should return None in place of the response for any errors or timeout processing some inputs
 
         Returns:
-            Union[BatchGetTrustworthinessScoreResponse, TryBatchGetTrustworthinessScoreResponse]: TLM confidence score for each prompt (in supplied order)
+            Union[List[float], List[Optional[float]]]: TLM confidence score for each prompt (in supplied order)
         """
         if capture_exceptions:
             per_query_timeout, per_batch_timeout = self._timeout, None
@@ -179,9 +168,9 @@ class TLM:
         )
 
         if capture_exceptions:
-            return cast(TryBatchGetTrustworthinessScoreResponse, tlm_responses)
+            return cast(List[Optional[float]], tlm_responses)
 
-        return cast(BatchGetTrustworthinessScoreResponse, tlm_responses)
+        return cast(List[float], tlm_responses)
 
     async def _batch_async(
         self,
@@ -229,19 +218,24 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         /,
-    ) -> Union[TLMResponse, BatchPromptResponse]:
+    ) -> Union[TLMResponse, List[TLMResponse]]:
         """
-        Get response and trustworthiness score for any text input from TLM.
+        Gets response and trustworthiness score for any text input.
+
+        This method prompts the TLM with the given prompt(s), producing completions (like a standard LLM)
+        but also provides trustworthiness scores quantifying the quality of the output.
 
         Args:
-            prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
+            prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the language model
         Returns:
-            TLMResponse | BatchPromptResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
+            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified),
                 and is suitable if strict error handling and immediate notification of any exceptions/timeouts is preferred.
                 However, you could lose any partial results if an exception is raised.
-                If saving partial results is important to you, check out the [try_prompt](#method-try_prompt) method instead.
+                If saving partial results is important to you, you can call this method on smaller chunks of data at a time
+                (and save intermediate results as desired); you can also consider using the more advanced
+                [`try_prompt()`](#method-try_prompt) method instead.
         """
         validate_tlm_prompt(prompt)
 
@@ -264,10 +258,10 @@ class TLM:
         self,
         prompt: Sequence[str],
         /,
-    ) -> TryBatchPromptResponse:
+    ) -> List[Optional[TLMResponse]]:
         """
-        Get response and trustworthiness score for any text input from TLM,
-        and handles any failures (errors of timeouts) by returning None in place of the failures.
+        Gets response and trustworthiness score for any text input,
+        handling any failures (errors of timeouts) by returning None in place of the failures.
 
         The list returned will have the same length as the input list, if there are any
         failures (errors or timeout) processing some inputs, the list will contain None in place of the response.
@@ -278,14 +272,14 @@ class TLM:
         Args:
             prompt (Sequence[str]): list of multiple prompts for the TLM
         Returns:
-            TryBatchPromptResponse: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
+            List[Optional[TLMResponse]]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
                 The returned list will always have the same length as the input list.
                 In case of failure on any prompt (due to timeouts or other erros),
                 the return list will contain None in place of the TLM response.
                 This method is suitable if you prioritize obtaining results for as many inputs as possible,
                 however you might miss out on certain error messages.
                 If you would prefer to be notified immediately about any errors or timeouts that might occur,
-                check out the [prompt](#method-prompt) method instead.
+                consider using the [`prompt()`](#method-prompt) method instead.
         """
         validate_tlm_try_prompt(prompt)
 
@@ -300,15 +294,15 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         /,
-    ) -> Union[TLMResponse, BatchPromptResponse]:
+    ) -> Union[TLMResponse, List[TLMResponse]]:
         """
         Asynchronously get response and trustworthiness score for any text input from TLM.
-        This method is similar to the [prompt](#method-prompt) method but operates asynchronously.
+        This method is similar to the [`prompt()`](#method-prompt) method but operates asynchronously.
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
         Returns:
-            TLMResponse | BatchPromptResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
+            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
@@ -375,7 +369,7 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
-    ) -> Union[float, BatchGetTrustworthinessScoreResponse]:
+    ) -> Union[float, List[float]]:
         """Gets trustworthiness score for prompt-response pairs.
 
         Args:
@@ -388,7 +382,9 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified),
                 and is suitable if strict error handling and immediate notification of any exceptions/timeouts is preferred.
                 However, you could lose any partial results if an exception is raised.
-                If saving partial results is important to you, check out the [try_get_trustworthiness_score](#method-try_get_trustworthiness_score) method instead.
+                If saving partial results is important to you, you can call this method on smaller chunks of data at a time
+                (and save intermediate results as desired); you can also consider using the more advanced
+                [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) method instead.
         """
         validate_tlm_prompt_response(prompt, response)
 
@@ -403,7 +399,7 @@ class TLM:
             )
 
         return cast(
-            BatchGetTrustworthinessScoreResponse,
+            List[float],
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=False)
             ),
@@ -413,7 +409,7 @@ class TLM:
         self,
         prompt: Sequence[str],
         response: Sequence[str],
-    ) -> TryBatchGetTrustworthinessScoreResponse:
+    ) -> List[Optional[float]]:
         """Gets trustworthiness score for prompt-response pairs.
         The list returned will have the same length as the input list, if there are any
         failures (errors or timeout) processing some inputs, the list will contain None
@@ -431,12 +427,12 @@ class TLM:
                 This method is suitable if you prioritize obtaining results for as many inputs as possible,
                 however you might miss out on certain error messages.
                 If you would prefer to be notified immediately about any errors or timeouts that might occur,
-                check out the [get_trustworthiness_score](#method-get_trustworthiness_score) method instead.
+                consider using the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
         validate_try_tlm_prompt_response(prompt, response)
 
         return cast(
-            TryBatchGetTrustworthinessScoreResponse,
+            List[Optional[float]],
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=True)
             ),
@@ -446,9 +442,9 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
-    ) -> Union[float, BatchGetTrustworthinessScoreResponse]:
+    ) -> Union[float, List[float]]:
         """Asynchronously gets trustworthiness score for prompt-response pairs.
-        This method is similar to the [get_trustworthiness_score](#method-get_trustworthiness_score) method but operates asynchronously.
+        This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously.
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
@@ -469,7 +465,7 @@ class TLM:
                 return cast(float, trustworthiness_score)
 
             return cast(
-                BatchGetTrustworthinessScoreResponse,
+                List[float],
                 await self._batch_get_trustworthiness_score(
                     prompt, response, capture_exceptions=False
                 ),
@@ -530,9 +526,11 @@ class TLMResponse(TypedDict):
     """A typed dict containing the response and trustworthiness score from the Trustworthy Language Model.
 
     Attributes:
-        response (str): text response from the Trustworthy Language Model
+        response (str): text response from the Trustworthy Language Model.
+
         trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
-        A higher score indicates a higher confidence that the response is correct/trustworthy.
+        A higher score indicates a higher confidence that the response is correct/trustworthy. The trustworthiness score
+        is omitted if TLM is run with quality preset "base".
     """
 
     response: str
@@ -540,9 +538,9 @@ class TLMResponse(TypedDict):
 
 
 class TLMOptions(TypedDict):
-    """Typed dict containing options for the Trustworthy Language Model.
+    """Typed dict containing advanced configuration options for the Trustworthy Language Model.
     Many of these arguments are automatically determined by the quality preset selected
-    (see the arguments in the TLM [initialization method](#method-__init__) to learn more about the various quality presets),
+    (see the arguments in the TLM [initialization method](../studio#method-tlm) to learn more about the various quality presets),
     but specifying custom values here will override any default values from the quality preset.
 
     Args:
@@ -575,12 +573,6 @@ class TLMOptions(TypedDict):
     num_candidate_responses: NotRequired[int]
     num_consistency_samples: NotRequired[int]
     use_self_reflection: NotRequired[bool]
-
-
-BatchPromptResponse = List[TLMResponse]
-TryBatchPromptResponse = List[Optional[TLMResponse]]
-BatchGetTrustworthinessScoreResponse = List[float]
-TryBatchGetTrustworthinessScoreResponse = List[Optional[float]]
 
 
 def is_notebook() -> bool:
