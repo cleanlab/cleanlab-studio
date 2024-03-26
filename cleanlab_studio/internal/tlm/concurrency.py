@@ -18,6 +18,8 @@ class TlmRateHandler:
     ADDITIVE_INCREMENT: int = 1
     MULTIPLICATIVE_DECREASE_FACTOR: int = 2
 
+    MAX_CONCURRENT_REQUESTS: int = 512
+
     def __init__(
         self,
         congestion_window: int = DEFAULT_CONGESTION_WINDOW,
@@ -67,6 +69,7 @@ class TlmRateHandler:
         self,
         slow_start_increase_factor: int = SLOW_START_INCREASE_FACTOR,
         additive_increment: int = ADDITIVE_INCREMENT,
+        max_concurrent_requests: int = MAX_CONCURRENT_REQUESTS,
     ) -> None:
         """Increases TLM congestion window
 
@@ -84,6 +87,9 @@ class TlmRateHandler:
 
         else:
             self._congestion_window += additive_increment
+
+        # cap congestion window at max concurrent requests
+        self._congestion_window = min(self._congestion_window, max_concurrent_requests)
 
         # release <congestion_window_increase> from send semaphore
         congestion_window_increase = self._congestion_window - prev_congestion_window
