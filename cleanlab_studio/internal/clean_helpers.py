@@ -1,6 +1,6 @@
 import itertools
 import time
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from tqdm import tqdm
 
@@ -59,8 +59,8 @@ def validate_label_column(
     api_key: str,
     dataset_id: str,
     label_column: str,
-    modality: str,
-    task_type: str,
+    modality: Literal["text", "tabular", "image"],
+    task_type: Optional[Literal["multi-class", "multi-label", "regression", "unsupervised"]],
     possible_label_columns: List[str],
 ) -> None:
     if label_column not in possible_label_columns:
