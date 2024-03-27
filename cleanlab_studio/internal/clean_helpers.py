@@ -74,7 +74,7 @@ def validate_label_column(
         raise InvalidDatasetError(
             (
                 f"Invalid label column: {label_column}. "
-                f"{task_type.capitalize()} projects require a label column of type {', '.join(valid_types)}. "
+                f"{str(task_type).capitalize()} projects require a label column of type {', '.join(valid_types)}. "
                 "Also ensure that the column has at least 2 unique values."
             )
         )
