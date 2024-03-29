@@ -4,7 +4,7 @@ from typing import Optional
 
 from tqdm import tqdm
 
-from cleanlab_studio.errors import CleansetError
+from cleanlab_studio.errors import CleansetError, CleansetHandledError
 from cleanlab_studio.internal.api import api
 
 
@@ -52,4 +52,11 @@ def poll_cleanset_status(
 
         if res["has_error"]:
             pbar.set_postfix_str(res["step_description"])
+            error_message = res["error_message"]
+            error_type = res["error_type"]
+            
+            if error_type is not None:
+                assert error_message is not None, "Error message should be present for handled error"
+                raise CleansetHandledError(error_type=error_type, error_message=error_message)
+            
             raise CleansetError(f"Cleanset {cleanset_id} failed to complete")

@@ -93,9 +93,18 @@ class CleansetError(InternalError):
     pass
 
 
+class CleansetHandledError(InternalError):
+    def __init__(self, error_type: str, error_message: str) -> None:
+        self.error_type = error_type
+        self.error_message = error_message
+
+    def __str__(self) -> str:
+        return f"Error during training:\n{self.error_type}\n{self.error_message}"
+
+
 class InvalidSchemaTypeError(ValueError):
     def __init__(self, msg: str) -> None:
         self.msg = msg
 
     def __str__(self) -> str:
-        return f"{self.msg}\nSee [TODO: insert docs] link for more information."
+        return f"{self.msg}\nSee [/guide/concepts/datasets/#schemas] for more information."
