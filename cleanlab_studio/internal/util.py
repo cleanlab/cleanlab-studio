@@ -280,9 +280,7 @@ def log_internal_error(error_message: str, stack_trace: str, api_key: Optional[s
 def obfuscate_stack_trace(stack_trace: str) -> str:
     # remove stack frames for user code
     cleanlab_match = re.search("File.*cleanlab", stack_trace)
-    cleanlab_traceback = (
-        stack_trace[cleanlab_match.start() :] if cleanlab_match else ""
-    )
+    cleanlab_traceback = stack_trace[cleanlab_match.start() :] if cleanlab_match else ""
 
     # clean up paths that don't contain "cleanlab-studio" which may contain local paths
     pattern1 = re.compile(r"File \"((?!cleanlab-studio).)*\n")
@@ -290,9 +288,7 @@ def obfuscate_stack_trace(stack_trace: str) -> str:
 
     # remove portions of paths preceding cleanlab-studio that may contain local paths
     pattern2 = re.compile(r"File([^\n]*?)cleanlab-studio")
-    cleanlab_traceback = pattern2.sub(
-        'File "cleanlab-studio', cleanlab_traceback
-    )
+    cleanlab_traceback = pattern2.sub('File "cleanlab-studio', cleanlab_traceback)
     return cleanlab_traceback
 
 
