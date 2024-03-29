@@ -75,6 +75,7 @@ def validate_label_column(
             (
                 f"Invalid label column: {label_column}. "
                 f"{str(task_type).capitalize()} projects require a label column of type {', '.join(valid_types)}. "
+                "For details on how to set the schema for your dataset, see the [datasets guide](/guide/concepts/datasets/#schema-updates). "
                 "Also ensure that the column has at least 2 unique values."
             )
         )
