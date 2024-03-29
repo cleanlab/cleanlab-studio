@@ -324,6 +324,28 @@ def get_dataset_details(api_key: str, dataset_id: str, task_type: Optional[str])
     return dataset_details
 
 
+def check_column_diversity(api_key: str, dataset_id: str, column_name: str) -> JSONDict:
+    check_uuid_well_formed(dataset_id, "dataset ID")
+    res = requests.get(
+        dataset_base_url + f"/diversity/{dataset_id}/{column_name}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    column_diversity: JSONDict = res.json()
+    return column_diversity
+
+
+def is_valid_multilabel_column(api_key: str, dataset_id: str, column_name: str) -> bool:
+    check_uuid_well_formed(dataset_id, "dataset ID")
+    res = requests.get(
+        dataset_base_url + f"/check_valid_multilabel/{dataset_id}/{column_name}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    multilabel_column: JSONDict = res.json()
+    return bool(multilabel_column["is_valid_multilabel_column"])
+
+
 def clean_dataset(
     api_key: str,
     dataset_id: str,

@@ -1,11 +1,11 @@
 import itertools
 import time
 import traceback
-from typing import Optional
+from typing import List, Literal, Optional
 
 from tqdm import tqdm
 
-from cleanlab_studio.errors import CleansetError, CleansetHandledError
+from cleanlab_studio.errors import CleansetError, CleansetHandledError, InvalidDatasetError
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import log_internal_error
 
@@ -67,3 +67,44 @@ def poll_cleanset_status(
                 raise CleansetHandledError(error_type=error_type, error_message=error_message)
 
             raise CleansetError(f"Cleanset {cleanset_id} failed to complete")
+
+
+def validate_label_column(
+    api_key: str,
+    dataset_id: str,
+    label_column: str,
+    modality: Literal["text", "tabular", "image"],
+    task_type: Optional[Literal["multi-class", "multi-label", "regression", "unsupervised"]],
+    possible_label_columns: List[str],
+) -> None:
+    if label_column not in possible_label_columns:
+        if task_type == "multi-class":
+            valid_types = ["string", "integer", "boolean"]
+        if task_type == "multi-label":
+            valid_types = ["string"]
+        if task_type == "regression":
+            valid_types = ["float"]
+
+        raise InvalidDatasetError(
+            (
+                f"Invalid label column: {label_column}. "
+                f"{str(task_type).capitalize()} projects require a label column of type {', '.join(valid_types)}. "
+                "For details on how to set the schema for your dataset, see the [datasets guide](/guide/concepts/datasets/#schema-updates). "
+                "Also ensure that the column has at least 2 unique values."
+            )
+        )
+    if task_type == "multi-class":
+        column_diversity = api.check_column_diversity(api_key, dataset_id, label_column)
+        if (
+            modality != "text"
+            and modality != "image"
+            and not column_diversity["has_minimal_diversity"]
+        ):
+            raise InvalidDatasetError(
+                "Label column for multi-class projects must have at least 2 unique classes with at least 5 examples each."
+            )
+    if task_type == "multi-label":
+        if not api.is_valid_multilabel_column(api_key, dataset_id, label_column):
+            raise InvalidDatasetError(
+                'Label column for multi-label projects should be formatted as comma-separated string of labels, i.e. "wearing_hat,has_glasses"'
+            )
