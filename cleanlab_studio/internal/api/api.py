@@ -5,6 +5,7 @@ import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
 from cleanlab_studio.errors import APIError, IngestionError, RateLimitError, TlmBadRequest
+from cleanlab_studio.internal.util import get_basic_info, obfuscate_stack_trace
 
 import aiohttp
 import requests
@@ -634,3 +635,7 @@ async def tlm_get_confidence_score(
             await client_session.close()
 
     return cast(JSONDict, res_json)
+
+
+def send_telemetry(info: JSONDict) -> None:
+    requests.post(f"{cli_base_url}/telemetry", json=info)
