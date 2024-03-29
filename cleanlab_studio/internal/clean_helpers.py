@@ -1,11 +1,13 @@
 import itertools
 import time
+import traceback
 from typing import List, Literal, Optional
 
 from tqdm import tqdm
 
-from cleanlab_studio.errors import CleansetError, InvalidDatasetError
+from cleanlab_studio.errors import CleansetError, CleansetHandledError, InvalidDatasetError
 from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.util import log_internal_error
 
 
 def poll_cleanset_status(
@@ -52,6 +54,18 @@ def poll_cleanset_status(
 
         if res["has_error"]:
             pbar.set_postfix_str(res["step_description"])
+            error_message = res["error_message"]
+            error_type = res["error_type"]
+
+            if error_type is not None:
+                if error_message is None:
+                    log_internal_error(
+                        "Missing error message for handled error",
+                        "\n".join(traceback.format_stack()),
+                        api_key,
+                    )
+                raise CleansetHandledError(error_type=error_type, error_message=error_message)
+
             raise CleansetError(f"Cleanset {cleanset_id} failed to complete")
 
 
