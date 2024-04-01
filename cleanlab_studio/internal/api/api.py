@@ -72,7 +72,7 @@ def handle_api_error_from_json(res_json: JSONDict, status_code: int) -> None:
             pass  # soft quota limit is going away soon, so ignore it
         else:
             raise APIError(res_json["description"])
-        
+
     if res_json.get("error", None) is not None:
         error = res_json["error"]
         if status_code == 422 and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION":
