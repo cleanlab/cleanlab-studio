@@ -39,6 +39,13 @@ class Studio:
     _api_key: str
 
     def __init__(self, api_key: Optional[str]):
+        """
+        Creates a Cleanlab Studio client.
+
+        Args:
+            api_key: You can find your API key on your [account page](https://app.cleanlab.ai/account) in Cleanlab Studio. Instead of specifying the API key here, you can also log in with `cleanlab login` on the command-line.
+
+        """
         if not api.is_valid_client_version():
             raise VersionError(
                 "CLI is out of date and must be updated. Run 'pip install --upgrade cleanlab-studio'."
@@ -318,13 +325,15 @@ class Studio:
 
     def get_model(self, model_id: str) -> inference.Model:
         """
-        Gets a model deployed by Cleanlab Studio.
+        Gets a model that is deployed in a Cleanlab Studio account.
+
+        The returned model can then be used to predict labels for new data. See the documentation for the [Model](../inference#class-model) class for more on what you can do with a Model object.
 
         Args:
-            model_id: ID of model to get. This ID should be fetched in the deployments page of the app UI.
+            model_id: ID of model to get. The model ID can be found in the "Model Details" tab of a model page.
 
         Returns:
-            [Model](../inference#class-model) object with methods to run predictions on new input data.
+            [Model](../inference#class-model) instance, which exposes methods to predict labels for new data.
         """
         return inference.Model(self._api_key, model_id)
 

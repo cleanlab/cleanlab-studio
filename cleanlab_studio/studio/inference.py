@@ -1,5 +1,9 @@
 """
-Methods for interfacing with deployed ML models (to produce predictions)
+Methods for interfacing with deployed ML models (to produce predictions).
+
+**This module is not meant to be imported and used directly.** Instead, use [`Studio.get_model()`](../studio/#method-get_model) to instantiate a [Model](#class-model) object.
+
+The [Model Deployment tutorial](/tutorials/inference_api/) explains the end-to-end workflow for using Cleanlab Studio's model deployment functionality.
 """
 
 import abc
@@ -26,10 +30,15 @@ ClassProbablities: TypeAlias = pd.DataFrame
 
 
 class Model(abc.ABC):
-    """Base class for deployed model inference."""
+    """Represents a machine learning model instance in a Cleanlab Studio account.
+
+    Models should be instantiated using the [`Studio.get_model()`](../studio/#method-get_model) method. Then, using a Model object, you can [`predict()`](#method-predict) labels for new data.
+    """
 
     def __init__(self, api_key: str, model_id: str):
-        """Initializes model class w/ API key and model ID."""
+        """Initializes a model.
+
+        **Objects of this class are not meant to be constructed directly.** Instead, use [`Studio.get_model()`](../studio/#method-get_model)."""
         self._api_key = api_key
         self._model_id = model_id
 
@@ -115,7 +124,7 @@ class Model(abc.ABC):
                 if self._tasktype == "multi-label":
                     # convert multi-label suggested labels to list of list of strings
                     suggested_labels = (
-                        results.pop("Suggested Label").apply(csv_string_to_list).to_numpy()
+                        results.pop("Suggested Label").apply(_csv_string_to_list).to_numpy()
                     )
                 else:
                     suggested_labels = results.pop("Suggested Label").to_numpy()
@@ -154,7 +163,7 @@ class Model(abc.ABC):
         return sio
 
 
-def csv_string_to_list(csv_string: Optional[str]) -> List[str]:
+def _csv_string_to_list(csv_string: Optional[str]) -> List[str]:
     """Convert a csv string with one row that represents a list into a list
 
     Return empty list if string is empty
