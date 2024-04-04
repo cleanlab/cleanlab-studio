@@ -114,3 +114,7 @@ class InvalidSchemaTypeError(ValueError):
 
     def __str__(self) -> str:
         return f"{self.msg}\nSee [/guide/concepts/datasets/#schemas] for more information."
+
+
+class InvalidProjectConfiguration(HandledError):
+    pass

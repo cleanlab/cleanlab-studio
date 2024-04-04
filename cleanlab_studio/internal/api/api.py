@@ -4,7 +4,13 @@ from math import e
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
-from cleanlab_studio.errors import APIError, IngestionError, RateLimitError, TlmBadRequest
+from cleanlab_studio.errors import (
+    APIError,
+    IngestionError,
+    InvalidProjectConfiguration,
+    RateLimitError,
+    TlmBadRequest,
+)
 from cleanlab_studio.internal.util import get_basic_info, obfuscate_stack_trace
 
 import aiohttp
@@ -57,16 +63,20 @@ def _construct_headers(
 
 
 def handle_api_error(res: requests.Response) -> None:
-    handle_api_error_from_json(res.json())
+    handle_api_error_from_json(res.json(), res.status_code)
 
 
-def handle_api_error_from_json(res_json: JSONDict) -> None:
+def handle_api_error_from_json(res_json: JSONDict, status_code: Optional[int] = None) -> None:
     if "code" in res_json and "description" in res_json:  # AuthError or UserQuotaError format
         if res_json["code"] == "user_soft_quota_exceeded":
             pass  # soft quota limit is going away soon, so ignore it
         else:
             raise APIError(res_json["description"])
+
     if res_json.get("error", None) is not None:
+        error = res_json["error"]
+        if status_code == 422 and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION":
+            raise InvalidProjectConfiguration(error["description"])
         raise APIError(res_json["error"])
 
 

@@ -212,16 +212,7 @@ class Studio:
         """
         dataset_details = api.get_dataset_details(self._api_key, dataset_id, task_type)
 
-        if label_column is not None:
-            clean_helpers.validate_label_column(
-                api_key=self._api_key,
-                dataset_id=dataset_id,
-                label_column=label_column,
-                modality=modality,
-                task_type=task_type,
-                possible_label_columns=dataset_details["label_columns"],
-            )
-        elif task_type is not None and task_type != "unsupervised":
+        if label_column is None and task_type is not None and task_type != "unsupervised":
             label_column = str(dataset_details["label_column_guess"])
             print(f"Label column not supplied. Using best guess {label_column}")
 
@@ -234,17 +225,13 @@ class Studio:
         if feature_columns is None:
             if modality == "tabular":
                 feature_columns = dataset_details["distinct_columns"]
-                if label_column is not None:
+                if label_column is not None and label_column in feature_columns:
                     feature_columns.remove(label_column)
                 print(f"Feature columns not supplied. Using all valid feature columns")
 
         if text_column is not None:
             if modality != "text":
                 raise InvalidDatasetError("Text column supplied, but project modality is not text")
-            elif text_column not in dataset_details["text_columns"]:
-                raise InvalidDatasetError(
-                    f"Invalid text column: {text_column}. Column must have text feature type"
-                )
 
         if text_column is None and modality == "text":
             text_column = dataset_details["text_column_guess"]
