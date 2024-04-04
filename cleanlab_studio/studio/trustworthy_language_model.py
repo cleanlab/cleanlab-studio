@@ -494,7 +494,7 @@ class TLM:
 
         """
         if self._quality_preset == "base":
-            raise ValueError(
+            raise ValidationError(
                 "Cannot get confidence score with `base` quality_preset -- choose a higher preset."
             )
 
