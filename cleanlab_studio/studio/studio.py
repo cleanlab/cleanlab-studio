@@ -423,6 +423,9 @@ class Studio:
 
 
 # decorate all functions of self
-for name, method in Studio.__dict__.items():
-    if isinstance(method, FunctionType):
-        setattr(Studio, name, (telemetry(track_all_frames=False))(method))
+#
+# using variable names prepended with "_" to not create global variables that
+# show up in the docs
+for _name, _method in Studio.__dict__.items():
+    if isinstance(_method, FunctionType):
+        setattr(Studio, _name, (telemetry(track_all_frames=False))(_method))
