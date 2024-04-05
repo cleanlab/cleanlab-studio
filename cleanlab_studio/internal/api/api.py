@@ -7,6 +7,7 @@ from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
 from cleanlab_studio.errors import (
     APIError,
     IngestionError,
+    InvalidProjectConfiguration,
     RateLimitError,
     TlmBadRequest,
     TlmServerError,
@@ -64,16 +65,20 @@ def _construct_headers(
 
 
 def handle_api_error(res: requests.Response) -> None:
-    handle_api_error_from_json(res.json())
+    handle_api_error_from_json(res.json(), res.status_code)
 
 
-def handle_api_error_from_json(res_json: JSONDict) -> None:
+def handle_api_error_from_json(res_json: JSONDict, status_code: Optional[int] = None) -> None:
     if "code" in res_json and "description" in res_json:  # AuthError or UserQuotaError format
         if res_json["code"] == "user_soft_quota_exceeded":
             pass  # soft quota limit is going away soon, so ignore it
         else:
             raise APIError(res_json["description"])
+
     if res_json.get("error", None) is not None:
+        error = res_json["error"]
+        if status_code == 422 and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION":
+            raise InvalidProjectConfiguration(error["description"])
         raise APIError(res_json["error"])
 
 
@@ -351,6 +356,28 @@ def get_dataset_details(api_key: str, dataset_id: str, task_type: Optional[str])
     handle_api_error(res)
     dataset_details: JSONDict = res.json()
     return dataset_details
+
+
+def check_column_diversity(api_key: str, dataset_id: str, column_name: str) -> JSONDict:
+    check_uuid_well_formed(dataset_id, "dataset ID")
+    res = requests.get(
+        dataset_base_url + f"/diversity/{dataset_id}/{column_name}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    column_diversity: JSONDict = res.json()
+    return column_diversity
+
+
+def is_valid_multilabel_column(api_key: str, dataset_id: str, column_name: str) -> bool:
+    check_uuid_well_formed(dataset_id, "dataset ID")
+    res = requests.get(
+        dataset_base_url + f"/check_valid_multilabel/{dataset_id}/{column_name}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    multilabel_column: JSONDict = res.json()
+    return bool(multilabel_column["is_valid_multilabel_column"])
 
 
 def clean_dataset(
@@ -676,3 +703,7 @@ async def tlm_get_confidence_score(
             await client_session.close()
 
     return cast(JSONDict, res_json)
+
+
+def send_telemetry(info: JSONDict) -> None:
+    requests.post(f"{cli_base_url}/telemetry", json=info)

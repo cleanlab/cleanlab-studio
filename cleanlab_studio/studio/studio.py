@@ -39,6 +39,13 @@ class Studio:
     _api_key: str
 
     def __init__(self, api_key: Optional[str]):
+        """
+        Creates a Cleanlab Studio client.
+
+        Args:
+            api_key: You can find your API key on your [account page](https://app.cleanlab.ai/account) in Cleanlab Studio. Instead of specifying the API key here, you can also log in with `cleanlab login` on the command-line.
+
+        """
         if not api.is_valid_client_version():
             raise VersionError(
                 "CLI is out of date and must be updated. Run 'pip install --upgrade cleanlab-studio'."
@@ -212,12 +219,7 @@ class Studio:
         """
         dataset_details = api.get_dataset_details(self._api_key, dataset_id, task_type)
 
-        if label_column is not None:
-            if label_column not in dataset_details["label_columns"]:
-                raise InvalidDatasetError(
-                    f"Invalid label column: {label_column}. Label column must have categorical feature type"
-                )
-        elif task_type is not None and task_type != "unsupervised":
+        if label_column is None and task_type is not None and task_type != "unsupervised":
             label_column = str(dataset_details["label_column_guess"])
             print(f"Label column not supplied. Using best guess {label_column}")
 
@@ -230,17 +232,14 @@ class Studio:
         if feature_columns is None:
             if modality == "tabular":
                 feature_columns = dataset_details["distinct_columns"]
-                if label_column is not None:
+                if label_column is not None and label_column in feature_columns:
                     feature_columns.remove(label_column)
                 print(f"Feature columns not supplied. Using all valid feature columns")
 
         if text_column is not None:
             if modality != "text":
                 raise InvalidDatasetError("Text column supplied, but project modality is not text")
-            elif text_column not in dataset_details["text_columns"]:
-                raise InvalidDatasetError(
-                    f"Invalid text column: {text_column}. Column must have text feature type"
-                )
+
         if text_column is None and modality == "text":
             text_column = dataset_details["text_column_guess"]
             print(f"Text column not supplied. Using best guess {text_column}")
@@ -313,13 +312,15 @@ class Studio:
 
     def get_model(self, model_id: str) -> inference.Model:
         """
-        Gets a model deployed by Cleanlab Studio.
+        Gets a model that is deployed in a Cleanlab Studio account.
+
+        The returned model can then be used to predict labels for new data. See the documentation for the [Model](../inference#class-model) class for more on what you can do with a Model object.
 
         Args:
-            model_id: ID of model to get. This ID should be fetched in the deployments page of the app UI.
+            model_id: ID of model to get. The model ID can be found in the "Model Details" tab of a model page.
 
         Returns:
-            [Model](../inference#class-model) object with methods to run predictions on new input data.
+            [Model](../inference#class-model) instance, which exposes methods to predict labels for new data.
         """
         return inference.Model(self._api_key, model_id)
 
@@ -452,6 +453,9 @@ class Studio:
 
 
 # decorate all functions of self
-for name, method in Studio.__dict__.items():
-    if isinstance(method, FunctionType):
-        setattr(Studio, name, (telemetry(track_all_frames=False))(method))
+#
+# using variable names prepended with "_" to not create global variables that
+# show up in the docs
+for _name, _method in Studio.__dict__.items():
+    if isinstance(_method, FunctionType):
+        setattr(Studio, _name, (telemetry(track_all_frames=False))(_method))

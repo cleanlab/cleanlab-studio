@@ -14,7 +14,7 @@ import re
 import numpy as np
 import pandas as pd
 
-from cleanlab_studio.internal.api.api import cli_base_url
+from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.errors import InvalidDatasetError, HandledError
 
@@ -255,34 +255,41 @@ def telemetry(
                     if track_all_frames:
                         cleanlab_traceback = trace_str
                     else:
-                        # remove stack frames for user code
-                        cleanlab_match = re.search("File.*cleanlab", trace_str)
-                        cleanlab_traceback = (
-                            trace_str[cleanlab_match.start() :] if cleanlab_match else ""
-                        )
-
-                        # clean up paths that don't contain "cleanlab-studio" which may contain local paths
-                        pattern1 = re.compile(r"File \"((?!cleanlab-studio).)*\n")
-                        cleanlab_traceback = pattern1.sub("File \n", cleanlab_traceback)
-
-                        # remove portios of paths preceding cleanlab-studio that may contain local paths
-                        pattern2 = re.compile(r"File([^\n]*?)cleanlab-studio")
-                        cleanlab_traceback = pattern2.sub(
-                            'File "cleanlab-studio', cleanlab_traceback
-                        )
+                        # remove user code/local paths from trace
+                        cleanlab_traceback = obfuscate_stack_trace(trace_str)
 
                     user_info["stack_trace"] = cleanlab_traceback
                     user_info["error_type"] = type(err).__name__
                     user_info["is_handled_error"] = isinstance(err, HandledError)
-                    _ = requests.post(
-                        f"{cli_base_url}/telemetry",
-                        json=user_info,
-                    )
+                    api.send_telemetry(user_info)
                 raise err
 
         return tracked_func
 
     return track
+
+
+def log_internal_error(error_message: str, stack_trace: str, api_key: Optional[str] = None) -> None:
+    user_info = get_basic_info()
+    user_info["api_key"] = api_key
+    user_info["error_message"] = error_message
+    user_info["stack_trace"] = obfuscate_stack_trace(stack_trace)
+    api.send_telemetry(user_info)
+
+
+def obfuscate_stack_trace(stack_trace: str) -> str:
+    # remove stack frames for user code
+    cleanlab_match = re.search("File.*cleanlab", stack_trace)
+    cleanlab_traceback = stack_trace[cleanlab_match.start() :] if cleanlab_match else ""
+
+    # clean up paths that don't contain "cleanlab-studio" which may contain local paths
+    pattern1 = re.compile(r"File \"((?!cleanlab-studio).)*\n")
+    cleanlab_traceback = pattern1.sub("File \n", cleanlab_traceback)
+
+    # remove portions of paths preceding cleanlab-studio that may contain local paths
+    pattern2 = re.compile(r"File([^\n]*?)cleanlab-studio")
+    cleanlab_traceback = pattern2.sub('File "cleanlab-studio', cleanlab_traceback)
+    return cleanlab_traceback
 
 
 def get_basic_info() -> Dict[str, Any]:
