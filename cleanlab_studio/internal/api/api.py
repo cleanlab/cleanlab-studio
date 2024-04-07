@@ -266,7 +266,7 @@ def download_cleanlab_columns(
     cleanset_json_io = io.StringIO(cleanset_json)
     cleanset_pd: pd.DataFrame = pd.read_json(cleanset_json_io, orient="table")
     cleanset_pd.rename(columns={"id": id_col}, inplace=True)
-    cleanset_pd.sort_values(by=id_col, inplace=True)
+    cleanset_pd.sort_values(by=id_col, inplace=True, ignore_index=True)
     return cleanset_pd
 
 
