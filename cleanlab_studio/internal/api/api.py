@@ -1,19 +1,21 @@
 import asyncio
 import io
-from math import e
 import os
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
+
 from cleanlab_studio.errors import (
     APIError,
     IngestionError,
     InvalidProjectConfiguration,
     RateLimitError,
     TlmBadRequest,
+    TlmServerError,
 )
-from cleanlab_studio.internal.util import get_basic_info, obfuscate_stack_trace
+from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 
 import aiohttp
+import aiohttp.client_exceptions
 import requests
 from tqdm import tqdm
 import pandas as pd
@@ -88,16 +90,38 @@ def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
         )
 
 
-async def handle_tlm_client_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+async def handle_tlm_client_error_from_resp(
+    resp: aiohttp.ClientResponse, batch_index: Optional[int]
+) -> None:
     """Catches 4XX (client error) errors."""
     if 400 <= resp.status < 500:
         try:
             res_json = await resp.json()
             error_message = res_json["error"]
         except Exception:
-            error_message = "Client error occurred."
+            error_message = "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
+
+        if batch_index is not None:
+            error_message = f"Error executing query at index {batch_index}:\n{error_message}"
 
         raise TlmBadRequest(error_message)
+
+
+async def handle_tlm_api_error_from_resp(
+    resp: aiohttp.ClientResponse, batch_index: Optional[int]
+) -> None:
+    """Catches 5XX (server error) errors."""
+    if 500 <= resp.status < 600:
+        try:
+            res_json = await resp.json()
+            error_message = res_json["error"]
+        except Exception:
+            error_message = "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
+
+        if batch_index is not None:
+            error_message = f"Error executing query at index {batch_index}:\n{error_message}"
+
+        raise TlmServerError(error_message, resp.status)
 
 
 def validate_api_key(api_key: str) -> bool:
@@ -556,6 +580,9 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
             await asyncio.sleep(sleep_time)
             try:
                 return await func(*args, **kwargs)
+            except aiohttp.client_exceptions.ClientConnectorError as e:
+                # note: we don't increment num_try here, because we don't want connection errors to count against the total number of retries
+                sleep_time = 2**num_try
             except RateLimitError as e:
                 # note: we don't increment num_try here, because we don't want rate limit retries to count against the total number of retries
                 sleep_time = e.retry_after
@@ -578,7 +605,9 @@ async def tlm_prompt(
     prompt: str,
     quality_preset: str,
     options: Optional[JSONDict],
+    rate_handler: TlmRateHandler,
     client_session: Optional[aiohttp.ClientSession] = None,
+    batch_index: Optional[int] = None,
 ) -> JSONDict:
     """
     Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
@@ -588,7 +617,9 @@ async def tlm_prompt(
         prompt (str): prompt for TLM to respond to
         quality_preset (str): quality preset to use to generate response
         options (JSONDict): additional parameters for TLM
+        rate_handler (TlmRateHandler): concurrency handler used to manage TLM request rate
         client_session (aiohttp.ClientSession): client session used to issue TLM request
+        batch_index (Optional[int], optional): index of prompt in batch, used for error messages. Defaults to None if not in batch.
 
     Returns:
         JSONDict: dictionary with TLM response and confidence score
@@ -599,16 +630,18 @@ async def tlm_prompt(
         local_scoped_client = True
 
     try:
-        res = await client_session.post(
-            f"{tlm_base_url}/prompt",
-            json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
-            headers=_construct_headers(api_key),
-        )
-        res_json = await res.json()
+        async with rate_handler:
+            res = await client_session.post(
+                f"{tlm_base_url}/prompt",
+                json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
+                headers=_construct_headers(api_key),
+            )
 
-        handle_rate_limit_error_from_resp(res)
-        await handle_tlm_client_error_from_resp(res)
-        handle_api_error_from_json(res_json)
+            res_json = await res.json()
+
+            handle_rate_limit_error_from_resp(res)
+            await handle_tlm_client_error_from_resp(res, batch_index)
+            await handle_tlm_api_error_from_resp(res, batch_index)
 
     finally:
         if local_scoped_client:
@@ -624,7 +657,9 @@ async def tlm_get_confidence_score(
     response: str,
     quality_preset: str,
     options: Optional[JSONDict],
+    rate_handler: TlmRateHandler,
     client_session: Optional[aiohttp.ClientSession] = None,
+    batch_index: Optional[int] = None,
 ) -> JSONDict:
     """
     Query Trustworthy Language Model for a confidence score for the prompt-response pair.
@@ -635,7 +670,9 @@ async def tlm_get_confidence_score(
         response (str): response for TLM to get confidence score for
         quality_preset (str): quality preset to use to generate confidence score
         options (JSONDict): additional parameters for TLM
+        rate_handler (TlmRateHandler): concurrency handler used to manage TLM request rate
         client_session (aiohttp.ClientSession): client session used to issue TLM request
+        batch_index (Optional[int], optional): index of prompt in batch, used for error messages. Defaults to None if not in batch.
 
     Returns:
         JSONDict: dictionary with TLM confidence score
@@ -646,21 +683,20 @@ async def tlm_get_confidence_score(
         local_scoped_client = True
 
     try:
-        res = await client_session.post(
-            f"{tlm_base_url}/get_confidence_score",
-            json=dict(
-                prompt=prompt, response=response, quality=quality_preset, options=options or {}
-            ),
-            headers=_construct_headers(api_key),
-        )
-        res_json = await res.json()
+        async with rate_handler:
+            res = await client_session.post(
+                f"{tlm_base_url}/get_confidence_score",
+                json=dict(
+                    prompt=prompt, response=response, quality=quality_preset, options=options or {}
+                ),
+                headers=_construct_headers(api_key),
+            )
 
-        if local_scoped_client:
-            await client_session.close()
+            res_json = await res.json()
 
-        handle_rate_limit_error_from_resp(res)
-        await handle_tlm_client_error_from_resp(res)
-        handle_api_error_from_json(res_json)
+            handle_rate_limit_error_from_resp(res)
+            await handle_tlm_client_error_from_resp(res, batch_index)
+            await handle_tlm_api_error_from_resp(res, batch_index)
 
     finally:
         if local_scoped_client:

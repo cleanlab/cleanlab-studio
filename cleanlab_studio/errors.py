@@ -1,3 +1,6 @@
+from asyncio import Handle
+
+
 class HandledError(Exception):
     pass
 
@@ -34,6 +37,10 @@ class SettingsError(HandledError):
     pass
 
 
+class ValidationError(HandledError):
+    pass
+
+
 class UploadError(HandledError):
     pass
 
@@ -63,14 +70,20 @@ class APITimeoutError(HandledError):
     pass
 
 
-class RateLimitError(APIError):
+class RateLimitError(HandledError):
     def __init__(self, message: str, retry_after: int):
         self.message = message
         self.retry_after = retry_after
 
 
-class TlmBadRequest(APIError):
+class TlmBadRequest(HandledError):
     pass
+
+
+class TlmServerError(APIError):
+    def __init__(self, message: str, status_code: int) -> None:
+        self.message = message
+        self.status_code = status_code
 
 
 class UnsupportedVersionError(HandledError):
