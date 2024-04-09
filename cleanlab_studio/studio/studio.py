@@ -138,11 +138,6 @@ class Studio:
             include_project_details=include_project_details,
             to_spark=to_spark,
         )
-        if "cleanlab_row_ID" in rows_df.columns:
-            if to_spark:
-                rows_df.sort("cleanlab_row_ID")
-            else:
-                rows_df.sort_values(by="cleanlab_row_ID")
         return rows_df
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
