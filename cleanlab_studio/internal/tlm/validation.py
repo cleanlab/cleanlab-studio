@@ -9,7 +9,9 @@ from cleanlab_studio.internal.constants import (
 )
 
 
-SKIP_VALIDATE_TLM_OPTIONS = os.environ.get("CLEANLAB_STUDIO_SKIP_VALIDATE_TLM_OPTIONS", False)
+SKIP_VALIDATE_TLM_OPTIONS: bool = (
+    os.environ.get("CLEANLAB_STUDIO_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
+)
 
 
 def validate_tlm_prompt(prompt: Union[str, Sequence[str]]) -> None:

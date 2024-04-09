@@ -101,7 +101,7 @@ class TlmRateHandler:
         multiplicative_decrease_factor: int = MULTIPLICATIVE_DECREASE_FACTOR,
     ) -> None:
         """Decreases TLM congestion window, to minimum of 1."""
-        if self._congestion_window == 1:
+        if self._congestion_window <= 1:
             return
 
         prev_congestion_window = self._congestion_window
