@@ -545,7 +545,8 @@ class TLMOptions(TypedDict):
 
     Args:
         model (str, default = "gpt-3.5-turbo-16k"): underlying LLM to use (better models will yield better results).
-        Models currently supported include "gpt-3.5-turbo-16k", "gpt-4", "gpt-4-turbo-2024-04-09".
+        Models supported in the generally available version of Cleanlab Studio are OpenAI LLMs, including: "gpt-3.5-turbo-16k", "gpt-4", "gpt-4-turbo-2024-04-09".
+        Enterprise versions of TLM can support any LLM you would like to use, learn more by emailing: sales@cleanlab.ai
 
         max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
         The minimum value for this parameter is 64, and the maximum is 512.
