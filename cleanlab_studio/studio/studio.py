@@ -399,12 +399,18 @@ class Studio:
 
         Args:
             quality_preset (TLMQualityPreset): quality preset to use for TLM queries, which will determine the quality of the output responses and trustworthiness scores.
-            Supported presets include "best", "high", "medium", "low", "base".
-            The "best" and "high" presets will improve the LLM responses themselves, with "best" also returning the most reliable trustworthiness scores.
-            The "medium" and "low" presets will return standard LLM responses along with associated confidence scores,
-            with "medium" producing more reliable trustworthiness scores than low.
-            The "base" preset will not return any confidence score, just a standard LLM output response, this option is similar to using your favorite LLM API.
-            Higher presets have increased runtime and cost.
+            TLMQualityPreset is a string specifying either of the supported presets, including "best", "high", "medium", "low", "base".
+
+                The "best" and "high" presets will improve the LLM responses themselves, alongside providing reliable trustworthiness scores.
+                The "medium" and "low" presets will return standard LLM responses along with associated trustworthiness scores,
+                with "medium" producing more reliable trustworthiness scores than low.
+                The "base" preset will not return any trustworthiness score, just a standard LLM output response, this option is similar to using your favorite LLM API.
+
+                Higher presets have increased runtime and cost. For more information about the details of each present,
+                view the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
+                Note that it is recommended to avoid using "best" or "high" presets if you mostly care about evaluating the LLM outputs using trustworthiness scores
+                (and not about improving the LLM responses), as these presets have higher runtimes/costs and are optimized to return more accurate LLM outputs,
+                but not necessarily more reliable trustworthiness scores.
 
             options (TLMOptions, optional): a typed dict of advanced configuration options.
             Options that can be passed in include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
