@@ -51,7 +51,7 @@ class TLM:
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
     ) -> None:
-        """Initializes a Trustworthy Language Model.
+        """Use `Studio.TLM()` instead of this method to initialize a TLM.
 
         lazydocs: ignore
         """
