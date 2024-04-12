@@ -1,5 +1,6 @@
 # Note to developers:
-# Consider if backend's min client version needs updating when pushing any changes to this file.
+# Consider if backend's MIN_CLI_VERSION needs updating when pushing any changes to this file.
+# https://github.com/cleanlab/cleanlab-studio-backend/blob/staging/backend/api/cli/cli_api.py#L34
 
 __version__ = "2.0.1"
 
