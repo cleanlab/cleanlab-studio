@@ -399,7 +399,7 @@ class Studio:
 
         Args:
             quality_preset (TLMQualityPreset): An optional preset to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs.
-            TLMQualityPreset is a string specifying one of the supported presets: "best", "high", "medium", "low", "base".
+                TLMQualityPreset is a string specifying one of the supported presets, including "best", "high", "medium", "low", "base".
 
                 The "best" and "high" presets improve the LLM responses themselves,
                 with "best" returning more reliable trustworthiness scores than "high".
@@ -414,7 +414,7 @@ class Studio:
                 These presets have higher runtime/cost and are optimized to return more accurate LLM outputs, but not necessarily more reliable trustworthiness scores.
 
             options (TLMOptions, optional): a typed dict of advanced configuration options.
-            Avaialable options (keys in this dict) include: "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
+            Avaialable options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
             For more details about the options, see the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
             If specified, these override any settings from the choice of `quality_preset`.
 

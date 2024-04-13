@@ -234,7 +234,7 @@ class TLM:
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
                 Use it if you want strict error handling and immediate notification of any exceptions/timeouts.
-                
+
                 If running this method on a big batch of prompts: you might lose partially completed results if TLM fails on any one of them.
                 To avoid losing partial results for the prompts that TLM did not fail on,
                 you can either call this method on smaller batches of prompts at a time
@@ -383,7 +383,7 @@ class TLM:
             float | List[float]: float or list of floats (if multiple prompt-responses were provided) corresponding
                 to the TLM's trustworthiness score.
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
-                If running on many prompt-response pairs simultaneously: 
+                If running on many prompt-response pairs simultaneously:
                 this method will raise an exception if any TLM errors or timeouts occur.
                 Use it if strict error handling and immediate notification of any exceptions/timeouts is preferred.
                 You will lose any partial results if an exception is raised.
@@ -558,10 +558,10 @@ class TLMOptions(TypedDict):
 
     The default values corresponding to each quality preset (specified when instantiating [`Studio.TLM()`](../studio/#method-tlm)) are:
     - **best:** `num_candidate_responses` = 6, `num_consistency_samples` = 8, `use_self_reflection` = True. This preset will improve LLM responses.
-    - **high:** `num_candidate_responses` = 6, `num_consistency_samples` = 8, `use_self_reflection` = True. This preset will improve LLM responses.
-    - **medium:** `num_candidate_responses` = 1, `num_consistency_samples` = 8, `use_self_reflection` = True
-    - **low:** `num_candidate_responses` = 1, `num_consistency_samples` = 4, `use_self_reflection` = True
-    - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False, this quality preset is equivalent to a regular LLM call
+    - **high:** `num_candidate_responses` = 4, `num_consistency_samples` = 8, `use_self_reflection` = True. This preset will improve LLM responses.
+    - **medium:** `num_candidate_responses` = 1, `num_consistency_samples` = 8, `use_self_reflection` = True.
+    - **low:** `num_candidate_responses` = 1, `num_consistency_samples` = 4, `use_self_reflection` = True.
+    - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False. This preset is equivalent to a regular LLM call.
 
     By default, the TLM is set to the "medium" quality preset. The default `model` used is "gpt-3.5-turbo-16k", and `max_tokens` is 512 for all quality presets.
     You can set custom values for these arguments regardless of the quality preset specified.
@@ -589,7 +589,7 @@ class TLMOptions(TypedDict):
         Higher values here produce better (more reliable) TLM trustworthiness scores, but at higher costs/runtimes.
         This parameter must be between 0 and 20.
 
-        use_self_reflection (bool, default = `True`): whether the LLM is asked to self-reflect upon the response it 
+        use_self_reflection (bool, default = `True`): whether the LLM is asked to self-reflect upon the response it
         generated and self-evaluate this response.
         This self-reflection forms a big part of the trustworthiness score, helping quantify aleatoric uncertainty associated with challenging prompts
         and helping catch answers that are obviously incorrect/bad for a prompt asking for a well-defined answer that LLMs should be able to handle.
