@@ -300,7 +300,8 @@ class TLM:
     ) -> Union[TLMResponse, List[TLMResponse]]:
         """
         Asynchronously get response and trustworthiness score for any text input from TLM.
-        This method is similar to the [`prompt()`](#method-prompt) method but operates asynchronously.
+        This method is similar to the [`prompt()`](#method-prompt) method but operates asynchronously,
+        allowing for non-blocking concurrent operations.
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
@@ -452,7 +453,8 @@ class TLM:
         response: Union[str, Sequence[str]],
     ) -> Union[float, List[float]]:
         """Asynchronously gets trustworthiness score for prompt-response pairs.
-        This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously.
+        This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously,
+        allowing for non-blocking concurrent operations.
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
