@@ -581,6 +581,7 @@ class TLMOptions(TypedDict):
         TLM scores the trustworthiness of each candidate response, and then returns the most trustworthy one.
         Higher values here can produce better (more accurate) responses from the TLM, but at higher costs/runtimes (and internally consumes more tokens).
         This parameter must be between 1 and 20.
+        When it is 1, TLM simply returns a standard LLM response and does not attempt to improve it.
 
         num_consistency_samples (int, default = 8): the amount of internal sampling to evaluate LLM-response-consistency.
         This consistency forms a big part of the returned trustworthiness score, helping quantify the epistemic uncertainty associated with
