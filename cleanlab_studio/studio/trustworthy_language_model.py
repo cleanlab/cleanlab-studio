@@ -303,6 +303,10 @@ class TLM:
         This method is similar to the [`prompt()`](#method-prompt) method but operates asynchronously,
         allowing for non-blocking concurrent operations.
 
+        Use this method if the prompts are streaming in one at a time, and you want to returs the results
+        for each input as quickly as possible, without the execution of any one TLM prompt blocking the execution of other TLM prompts.
+        Note that asynchronous methods do not block until completion, so you will need to fetch the results yourself later.
+
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
         Returns:
@@ -455,6 +459,10 @@ class TLM:
         """Asynchronously gets trustworthiness score for prompt-response pairs.
         This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously,
         allowing for non-blocking concurrent operations.
+
+        Use this method if the prompts-response pairs are streaming in one at a time, and you want to returs the results
+        for each input as quickly as possible, without the execution of any one TLM call blocking the execution of other TLM calls.
+        Note that asynchronous methods do not block until completion, so you will need to fetch the results yourself later.
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
