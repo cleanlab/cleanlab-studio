@@ -401,8 +401,8 @@ class Studio:
             quality_preset (TLMQualityPreset): An optional preset to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs.
                 TLMQualityPreset is a string specifying one of the supported presets, including "best", "high", "medium", "low", "base".
 
-                The "best" and "high" presets improve the LLM responses themselves,
-                with "best" returning more reliable trustworthiness scores than "high".
+                The "best" and "high" presets return improved LLM responses,
+                with "best" also returning more reliable trustworthiness scores than "high".
                 The "medium" and "low" presets return standard LLM responses along with associated trustworthiness scores,
                 with "medium" producing more reliable trustworthiness scores than low.
                 The "base" preset will not return any trustworthiness score, just a standard LLM response, and is similar to directly using your favorite LLM API.
