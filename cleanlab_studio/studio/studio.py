@@ -393,7 +393,7 @@ class Studio:
     ) -> trustworthy_language_model.TLM:
         """Instantiates a configured Trustworthy Language Model (TLM) instance.
 
-        The TLM object can be used as a drop-in replacement for an LLM, or, for estimating trustworthiness scores for arbitrary text prompt/response pairs, and more (see the [TLM documentation](../trustworthy_language_model#class-TLM)).
+        The TLM object can be used as a drop-in replacement for an LLM, or, for estimating trustworthiness scores for arbitrary text prompt/response pairs, and more (see the [TLM documentation](../trustworthy_language_model#class-tlm)).
 
         For advanced use, TLM offers configuration options. The documentation below summarizes these options, and more details are explained in the [TLM tutorial](/tutorials/tlm).
 
