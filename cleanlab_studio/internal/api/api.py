@@ -21,6 +21,7 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import numpy.typing as npt
+from io import StringIO
 
 try:
     import snowflake
@@ -308,7 +309,7 @@ def download_array(
         if res_json["array_type"] == "numpy":
             np_data: npt.NDArray[np.float_] = np.array(res_json[name])
             return np_data
-        pd_data: pd.DataFrame = pd.read_json(res_json[name], orient="records")
+        pd_data: pd.DataFrame = pd.read_json(StringIO(res_json[name]), orient='records')
         return pd_data
     raise APIError(f"{name} for cleanset {cleanset_id} not found")
 
