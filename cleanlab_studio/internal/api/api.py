@@ -724,42 +724,20 @@ def enrich_data(
     **kwargs,
 ) -> pd.DataFrame:
     """
-    Returns a DataFrame `results` with two columns: 'metadata', 'trustworthiness'.
-    metadata column = TLM outputs of the prompt (+ regex if regex was applied)
-    trustworthiness column = trustworthiness scores (which ignore the regex)
+    Enriches a DataFrame with TLM responses and metadata.
 
-    If `subset_indices` is not None, we only return these for the subset of indices from the `data` DataFrame.
-    As index for `results`, we use the same index that `data` DataFrame was using.
-    `subset_indices` is required to be a .iloc
+    Args:
+        prompt: Formatted f-string, that contains both the prompt, and names of columns to embed:
+        regex: One or more expressions will be passed into re.compile or a list of already compiled regular expressions.
+            If a list is proivded, the regexes are applied in order and first succesfull match is returned.
+        return_values: List of possible values to return (zero shot classification)
+            If specified, this only ever returns one of these values in the metadata column.
+            After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
+        subset_indices: What subset of the supplied data to run this for. Can be either a list of unique indicies or a range. If None, we run on all the data.
+        column_name_prefix: Optional prefix appended to all columns names that are returned.
 
-    If regex is supplied, `results` can have a third column:
-    logs = raw LLM output str, before regular expression was applied.
-
-    Arguments:
-    prompt: f-string formatted string, that contains both the prompt, and names of columns to embed:
-    Example: "Is this a numeric value, answer Yes or No only. Value: {column_name}"
-
-    regex: str or List[str] that will be passed into re.compile. We can support multiple here, applied in a chain.
-        Or re.compile object that is already a Python regular expression.
-        Open to other suggestions here!
-        This regex implements str -> str mapping that is one of:
-        replacement/substution, extraction, matching (return true/false string),
-        Open to other suggestions here!
-        This is applied directly to TLM outputs.
-
-    return_values: Set of possible values to return (zero shot classification)
-    If specified, this only ever returns one of these values in the metadata column.
-    After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
-
-    subset_indices: what subset of the supplied data to run this for.
-    We only run on this subset of the data. If None, we run on all the data.
-
-    column_name_prefix: optional prefix appended to all columns names that are returned.
-
-    kwargs: includes the following (do not document them for now)
-        llm_init_kwargs: dict passed into TLM constructor
-        llm_prompt_kwargs: dict passed into TLM.prompt()
-
+    Returns:
+        A DataFrame that now contains additional `metadata` and `trustworthiness` columns related to the prompt. Columns will have `column_name_prefix_` prepended to them if specified.
     """
     subset_data = extract_df_subset(data, subset_indices)
     formatted_prompts = subset_data.apply(lambda x: prompt.format(**x), axis=1).to_list()
