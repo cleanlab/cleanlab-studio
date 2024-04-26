@@ -1,616 +1,405 @@
 """
-Cleanlab's Trustworthy Language Model (TLM) is a large language model that gives more reliable answers and quantifies its uncertainty in these answers.
-
-**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLM()`](/reference/python/studio/#method-tlm) to instantiate a [TLM](#class-TLM) object, and then you can use the methods like [`prompt()`](#method-prompt) and [`get_trustworthiness_score()`](#method-get_trustworthiness_score) documented on this page.
-
-The [Trustworthy Language Model tutorial](/tutorials/tlm/) further explains TLM and its use cases.
+Cleanlab TLM is a Large Language Model that gives more reliable answers and quantifies its uncertainty in these answers
 """
 
 from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Coroutine, List, Optional, Union, cast, Sequence
-from tqdm.asyncio import tqdm_asyncio
+from typing import Coroutine, List, Optional, Union, cast
 
 import aiohttp
 from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
-from cleanlab_studio.internal.tlm.validation import (
-    validate_tlm_prompt,
-    validate_tlm_try_prompt,
-    validate_tlm_prompt_response,
-    validate_try_tlm_prompt_response,
-    validate_tlm_options,
-)
-from cleanlab_studio.internal.types import TLMQualityPreset
-from cleanlab_studio.errors import ValidationError
+from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
 from cleanlab_studio.internal.constants import (
+    _DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
+    _MAX_CONCURRENT_TLM_REQUESTS_LIMIT,
     _VALID_TLM_QUALITY_PRESETS,
-    _TLM_MAX_RETRIES,
 )
+
+
+class TLMResponse(TypedDict):
+    """Trustworthy Language Model response.
+
+    Attributes:
+        response (str): text response from language model
+        confidence_score (float): score corresponding to confidence that the response is correct
+    """
+
+    response: str
+    confidence_score: float
+
+
+class TLMOptions(TypedDict):
+    """Trustworthy language model options. The TLM quality-preset determines many of these settings automatically, but
+    specifying other values here will over-ride the setting from the quality-preset.
+
+    Args:
+        max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
+
+        max_timeout (int, optional): the maximum timeout to query from TLM in seconds. If a max_timeout is not specified, then timeout is calculated based on number of tokens.
+
+        num_candidate_responses (int, default = 1): this controls how many candidate responses are internally generated.
+        TLM scores the confidence of each candidate response, and then returns the most confident one.
+        A higher value here can produce better (more accurate) responses from the TLM, but at higher costs/runtimes.
+
+        num_consistency_samples (int, default = 5): this controls how many samples are internally generated to evaluate the LLM-response-consistency.
+        This is a big part of the returned confidence_score, in particular for ensuring lower scores for strange input prompts or those that are too open-ended to receive a well-defined 'good' response.
+        Higher values here produce better (more reliable) TLM confidence scores, but at higher costs/runtimes.
+
+        use_self_reflection (bool, default = `True`): this controls whether self-reflection is used to have the LLM reflect upon the response it is generating and explicitly self-evaluate whether it seems good or not.
+        This is a big part of the confidence score, in particular for ensure low scores for responses that are obviously incorrect/bad for a standard prompt that LLMs should be able to handle.
+        Setting this to False disables the use of self-reflection and may produce worse TLM confidence scores, but can reduce costs/runtimes.
+
+        model (str, default = "gpt-3.5-turbo-16k"): ID of the model to use. Other options: "gpt-4"
+
+    """
+
+    max_tokens: NotRequired[int]
+    model: NotRequired[str]
+    max_timeout: NotRequired[int]
+    num_candidate_responses: NotRequired[int]
+    num_consistency_samples: NotRequired[int]
+    use_self_reflection: NotRequired[bool]
 
 
 class TLM:
-    """Represents a Trustworthy Language Model (TLM) instance, which is bound to a Cleanlab Studio account.
-
-    ** The TLM object is not meant to be constructed directly.** Instead, use the [`Studio.TLM()`](../studio/#method-tlm)
-    method to configure and instantiate a TLM object.
-    After you've instantiated the TLM object using [`Studio.TLM()`](../studio/#method-tlm), you can use the instance methods documented on this page.
-    """
+    """TLM interface class."""
 
     def __init__(
         self,
         api_key: str,
         quality_preset: TLMQualityPreset,
-        *,
-        options: Optional[TLMOptions] = None,
-        timeout: Optional[float] = None,
-        verbose: Optional[bool] = None,
+        max_concurrent_requests: int = _DEFAULT_MAX_CONCURRENT_TLM_REQUESTS,
     ) -> None:
-        """Use `Studio.TLM()` instead of this method to initialize a TLM.
+        """Initializes TLM interface.
 
-        lazydocs: ignore
+        Args:
+            api_key (str): API key used to authenticate TLM client
+            quality_preset (TLMQualityPreset): quality preset to use for TLM queries
+            max_concurrent_requests (int): maximum number of concurrent requests when issuing batch queries. Default is 16.
         """
         self._api_key = api_key
 
+        assert (
+            max_concurrent_requests < _MAX_CONCURRENT_TLM_REQUESTS_LIMIT
+        ), f"max_concurrent_requests must be less than {_MAX_CONCURRENT_TLM_REQUESTS_LIMIT}"
+
         if quality_preset not in _VALID_TLM_QUALITY_PRESETS:
-            raise ValidationError(
+            raise ValueError(
                 f"Invalid quality preset {quality_preset} -- must be one of {_VALID_TLM_QUALITY_PRESETS}"
             )
 
-        if options is not None:
-            validate_tlm_options(options)
-
-        if timeout is not None and not (isinstance(timeout, int) or isinstance(timeout, float)):
-            raise ValidationError("timeout must be a integer or float value")
-
-        if verbose is not None and not isinstance(verbose, bool):
-            raise ValidationError("verbose must be a boolean value")
-
-        is_notebook_flag = is_notebook()
-
         self._quality_preset = quality_preset
-        self._options = options
-        self._timeout = timeout if timeout is not None and timeout > 0 else None
-        self._verbose = verbose if verbose is not None else is_notebook_flag
 
-        if is_notebook_flag:
+        if is_notebook():
             import nest_asyncio
 
             nest_asyncio.apply()
 
-        self._event_loop = asyncio.get_event_loop()
-        self._rate_handler = TlmRateHandler()
+        try:
+            self._event_loop = asyncio.get_event_loop()
+        except RuntimeError:
+            self._event_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._event_loop)
+            
+        self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
 
-    async def _batch_prompt(
+    def _batch_prompt(
         self,
-        prompts: Sequence[str],
-        capture_exceptions: bool = False,
-    ) -> Union[List[TLMResponse], List[Optional[TLMResponse]]]:
-        """Run a batch of prompts through TLM and get responses/scores for each prompt in the batch. The list returned will have the same length as the input list.
+        prompts: List[str],
+        options: Union[None, TLMOptions, List[Union[TLMOptions, None]]] = None,
+        timeout: Optional[float] = None,
+        retries: int = 1,
+    ) -> List[TLMResponse]:
+        """Run batch of TLM prompts.
 
         Args:
             prompts (List[str]): list of prompts to run
-            capture_exceptions (bool): if ``True``, the returned list will contain ``None`` in place of the response for any errors or timeout when processing a particular prompt from the batch.
-                If ``False``, this entire method will raise an exception if TLM fails to produce a result for any prompt in the batch.
+            options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to prompt method. Defaults to None.
+            timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
+            retries (int): number of retries to attempt for each individual prompt in case of error. Defaults to 1.
 
         Returns:
-            Union[List[TLMResponse], List[Optional[TLMResponse]]]: TLM responses/scores for each prompt (in supplied order)
+            List[TLMResponse]: TLM responses for each prompt (in supplied order)
         """
-        if capture_exceptions:
-            per_query_timeout, per_batch_timeout = self._timeout, None
+        if isinstance(options, list):
+            options_collection = options
         else:
-            per_query_timeout, per_batch_timeout = None, self._timeout
+            options = cast(Union[None, TLMOptions], options)
+            options_collection = [options for _ in prompts]
 
-        # run batch of TLM
-        tlm_responses = await self._batch_async(
-            [
-                self._prompt_async(
-                    prompt,
-                    timeout=per_query_timeout,
-                    capture_exceptions=capture_exceptions,
-                    batch_index=batch_index,
-                )
-                for batch_index, prompt in enumerate(prompts)
-            ],
-            per_batch_timeout,
+        assert len(prompts) == len(options_collection), "Length of prompts and options must match."
+
+        tlm_responses = self._event_loop.run_until_complete(
+            self._batch_async(
+                [
+                    self.prompt_async(
+                        prompt,
+                        option_dict,
+                        retries=retries,
+                    )
+                    for prompt, option_dict in zip(prompts, options_collection)
+                ],
+                timeout=timeout,
+            )
         )
-
-        if capture_exceptions:
-            return cast(List[Optional[TLMResponse]], tlm_responses)
 
         return cast(List[TLMResponse], tlm_responses)
 
-    async def _batch_get_trustworthiness_score(
+    def _batch_get_confidence_score(
         self,
-        prompts: Sequence[str],
-        responses: Sequence[str],
-        capture_exceptions: bool = False,
-    ) -> Union[List[float], List[Optional[float]]]:
-        """Run batch of TLM get trustworthiness score.
-
-        capture_exceptions behavior:
-        - If true, the list will contain None in place of the response for any errors or timeout processing some inputs.
-        - Otherwise, the method will raise an exception for any errors or timeout processing some inputs.
-
-        capture_exceptions interaction with timeout:
-        - If true, timeouts are applied on a per-query basis (i.e. some queries may succeed while others fail)
-        - If false, a single timeout is applied to the entire batch (i.e. all queries will fail if the timeout is reached)
+        prompts: List[str],
+        responses: List[str],
+        options: Union[None, TLMOptions, List[Union[TLMOptions, None]]] = None,
+        timeout: Optional[float] = None,
+        retries: int = 1,
+    ) -> List[float]:
+        """Run batch of TLM get confidence score.
 
         Args:
-            prompts (Sequence[str]): list of prompts to run get trustworthiness score for
-            responses (Sequence[str]): list of responses to run get trustworthiness score for
-            capture_exceptions (bool): if should return None in place of the response for any errors or timeout processing some inputs
+            prompts (List[str]): list of prompts to run get confidence score for
+            responses (List[str]): list of responses to run get confidence score for
+            options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to get confidence score method. Defaults to None.
+            timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
+            retries (int): number of retries to attempt for each individual prompt in case of error. Defaults to 1.
 
         Returns:
-            Union[List[float], List[Optional[float]]]: TLM trustworthiness score for each prompt (in supplied order)
+            List[float]: TLM confidence score for each prompt (in supplied order)
         """
-        if capture_exceptions:
-            per_query_timeout, per_batch_timeout = self._timeout, None
+        if isinstance(options, list):
+            options_collection = options
         else:
-            per_query_timeout, per_batch_timeout = None, self._timeout
+            options = cast(Union[None, TLMOptions], options)
+            options_collection = [options for _ in prompts]
 
-        # run batch of TLM get trustworthiness score
-        tlm_responses = await self._batch_async(
-            [
-                self._get_trustworthiness_score_async(
-                    prompt,
-                    response,
-                    timeout=per_query_timeout,
-                    capture_exceptions=capture_exceptions,
-                    batch_index=batch_index,
-                )
-                for batch_index, (prompt, response) in enumerate(zip(prompts, responses))
-            ],
-            per_batch_timeout,
+        assert len(prompts) == len(responses), "Length of prompts and responses must match."
+        assert len(prompts) == len(options_collection), "Length of prompts and options must match."
+
+        tlm_responses = self._event_loop.run_until_complete(
+            self._batch_async(
+                [
+                    self.get_confidence_score_async(
+                        prompt,
+                        response,
+                        option_dict,
+                        retries=retries,
+                    )
+                    for prompt, response, option_dict in zip(prompts, responses, options_collection)
+                ],
+                timeout=timeout,
+            )
         )
-
-        if capture_exceptions:
-            return cast(List[Optional[float]], tlm_responses)
 
         return cast(List[float], tlm_responses)
 
     async def _batch_async(
         self,
-        tlm_coroutines: Sequence[Coroutine[None, None, Union[TLMResponse, float, None]]],
-        batch_timeout: Optional[float] = None,
-    ) -> Sequence[Union[TLMResponse, float, None]]:
-        """Runs batch of TLM queries.
-
-        Args:
-            tlm_coroutines (List[Coroutine[None, None, Union[TLMResponse, float, None]]]): list of query coroutines to run, returning TLM responses or trustworthiness scores (or None if capture_exceptions is True)
-            batch_timeout (Optional[float], optional): timeout (in seconds) to run all queries, defaults to None (no timeout)
-
-        Returns:
-            Sequence[Union[TLMResponse, float, None]]: list of coroutine results, with preserved order
-        """
+        tlm_coroutines: List[
+            Union[Coroutine[None, None, TLMResponse], Coroutine[None, None, float]]
+        ],
+        timeout: Optional[float],
+    ) -> Union[List[TLMResponse], List[float]]:
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
 
-        if self._verbose:
-            gather_task = tqdm_asyncio.gather(
-                *tlm_query_tasks,
-                total=len(tlm_query_tasks),
-                desc="Querying TLM...",
-                bar_format="{desc} {percentage:3.0f}%|{bar}|",
-            )
-        else:
-            gather_task = asyncio.gather(*tlm_query_tasks)
-
-        wait_task = asyncio.wait_for(gather_task, timeout=batch_timeout)
-        try:
-            return cast(
-                Sequence[Union[TLMResponse, float, None]],
-                await wait_task,
-            )
-        except Exception:
-            # if exception occurs while awaiting batch results, cancel remaining tasks
-            for query_task in tlm_query_tasks:
-                query_task.cancel()
-
-            # await remaining tasks to ensure they are cancelled
-            await asyncio.gather(*tlm_query_tasks, return_exceptions=True)
-
-            raise
+        return await asyncio.wait_for(asyncio.gather(*tlm_query_tasks), timeout=timeout)  # type: ignore[arg-type]
 
     def prompt(
         self,
-        prompt: Union[str, Sequence[str]],
-        /,
+        prompt: Union[str, List[str]],
+        options: Union[None, TLMOptions, List[Union[TLMOptions, None]]] = None,
+        timeout: Optional[float] = None,
+        retries: int = 1,
     ) -> Union[TLMResponse, List[TLMResponse]]:
         """
-        Gets response and trustworthiness score for any text input.
-
-        This method prompts the TLM with the given prompt(s), producing completions (like a standard LLM)
-        but also provides trustworthiness scores quantifying the quality of the output.
+        Get response and confidence from TLM.
 
         Args:
-            prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the language model.
-                Providing a batch of many prompts here will be faster than calling this method on each prompt separately.
+            prompt (str | List[str]): prompt (or list of multiple prompts) for the TLM
+            options (None | TLMOptions | List[TLMOptions |  None], optional): list of options (or instance of options) to pass to prompt method. Defaults to None.
+            timeout (Optional[float], optional): timeout (in seconds) to run all prompts. Defaults to None.
+                If the timeout is hit, this method will throw a `TimeoutError`.
+                Larger values give TLM a higher chance to return outputs for all of your prompts.
+                Smaller values ensure this method does not take too long.
+            retries (int): number of retries to attempt for each individual prompt in case of internal error. Defaults to 1.
+                Larger values give TLM a higher chance of returning outputs for all of your prompts,
+                but this method will also take longer to alert you in cases of an unrecoverable error.
+                Set to 0 to never attempt any retries.
         Returns:
-            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
-                If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
-                This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
-                Use it if you want strict error handling and immediate notification of any exceptions/timeouts.
-
-                If running this method on a big batch of prompts: you might lose partially completed results if TLM fails on any one of them.
-                To avoid losing partial results for the prompts that TLM did not fail on,
-                you can either call this method on smaller batches of prompts at a time
-                (and save intermediate results between batches), or use the [`try_prompt()`](#method-try_prompt) method instead.
+            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and confidence score.
+                    If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
         """
-        validate_tlm_prompt(prompt)
+        if isinstance(prompt, list):
+            if any(not isinstance(p, str) for p in prompt):
+                raise ValueError("All prompts must be strings.")
 
-        if isinstance(prompt, str):
-            return cast(
-                TLMResponse,
-                self._event_loop.run_until_complete(
-                    self._prompt_async(prompt, timeout=self._timeout, capture_exceptions=False),
-                ),
+            return self._batch_prompt(
+                prompt,
+                options,
+                timeout=timeout,
+                retries=retries,
             )
 
-        return cast(
-            List[TLMResponse],
-            self._event_loop.run_until_complete(
-                self._batch_prompt(prompt, capture_exceptions=False),
-            ),
-        )
+        elif isinstance(prompt, str):
+            if not (options is None or isinstance(options, dict)):
+                raise ValueError(
+                    "options must be a single TLMOptions object for single prompt.\n"
+                    "See: https://help.cleanlab.ai/reference/python/trustworthy_language_model/#class-tlmoptions"
+                )
 
-    def try_prompt(
-        self,
-        prompt: Sequence[str],
-        /,
-    ) -> List[Optional[TLMResponse]]:
-        """
-        Gets response and trustworthiness score for any batch of prompts,
-        handling any failures (errors of timeouts) by returning None in place of the failures.
+            return self._event_loop.run_until_complete(
+                self.prompt_async(
+                    prompt,
+                    cast(Union[None, TLMOptions], options),
+                    retries=retries,
+                )
+            )
 
-        The list returned will have the same length as the input list, if there are any
-        failures (errors or timeout) processing some inputs, the list will contain None in place of the response.
-
-        This is the recommended way to get TLM responses and trustworthiness scores for big datasets of many prompts,
-        where some individual TLM responses within the dataset may fail. It ensures partial results are not lost.
-
-        Args:
-            prompt (Sequence[str]): list of multiple prompts for the TLM
-        Returns:
-            List[Optional[TLMResponse]]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
-                The returned list will always have the same length as the input list.
-                In case of TLM failure on any prompt (due to timeouts or other errors),
-                the return list will contain None in place of the TLM response for that failed prompt.
-                Use this to obtain TLM results for as many prompts as possible,
-                but you might miss out on certain error messages.
-                If you prefer to be notified immediately about any errors or timeouts when running many prompts,
-                use the [`prompt()`](#method-prompt) method instead.
-        """
-        validate_tlm_try_prompt(prompt)
-
-        return cast(
-            List[Optional[TLMResponse]],
-            self._event_loop.run_until_complete(
-                self._batch_prompt(prompt, capture_exceptions=True),
-            ),
-        )
+        else:
+            raise ValueError("prompt must be a string or list of strings.")
 
     async def prompt_async(
         self,
-        prompt: Union[str, Sequence[str]],
-        /,
-    ) -> Union[TLMResponse, List[TLMResponse]]:
-        """
-        Asynchronously get response and trustworthiness score for any text input from TLM.
-        This method is similar to the [`prompt()`](#method-prompt) method but operates asynchronously,
-        allowing for non-blocking concurrent operations.
-
-        Use this method if prompts are streaming in one at a time, and you want to return results
-        for each one as quickly as possible, without the TLM execution of any one prompt blocking the execution of the others.
-        Asynchronous methods do not block until completion, so you will need to fetch the results yourself.
-
-        Args:
-            prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
-        Returns:
-            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
-                If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
-                This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
-        """
-        validate_tlm_prompt(prompt)
-
-        async with aiohttp.ClientSession() as session:
-            if isinstance(prompt, str):
-                tlm_response = await self._prompt_async(
-                    prompt, session, timeout=self._timeout, capture_exceptions=False
-                )
-                return cast(TLMResponse, tlm_response)
-
-            return cast(
-                List[TLMResponse],
-                await self._batch_prompt(prompt, capture_exceptions=False),
-            )
-
-    async def _prompt_async(
-        self,
         prompt: str,
+        options: Optional[TLMOptions] = None,
         client_session: Optional[aiohttp.ClientSession] = None,
-        timeout: Optional[float] = None,
-        capture_exceptions: bool = False,
-        batch_index: Optional[int] = None,
-    ) -> Optional[TLMResponse]:
+        retries: int = 0,
+    ) -> TLMResponse:
         """
-        Private asynchronous method to get response and trustworthiness score from TLM.
+        (Asynchronously) Get response and confidence from TLM.
 
         Args:
             prompt (str): prompt for the TLM
-            client_session (aiohttp.ClientSession, optional): async HTTP session to use for TLM query. Defaults to None (creates a new session).
-            timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
-            capture_exceptions: if should return None in place of the response for any errors
-            batch_index: index of the prompt in the batch, used for error messages
+            options (Optional[TLMOptions]): options to parameterize TLM with. Defaults to None.
+            client_session (Optional[aiohttp.ClientSession]): async HTTP session to use for TLM query. Defaults to None.
+            retries (int): number of retries for TLM query. Defaults to 0.
         Returns:
-            TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
+            TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and confidence score
         """
-
-        try:
-            tlm_response = await asyncio.wait_for(
-                api.tlm_prompt(
-                    self._api_key,
-                    prompt,
-                    self._quality_preset,
-                    self._options,
-                    self._rate_handler,
-                    client_session,
-                    batch_index=batch_index,
-                    retries=_TLM_MAX_RETRIES,
-                ),
-                timeout=timeout,
+        async with self._query_semaphore:
+            tlm_response = await api.tlm_prompt(
+                self._api_key,
+                prompt,
+                self._quality_preset,
+                cast(JSONDict, options),
+                client_session,
+                retries=retries,
             )
-        except Exception as e:
-            if capture_exceptions:
-                return None
-            raise e
 
         return {
             "response": tlm_response["response"],
-            "trustworthiness_score": tlm_response["confidence_score"],
+            "confidence_score": tlm_response["confidence_score"],
         }
 
-    def get_trustworthiness_score(
+    def get_confidence_score(
         self,
-        prompt: Union[str, Sequence[str]],
-        response: Union[str, Sequence[str]],
+        prompt: Union[str, List[str]],
+        response: Union[str, List[str]],
+        options: Union[None, TLMOptions, List[Union[TLMOptions, None]]] = None,
+        timeout: Optional[float] = None,
+        retries: int = 1,
     ) -> Union[float, List[float]]:
-        """Computes trustworthiness score for arbitrary given prompt-response pairs.
+        """Gets confidence score for prompt-response pair(s).
 
         Args:
-            prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
-            response (str | Sequence[str]): existing response (or list of responses) associated with the input prompts.
-                These can be from any LLM or human-written responses.
+            prompt (str | List[str]): prompt (or list of multiple prompts) for the TLM
+            response (str | List[str]): response (or list of multiple responses) for the TLM to evaluate
+            options (None | TLMOptions | List[TLMOptions  |  None], optional): list of options (or instance of options) to pass to get confidence score method. Defaults to None.
+            timeout (Optional[float], optional): maximum allowed time (in seconds) to run all prompts and evaluate all responses. Defaults to None.
+                If the timeout is hit, this method will throw a `TimeoutError`.
+                Larger values give TLM a higher chance to return outputs for all of your prompts + responses.
+                Smaller values ensure this method does not take too long.
+            retries (int): number of retries to attempt for each individual prompt in case of internal error. Defaults to 1.
+                Larger values give TLM a higher chance of returning outputs for all of your prompts,
+                but this method will also take longer to alert you in cases of an unrecoverable error.
+                Set to 0 to never attempt any retries.
         Returns:
-            float | List[float]: float or list of floats (if multiple prompt-responses were provided) corresponding
-                to the TLM's trustworthiness score.
-                The score quantifies how confident TLM is that the given response is good for the given prompt.
-                If running on many prompt-response pairs simultaneously:
-                this method will raise an exception if any TLM errors or timeouts occur.
-                Use it if strict error handling and immediate notification of any exceptions/timeouts is preferred.
-                You will lose any partial results if an exception is raised.
-                If saving partial results is important, you can call this method on smaller batches of prompt-response pairs at a time
-                (and save intermediate results) or use the [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) method instead.
+            float (or list of floats if multiple prompt-responses were provided) corresponding to the TLM's confidence score.
+                    The score quantifies how confident TLM is that the given response is good for the given prompt.
         """
-        validate_tlm_prompt_response(prompt, response)
+        if isinstance(prompt, list):
+            if any(not isinstance(p, str) for p in prompt):
+                raise ValueError("All prompts must be strings.")
+            if any(not isinstance(r, str) for r in response):
+                raise ValueError("All responses must be strings.")
 
-        if isinstance(prompt, str) and isinstance(response, str):
-            return cast(
-                float,
-                self._event_loop.run_until_complete(
-                    self._get_trustworthiness_score_async(
-                        prompt, response, timeout=self._timeout, capture_exceptions=False
-                    )
-                ),
-            )
-
-        return cast(
-            List[float],
-            self._event_loop.run_until_complete(
-                self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=False)
-            ),
-        )
-
-    def try_get_trustworthiness_score(
-        self,
-        prompt: Sequence[str],
-        response: Sequence[str],
-    ) -> List[Optional[float]]:
-        """Gets trustworthiness score for batches of many prompt-response pairs.
-
-        The list returned will have the same length as the input list, if TLM hits any
-        errors or timeout processing certain inputs, the list will contain None
-        in place of the TLM score for this failed input.
-
-        This is the recommended way to get TLM trustworthiness scores for big datasets,
-        where some individual TLM calls within the dataset may fail. It will ensure partial results are not lost.
-
-        Args:
-            prompt (Sequence[str]): list of prompts for the TLM to evaluate
-            response (Sequence[str]): list of existing responses corresponding to the input prompts (from any LLM or human-written)
-        Returns:
-            List[float]: list of floats corresponding to the TLM's trustworthiness score.
-                The score quantifies how confident TLM is that the given response is good for the given prompt.
-                The returned list will always have the same length as the input list.
-                In case of TLM error or timeout on any prompt-response pair,
-                the returned list will contain None in place of the trustworthiness score.
-                Use this method if you prioritize obtaining results for as many inputs as possible,
-                however you might miss out on certain error messages.
-                If you prefer to be notified immediately about any errors or timeouts,
-                use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
-        """
-        validate_try_tlm_prompt_response(prompt, response)
-
-        return cast(
-            List[Optional[float]],
-            self._event_loop.run_until_complete(
-                self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=True)
-            ),
-        )
-
-    async def get_trustworthiness_score_async(
-        self,
-        prompt: Union[str, Sequence[str]],
-        response: Union[str, Sequence[str]],
-    ) -> Union[float, List[float]]:
-        """Asynchronously gets trustworthiness score for prompt-response pairs.
-        This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously,
-        allowing for non-blocking concurrent operations.
-
-        Use this method if prompt-response pairs are streaming in, and you want to return TLM scores
-        for each pair as quickly as possible, without the TLM scoring of any one pair blocking the scoring of the others.
-        Asynchronous methods do not block until completion, so you will need to fetch the results yourself.
-
-        Args:
-            prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
-            response (str | Sequence[str]): response (or list of responses) corresponding to the input prompts
-        Returns:
-            float | List[float]: float or list of floats (if multiple prompt-responses were provided) corresponding
-                to the TLM's trustworthiness score.
-                The score quantifies how confident TLM is that the given response is good for the given prompt.
-                This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
-        """
-        validate_tlm_prompt_response(prompt, response)
-
-        async with aiohttp.ClientSession() as session:
-            if isinstance(prompt, str) and isinstance(response, str):
-                trustworthiness_score = await self._get_trustworthiness_score_async(
-                    prompt, response, session, timeout=self._timeout, capture_exceptions=False
+            if not isinstance(response, list):
+                raise ValueError(
+                    "responses must be a list or iterable of strings when prompt is a list or iterable."
                 )
-                return cast(float, trustworthiness_score)
 
-            return cast(
-                List[float],
-                await self._batch_get_trustworthiness_score(
-                    prompt, response, capture_exceptions=False
-                ),
+            return self._batch_get_confidence_score(
+                prompt,
+                response,
+                options,
+                timeout=timeout,
+                retries=retries,
             )
 
-    async def _get_trustworthiness_score_async(
+        elif isinstance(prompt, str):
+            if not (options is None or isinstance(options, dict)):
+                raise ValueError(
+                    "options must be a single TLMOptions object for single prompt.\n"
+                    "See: https://help.cleanlab.ai/reference/python/trustworthy_language_model/#class-tlmoptions"
+                )
+
+            if not isinstance(response, str):
+                raise ValueError("responses must be a single string for single prompt.")
+
+            return self._event_loop.run_until_complete(
+                self.get_confidence_score_async(
+                    prompt,
+                    response,
+                    cast(Union[None, TLMOptions], options),
+                    retries=retries,
+                )
+            )
+
+        else:
+            raise ValueError("prompt must be a string or list/iterable of strings.")
+
+    async def get_confidence_score_async(
         self,
         prompt: str,
         response: str,
+        options: Optional[TLMOptions] = None,
         client_session: Optional[aiohttp.ClientSession] = None,
-        timeout: Optional[float] = None,
-        capture_exceptions: bool = False,
-        batch_index: Optional[int] = None,
-    ) -> Optional[float]:
-        """Private asynchronous method to get trustworthiness score for prompt-response pairs.
+        retries: int = 0,
+    ) -> float:
+        """(Asynchronously) gets confidence score for prompt-response pair.
 
         Args:
-            prompt: prompt for the TLM to evaluate
-            response: response corresponding to the input prompt
-            client_session: async HTTP session to use for TLM query. Defaults to None.
-            timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
-            capture_exceptions: if should return None in place of the response for any errors
-            batch_index: index of the prompt in the batch, used for error messages
+            prompt: prompt for the TLM
+            response: response for the TLM  to evaluate
+            options (Optional[TLMOptions]): options to parameterize TLM with. Defaults to None.
+            client_session (Optional[aiohttp.ClientSession]): async HTTP session to use for TLM query. Defaults to None.
+            retries (int): number of retries for TLM query. Defaults to 0.
         Returns:
-            float corresponding to the TLM's trustworthiness score
+            float corresponding to the TLM's confidence score
 
         """
         if self._quality_preset == "base":
-            raise ValidationError(
-                "Cannot get trustworthiness score with `base` quality_preset -- choose a higher preset."
+            raise ValueError(
+                "Cannot get confidence score with `base` quality_preset -- choose a higher preset."
             )
 
-        try:
-            tlm_response = await asyncio.wait_for(
-                api.tlm_get_confidence_score(
-                    self._api_key,
-                    prompt,
-                    response,
-                    self._quality_preset,
-                    self._options,
-                    self._rate_handler,
-                    client_session,
-                    batch_index=batch_index,
-                    retries=_TLM_MAX_RETRIES,
-                ),
-                timeout=timeout,
+        async with self._query_semaphore:
+            return cast(
+                float,
+                (
+                    await api.tlm_get_confidence_score(
+                        self._api_key,
+                        prompt,
+                        response,
+                        self._quality_preset,
+                        cast(JSONDict, options),
+                        client_session,
+                        retries=retries,
+                    )
+                )["confidence_score"],
             )
-
-            return cast(float, tlm_response["confidence_score"])
-
-        except Exception as e:
-            if capture_exceptions:
-                return None
-            raise e
-
-
-class TLMResponse(TypedDict):
-    """A typed dict containing the response and trustworthiness score from the Trustworthy Language Model.
-
-    Attributes:
-        response (str): text response from the Trustworthy Language Model.
-
-        trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
-        A higher score indicates a higher confidence that the response is correct/trustworthy. The trustworthiness score
-        is omitted if TLM is run with quality preset "base".
-    """
-
-    response: str
-    trustworthiness_score: Optional[float]
-
-
-class TLMOptions(TypedDict):
-    """Typed dict containing advanced configuration options for the Trustworthy Language Model.
-    Many of these configurations are automatically determined by the quality preset selected
-    (see the arguments in the TLM [initialization method](../studio#method-tlm) to learn more about quality presets).
-    Specifying custom values here will override any default values from the quality preset.
-
-    For all options described below, higher/more expensive settings will lead to longer runtimes and may consume more tokens internally.
-    The high token cost might make it such that you are not able to run long prompts (or prompts with long responses) in your account,
-    unless your token limits are increased. If you are hit token limit issues, try using lower/less expensive settings
-    to be able to run longer prompts/responses.
-
-    The default values corresponding to each quality preset (specified when instantiating [`Studio.TLM()`](../studio/#method-tlm)) are:
-    - **best:** `num_candidate_responses` = 6, `num_consistency_samples` = 8, `use_self_reflection` = True. This preset will improve LLM responses.
-    - **high:** `num_candidate_responses` = 4, `num_consistency_samples` = 8, `use_self_reflection` = True. This preset will improve LLM responses.
-    - **medium:** `num_candidate_responses` = 1, `num_consistency_samples` = 8, `use_self_reflection` = True.
-    - **low:** `num_candidate_responses` = 1, `num_consistency_samples` = 4, `use_self_reflection` = True.
-    - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False. This preset is equivalent to a regular LLM call.
-
-    By default, the TLM is set to the "medium" quality preset. The default `model` used is "gpt-3.5-turbo-16k", and `max_tokens` is 512 for all quality presets.
-    You can set custom values for these arguments regardless of the quality preset specified.
-
-    Args:
-        model (str, default = "gpt-3.5-turbo-16k"): underlying LLM to use (better models will yield better results).
-        Models currently supported include "gpt-3.5-turbo-16k", "gpt-4".
-
-        max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
-        This number will impact the maximum number of tokens you will see in the output response, and also the number of tokens
-        that can be generated internally within the TLM (to estimate the trustworthiness score).
-        Higher values here can produce better (more reliable) TLM responses and trustworthiness scores, but at higher costs/runtimes.
-        If you are experiencing token limit errors while using the TLM (especially on higher quality presets), consider lowering this number.
-        This parameter must be between 64 and 512.
-
-        num_candidate_responses (int, default = 1): how many alternative candidate responses are internally generated by TLM.
-        TLM scores the trustworthiness of each candidate response, and then returns the most trustworthy one.
-        Higher values here can produce better (more accurate) responses from the TLM, but at higher costs/runtimes (and internally consumes more tokens).
-        This parameter must be between 1 and 20.
-        When it is 1, TLM simply returns a standard LLM response and does not attempt to improve it.
-
-        num_consistency_samples (int, default = 8): the amount of internal sampling to evaluate LLM-response-consistency.
-        This consistency forms a big part of the returned trustworthiness score, helping quantify the epistemic uncertainty associated with
-        strange prompts or prompts that are too vague/open-ended to receive a clearly defined 'good' response.
-        Higher values here produce better (more reliable) TLM trustworthiness scores, but at higher costs/runtimes.
-        This parameter must be between 0 and 20.
-
-        use_self_reflection (bool, default = `True`): whether the LLM is asked to self-reflect upon the response it
-        generated and self-evaluate this response.
-        This self-reflection forms a big part of the trustworthiness score, helping quantify aleatoric uncertainty associated with challenging prompts
-        and helping catch answers that are obviously incorrect/bad for a prompt asking for a well-defined answer that LLMs should be able to handle.
-        Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
-    """
-
-    model: NotRequired[str]
-    max_tokens: NotRequired[int]
-    num_candidate_responses: NotRequired[int]
-    num_consistency_samples: NotRequired[int]
-    use_self_reflection: NotRequired[bool]
 
 
 def is_notebook() -> bool:
