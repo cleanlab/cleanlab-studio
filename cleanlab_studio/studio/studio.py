@@ -2,7 +2,8 @@
 Python API for Cleanlab Studio.
 """
 
-from typing import Any, List, Literal, Optional, Union
+import re
+from typing import Any, List, Literal, Optional, Tuple, Union
 from types import FunctionType
 import warnings
 
@@ -456,6 +457,50 @@ class Studio:
 
         except (TimeoutError, CleansetError):
             return False
+
+    def enrich_data(
+        self,
+        prompt: str,
+        data: pd.DataFrame,
+        *,
+        regex: Union[str, re.Pattern, List[re.Pattern]] = None,
+        return_values: List[str] = None,
+        subset_indices: Union[Tuple[int, int], List[int], None] = (0, 3),
+        column_name_prefix: str = "",
+        **kwargs,
+    ) -> pd.DataFrame:
+        """
+        This method takes in a prompt template and a DataFrame and enriches the dataframe with the results of the prompting and associated trustworthiness scores.
+
+        Args:
+            prompt: Formatted f-string, that contains both the prompt, and names of columns to embed:
+
+                **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
+
+            regex: One or more expressions will be passed into re.compile or a list of already compiled regular expressions.
+                If a list is proivded, the regexes are applied in order and first succesfull match is returned.
+
+                **Note:** Regex patterns should each specify exactly 1 group that is the match group using parenthesis like so '.*(<desired match group pattern>)'.
+
+            return_values: List of possible values to return (zero shot classification)
+                If specified, this only ever returns one of these values in the metadata column.
+                After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
+
+            subset_indices: What subset of the supplied data to run this for. Can be either a list of unique indicies or a range. If None, we run on all the data.
+
+            column_name_prefix: Optional prefix appended to all columns names that are returned.
+
+        Returns:
+            A DataFrame that now contains additional `metadata` and `trustworthiness` columns related to the prompt. Columns will have `column_name_prefix_` prepended to them if specified.
+            `metadata` column = TLM outputs of the prompt and other data mutations if `regex` or `return_values` is not specified.
+            `trustworthiness` column = trustworthiness scores (which ignore the data mutations).
+
+            **Note**: If any data mutations were made to the original response from the prompt, an additional `log` column will be added to the DataFrame that contains the raw output before the mutations were applied.
+        """
+        tlm = self.TLM(**kwargs)
+        return api.enrich_data(
+            tlm, prompt, data, regex, return_values, subset_indices, column_name_prefix, **kwargs
+        )
 
 
 # decorate all functions of self

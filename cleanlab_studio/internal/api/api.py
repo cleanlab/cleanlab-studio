@@ -1,6 +1,7 @@
 import asyncio
 import io
 import os
+import re
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
 
@@ -40,8 +41,14 @@ except ImportError:
 from cleanlab_studio.internal.types import JSONDict, SchemaOverride
 from cleanlab_studio.version import __version__
 from cleanlab_studio.errors import NotInstalledError
-from cleanlab_studio.internal.api.api_helper import check_uuid_well_formed
-
+from cleanlab_studio.internal.api.api_helper import (
+    check_uuid_well_formed,
+    extract_df_subset,
+    get_compiled_regex_list,
+    get_regex_match,
+    get_return_values_match,
+)
+from cleanlab_studio.studio.trustworthy_language_model import TLM
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
@@ -704,6 +711,92 @@ async def tlm_get_confidence_score(
             await client_session.close()
 
     return cast(JSONDict, res_json)
+
+
+def enrich_data(
+    tlm: TLM,
+    prompt: str,
+    data: pd.DataFrame,
+    regex: Union[str, re.Pattern, List[re.Pattern]] = None,
+    return_values: List[str] = None,
+    subset_indices: Union[Tuple[int, int], List[int], None] = (0, 3),
+    column_name_prefix: str = "",
+    **kwargs,
+) -> pd.DataFrame:
+    """
+    Returns a DataFrame `results` with two columns: 'metadata', 'trustworthiness'.
+    metadata column = TLM outputs of the prompt (+ regex if regex was applied)
+    trustworthiness column = trustworthiness scores (which ignore the regex)
+
+    If `subset_indices` is not None, we only return these for the subset of indices from the `data` DataFrame.
+    As index for `results`, we use the same index that `data` DataFrame was using.
+    `subset_indices` is required to be a .iloc
+
+    If regex is supplied, `results` can have a third column:
+    logs = raw LLM output str, before regular expression was applied.
+
+    Arguments:
+    prompt: f-string formatted string, that contains both the prompt, and names of columns to embed:
+    Example: "Is this a numeric value, answer Yes or No only. Value: {column_name}"
+
+    regex: str or List[str] that will be passed into re.compile. We can support multiple here, applied in a chain.
+        Or re.compile object that is already a Python regular expression.
+        Open to other suggestions here!
+        This regex implements str -> str mapping that is one of:
+        replacement/substution, extraction, matching (return true/false string),
+        Open to other suggestions here!
+        This is applied directly to TLM outputs.
+
+    return_values: Set of possible values to return (zero shot classification)
+    If specified, this only ever returns one of these values in the metadata column.
+    After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
+
+    subset_indices: what subset of the supplied data to run this for.
+    We only run on this subset of the data. If None, we run on all the data.
+
+    column_name_prefix: optional prefix appended to all columns names that are returned.
+
+    kwargs: includes the following (do not document them for now)
+        llm_init_kwargs: dict passed into TLM constructor
+        llm_prompt_kwargs: dict passed into TLM.prompt()
+
+    """
+    subset_data = extract_df_subset(data, subset_indices)
+    formatted_prompts = subset_data.apply(lambda x: prompt.format(**x), axis=1).to_list()
+    outputs = tlm.try_prompt(formatted_prompts)
+
+    if column_name_prefix != "":
+        column_name_prefix = column_name_prefix + "_"
+
+    if (
+        regex is None and return_values is None
+    ):  # we do not need to have a "logs" column as original output is not augmented by regex or return values
+        subset_data[f"{column_name_prefix}metadata"] = [output["response"] for output in outputs]
+        subset_data[f"{column_name_prefix}trustworthiness"] = [
+            output["trustworthiness_score"] for output in outputs
+        ]
+        return subset_data
+
+    subset_data[f"{column_name_prefix}logs"] = [output["response"] for output in outputs]
+    subset_data[f"{column_name_prefix}trustworthiness"] = [
+        output["trustworthiness_score"] for output in outputs
+    ]
+
+    if regex:
+        regex_list = get_compiled_regex_list(regex)
+        subset_data[f"{column_name_prefix}metadata"] = subset_data[
+            f"{column_name_prefix}logs"
+        ].apply(lambda x: get_regex_match(x, regex_list))
+    else:
+        subset_data[f"{column_name_prefix}metadata"] = subset_data[f"{column_name_prefix}logs"]
+
+    if return_values:
+        return_values_pattern = r"(" + "|".join(return_values) + ")"
+        subset_data[f"{column_name_prefix}metadata"] = subset_data[
+            f"{column_name_prefix}metadata"
+        ].apply(lambda x: get_return_values_match(x, return_values_pattern))
+
+    return subset_data
 
 
 def send_telemetry(info: JSONDict) -> None:
