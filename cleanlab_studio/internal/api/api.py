@@ -727,6 +727,7 @@ def enrich_data(
     Enriches a DataFrame with TLM responses and metadata.
 
     Args:
+        tlm: Trustworthy Language Model instance.
         prompt: Formatted f-string, that contains both the prompt, and names of columns to embed:
         regex: One or more expressions will be passed into re.compile or a list of already compiled regular expressions.
             If a list is proivded, the regexes are applied in order and first succesfull match is returned.
