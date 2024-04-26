@@ -103,8 +103,7 @@ class TLM:
             self._event_loop = asyncio.get_event_loop()
         except RuntimeError:
             self._event_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self._event_loop)
-            
+
         self._query_semaphore = asyncio.Semaphore(max_concurrent_requests)
 
     def _batch_prompt(
