@@ -21,11 +21,10 @@ def extract_df_subset(
     """Extract a subset of the dataframe based on the provided indices. If no indices are provided, the entire dataframe is returned. Indices can be range or specific row indices."""
     if subset_indices is None:
         return df
-
     if isinstance(subset_indices, range):
         subset_indices = subset_indices
-    else:
-        subset_indices = range(*subset_indices)  # Unpack range if provided as a tuple
+    if isinstance(subset_indices, tuple):
+        subset_indices = range(*subset_indices)
     subset_df = df.iloc[subset_indices].copy()
     return subset_df
 
