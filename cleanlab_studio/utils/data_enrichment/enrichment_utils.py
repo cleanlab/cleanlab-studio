@@ -15,7 +15,7 @@ def get_prompt_outputs(studio, prompt, data, **kwargs):
 
 
 def extract_df_subset(
-    df: pd.DataFrame, subset_indices: Union[Tuple[int, int], List[int], None]
+    df: pd.DataFrame, subset_indices: Union[Tuple[int, int], List[int], None, range]
 ) -> pd.DataFrame:
     """Extract a subset of the dataframe based on the provided indices. If no indices are provided, the entire dataframe is returned. Indices can be range or specific row indices."""
     if subset_indices is None:
@@ -64,5 +64,5 @@ def get_return_values_match(response: str, return_values_pattern: re.Pattern) ->
     """Extract the provided return values from the response using regex pattern. Return first extracted value if multiple exist."""
     exact_matches = re.findall(return_values_pattern, str(response))
     if len(exact_matches) > 0:
-        return exact_matches[0]
+        return str(exact_matches[0])
     return None

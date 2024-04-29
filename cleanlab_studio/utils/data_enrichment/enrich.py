@@ -1,5 +1,5 @@
 import re
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 import pandas as pd
 from cleanlab_studio.utils.data_enrichment.enrichment_utils import (
     extract_df_subset,
@@ -16,9 +16,10 @@ def enrich_data(
     studio: Studio,
     prompt: str,
     data: pd.DataFrame,
-    regex: Union[str, re.Pattern, List[re.Pattern]] = None,
-    return_values: List[str] = None,
-    subset_indices: Union[Tuple[int, int], List[int], None] = (0, 3),
+    *,
+    regex: Optional[Union[str, re.Pattern, List[re.Pattern]]] = None,
+    return_values: Optional[List[str]] = None,
+    subset_indices: Optional[Union[Tuple[int, int], List[int]]] = (0, 3),
     column_name_prefix: str = "",
     **kwargs,
 ) -> pd.DataFrame:
