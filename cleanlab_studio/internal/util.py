@@ -15,7 +15,6 @@ import pandas as pd
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.errors import InvalidDatasetError, HandledError, ValidationError
-from cleanlab_studio.studio.studio import Studio
 
 try:
     import snowflake.snowpark as snowpark
@@ -335,7 +334,7 @@ def quote(s: str) -> str:
 def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
 
-def get_prompt_outputs(studio, data, prompt, **kwargs):
+def get_prompt_outputs(studio, prompt, data, **kwargs):
     """Returns the outputs of the prompt for each row in the dataframe."""
     tlm = studio.TLM(**kwargs)
     formatted_prompts = data.apply(lambda x: prompt.format(**x), axis=1).to_list()
@@ -391,7 +390,7 @@ def get_return_values_match(response: str, return_values_pattern: re.Pattern) ->
 
 
 def enrich_data(
-    studio: Studio,
+    studio,
     prompt: str,
     data: pd.DataFrame,
     regex: Union[str, re.Pattern, List[re.Pattern]] = None,
