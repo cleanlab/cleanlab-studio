@@ -1,7 +1,6 @@
 import asyncio
 import io
 import os
-import re
 import time
 from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
 
@@ -43,12 +42,7 @@ from cleanlab_studio.version import __version__
 from cleanlab_studio.errors import NotInstalledError
 from cleanlab_studio.internal.api.api_helper import (
     check_uuid_well_formed,
-    extract_df_subset,
-    get_compiled_regex_list,
-    get_regex_match,
-    get_return_values_match,
 )
-from cleanlab_studio.studio.trustworthy_language_model import TLM
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
@@ -711,71 +705,6 @@ async def tlm_get_confidence_score(
             await client_session.close()
 
     return cast(JSONDict, res_json)
-
-
-def enrich_data(
-    tlm: TLM,
-    prompt: str,
-    data: pd.DataFrame,
-    regex: Union[str, re.Pattern, List[re.Pattern]] = None,
-    return_values: List[str] = None,
-    subset_indices: Union[Tuple[int, int], List[int], None] = (0, 3),
-    column_name_prefix: str = "",
-    **kwargs,
-) -> pd.DataFrame:
-    """
-    Enriches a DataFrame with TLM responses and metadata.
-
-    Args:
-        tlm: Trustworthy Language Model instance.
-        prompt: Formatted f-string, that contains both the prompt, and names of columns to embed:
-        regex: One or more expressions will be passed into re.compile or a list of already compiled regular expressions.
-            If a list is proivded, the regexes are applied in order and first succesfull match is returned.
-        return_values: List of possible values to return (zero shot classification)
-            If specified, this only ever returns one of these values in the metadata column.
-            After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
-        subset_indices: What subset of the supplied data to run this for. Can be either a list of unique indicies or a range. If None, we run on all the data.
-        column_name_prefix: Optional prefix appended to all columns names that are returned.
-
-    Returns:
-        A DataFrame that now contains additional `metadata` and `trustworthiness` columns related to the prompt. Columns will have `column_name_prefix_` prepended to them if specified.
-    """
-    subset_data = extract_df_subset(data, subset_indices)
-    formatted_prompts = subset_data.apply(lambda x: prompt.format(**x), axis=1).to_list()
-    outputs = tlm.try_prompt(formatted_prompts)
-
-    if column_name_prefix != "":
-        column_name_prefix = column_name_prefix + "_"
-
-    if (
-        regex is None and return_values is None
-    ):  # we do not need to have a "logs" column as original output is not augmented by regex or return values
-        subset_data[f"{column_name_prefix}metadata"] = [output["response"] for output in outputs]
-        subset_data[f"{column_name_prefix}trustworthiness"] = [
-            output["trustworthiness_score"] for output in outputs
-        ]
-        return subset_data
-
-    subset_data[f"{column_name_prefix}logs"] = [output["response"] for output in outputs]
-    subset_data[f"{column_name_prefix}trustworthiness"] = [
-        output["trustworthiness_score"] for output in outputs
-    ]
-
-    if regex:
-        regex_list = get_compiled_regex_list(regex)
-        subset_data[f"{column_name_prefix}metadata"] = subset_data[
-            f"{column_name_prefix}logs"
-        ].apply(lambda x: get_regex_match(x, regex_list))
-    else:
-        subset_data[f"{column_name_prefix}metadata"] = subset_data[f"{column_name_prefix}logs"]
-
-    if return_values:
-        return_values_pattern = r"(" + "|".join(return_values) + ")"
-        subset_data[f"{column_name_prefix}metadata"] = subset_data[
-            f"{column_name_prefix}metadata"
-        ].apply(lambda x: get_return_values_match(x, return_values_pattern))
-
-    return subset_data
 
 
 def send_telemetry(info: JSONDict) -> None:

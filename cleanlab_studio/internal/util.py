@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, Optional, TypeVar, Union, Callable, Dict, List
+from typing import Any, Optional, Tuple, TypeVar, Union, Callable, Dict, List
 import math
 import functools
 import sys
@@ -7,16 +7,15 @@ import traceback
 import contextlib
 import subprocess
 import platform
-import requests
 import re
 
 
-import numpy as np
 import pandas as pd
 
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.settings import CleanlabSettings
-from cleanlab_studio.errors import InvalidDatasetError, HandledError
+from cleanlab_studio.errors import InvalidDatasetError, HandledError, ValidationError
+from cleanlab_studio.studio.studio import Studio
 
 try:
     import snowflake.snowpark as snowpark
@@ -335,3 +334,127 @@ def quote(s: str) -> str:
 
 def quote_list(l: List[str]) -> List[str]:
     return [quote(i) for i in l]
+
+def get_prompt_outputs(studio, data, prompt, **kwargs):
+    """Returns the outputs of the prompt for each row in the dataframe."""
+    tlm = studio.TLM(**kwargs)
+    formatted_prompts = data.apply(lambda x: prompt.format(**x), axis=1).to_list()
+    outputs = tlm.try_prompt(formatted_prompts)
+    return outputs
+
+def extract_df_subset(
+    df: pd.DataFrame, subset_indices: Union[Tuple[int, int], List[int], None]
+) -> pd.DataFrame:
+    """Extract a subset of the dataframe based on the provided indices. If no indices are provided, the entire dataframe is returned. Indices can be range or specific row indices."""
+    if subset_indices is None:
+        print("Processing your full dataset since `subset_indices` is None. This may take a while. Specify this argument to get faster results for a subset of your dataset.")
+        return df
+    if isinstance(subset_indices, range):
+        subset_indices = subset_indices
+    if isinstance(subset_indices, tuple):
+        subset_indices = range(*subset_indices)
+    subset_df = df.iloc[subset_indices].copy()
+    return subset_df
+
+
+def get_compiled_regex_list(regex: Union[str, re.Pattern, List[re.Pattern]]) -> List[re.Pattern]:
+    """Compile the regex pattern(s) provided and return a list of compiled regex patterns."""
+    if isinstance(regex, str):
+        return [re.compile(rf"{regex}")]
+    elif isinstance(regex, re.Pattern):
+        return [regex]
+    elif isinstance(regex, list):
+        return regex
+    else:
+        raise ValidationError("Passed in regex can only be type one of: str, re.Pattern, or list of re.Pattern.")
+
+
+def get_regex_match(response: str, regex_list: List[re.Pattern]) -> Union[str, None]:
+    """Extract the first match from the response using the provided regex patterns. Return first match if multiple exist.
+    Note: This function assumes the regex patterns each specify exactly 1 group that is the match group using '(<group>)'."""
+    for regex_pattern in regex_list:
+        pattern_match = regex_pattern.match(response)
+        if pattern_match:
+            return pattern_match.group(
+                1
+            )  # TODO: currently, this assumes 1 group in the supplied regex as the "match" group and takes that match if it exists.
+    print(f'Your provided regex: {str(regex_list)} did not match a single LLM output across the dataset. This message is simply to inform you that the regex is not having any effect.')
+    return None
+
+
+def get_return_values_match(response: str, return_values_pattern: re.Pattern) -> Union[str, None]:
+    """Extract the provided return values from the response using regex pattern. Return first extracted value if multiple exist."""
+    exact_matches = re.findall(return_values_pattern, str(response))
+    if len(exact_matches) > 0:
+        return exact_matches[0]
+    return None
+
+
+def enrich_data(
+    studio: Studio,
+    prompt: str,
+    data: pd.DataFrame,
+    regex: Union[str, re.Pattern, List[re.Pattern]] = None,
+    return_values: List[str] = None,
+    subset_indices: Union[Tuple[int, int], List[int], None] = (0, 3),
+    column_name_prefix: str = "",
+    **kwargs,
+) -> pd.DataFrame:
+    """
+    This method takes in a Studio client object, prompt template and a DataFrame and enriches the dataframe with the results of the prompting and associated trustworthiness scores.
+
+    Args:
+        prompt: Formatted f-string, that contains both the prompt, and names of columns to embed.
+            **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
+        regex: One or more expressions will be passed into re.compile or a list of already compiled regular expressions.
+            If a list is proivded, the regexes are applied in order and first succesfull match is returned.
+            **Note:** Regex patterns should each specify exactly 1 group that is the match group using parenthesis like so '.*(<desired match group pattern>)'.
+            **Example:** `r'.*(Bird|[Rr]abbit).*'` will match any string that is the word 'Bird', 'Rabbit' or 'rabbit' into group 1.
+        return_values: List of all possible values for the `metadata` column.
+            If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
+            After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
+        subset_indices: What subset of the supplied data to run this for. Can be either a list of unique indicies or a range. If None, we run on all the data.
+        column_name_prefix: Optional prefix appended to all columns names that are returned.
+
+    Returns:
+        A DataFrame that now contains additional `metadata` and `trustworthiness` columns related to the prompt. Columns will have `column_name_prefix_` prepended to them if specified.
+        `metadata` column = responses to the prompt and other data mutations if `regex` or `return_values` is not specified.
+        `trustworthiness` column = trustworthiness of the prompt responses (which ignore the data mutations).
+        **Note**: If any data mutations were made to the original response from the prompt, an additional `log` column will be added to the DataFrame that contains the raw output before the mutations were applied.
+    """
+    subset_data = extract_df_subset(data, subset_indices)
+    outputs = get_prompt_outputs(studio, prompt, subset_data, **kwargs)
+
+    if column_name_prefix != "":
+        column_name_prefix = column_name_prefix + "_"
+
+    if (
+        regex is None and return_values is None
+    ):  # we do not need to have a "logs" column as original output is not augmented by regex or return values
+        subset_data[f"{column_name_prefix}metadata"] = [output["response"] for output in outputs]
+        subset_data[f"{column_name_prefix}trustworthiness"] = [
+            output["trustworthiness_score"] for output in outputs
+        ]
+        return subset_data
+
+    subset_data[f"{column_name_prefix}logs"] = [output["response"] for output in outputs]
+    subset_data[f"{column_name_prefix}trustworthiness"] = [
+        output["trustworthiness_score"] for output in outputs
+    ]
+
+    if regex:
+        regex_list = get_compiled_regex_list(regex)
+        subset_data[f"{column_name_prefix}metadata"] = subset_data[
+            f"{column_name_prefix}logs"
+        ].apply(lambda x: get_regex_match(x, regex_list))
+    else:
+        subset_data[f"{column_name_prefix}metadata"] = subset_data[f"{column_name_prefix}logs"]
+
+    if return_values:
+        return_values_pattern = r"(" + "|".join(return_values) + ")"
+        subset_data[f"{column_name_prefix}metadata"] = subset_data[
+            f"{column_name_prefix}metadata"
+        ].apply(lambda x: get_return_values_match(x, return_values_pattern))
+
+    return subset_data
+
