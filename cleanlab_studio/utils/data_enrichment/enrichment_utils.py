@@ -60,7 +60,7 @@ def get_regex_match(response: str, regex_list: List[re.Pattern]) -> Union[str, N
     return None
 
 
-def get_return_values_match(response: str, return_values_pattern: re.Pattern) -> Union[str, None]:
+def get_return_values_match(response: str, return_values_pattern: str) -> Union[str, None]:
     """Extract the provided return values from the response using regex pattern. Return first extracted value if multiple exist."""
     exact_matches = re.findall(return_values_pattern, str(response))
     if len(exact_matches) > 0:
