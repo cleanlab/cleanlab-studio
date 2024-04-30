@@ -1,6 +1,6 @@
 from difflib import SequenceMatcher
 import re
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 import warnings
 
 import pandas as pd
@@ -11,7 +11,7 @@ from cleanlab_studio.studio.trustworthy_language_model import TLMResponse
 
 
 def get_prompt_outputs(
-    studio: Studio, prompt: str, data: pd.DataFrame, **kwargs
+    studio: Studio, prompt: str, data: pd.DataFrame, **kwargs: Any
 ) -> List[TLMResponse | None]:
     """Returns the outputs of the prompt for each row in the dataframe."""
     tlm = studio.TLM(**kwargs)

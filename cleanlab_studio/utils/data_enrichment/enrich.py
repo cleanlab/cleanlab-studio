@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 import pandas as pd
 from cleanlab_studio.utils.data_enrichment.enrichment_utils import (
     extract_df_subset,
@@ -24,7 +24,7 @@ def enrich_data(
     subset_indices: Optional[Union[Tuple[int, int], List[int]]] = (0, 3),
     metadata_column_name: str = "metadata",
     disable_warnings: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """
     Generate a column of arbitrary metadata for your DataFrame, reliably at scale with Generative AI.
