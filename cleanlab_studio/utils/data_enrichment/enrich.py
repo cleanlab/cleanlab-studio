@@ -7,6 +7,7 @@ from cleanlab_studio.utils.data_enrichment.enrichment_utils import (
     get_prompt_outputs,
     get_regex_match,
     get_return_values_match,
+    optimize_prompt,
 )
 
 from cleanlab_studio.studio.studio import Studio
@@ -19,8 +20,10 @@ def enrich_data(
     *,
     regex: Optional[Union[str, re.Pattern, List[re.Pattern]]] = None,
     return_values: Optional[List[str]] = None,
+    optimize_prompt: bool = True,
     subset_indices: Optional[Union[Tuple[int, int], List[int]]] = (0, 3),
     column_name_prefix: str = "",
+    disable_warnings: bool = False,
     **kwargs,
 ) -> pd.DataFrame:
     """
@@ -41,52 +44,89 @@ def enrich_data(
         return_values: List of all possible values for the `metadata` column.
             If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
             After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
+        optimize_prompt: When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
+            For instance, if the return_values are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `return_values`."
         subset_indices: What subset of the supplied data rows to generate metadata for. If None, we run on all of the data.
-        
-        This can be either a list of unique indices or a range. These indices are passed into pandas ``.iloc`` method, so should be integers based on row order as opposed to row-index labels pointing to `df.index`.
-        
-        We advise against collecting results for all of your data at first. First collect results for a smaller data subset, and use this subset to experiment with different values of the `prompt` or `regex` arguments. Only once the results look good for your subset should you run on the full dataset. 
-        
+            This can be either a list of unique indices or a range. These indices are passed into pandas ``.iloc`` method, so should be integers based on row order as opposed to row-index labels pointing to `df.index`.
+            We advise against collecting results for all of your data at first. First collect results for a smaller data subset, and use this subset to experiment with different values of the `prompt` or `regex` arguments. Only once the results look good for your subset should you run on the full dataset. 
         column_name_prefix: Optional prefix appended to all columns names that are returned.
+        disable_warnings: When True, warnings are disabled.
 
     Returns:
-        A DataFrame that now contains additional `metadata` and `trustworthiness` columns related to the prompt. Columns will have `column_name_prefix_` prepended to them if specified.
+        A DataFrame that contains `metadata` and `trustworthiness` columns related to the prompt in order of original data. Columns will have `column_name_prefix_` prepended to them if specified.
         `metadata` column = responses to the prompt and other data mutations if `regex` or `return_values` is not specified.
         `trustworthiness` column = trustworthiness of the prompt responses (which ignore the data mutations).
         **Note**: If you specified the `regex` or `return_values` arguments, some additional transformations may be applied to raw LLM outputs to produce the returned values. In these cases, an additional `log` column will be added to the returned DataFrame that records the raw LLM outputs.
     """
-    subset_data = extract_df_subset(data, subset_indices)
-    outputs = get_prompt_outputs(studio, prompt, subset_data, **kwargs)
+    if subset_indices:
+        df = extract_df_subset(data, subset_indices)
+
+    if optimize_prompt:
+        final_prompt = optimize_prompt(prompt, return_values)
+
+    outputs = get_prompt_outputs(studio, final_prompt, df, **kwargs)
 
     if column_name_prefix != "":
         column_name_prefix = column_name_prefix + "_"
 
     if (
         regex is None and return_values is None
-    ):  # we do not need to have a "logs" column as original output is not augmented by regex or return values
-        subset_data[f"{column_name_prefix}metadata"] = [output["response"] for output in outputs]
-        subset_data[f"{column_name_prefix}trustworthiness"] = [
+    ):  # we do not need to have a "log" column as original output is not augmented by regex or return values
+        df[f"{column_name_prefix}metadata"] = [output["response"] for output in outputs]
+        df[f"{column_name_prefix}trustworthiness"] = [
             output["trustworthiness_score"] for output in outputs
         ]
-        return subset_data
+        return df[[f"{column_name_prefix}metadata", f"{column_name_prefix}trustworthiness"]]
 
-    subset_data[f"{column_name_prefix}logs"] = [output["response"] for output in outputs]
-    subset_data[f"{column_name_prefix}trustworthiness"] = [
+    df[f"{column_name_prefix}log"] = [output["response"] for output in outputs]
+    df[f"{column_name_prefix}trustworthiness"] = [
         output["trustworthiness_score"] for output in outputs
     ]
 
     if regex:
         regex_list = get_compiled_regex_list(regex)
-        subset_data[f"{column_name_prefix}metadata"] = subset_data[
-            f"{column_name_prefix}logs"
-        ].apply(lambda x: get_regex_match(x, regex_list))
+        df[f"{column_name_prefix}metadata"] = df[f"{column_name_prefix}log"].apply(
+            lambda x: get_regex_match(x, regex_list)
+        )
     else:
-        subset_data[f"{column_name_prefix}metadata"] = subset_data[f"{column_name_prefix}logs"]
+        df[f"{column_name_prefix}metadata"] = df[f"{column_name_prefix}log"]
 
     if return_values:
         return_values_pattern = r"(" + "|".join(return_values) + ")"
-        subset_data[f"{column_name_prefix}metadata"] = subset_data[
-            f"{column_name_prefix}metadata"
-        ].apply(lambda x: get_return_values_match(x, return_values_pattern))
+        df[f"{column_name_prefix}metadata"] = df[f"{column_name_prefix}metadata"].apply(
+            lambda x: get_return_values_match(
+                x, return_values, return_values_pattern, disable_warnings
+            )
+        )
 
-    return subset_data
+    return df[
+        [
+            f"{column_name_prefix}metadata",
+            f"{column_name_prefix}trustworthiness",
+            f"{column_name_prefix}log",
+        ]
+    ]
+
+
+def get_regex_matches(
+    column_data: Union[pd.Series, List[str]],
+    regex: Union[str, re.Pattern, List[re.Pattern]],
+):
+    """
+    Extracts the first match from the response using the provided regex patterns. Return first match if multiple exist.
+    Note: This function assumes the regex patterns each specify exactly 1 group that is the match group using '(<group>)'.
+
+    Args:
+        column_data: A pandas series or list of strings that you want to apply the regex to.
+        regex: A single regex pattern or a list of regex patterns to apply to the column_data.
+
+    Returns:
+        A pandas series of the first match from the response using the provided regex patterns.
+    """
+    regex_list = get_compiled_regex_list(regex)
+    if isinstance(column_data, list):
+        return [get_regex_match(x, regex_list) for x in column_data]
+    elif isinstance(column_data, pd.Series):
+        return column_data.apply(lambda x: get_regex_match(x, regex_list))
+    else:
+        raise TypeError("column_data should be a pandas Series or a list of strings.")

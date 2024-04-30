@@ -1,5 +1,7 @@
+from difflib import SequenceMatcher
 import re
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
+import warnings
 
 import pandas as pd
 
@@ -51,9 +53,7 @@ def get_regex_match(response: str, regex_list: List[re.Pattern]) -> Union[str, N
     for regex_pattern in regex_list:
         pattern_match = regex_pattern.match(response)
         if pattern_match:
-            return pattern_match.group(
-                1
-            )  # TODO: currently, this assumes 1 group in the supplied regex as the "match" group and takes that match if it exists.
+            return pattern_match.group(1)
     print(
         f"Your provided regex: {str(regex_list)} did not match a single LLM output across the dataset. This message is simply to inform you that the regex is not having any effect."
     )
@@ -66,3 +66,55 @@ def get_return_values_match(response: str, return_values_pattern: str) -> Union[
     if len(exact_matches) > 0:
         return str(exact_matches[0])
     return None
+
+
+def optimize_prompt(prompt: str, return_values: Optional[List[str]] = None) -> str:
+    """Optimize the prompt by ammending original.
+    Adds a pre-prompt message if return_values are provided. This will help the LLM understand it's response must exactly match one of the return values."""
+
+    if return_values is not None:
+        string_return_values = str(return_values).replace("'", "")
+        pre_prompt = (
+            f"Your answer must exactly match one of the following values: {string_return_values}.\n"
+        )
+        optimal_prompt = f"{pre_prompt}{prompt}"
+    else:
+        optimal_prompt = prompt
+    return optimal_prompt
+
+
+def parse_category(
+    response: str,
+    return_values: List[str],
+    return_values_pattern: Optional[str] = None,
+    disable_warnings: bool = False,
+) -> str:
+    """Extracts the provided return values from the response using regex patterns. Return first extracted value if multiple exist. If no value out of the possible `return_values` is directly mentioned in the response, the return value with greatest string similarity to the response is returned (along with a warning).
+
+    Params
+    ------
+    response: Response from the LLM
+    return_values: List of expected return values
+    return_values_pattern: Pre-compiled pattern of all return values. If not specified, pattern is created.
+    disable_warnings: If True, print warnings are disabled
+    """
+
+    response_str = str(response)
+
+    if return_values_pattern is None:
+        return_values_pattern = r"(" + "|".join(return_values) + ")"
+
+    # Parse category if LLM response is properly formatted
+    exact_matches = re.findall(return_values_pattern, response_str, re.IGNORECASE)
+    if len(exact_matches) > 0:
+        return str(exact_matches[0])
+
+    # If there are no exact matches to a specific category, return the closest category based on string similarity.
+    closest_match = max(return_values, key=lambda x: SequenceMatcher(None, response_str, x).ratio())
+    similarity_score = SequenceMatcher(None, response_str, closest_match).ratio()
+    str_warning = "match"
+    if similarity_score < 0.5:
+        str_warning = "remotely match"
+    if not disable_warnings:
+        warnings.warn(f"None of the return_values {str_warning} raw LLM output: {response_str}")
+    return closest_match
