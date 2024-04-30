@@ -39,7 +39,7 @@ def enrich_data(
         regex: One or more expressions will be passed into ``re.compile()`` or a list of already compiled regular expressions.
             The regex will be applied to the raw LLM outputs from your prompt, enabling additional control over the final column values returned.
             If a list is provided, the regexes are applied in order and first successful match is returned.
-            This regex argument is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time, but can easily transform the raw LLM outputs to be valid through regular expressions that extract or replace parts of the raw output string.
+            This `regex` argument is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time, but can easily transform the raw LLM outputs to be valid through regular expressions that extract or replace parts of the raw output string.
 
             **Note:** Regex patterns should each specify exactly 1 group that is the match group using parenthesis like so '.*(<desired match group pattern>)'.
             **Example:** `r'.*(Bird|[Rr]abbit).*'` will match any string that is the word 'Bird', 'Rabbit' or 'rabbit' into group 1.

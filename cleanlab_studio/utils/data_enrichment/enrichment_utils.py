@@ -7,9 +7,10 @@ import pandas as pd
 
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.studio.studio import Studio
+from cleanlab_studio.studio.trustworthy_language_model import TLMResponse
 
 
-def get_prompt_outputs(studio: Studio, prompt: str, data: pd.DataFrame, **kwargs) -> List[dict]:
+def get_prompt_outputs(studio: Studio, prompt: str, data: pd.DataFrame, **kwargs) -> TLMResponse:
     """Returns the outputs of the prompt for each row in the dataframe."""
     tlm = studio.TLM(**kwargs)
     formatted_prompts = data.apply(lambda x: prompt.format(**x), axis=1).to_list()
