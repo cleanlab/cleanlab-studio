@@ -37,8 +37,10 @@ def enrich_data(
         prompt: Formatted f-string, that contains both the prompt, and names of columns to embed.
             **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
         regex: One or more expressions will be passed into ``re.compile()`` or a list of already compiled regular expressions.
-        The regex will be applied to the raw LLM outputs from your prompt, enabling additional control over the final column values returned.
+            The regex will be applied to the raw LLM outputs from your prompt, enabling additional control over the final column values returned.
             If a list is provided, the regexes are applied in order and first successful match is returned.
+            This regex argument is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time, but can easily transform the raw LLM outputs to be valid through regular expressions that extract or replace parts of the raw output string.
+
             **Note:** Regex patterns should each specify exactly 1 group that is the match group using parenthesis like so '.*(<desired match group pattern>)'.
             **Example:** `r'.*(Bird|[Rr]abbit).*'` will match any string that is the word 'Bird', 'Rabbit' or 'rabbit' into group 1.
         return_values: List of all possible values for the `metadata` column.
@@ -112,7 +114,7 @@ def enrich_data(
 def get_regex_matches(
     column_data: Union[pd.Series, List[str]],
     regex: Union[str, re.Pattern, List[re.Pattern]],
-):
+) -> Union[pd.Series, List[str]]:
     """
     Extracts the first match from the response using the provided regex patterns. Return first match if multiple exist.
     Note: This function assumes the regex patterns each specify exactly 1 group that is the match group using '(<group>)'.
@@ -122,7 +124,7 @@ def get_regex_matches(
         regex: A single regex pattern or a list of regex patterns to apply to the column_data.
 
     Returns:
-        A pandas series of the first match from the response using the provided regex patterns.
+        The first matches of each response using the provided regex patterns.
     """
     regex_list = get_compiled_regex_list(regex)
     if isinstance(column_data, list):
