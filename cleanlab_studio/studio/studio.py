@@ -2,7 +2,6 @@
 Python API for Cleanlab Studio.
 """
 
-import re
 from typing import Any, List, Literal, Optional, Union
 from types import FunctionType
 import warnings

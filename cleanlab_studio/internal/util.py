@@ -14,7 +14,7 @@ import pandas as pd
 
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.settings import CleanlabSettings
-from cleanlab_studio.errors import InvalidDatasetError, HandledError, ValidationError
+from cleanlab_studio.errors import InvalidDatasetError, HandledError
 
 try:
     import snowflake.snowpark as snowpark
