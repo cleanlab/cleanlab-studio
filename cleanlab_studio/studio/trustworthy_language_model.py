@@ -87,7 +87,7 @@ class TLM:
         except RuntimeError:
             self._event_loop = asyncio.new_event_loop()
         self._rate_handler = TlmRateHandler()
-        
+
     async def _batch_prompt(
         self,
         prompts: Sequence[str],
