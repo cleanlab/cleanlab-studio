@@ -18,7 +18,7 @@ def enrich_data(
     prompt: str,
     data: pd.DataFrame,
     *,
-    regex: Optional[Union[str, re.Pattern, List[re.Pattern]]] = None,
+    regex: Optional[Union[str, re.Pattern[str], List[re.Pattern[str]]]] = None,
     return_values: Optional[List[str]] = None,
     optimize_prompt: bool = True,
     subset_indices: Optional[Union[Tuple[int, int], List[int]]] = (0, 3),
@@ -113,7 +113,7 @@ def enrich_data(
 
 def get_regex_matches(
     column_data: Union[pd.Series, List[str]],
-    regex: Union[str, re.Pattern, List[re.Pattern]],
+    regex: Union[str, re.Pattern[str], List[re.Pattern[str]]],
 ) -> Union[pd.Series, List[str]]:
     """
     Extracts the first match from the response using the provided regex patterns. Return first match if multiple exist.

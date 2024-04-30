@@ -6,9 +6,10 @@ import warnings
 import pandas as pd
 
 from cleanlab_studio.errors import ValidationError
+from cleanlab_studio.studio.studio import Studio
 
 
-def get_prompt_outputs(studio, prompt, data, **kwargs):
+def get_prompt_outputs(studio: Studio, prompt: str, data: pd.DataFrame, **kwargs) -> List[dict]:
     """Returns the outputs of the prompt for each row in the dataframe."""
     tlm = studio.TLM(**kwargs)
     formatted_prompts = data.apply(lambda x: prompt.format(**x), axis=1).to_list()
@@ -33,7 +34,9 @@ def extract_df_subset(
     return subset_df
 
 
-def get_compiled_regex_list(regex: Union[str, re.Pattern, List[re.Pattern]]) -> List[re.Pattern]:
+def get_compiled_regex_list(
+    regex: Union[str, re.Pattern[str], List[re.Pattern[str]]]
+) -> List[re.Pattern[str]]:
     """Compile the regex pattern(s) provided and return a list of compiled regex patterns."""
     if isinstance(regex, str):
         return [re.compile(rf"{regex}")]
@@ -47,7 +50,7 @@ def get_compiled_regex_list(regex: Union[str, re.Pattern, List[re.Pattern]]) -> 
         )
 
 
-def get_regex_match(response: str, regex_list: List[re.Pattern]) -> Union[str, None]:
+def get_regex_match(response: str, regex_list: List[re.Pattern[str]]) -> Union[str, None]:
     """Extract the first match from the response using the provided regex patterns. Return first match if multiple exist.
     Note: This function assumes the regex patterns each specify exactly 1 group that is the match group using '(<group>)'."""
     for regex_pattern in regex_list:
