@@ -22,7 +22,7 @@ def enrich_data(
     return_values: Optional[List[str]] = None,
     optimize_prompt: bool = True,
     subset_indices: Optional[Union[Tuple[int, int], List[int]]] = (0, 3),
-    column_name_prefix: str = "",
+    metadata_column_name: str = "metadata",
     disable_warnings: bool = False,
     **kwargs,
 ) -> pd.DataFrame:
@@ -44,12 +44,13 @@ def enrich_data(
         return_values: List of all possible values for the `metadata` column.
             If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
             After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
+            If `optimize_prompt` is True, the prompt will be automatically adjusted to include a statement that the response must match one of the `return_values`.
         optimize_prompt: When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
             For instance, if the return_values are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `return_values`."
         subset_indices: What subset of the supplied data rows to generate metadata for. If None, we run on all of the data.
             This can be either a list of unique indices or a range. These indices are passed into pandas ``.iloc`` method, so should be integers based on row order as opposed to row-index labels pointing to `df.index`.
             We advise against collecting results for all of your data at first. First collect results for a smaller data subset, and use this subset to experiment with different values of the `prompt` or `regex` arguments. Only once the results look good for your subset should you run on the full dataset.
-        column_name_prefix: Optional prefix appended to all columns names that are returned.
+        metadata_column_name: Optional name for the returned metadata column. Nmae acts as a prefix appended to all additional columns that are returned.
         disable_warnings: When True, warnings are disabled.
 
     Returns:
@@ -67,18 +68,16 @@ def enrich_data(
         prompt = get_optimized_prompt(prompt, return_values)
 
     outputs = get_prompt_outputs(studio, prompt, df, **kwargs)
-
-    if column_name_prefix != "":
-        column_name_prefix = column_name_prefix + "_"
+    column_name_prefix = metadata_column_name + "_"
 
     if (
         regex is None and return_values is None
     ):  # we do not need to have a "log" column as original output is not augmented by regex or return values
-        df[f"{column_name_prefix}metadata"] = [output["response"] for output in outputs]
+        df[f"{metadata_column_name}"] = [output["response"] for output in outputs]
         df[f"{column_name_prefix}trustworthiness"] = [
             output["trustworthiness_score"] for output in outputs
         ]
-        return df[[f"{column_name_prefix}metadata", f"{column_name_prefix}trustworthiness"]]
+        return df[[f"{metadata_column_name}", f"{column_name_prefix}trustworthiness"]]
 
     df[f"{column_name_prefix}log"] = [output["response"] for output in outputs]
     df[f"{column_name_prefix}trustworthiness"] = [
@@ -87,15 +86,15 @@ def enrich_data(
 
     if regex:
         regex_list = get_compiled_regex_list(regex)
-        df[f"{column_name_prefix}metadata"] = df[f"{column_name_prefix}log"].apply(
+        df[f"{metadata_column_name}"] = df[f"{column_name_prefix}log"].apply(
             lambda x: get_regex_match(x, regex_list)
         )
     else:
-        df[f"{column_name_prefix}metadata"] = df[f"{column_name_prefix}log"]
+        df[f"{metadata_column_name}"] = df[f"{column_name_prefix}log"]
 
     if return_values:
         return_values_pattern = r"(" + "|".join(return_values) + ")"
-        df[f"{column_name_prefix}metadata"] = df[f"{column_name_prefix}metadata"].apply(
+        df[f"{metadata_column_name}"] = df[f"{metadata_column_name}"].apply(
             lambda x: get_return_values_match(
                 x, return_values, return_values_pattern, disable_warnings
             )
@@ -103,7 +102,7 @@ def enrich_data(
 
     return df[
         [
-            f"{column_name_prefix}metadata",
+            f"{metadata_column_name}",
             f"{column_name_prefix}trustworthiness",
             f"{column_name_prefix}log",
         ]
