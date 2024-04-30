@@ -60,15 +60,7 @@ def get_regex_match(response: str, regex_list: List[re.Pattern]) -> Union[str, N
     return None
 
 
-def get_return_values_match(response: str, return_values_pattern: str) -> Union[str, None]:
-    """Extract the provided return values from the response using regex pattern. Return first extracted value if multiple exist."""
-    exact_matches = re.findall(return_values_pattern, str(response))
-    if len(exact_matches) > 0:
-        return str(exact_matches[0])
-    return None
-
-
-def optimize_prompt(prompt: str, return_values: Optional[List[str]] = None) -> str:
+def get_optimized_prompt(prompt: str, return_values: Optional[List[str]] = None) -> str:
     """Optimize the prompt by ammending original.
     Adds a pre-prompt message if return_values are provided. This will help the LLM understand it's response must exactly match one of the return values."""
 
@@ -83,7 +75,7 @@ def optimize_prompt(prompt: str, return_values: Optional[List[str]] = None) -> s
     return optimal_prompt
 
 
-def parse_category(
+def get_return_values_match(
     response: str,
     return_values: List[str],
     return_values_pattern: Optional[str] = None,

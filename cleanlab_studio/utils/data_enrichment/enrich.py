@@ -7,7 +7,7 @@ from cleanlab_studio.utils.data_enrichment.enrichment_utils import (
     get_prompt_outputs,
     get_regex_match,
     get_return_values_match,
-    optimize_prompt,
+    get_optimized_prompt,
 )
 
 from cleanlab_studio.studio.studio import Studio
@@ -28,7 +28,7 @@ def enrich_data(
 ) -> pd.DataFrame:
     """
     Generate a column of arbitrary metadata for your DataFrame, reliably at scale with Generative AI.
-    The metadata is separately generated for each row of your DataFrame, based on a prompt that specifies what information you need and what existing columns' data it should be derived from. 
+    The metadata is separately generated for each row of your DataFrame, based on a prompt that specifies what information you need and what existing columns' data it should be derived from.
     Each row of generated metadata is accompanied by a trustworthiness score, which helps you discover which metadata is most/least reliable.
     You can optionally apply regular expressions to further reformat your metadata beyond raw LLM outputs, or specify that each row of the metadata must be constrained to a particular set of values.
 
@@ -48,7 +48,7 @@ def enrich_data(
             For instance, if the return_values are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `return_values`."
         subset_indices: What subset of the supplied data rows to generate metadata for. If None, we run on all of the data.
             This can be either a list of unique indices or a range. These indices are passed into pandas ``.iloc`` method, so should be integers based on row order as opposed to row-index labels pointing to `df.index`.
-            We advise against collecting results for all of your data at first. First collect results for a smaller data subset, and use this subset to experiment with different values of the `prompt` or `regex` arguments. Only once the results look good for your subset should you run on the full dataset. 
+            We advise against collecting results for all of your data at first. First collect results for a smaller data subset, and use this subset to experiment with different values of the `prompt` or `regex` arguments. Only once the results look good for your subset should you run on the full dataset.
         column_name_prefix: Optional prefix appended to all columns names that are returned.
         disable_warnings: When True, warnings are disabled.
 
@@ -60,11 +60,13 @@ def enrich_data(
     """
     if subset_indices:
         df = extract_df_subset(data, subset_indices)
+    else:
+        df = data.copy()
 
     if optimize_prompt:
-        final_prompt = optimize_prompt(prompt, return_values)
+        prompt = get_optimized_prompt(prompt, return_values)
 
-    outputs = get_prompt_outputs(studio, final_prompt, df, **kwargs)
+    outputs = get_prompt_outputs(studio, prompt, df, **kwargs)
 
     if column_name_prefix != "":
         column_name_prefix = column_name_prefix + "_"
