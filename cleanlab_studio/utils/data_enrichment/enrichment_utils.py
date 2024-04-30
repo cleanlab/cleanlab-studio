@@ -10,7 +10,7 @@ from cleanlab_studio.studio.studio import Studio
 from cleanlab_studio.studio.trustworthy_language_model import TLMResponse
 
 
-def get_prompt_outputs(studio: Studio, prompt: str, data: pd.DataFrame, **kwargs) -> TLMResponse:
+def get_prompt_outputs(studio: Studio, prompt: str, data: pd.DataFrame, **kwargs) -> List[TLMResponse | None]:
     """Returns the outputs of the prompt for each row in the dataframe."""
     tlm = studio.TLM(**kwargs)
     formatted_prompts = data.apply(lambda x: prompt.format(**x), axis=1).to_list()
