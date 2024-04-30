@@ -72,27 +72,27 @@ def enrich_data(
     outputs = get_prompt_outputs(studio, prompt, df, **kwargs)
     column_name_prefix = metadata_column_name + "_"
 
+    df[f"{column_name_prefix}trustworthiness"] = [
+        output["trustworthiness_score"] if output is not None else None for output in outputs
+    ]
+    df[f"{metadata_column_name}"] = [
+        output["response"] if output is not None else None for output in outputs
+    ]
+
     if (
         regex is None and return_values is None
     ):  # we do not need to have a "log" column as original output is not augmented by regex or return values
-        df[f"{metadata_column_name}"] = [output["response"] for output in outputs]
-        df[f"{column_name_prefix}trustworthiness"] = [
-            output["trustworthiness_score"] for output in outputs
-        ]
         return df[[f"{metadata_column_name}", f"{column_name_prefix}trustworthiness"]]
 
-    df[f"{column_name_prefix}log"] = [output["response"] for output in outputs]
-    df[f"{column_name_prefix}trustworthiness"] = [
-        output["trustworthiness_score"] for output in outputs
+    df[f"{column_name_prefix}log"] = [
+        output["response"] if output is not None else None for output in outputs
     ]
 
     if regex:
         regex_list = get_compiled_regex_list(regex)
-        df[f"{metadata_column_name}"] = df[f"{column_name_prefix}log"].apply(
-            lambda x: get_regex_match(x, regex_list)
+        df[f"{metadata_column_name}"] = df[f"{metadata_column_name}"].apply(
+            lambda x: get_regex_match(x, regex_list, disable_warnings)
         )
-    else:
-        df[f"{metadata_column_name}"] = df[f"{column_name_prefix}log"]
 
     if return_values:
         return_values_pattern = r"(" + "|".join(return_values) + ")"
@@ -114,14 +114,16 @@ def enrich_data(
 def get_regex_matches(
     column_data: Union[pd.Series, List[str]],
     regex: Union[str, re.Pattern[str], List[re.Pattern[str]]],
+    disable_warnings: bool = False,
 ) -> Union[pd.Series, List[str]]:
     """
     Extracts the first match from the response using the provided regex patterns. Return first match if multiple exist.
-    Note: This function assumes the regex patterns each specify exactly 1 group that is the match group using '(<group>)'.
+    **Note:** This function assumes the regex patterns each specify exactly 1 group that is the match group using '(<group>)'.
 
     Args:
         column_data: A pandas series or list of strings that you want to apply the regex to.
         regex: A single regex pattern or a list of regex patterns to apply to the column_data.
+        disable_warnings: When True, warnings are disabled.
 
     Returns:
         The first matches of each response using the provided regex patterns.
@@ -130,6 +132,6 @@ def get_regex_matches(
     if isinstance(column_data, list):
         return [get_regex_match(x, regex_list) for x in column_data]
     elif isinstance(column_data, pd.Series):
-        return column_data.apply(lambda x: get_regex_match(x, regex_list))
+        return column_data.apply(lambda x: get_regex_match(x, regex_list, disable_warnings))
     else:
         raise TypeError("column_data should be a pandas Series or a list of strings.")

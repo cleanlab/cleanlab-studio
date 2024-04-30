@@ -10,7 +10,9 @@ from cleanlab_studio.studio.studio import Studio
 from cleanlab_studio.studio.trustworthy_language_model import TLMResponse
 
 
-def get_prompt_outputs(studio: Studio, prompt: str, data: pd.DataFrame, **kwargs) -> List[TLMResponse | None]:
+def get_prompt_outputs(
+    studio: Studio, prompt: str, data: pd.DataFrame, **kwargs
+) -> List[TLMResponse | None]:
     """Returns the outputs of the prompt for each row in the dataframe."""
     tlm = studio.TLM(**kwargs)
     formatted_prompts = data.apply(lambda x: prompt.format(**x), axis=1).to_list()
@@ -51,16 +53,19 @@ def get_compiled_regex_list(
         )
 
 
-def get_regex_match(response: str, regex_list: List[re.Pattern[str]]) -> Union[str, None]:
+def get_regex_match(
+    response: str, regex_list: List[re.Pattern[str]], disable_warnings: bool = False
+) -> Union[str, None]:
     """Extract the first match from the response using the provided regex patterns. Return first match if multiple exist.
     Note: This function assumes the regex patterns each specify exactly 1 group that is the match group using '(<group>)'."""
     for regex_pattern in regex_list:
         pattern_match = regex_pattern.match(response)
         if pattern_match:
             return pattern_match.group(1)
-    print(
-        f"Your provided regex: {str(regex_list)} did not match a single LLM output across the dataset. This message is simply to inform you that the regex is not having any effect."
-    )
+    if not disable_warnings:
+        warnings.warn(
+            f"Your provided regex: {str(regex_list)} did not match a single LLM output across the dataset. This message is simply to inform you that the regex is not having any effect."
+        )
     return None
 
 
