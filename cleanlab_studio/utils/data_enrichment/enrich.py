@@ -128,12 +128,12 @@ def get_regex_matches(
     **Example 2:** `r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'` will match an email in the raw response LLM response.
 
     Args:
-        column_data: A pandas series or list of strings that you want to apply the regex to.
-        regex: A single string expression that will be passed into ``re.compile()``, a single compiled expression or a list of already compiled regular expressions.
+        column_data: A pandas Series or list of strings, where you want to apply a regex to extract matches from each element. This could be the `metadata` column output by ``enrich_data()``.
+        regex: A string expression that will be passed into ``re.compile()``, a compiled regular expression, or a list of multiple already compiled regular expressions.
         disable_warnings: When True, warnings are disabled.
 
     Returns:
-        The first matches of each response using the provided regex patterns.
+        Extracted matches to the provided regular expression from each element of the data column (specifically, the first match is returned).
     """
     regex_list = get_compiled_regex_list(regex)
     if isinstance(column_data, list):
