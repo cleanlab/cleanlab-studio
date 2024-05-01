@@ -124,8 +124,8 @@ def get_regex_matches(
     If a list of regular expressions is provided, the expressions are applied in order, and the first valid regex match is returned.
 
     **Note:** Regex patterns should each specify exactly 1 group that is represents the desired characters to be extracted from the raw response using parenthesis like so '(<desired match group pattern>)'.
-    **Example 1:** `r'.*The answer is: (Bird|[Rr]abbit).*'` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response text. This can be used when you are asking the LLM to output COT or additional responses, however, only care about saving the answer for downstream tasks.
-    **Example 2:** `r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'` will match an email in the raw response LLM response. Similar patterns can be used when you want to extract a specifically structured part of the response.
+    **Example 1:** `r'.*The answer is: (Bird|[Rr]abbit).*'` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response text.
+    **Example 2:** `r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'` will match an email in the raw response LLM response.
 
     Args:
         column_data: A pandas series or list of strings that you want to apply the regex to.
