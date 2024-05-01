@@ -36,14 +36,14 @@ def enrich_data(
         studio: Cleanlab Studio client object, which you must instantiate before calling this method.
         prompt: Formatted f-string, that contains both the prompt, and names of columns to embed.
             **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
-        regex: A single string expression that will be passed into ``re.compile()``, a single compiled expression or a list of already compiled regular expressions.
-            The expressions passed here will be applied to the raw LLM outputs from your prompt, enabling additional control to better format the final outputs column.
+        regex: A string expression that will be passed into ``re.compile()``, a compiled regular expression, or a list of multiple already compiled regular expressions.
+            Optional expressions passed here will be applied to the raw LLM outputs from your prompt, enabling additional control to better format the final metadata output column.
             This `regex` argument is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time, but can easily transform the raw LLM outputs to be valid through regular expressions that extract parts of the raw output string.
             If a list of expressions is provided, the expressions are applied in order and first valid extraction is returned.
 
-            **Note:** Regex patterns should each specify exactly 1 group that is represents the desired characters to be extracted from the raw response using parenthesis like so '(<desired match group pattern>)'.
-            **Example 1:** `r'.*The answer is: (Bird|[Rr]abbit).*'` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response text. This can be used when you are asking the LLM to output COT or additional responses, however, only care about saving the answer for downstream tasks.
-            **Example 2:** `r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'` will match an email in the raw response LLM response. Similar patterns can be used when you want to extract a specifically structured part of the response.
+            **Note:** Each regex pattern should specify 1 group that represents the desired characters to extract from the raw LLM response using parenthesis like so: ``'(<desired match group pattern>)'``.
+            **Example 1:** ``regex = r'.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw LLM response. This might be useful if your prompt instructed the LLM to respond in this format.
+            **Example 2:** ``regex = r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'`` will extract an email in the raw LLM response. Similar patterns can be used to extract a specifically structured part of the LLM response.
         return_values: List of all possible values for the `metadata` column.
             If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
             After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
