@@ -7,11 +7,9 @@ import traceback
 import contextlib
 import subprocess
 import platform
-import requests
 import re
 
 
-import numpy as np
 import pandas as pd
 
 from cleanlab_studio.internal.api import api

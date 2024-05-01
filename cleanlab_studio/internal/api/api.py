@@ -40,8 +40,9 @@ except ImportError:
 from cleanlab_studio.internal.types import JSONDict, SchemaOverride
 from cleanlab_studio.version import __version__
 from cleanlab_studio.errors import NotInstalledError
-from cleanlab_studio.internal.api.api_helper import check_uuid_well_formed
-
+from cleanlab_studio.internal.api.api_helper import (
+    check_uuid_well_formed,
+)
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
