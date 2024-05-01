@@ -137,7 +137,7 @@ def get_regex_matches(
     """
     regex_list = get_compiled_regex_list(regex)
     if isinstance(column_data, list):
-        return [get_regex_match(x, regex_list) for x in column_data]
+        return [get_regex_match(x, regex_list, disable_warnings) for x in column_data]
     elif isinstance(column_data, pd.Series):
         return column_data.apply(lambda x: get_regex_match(x, regex_list, disable_warnings))
     else:
