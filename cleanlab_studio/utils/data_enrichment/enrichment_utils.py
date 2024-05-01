@@ -54,7 +54,7 @@ def get_compiled_regex_list(
 
 
 def get_regex_match(
-    response: str, regex_list: List[re.Pattern[str]], disable_warnings: bool = False
+    response: str, regex_list: List[re.Pattern[str]], disable_warnings: bool
 ) -> Union[str, None]:
     """Extract the first match from the response using the provided regex patterns. Return first match if multiple exist.
     Note: This function assumes the regex patterns each specify exactly 1 group that is the match group using '(<group>)'."""
@@ -75,9 +75,7 @@ def get_optimized_prompt(prompt: str, return_values: Optional[List[str]] = None)
 
     if return_values is not None:
         string_return_values = str(return_values).replace("'", "")
-        pre_prompt = (
-            f"Your answer must exactly match one of the following values: {string_return_values}.\n"
-        )
+        pre_prompt = f"Your answer must exactly match one of the following values: [{string_return_values}].\n"
         optimal_prompt = f"{pre_prompt}{prompt}"
     else:
         optimal_prompt = prompt
@@ -88,7 +86,7 @@ def get_return_values_match(
     response: str,
     return_values: List[str],
     return_values_pattern: Optional[str] = None,
-    disable_warnings: bool = False,
+    disable_warnings: bool = True,
 ) -> str:
     """Extracts the provided return values from the response using regex patterns. Return first extracted value if multiple exist. If no value out of the possible `return_values` is directly mentioned in the response, the return value with greatest string similarity to the response is returned (along with a warning).
 

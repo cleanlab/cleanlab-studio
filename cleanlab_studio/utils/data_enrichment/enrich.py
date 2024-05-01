@@ -36,13 +36,14 @@ def enrich_data(
         studio: Cleanlab Studio client object, which you must instantiate before calling this method.
         prompt: Formatted f-string, that contains both the prompt, and names of columns to embed.
             **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
-        regex: One or more expressions will be passed into ``re.compile()`` or a list of already compiled regular expressions.
-            The regex will be applied to the raw LLM outputs from your prompt, enabling additional control over the final column values returned.
-            If a list is provided, the regexes are applied in order and first successful match is returned.
-            This `regex` argument is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time, but can easily transform the raw LLM outputs to be valid through regular expressions that extract or replace parts of the raw output string.
+        regex: A single string expression that will be passed into ``re.compile()``, a single compiled expression or a list of already compiled regular expressions.
+            The expressions passed here will be applied to the raw LLM outputs from your prompt, enabling additional control to better format the final outputs column.
+            This `regex` argument is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time, but can easily transform the raw LLM outputs to be valid through regular expressions that extract parts of the raw output string.
+            If a list of expressions is provided, the expressions are applied in order and first valid extraction is returned.
 
-            **Note:** Regex patterns should each specify exactly 1 group that is the match group using parenthesis like so '.*(<desired match group pattern>)'.
-            **Example:** `r'.*(Bird|[Rr]abbit).*'` will match any string that is the word 'Bird', 'Rabbit' or 'rabbit' into group 1.
+            **Note:** Regex patterns should each specify exactly 1 group that is represents the desired characters to be extracted from the raw response using parenthesis like so '(<desired match group pattern>)'.
+            **Example 1:** `r'.*The answer is: (Bird|[Rr]abbit).*'` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response text. This can be used when you are asking the LLM to output COT or additional responses, however, only care about saving the answer for downstream tasks.
+            **Example 2:** `r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'` will match an email in the raw response LLM response. Similar patterns can be used when you want to extract a specifically structured part of the response.
         return_values: List of all possible values for the `metadata` column.
             If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
             After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
@@ -52,14 +53,14 @@ def enrich_data(
         subset_indices: What subset of the supplied data rows to generate metadata for. If None, we run on all of the data.
             This can be either a list of unique indices or a range. These indices are passed into pandas ``.iloc`` method, so should be integers based on row order as opposed to row-index labels pointing to `df.index`.
             We advise against collecting results for all of your data at first. First collect results for a smaller data subset, and use this subset to experiment with different values of the `prompt` or `regex` arguments. Only once the results look good for your subset should you run on the full dataset.
-        metadata_column_name: Optional name for the returned metadata column. Nmae acts as a prefix appended to all additional columns that are returned.
+        metadata_column_name: Optional name for the returned metadata column. Name acts as a prefix appended to all additional columns that are returned.
         disable_warnings: When True, warnings are disabled.
 
     Returns:
-        A DataFrame that contains `metadata` and `trustworthiness` columns related to the prompt in order of original data. Columns will have `column_name_prefix_` prepended to them if specified.
+        A DataFrame that contains `metadata` and `trustworthiness` columns related to the prompt in order of original data. Some columns names will have `metadata_column_name` prepended to them.
         `metadata` column = responses to the prompt and other data mutations if `regex` or `return_values` is not specified.
         `trustworthiness` column = trustworthiness of the prompt responses (which ignore the data mutations).
-        **Note**: If you specified the `regex` or `return_values` arguments, some additional transformations may be applied to raw LLM outputs to produce the returned values. In these cases, an additional `log` column will be added to the returned DataFrame that records the raw LLM outputs.
+        **Note**: If you specified the `regex` or `return_values` arguments, some additional transformations may be applied to raw LLM outputs to produce the returned values. In these cases, an additional `log` column will be added to the returned DataFrame that records the raw LLM outputs (feel free to disregard these).
     """
     if subset_indices:
         df = extract_df_subset(data, subset_indices)
@@ -117,12 +118,18 @@ def get_regex_matches(
     disable_warnings: bool = False,
 ) -> Union[pd.Series, List[str]]:
     """
-    Extracts the first match from the response using the provided regex patterns. Return first match if multiple exist.
-    **Note:** This function assumes the regex patterns each specify exactly 1 group that is the match group using '(<group>)'.
+    Extracts the first valid regex pattern from the response using the passed in regex patterns for each example in the column data.
+
+    This function is useful in settings where you want to tune the regex patterns to extract the most valid outputs out of the column data but do not want to continually prompt the LLM to generate new outputs.
+    If a list of expressions is provided, the expressions are applied in order and first valid extraction is returned.
+
+    **Note:** Regex patterns should each specify exactly 1 group that is represents the desired characters to be extracted from the raw response using parenthesis like so '(<desired match group pattern>)'.
+    **Example 1:** `r'.*The answer is: (Bird|[Rr]abbit).*'` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response text. This can be used when you are asking the LLM to output COT or additional responses, however, only care about saving the answer for downstream tasks.
+    **Example 2:** `r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'` will match an email in the raw response LLM response. Similar patterns can be used when you want to extract a specifically structured part of the response.
 
     Args:
         column_data: A pandas series or list of strings that you want to apply the regex to.
-        regex: A single regex pattern or a list of regex patterns to apply to the column_data.
+        regex: A single string expression that will be passed into ``re.compile()``, a single compiled expression or a list of already compiled regular expressions.
         disable_warnings: When True, warnings are disabled.
 
     Returns:
