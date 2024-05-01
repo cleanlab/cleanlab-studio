@@ -118,10 +118,10 @@ def get_regex_matches(
     disable_warnings: bool = False,
 ) -> Union[pd.Series, List[str]]:
     """
-    Extracts the first valid regex pattern from the response using the passed in regex patterns for each example in the column data.
+    Extracts the first match to the provided regular expression pattern from each example in the provided column of data.
 
-    This function is useful in settings where you want to tune the regex patterns to extract the most valid outputs out of the column data but do not want to continually prompt the LLM to generate new outputs.
-    If a list of expressions is provided, the expressions are applied in order and first valid extraction is returned.
+    Use this function for: tuning regex patterns to extract the best outputs from the raw LLM responses for your dataset obtained via ``enrich_data()``, without having to re-run the LLM.
+    If a list of regular expressions is provided, the expressions are applied in order, and the first valid regex match is returned.
 
     **Note:** Regex patterns should each specify exactly 1 group that is represents the desired characters to be extracted from the raw response using parenthesis like so '(<desired match group pattern>)'.
     **Example 1:** `r'.*The answer is: (Bird|[Rr]abbit).*'` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response text. This can be used when you are asking the LLM to output COT or additional responses, however, only care about saving the answer for downstream tasks.
