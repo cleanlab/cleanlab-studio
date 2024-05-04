@@ -123,7 +123,7 @@ def get_regex_matches(
     Use this function for: tuning regex patterns to extract the best outputs from the raw LLM responses for your dataset obtained via ``enrich_data()``, without having to re-run the LLM.
     If a list of regular expressions is provided, the expressions are applied in order, and the first valid regex match is returned.
 
-    **Note:** Regex patterns should each specify exactly 1 group that is represents the desired characters to be extracted from the raw response using parenthesis like so '(<desired match group pattern>)'.
+    **Note:** Regex patterns should each specify exactly 1 group that is represents the desired characters to be extracted from the raw response using parenthesis like so ``'(<desired match group pattern>)'``.
     **Example 1:** `r'.*The answer is: (Bird|[Rr]abbit).*'` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response text.
     **Example 2:** `r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'` will match an email in the raw response LLM response.
 
