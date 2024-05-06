@@ -82,7 +82,10 @@ class TLM:
 
             nest_asyncio.apply()
 
-        self._event_loop = asyncio.get_event_loop()
+        try:
+            self._event_loop = asyncio.get_event_loop()
+        except RuntimeError:
+            self._event_loop = asyncio.new_event_loop()
         self._rate_handler = TlmRateHandler()
 
     async def _batch_prompt(
