@@ -206,7 +206,7 @@ class Studio:
                 information on task types.
             model_type: Type of model to train (i.e. "fast", "regular"). See the [Projects Guide](/guide/concepts/projects/#model-type) for more information on model types.
             label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess). For "unsupervised" tasks, this should be `None`.
-            feature_columns: List of columns to use as features. By default all columns are used as feature columns. This is specifically useful in tabular modality projects where, we might want to exclude the id column as a feature column.
+            feature_columns: List of columns to use as features for a tabular project. By default all columns are used as feature columns. This parameter is particularly useful if your dataset has a column containing unique IDs and you want to exclude that column from the feature columns.
             text_column: Name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess).
 
         Returns:
