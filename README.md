@@ -22,7 +22,6 @@ If you already have the client installed and wish to upgrade to the latest versi
 pip install --upgrade cleanlab-studio
 ```
 
-Cleanlab Studio API client requires Python >= 3.8.
 
 ## Quickstart
 
