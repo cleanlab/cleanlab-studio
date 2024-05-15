@@ -1,7 +1,7 @@
 import re
 from typing import Any, List, Optional, Tuple, Union
 import pandas as pd
-from cleanlab_studio.utils.data_enrichment.enrichment_utils import (
+from cleanlab_studio.internal.enrichment_utils import (
     extract_df_subset,
     get_compiled_regex_list,
     get_prompt_outputs,
