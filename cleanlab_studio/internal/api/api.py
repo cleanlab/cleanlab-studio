@@ -461,6 +461,12 @@ def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
     return status
 
 
+def delete_dataset(api_key: str, dataset_id: str) -> None:
+    check_uuid_well_formed(dataset_id, "dataset ID")
+    res = requests.delete(dataset_base_url + f"/{dataset_id}", headers=_construct_headers(api_key))
+    handle_api_error(res)
+
+
 def delete_project(api_key: str, project_id: str) -> None:
     check_uuid_well_formed(project_id, "project ID")
     res = requests.delete(project_base_url + f"/{project_id}", headers=_construct_headers(api_key))
