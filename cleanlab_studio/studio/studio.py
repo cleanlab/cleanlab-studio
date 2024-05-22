@@ -113,6 +113,19 @@ class Studio:
             schema_overrides=schema_overrides,
         )
 
+    def delete_dataset(
+        self,
+        dataset_id: str,
+    ) -> None:
+        """Deletes a dataset from Cleanlab Studio.
+
+        If the dataset is used in projects, the projects will be deleted as well.
+        """
+        api.delete_dataset(
+            self._api_key,
+            dataset_id,
+        )
+
     def download_cleanlab_columns(
         self,
         cleanset_id: str,
