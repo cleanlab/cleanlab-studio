@@ -63,7 +63,9 @@ class TlmRateHandler:
             await self._decrease_congestion_window()
 
         elif isinstance(exc, TlmPartialSuccess):
+            print(f"nli failed, before decreasing rate: {self._congestion_window}", flush=True)
             await self._decrease_congestion_window()
+            print(f"nli failed, after increasing rate: {self._congestion_window}", flush=True)
             swallow_exception = True
 
         # release acquired send semaphore from aenter
