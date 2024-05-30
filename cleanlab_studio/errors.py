@@ -87,7 +87,7 @@ class TlmServerError(APIError):
 
 
 class TlmPartialSuccess(APIError):
-    """TLM request partially succeeded. Still return result to user."""
+    """TLM request partially succeeded. Still returns result to user."""
 
     pass
 
