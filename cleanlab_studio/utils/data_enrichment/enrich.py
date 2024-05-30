@@ -3,11 +3,11 @@ from typing import Any, List, Optional, Tuple, Union
 import pandas as pd
 from cleanlab_studio.internal.enrichment_utils import (
     extract_df_subset,
-    get_compiled_regex_list,
     get_prompt_outputs,
-    get_regex_match,
+    get_regex_replacement,
     get_return_values_match,
     get_optimized_prompt,
+    Replacement,
 )
 
 from cleanlab_studio.studio.studio import Studio
@@ -18,7 +18,7 @@ def enrich_data(
     prompt: str,
     data: pd.DataFrame,
     *,
-    regex: Optional[Union[str, re.Pattern[str], List[re.Pattern[str]]]] = None,
+    regex_replacements: Optional[Union[Replacement, List[Replacement]]] = None,
     return_values: Optional[List[str]] = None,
     optimize_prompt: bool = True,
     subset_indices: Optional[Union[Tuple[int, int], List[int]]] = (0, 3),
@@ -36,14 +36,17 @@ def enrich_data(
         studio: Cleanlab Studio client object, which you must instantiate before calling this method.
         prompt: Formatted f-string, that contains both the prompt, and names of columns to embed.
             **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
-        regex: A string expression that will be passed into ``re.compile()``, a compiled regular expression, or a list of multiple already compiled regular expressions.
-            Optional expressions passed here will be applied to the raw LLM outputs from your prompt, enabling additional control to better format the final metadata output column.
-            This `regex` argument is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time, but can easily transform the raw LLM outputs to be valid through regular expressions that extract parts of the raw output string.
-            If a list of expressions is provided, the expressions are applied in order and first valid extraction is returned.
+        regex_replacements: A tuple or list of tuples each containing a pair of items:
+            - a regex pattern to match (str or re.Pattern)
+            - a string to replace the matched pattern with (str)
+            These tuples specify the desired patterns to match and replace from the raw LLM response,
+            it is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time,
+            but can easily transform the raw LLM outputs to be valid through regular expressions that extract and replace parts of the raw output string.
+            If a list of tuples is passed in, the replacements are applied in the order they appear in the list.
 
-            **Note:** Each regex pattern should specify 1 group that represents the desired characters to extract from the raw LLM response using parenthesis like so: ``'(<desired match group pattern>)'``.
-            **Example 1:** ``regex = r'.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw LLM response. This might be useful if your prompt instructed the LLM to respond in this format.
-            **Example 2:** ``regex = r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'`` will extract an email in the raw LLM response. Similar patterns can be used to extract a specifically structured part of the LLM response.
+            **Example 1:** ``regex_replacements = (r'\b(?!(True|False)\b)\w+\b', '')`` will replace all words not True or False with an empty string.
+            **Example 2:** ``regex_replacements = (re.compile(r' Explanation:.*' re.IGNORECASE), '') will remove everything after and including the words "Explanation:".
+            For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True" after the regex replacement.
         return_values: List of all possible values for the `metadata` column.
             If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
             After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
@@ -81,7 +84,7 @@ def enrich_data(
     ]
 
     if (
-        regex is None and return_values is None
+        regex_replacements is None and return_values is None
     ):  # we do not need to have a "log" column as original output is not augmented by regex or return values
         return df[[f"{metadata_column_name}", f"{column_name_prefix}trustworthiness"]]
 
@@ -89,10 +92,9 @@ def enrich_data(
         output["response"] if output is not None else None for output in outputs
     ]
 
-    if regex:
-        regex_list = get_compiled_regex_list(regex)
+    if regex_replacements:
         df[f"{metadata_column_name}"] = df[f"{metadata_column_name}"].apply(
-            lambda x: get_regex_match(x, regex_list, disable_warnings)
+            lambda x: get_regex_replacement(x, regex_replacements)
         )
 
     if return_values:
@@ -112,33 +114,32 @@ def enrich_data(
     ]
 
 
-def get_regex_matches(
+def get_regex_replacements(
     column_data: Union[pd.Series, List[str]],
-    regex: Union[str, re.Pattern[str], List[re.Pattern[str]]],
-    disable_warnings: bool = False,
+    regex_replacements: Union[Replacement, List[Replacement]],
 ) -> Union[pd.Series, List[str]]:
     """
-    Extracts the first match to the provided regular expression pattern from each example in the provided column of data.
+    Performs regex replacements to the given string according to the given matching patterns and replacement strings.
 
-    Use this function for: tuning regex patterns to extract the best outputs from the raw LLM responses for your dataset obtained via ``enrich_data()``, without having to re-run the LLM.
-    If a list of regular expressions is provided, the expressions are applied in order, and the first valid regex match is returned.
+    Use this function for: tuning regex replacements to obtain the best outputs from the raw LLM responses for your dataset obtained via ``enrich_data()``, without having to re-run the LLM.
+    If a list of tuples is passed in, the replacements are applied in the order they appear in the list.
 
-    **Note:** Regex patterns should each specify exactly 1 group that is represents the desired characters to be extracted from the raw response using parenthesis like so ``'(<desired match group pattern>)'``.
-    **Example 1:** `r'.*The answer is: (Bird|[Rr]abbit).*'` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response text.
-    **Example 2:** `r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'` will match an email in the raw response LLM response.
+    **Example 1:** ``regex_replacements = (r'\b(?!(True|False)\b)\w+\b', '')`` will replace all words not True or False with an empty string.
+    **Example 2:** ``regex_replacements = (re.compile(r' Explanation:.*' re.IGNORECASE), '') will remove everything after and including the words "Explanation:".
+    For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True" after the regex replacement.
 
     Args:
         column_data: A pandas Series or list of strings, where you want to apply a regex to extract matches from each element. This could be the `metadata` column output by ``enrich_data()``.
-        regex: A string expression that will be passed into ``re.compile()``, a compiled regular expression, or a list of multiple already compiled regular expressions.
-        disable_warnings: When True, warnings are disabled.
+        regex_replacements: A tuple or list of tuples each containing a pair of items:
+            - a regex pattern to match (str or re.Pattern)
+            - a string to replace the matched pattern with (str)
 
     Returns:
         Extracted matches to the provided regular expression from each element of the data column (specifically, the first match is returned).
     """
-    regex_list = get_compiled_regex_list(regex)
     if isinstance(column_data, list):
-        return [get_regex_match(x, regex_list, disable_warnings) for x in column_data]
+        return [get_regex_replacement(x, regex_replacements) for x in column_data]
     elif isinstance(column_data, pd.Series):
-        return column_data.apply(lambda x: get_regex_match(x, regex_list, disable_warnings))
+        return column_data.apply(lambda x: get_regex_replacement(x, regex_replacements))
     else:
         raise TypeError("column_data should be a pandas Series or a list of strings.")

@@ -9,11 +9,17 @@ from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.studio.studio import Studio
 from cleanlab_studio.studio.trustworthy_language_model import TLMResponse
 
+Replacement = Tuple[Union[str, re.Pattern[str]], str]
+
 
 def get_prompt_outputs(
     studio: Studio, prompt: str, data: pd.DataFrame, **kwargs: Any
 ) -> List[Optional[TLMResponse]]:
     """Returns the outputs of the prompt for each row in the dataframe."""
+    default_tlm_options = {"model": "claude-3-haiku"}
+    tlm_options = kwargs.get("options", {})
+    kwargs["options"] = {**default_tlm_options, **tlm_options}
+
     tlm = studio.TLM(**kwargs)
     formatted_prompts = data.apply(lambda x: prompt.format(**x), axis=1).to_list()
     outputs = tlm.try_prompt(formatted_prompts)
@@ -37,41 +43,44 @@ def extract_df_subset(
     return subset_df
 
 
-def get_compiled_regex_list(
-    regex: Union[str, re.Pattern[str], List[re.Pattern[str]]]
-) -> List[re.Pattern[str]]:
-    """Compile the regex pattern(s) provided and return a list of compiled regex patterns."""
+def get_compiled_regex(regex: Union[str, re.Pattern[str]]) -> re.Pattern[str]:
+    """Compile the regex pattern(s) provided and return the compiled regex pattern."""
     if isinstance(regex, str):
-        return [re.compile(rf"{regex}")]
+        return re.compile(rf"{regex}")
     elif isinstance(regex, re.Pattern):
-        return [regex]
-    elif isinstance(regex, list):
         return regex
     else:
-        raise ValidationError(
-            "Passed in regex can only be type one of: str, re.Pattern, or list of re.Pattern."
-        )
+        raise ValidationError("Passed in regex can only be type one of: str, re.Pattern.")
 
 
-def get_regex_match(
-    response: str, regex_list: List[re.Pattern[str]], disable_warnings: bool
+def get_regex_replacement(
+    response: str, regex_replacements: Union[Replacement, List[Replacement]]
 ) -> Optional[str]:
-    """Extract the first match from the response using the provided regex patterns. Return first match if multiple exist.
-    Note: This function assumes the regex patterns each specify exactly 1 group that is the match group using ``'(<group>)'``."""
-    for regex_pattern in regex_list:
-        pattern_match = regex_pattern.match(response)
-        if pattern_match:
-            return pattern_match.group(1)
-    if not disable_warnings:
-        warnings.warn(
-            f"Your provided regex: {str(regex_list)} did not match a single LLM output across the dataset. This message is simply to inform you that the regex is not having any effect."
-        )
-    return None
+    """Performs regex replacements to the given string according to the given matching patterns and replacement strings."""
+    if isinstance(regex_replacements, tuple):
+        regex_replacements_list = [regex_replacements]
+    elif isinstance(regex_replacements, list):
+        regex_replacements_list = regex_replacements
+    else:
+        raise ValidationError("Passed in regex has to be either a tuple or a list of tuples.")
+
+    for replacement_pair in regex_replacements_list:
+        if not isinstance(replacement_pair, tuple) or len(replacement_pair) != 2:
+            raise ValidationError(
+                "Every item of the regex list must be a tuple that contains 2 items. TODO"
+            )
+
+        compiled_pattern = get_compiled_regex(replacement_pair[0])
+        replacement = replacement_pair[1]
+        response = compiled_pattern.sub(replacement, response)
+
+    return response
 
 
 def get_optimized_prompt(prompt: str, return_values: Optional[List[str]] = None) -> str:
     """Optimize the prompt by ammending original.
-    Adds a pre-prompt message if return_values are provided. This will help the LLM understand it's response must exactly match one of the return values."""
+    Adds a pre-prompt message if return_values are provided. This will help the LLM understand it's response must exactly match one of the return values.
+    """
 
     if return_values is not None:
         string_return_values = str(return_values).replace("'", "")
