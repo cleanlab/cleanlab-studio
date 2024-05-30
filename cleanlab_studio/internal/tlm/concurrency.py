@@ -61,7 +61,6 @@ class TlmRateHandler:
             await self._decrease_congestion_window()
 
         elif isinstance(exc, TlmPartialSuccess):
-            print("Partial success, decreasing congestion window.")
             await self._decrease_congestion_window()
 
         # release acquired send semaphore from aenter
