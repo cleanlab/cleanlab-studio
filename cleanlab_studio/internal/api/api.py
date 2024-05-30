@@ -10,6 +10,7 @@ from cleanlab_studio.errors import (
     InvalidProjectConfiguration,
     RateLimitError,
     TlmBadRequest,
+    TlmPartialSuccess,
     TlmServerError,
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
@@ -650,6 +651,9 @@ async def tlm_prompt(
             handle_rate_limit_error_from_resp(res)
             await handle_tlm_client_error_from_resp(res, batch_index)
             await handle_tlm_api_error_from_resp(res, batch_index)
+
+            if not res_json.get("deberta_success", True):
+                raise TlmPartialSuccess("Partial failure on deberta call -- slowdown request rate.")
 
     finally:
         if local_scoped_client:

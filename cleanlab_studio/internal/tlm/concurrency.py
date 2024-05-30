@@ -2,7 +2,7 @@ import asyncio
 from types import TracebackType
 from typing import Optional, Type
 
-from cleanlab_studio.errors import RateLimitError, TlmServerError
+from cleanlab_studio.errors import RateLimitError, TlmPartialSuccess, TlmServerError
 
 
 class TlmRateHandler:
@@ -50,6 +50,8 @@ class TlmRateHandler:
         If request failed due to 503, decrease congestion window.
         Else if request failed for other reason, don't change congestion window, just exit.
         """
+        swallow_exception: bool = False
+
         if exc_type is None:
             await self._increase_congestion_window()
 
@@ -60,10 +62,14 @@ class TlmRateHandler:
         ):
             await self._decrease_congestion_window()
 
+        elif isinstance(exc, TlmPartialSuccess):
+            await self._decrease_congestion_window()
+            swallow_exception = True
+
         # release acquired send semaphore from aenter
         self._send_semaphore.release()
 
-        return False
+        return swallow_exception
 
     async def _increase_congestion_window(
         self,
