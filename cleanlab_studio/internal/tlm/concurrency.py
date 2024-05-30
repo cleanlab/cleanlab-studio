@@ -2,7 +2,7 @@ import asyncio
 from types import TracebackType
 from typing import Optional, Type
 
-from cleanlab_studio.errors import RateLimitError, TlmServerError
+from cleanlab_studio.errors import RateLimitError, TlmPartialSuccess, TlmServerError
 
 
 class TlmRateHandler:
@@ -58,6 +58,10 @@ class TlmRateHandler:
             or isinstance(exc, TlmServerError)
             and exc.status_code == 503
         ):
+            await self._decrease_congestion_window()
+
+        elif isinstance(exc, TlmPartialSuccess):
+            print("Partial success, decreasing congestion window.")
             await self._decrease_congestion_window()
 
         # release acquired send semaphore from aenter

@@ -86,6 +86,10 @@ class TlmServerError(APIError):
         self.status_code = status_code
 
 
+class TlmPartialSuccess(APIError):
+    pass
+
+
 class UnsupportedVersionError(HandledError):
     def __init__(self) -> None:
         super().__init__(
