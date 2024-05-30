@@ -652,7 +652,7 @@ async def tlm_prompt(
             await handle_tlm_client_error_from_resp(res, batch_index)
             await handle_tlm_api_error_from_resp(res, batch_index)
 
-            if not res_json.get("nli_deberta_success", True):
+            if not res_json.get("deberta_success", True):
                 raise TlmPartialSuccess("Partial failure on deberta call -- slowdown request rate.")
 
     finally:
