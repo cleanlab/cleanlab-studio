@@ -142,4 +142,4 @@ def get_regex_replacements(
     elif isinstance(column_data, pd.Series):
         return column_data.apply(lambda x: get_regex_replacement(x, replacements))
     else:
-        raise TypeError("column_data should be a pandas Series or a list of strings.")|
+        raise TypeError("column_data should be a pandas Series or a list of strings.")
