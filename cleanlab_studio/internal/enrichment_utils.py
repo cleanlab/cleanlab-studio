@@ -9,7 +9,7 @@ from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.studio.studio import Studio
 from cleanlab_studio.studio.trustworthy_language_model import TLMResponse
 
-Replacement = Tuple[Union[str, re.Pattern[str]], str]
+Replacement = Tuple[str, str]
 
 
 def get_prompt_outputs(
@@ -43,16 +43,6 @@ def extract_df_subset(
     return subset_df
 
 
-def get_compiled_regex(regex: Union[str, re.Pattern[str]]) -> re.Pattern[str]:
-    """Compile the regex pattern(s) provided and return the compiled regex pattern."""
-    if isinstance(regex, str):
-        return re.compile(rf"{regex}")
-    elif isinstance(regex, re.Pattern):
-        return regex
-    else:
-        raise ValidationError("Passed in regex can only be type one of: str, re.Pattern.")
-
-
 def get_regex_replacement(
     response: str, replacements: Union[Replacement, List[Replacement]]
 ) -> Optional[str]:
@@ -67,10 +57,11 @@ def get_regex_replacement(
     for replacement_pair in replacements_list:
         if not isinstance(replacement_pair, tuple) or len(replacement_pair) != 2:
             raise ValidationError(
-                "Every item of the regex list must be a tuple that contains 2 items. TODO"
+                "Every item of the regex list must be a tuple that contains 2 strings: "
+                "(the regex pattern to match, the string to replace the matched pattern with)"
             )
 
-        compiled_pattern = get_compiled_regex(replacement_pair[0])
+        compiled_pattern = re.compile(replacement_pair[0])
         replacement = replacement_pair[1]
         response = compiled_pattern.sub(replacement, response)
 

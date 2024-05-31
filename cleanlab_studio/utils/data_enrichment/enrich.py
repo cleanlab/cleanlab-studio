@@ -1,4 +1,3 @@
-import re
 from typing import Any, List, Optional, Tuple, Union
 import pandas as pd
 from cleanlab_studio.internal.enrichment_utils import (
@@ -15,8 +14,8 @@ from cleanlab_studio.studio.studio import Studio
 
 def enrich_data(
     studio: Studio,
-    prompt: str,
     data: pd.DataFrame,
+    prompt: str,
     *,
     replacements: Optional[Union[Replacement, List[Replacement]]] = None,
     constrain_outputs: Optional[List[str]] = None,
@@ -33,31 +32,32 @@ def enrich_data(
     You can optionally apply regular expressions to further reformat your metadata beyond raw LLM outputs, or specify that each row of the metadata must be constrained to a particular set of values.
 
     Args:
-        studio: Cleanlab Studio client object, which you must instantiate before calling this method.
-        prompt: Formatted f-string, that contains both the prompt, and names of columns to embed.
+        studio (Studio): Cleanlab Studio client object, which you must instantiate before calling this method.
+        data (pd.DataFrame): A pandas DataFrame containing your data.
+        prompt (str): Formatted f-string, that contains both the prompt, and names of columns to embed.
             **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
-        replacements: A tuple or list of tuples each containing a pair of items:
-            - a regex pattern to match (str or re.Pattern)
-            - a string to replace the matched pattern with (str)
+        replacements (Replacement | List[Replacement], optional): A tuple or list of tuples each containing a pair of strings:
+            - a string containing the regex pattern to match
+            - a string to replace the matched pattern with
             These tuples specify the desired patterns to match and replace from the raw LLM response,
             it is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time,
             but can easily transform the raw LLM outputs to be valid through regular expressions that extract and replace parts of the raw output string.
             If a list of tuples is passed in, the replacements are applied in the order they appear in the list.
 
-            **Example 1:** ``replacements = (r'\b(?!(True|False)\b)\w+\b', '')`` will replace all words not True or False with an empty string.
-            **Example 2:** ``replacements = (re.compile(r' Explanation:.*' re.IGNORECASE), '') will remove everything after and including the words "Explanation:".
+            **Example 1:** ``replacements = ('\\b(?!(True|False)\\b)\\w+\\b', '')`` will replace all words not True or False with an empty string.
+            **Example 2:** ``replacements = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
             For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True" after the regex replacement.
-        constrain_outputs: List of all possible values for the `metadata` column.
+        constrain_outputs (List[str], optional): List of all possible output values for the `metadata` column.
             If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
             After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
             If `optimize_prompt` is True, the prompt will be automatically adjusted to include a statement that the response must match one of the `constrain_outputs`.
-        optimize_prompt: When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
+        optimize_prompt (bool, default = True): When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
             For instance, if the constrain_outputs are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `constrain_outputs`."
-        subset_indices: What subset of the supplied data rows to generate metadata for. If None, we run on all of the data.
+        subset_indices (Tuple[int, int] | List[int], optional): What subset of the supplied data rows to generate metadata for. If None, we run on all of the data.
             This can be either a list of unique indices or a range. These indices are passed into pandas ``.iloc`` method, so should be integers based on row order as opposed to row-index labels pointing to `df.index`.
             We advise against collecting results for all of your data at first. First collect results for a smaller data subset, and use this subset to experiment with different values of the `prompt` or `regex` arguments. Only once the results look good for your subset should you run on the full dataset.
-        new_column_name: Optional name for the returned metadata column. Name acts as a prefix appended to all additional columns that are returned.
-        disable_warnings: When True, warnings are disabled.
+        new_column_name (str): Optional name for the returned new metadata column. Name acts as a prefix appended to all additional columns that are returned.
+        disable_warnings (bool, default = False): When True, warnings are disabled.
 
     Returns:
         A DataFrame that contains `metadata` and `trustworthiness` columns related to the prompt in order of original data. Some columns names will have `new_column_name` prepended to them.
@@ -85,7 +85,7 @@ def enrich_data(
 
     if (
         replacements is None and constrain_outputs is None
-    ):  # we do not need to have a "log" column as original output is not augmented by regex or return values
+    ):  # we do not need to have a "log" column as original output is not augmented by regex replacements or contrained outputs
         return df[[f"{new_column_name}", f"{column_name_prefix}trustworthiness"]]
 
     df[f"{column_name_prefix}log"] = [
@@ -124,15 +124,15 @@ def get_regex_replacements(
     Use this function for: tuning regex replacements to obtain the best outputs from the raw LLM responses for your dataset obtained via ``enrich_data()``, without having to re-run the LLM.
     If a list of tuples is passed in, the replacements are applied in the order they appear in the list.
 
-    **Example 1:** ``replacements = (r'\b(?!(True|False)\b)\w+\b', '')`` will replace all words not True or False with an empty string.
-    **Example 2:** ``replacements = (re.compile(r' Explanation:.*' re.IGNORECASE), '') will remove everything after and including the words "Explanation:".
+    **Example 1:** ``replacements = ('\\b(?!(True|False)\\b)\\w+\\b', '')`` will replace all words not True or False with an empty string.
+    **Example 2:** ``replacements = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
     For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True" after the regex replacement.
 
     Args:
-        column_data: A pandas Series or list of strings, where you want to apply a regex to extract matches from each element. This could be the `metadata` column output by ``enrich_data()``.
-        replacements: A tuple or list of tuples each containing a pair of items:
-            - a regex pattern to match (str or re.Pattern)
-            - a string to replace the matched pattern with (str)
+        column_data (pd.Series | List[str]): A pandas Series or list of strings, where you want to apply a regex to extract matches from each element. This could be the `metadata` column output by ``enrich_data()``.
+        replacements (Replacement | List[Replacement]): A tuple or list of tuples each containing a pair of strings:
+            - a string containing the regex pattern to match
+            - a string to replace the matched pattern with
 
     Returns:
         Extracted matches to the provided regular expression from each element of the data column (specifically, the first match is returned).
@@ -142,4 +142,4 @@ def get_regex_replacements(
     elif isinstance(column_data, pd.Series):
         return column_data.apply(lambda x: get_regex_replacement(x, replacements))
     else:
-        raise TypeError("column_data should be a pandas Series or a list of strings.")
+        raise TypeError("column_data should be a pandas Series or a list of strings.")|
