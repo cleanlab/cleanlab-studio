@@ -86,6 +86,12 @@ class TlmServerError(APIError):
         self.status_code = status_code
 
 
+class TlmPartialSuccess(APIError):
+    """TLM request partially succeeded. Still returns result to user."""
+
+    pass
+
+
 class UnsupportedVersionError(HandledError):
     def __init__(self) -> None:
         super().__init__(
