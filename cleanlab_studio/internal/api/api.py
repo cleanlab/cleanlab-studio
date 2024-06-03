@@ -49,6 +49,7 @@ base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api"
 cli_base_url = f"{base_url}/cli/v0"
 upload_base_url = f"{base_url}/upload/v1"
 dataset_base_url = f"{base_url}/datasets"
+enrichment_base_url = f"{base_url}/enrichment/v0"
 project_base_url = f"{base_url}/projects"
 cleanset_base_url = f"{base_url}/cleansets"
 model_base_url = f"{base_url}/v1/deployment"
@@ -572,6 +573,72 @@ def get_deployed_model_info(api_key: str, model_id: str) -> Dict[str, str]:
     handle_api_error(res)
 
     return cast(Dict[str, str], res.json())
+
+
+def create_enrichment_project(
+    api_key: str,
+    dataset_id: str,
+    name: str,
+    target_column_in_dataset: str,
+) -> JSONDict:
+    """Create a new enrichment project."""
+    check_uuid_well_formed(dataset_id, "dataset ID")
+    request_json = dict(
+        dataset_id=dataset_id,
+        name=name,
+        target_column_in_dataset=target_column_in_dataset,
+    )
+    res = requests.post(
+        f"{enrichment_base_url}/projects",
+        headers=_construct_headers(api_key),
+        json=request_json,
+    )
+    handle_api_error(res)
+    res_json: JSONDict = res.json()
+    return cast(JSONDict, res_json)
+
+
+def delete_enrichment_project(api_key: str, project_id: str) -> None:
+    """Delete an enrichment project."""
+    check_uuid_well_formed(project_id, "Enrichment Project ID")
+    res = requests.delete(
+        f"{enrichment_base_url}/projects/{project_id}", headers=_construct_headers(api_key)
+    )
+    handle_api_error(res)
+    return
+
+
+def get_enrichment_project(api_key: str, project_id: str) -> JSONDict:
+    """Get an existing enrichment project."""
+    check_uuid_well_formed(project_id, "Enrichment Project ID")
+    res = requests.get(
+        f"{enrichment_base_url}/projects/{project_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    res_json: JSONDict = res.json()
+    return cast(JSONDict, res_json)
+
+
+def get_enrichment_projects(api_key: str) -> List[JSONDict]:
+    """Get a list of all enrichment projects."""
+    all_projects: List[JSONDict] = []
+    page: Optional[int] = 1
+
+    while page is not None:
+        res = requests.get(
+            f"{enrichment_base_url}/projects?page={page}",
+            headers=_construct_headers(api_key),
+        )
+        handle_api_error(res)
+        res_json: JSONDict = res.json()
+
+        if "projects" in res_json:
+            all_projects.extend(res_json["projects"])
+
+        page = res_json.get("next_page", None)
+
+    return all_projects
 
 
 def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
