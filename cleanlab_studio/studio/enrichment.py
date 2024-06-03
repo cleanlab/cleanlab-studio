@@ -6,7 +6,7 @@ Methods for interfacing with Enrichment Projects.
 
 from __future__ import annotations
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from cleanlab_studio.internal.api import api
 
@@ -43,7 +43,7 @@ class EnrichmentProject:
         self._created_at_string = created_at_string
         self.target_column_in_dataset = target_column_in_dataset
 
-    def _get_project_dict(self):
+    def _get_enrichment_project_dict(self) -> Dict[str, Any]:
         return dict(api.get_enrichment_project(api_key=self._api_key, project_id=self._id))
 
     @property
@@ -57,11 +57,11 @@ class EnrichmentProject:
     @property
     def created_at(self) -> datetime:
         if self._created_at_string is None:
-            self._created_at_string = self._get_project_dict()["created_at"]
+            self._created_at_string = self._get_enrichment_project_dict()["created_at"]
 
         return _response_timestamp_to_datetime(self._created_at_string)
 
     @property
     def updated_at(self) -> datetime:
-        updated_at = self._get_project_dict()["updated_at"]
+        updated_at = self._get_enrichment_project_dict()["updated_at"]
         return _response_timestamp_to_datetime(updated_at)

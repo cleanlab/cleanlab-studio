@@ -469,12 +469,12 @@ class Studio:
 
     def get_enrichment_projects(
         self,
-    ) -> list[enrichment.EnrichmentProject]:
+    ) -> List[enrichment.EnrichmentProject]:
         """
         Get a list of all EnrichmentProjects.
 
         Returns:
-            list[EnrichmentProject]: A list of [EnrichmentProject](../enrichment#class-enrichmentproject) objects.
+            List[EnrichmentProject]: A list of [EnrichmentProject](../enrichment#class-enrichmentproject) objects.
         """
         enrichment_project_dicts = api.get_enrichment_projects(
             api_key=self._api_key,

@@ -594,8 +594,7 @@ def create_enrichment_project(
         json=request_json,
     )
     handle_api_error(res)
-    res_json: JSONDict = res.json()
-    return cast(JSONDict, res_json)
+    return cast(JSONDict, res.json())
 
 
 def delete_enrichment_project(api_key: str, project_id: str) -> None:
@@ -616,8 +615,7 @@ def get_enrichment_project(api_key: str, project_id: str) -> JSONDict:
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)
-    res_json: JSONDict = res.json()
-    return cast(JSONDict, res_json)
+    return cast(JSONDict, res.json())
 
 
 def get_enrichment_projects(api_key: str) -> List[JSONDict]:
