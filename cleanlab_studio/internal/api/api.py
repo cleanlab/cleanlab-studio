@@ -604,7 +604,6 @@ def delete_enrichment_project(api_key: str, project_id: str) -> None:
         f"{enrichment_base_url}/projects/{project_id}", headers=_construct_headers(api_key)
     )
     handle_api_error(res)
-    return
 
 
 def get_enrichment_project(api_key: str, project_id: str) -> JSONDict:
@@ -618,7 +617,7 @@ def get_enrichment_project(api_key: str, project_id: str) -> JSONDict:
     return cast(JSONDict, res.json())
 
 
-def get_enrichment_projects(api_key: str) -> List[JSONDict]:
+def list_all_enrichment_projects(api_key: str) -> List[JSONDict]:
     """Get a list of all enrichment projects."""
     all_projects: List[JSONDict] = []
     page: Optional[int] = 1

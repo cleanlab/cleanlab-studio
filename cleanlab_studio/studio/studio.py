@@ -476,7 +476,7 @@ class Studio:
         Returns:
             List[EnrichmentProject]: A list of [EnrichmentProject](../enrichment#class-enrichmentproject) objects.
         """
-        enrichment_project_dicts = api.get_enrichment_projects(
+        enrichment_project_dicts = api.list_all_enrichment_projects(
             api_key=self._api_key,
         )
 

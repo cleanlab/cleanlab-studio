@@ -40,8 +40,8 @@ class EnrichmentProject:
         self._api_key = api_key
         self._id = id
         self._name = name
-        self._created_at_string = created_at_string
         self.target_column_in_dataset = target_column_in_dataset
+        self._created_at_string = created_at_string
 
     def _get_enrichment_project_dict(self) -> Dict[str, Any]:
         return dict(api.get_enrichment_project(api_key=self._api_key, project_id=self._id))
@@ -65,3 +65,12 @@ class EnrichmentProject:
     def updated_at(self) -> datetime:
         updated_at = self._get_enrichment_project_dict()["updated_at"]
         return _response_timestamp_to_datetime(updated_at)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "target_column_in_dataset": self.target_column_in_dataset,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
