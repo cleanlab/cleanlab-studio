@@ -122,7 +122,7 @@ def enrich_data(
 
 def process_regex(
     column_data: Union[pd.Series, List[str]],
-    regex: Optional[Union[str, Replacement, List[Replacement]]] = None,
+    regex: Union[str, Replacement, List[Replacement]],
 ) -> Union[pd.Series, List[str]]:
     """
     Performs regex matches or replacements to the given string according to the given matching patterns and replacement strings.
