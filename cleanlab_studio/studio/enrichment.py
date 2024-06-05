@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import Any, Dict, Optional, Union
 
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.types import EnrichmentProjectFromDict
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
