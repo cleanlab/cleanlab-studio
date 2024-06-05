@@ -421,11 +421,13 @@ class Studio:
             dataset_id=dataset_id,
             target_column_in_dataset=target_column_in_dataset,
         )
-        return enrichment.EnrichmentProject.from_dict(
-            {
-                "api_key": self._api_key,
-                **enrichment_project_dict,
-            }
+
+        return enrichment.EnrichmentProject(
+            api_key=self._api_key,
+            id=enrichment_project_dict["id"],
+            name=enrichment_project_dict["name"],
+            target_column_in_dataset=enrichment_project_dict["target_column_in_dataset"],
+            created_at=enrichment_project_dict["created_at"],
         )
 
     def delete_enrichment_project(self, project_id: str) -> None:

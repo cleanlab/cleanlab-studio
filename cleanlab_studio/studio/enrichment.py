@@ -71,9 +71,8 @@ class EnrichmentProject:
         (datetime.datetime) When the Enrichment Project was created.
         """
         if self._created_at is None:
-            self._created_at = _response_timestamp_to_datetime(
-                self._get_enrichment_project_dict()["created_at"]
-            )
+            create_at_string = self._get_enrichment_project_dict()["created_at"]
+            self._created_at = _response_timestamp_to_datetime(create_at_string)
 
         return self._created_at
 
@@ -96,17 +95,3 @@ class EnrichmentProject:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
-
-    @staticmethod
-    def from_dict(d: EnrichmentProjectFromDict) -> "EnrichmentProject":
-        """
-        **Objects of this class are not meant to be constructed directly.**
-        Instead, use [`Studio.get_enrichment_project()`](../studio/#method-get_enrichment_project).
-        """
-        return EnrichmentProject(
-            api_key=d.get("api_key"),
-            id=d.get("id"),
-            name=d.get("name"),
-            target_column_in_dataset=d.get("target_column_in_dataset"),
-            created_at=d.get("created_at", None),
-        )
