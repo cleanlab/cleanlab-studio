@@ -6,9 +6,10 @@ Methods for interfacing with Enrichment Projects.
 
 from __future__ import annotations
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.types import EnrichmentProjectFromDict
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
@@ -31,42 +32,63 @@ class EnrichmentProject:
         id: str,
         name: str,
         target_column_in_dataset: str,
-        created_at_string: Optional[str] = None,
+        created_at: Optional[Union[str, datetime]] = None,
     ) -> None:
         """Initialize an EnrichmentProject.
 
-        **Objects of this class are not meant to be constructed directly.** Instead, use [`Studio.get_enrichment_project()`](../studio/#method-get_enrichment_project).
+        **Objects of this class are not meant to be constructed directly.**
+        Instead, use [`Studio.get_enrichment_project()`](../studio/#method-get_enrichment_project).
         """
         self._api_key = api_key
         self._id = id
         self._name = name
         self.target_column_in_dataset = target_column_in_dataset
-        self._created_at_string = created_at_string
+        if isinstance(created_at, str):
+            self._created_at = _response_timestamp_to_datetime(created_at)
+        else:
+            self._created_at = created_at
 
     def _get_enrichment_project_dict(self) -> Dict[str, Any]:
         return dict(api.get_enrichment_project(api_key=self._api_key, project_id=self._id))
 
     @property
     def id(self) -> str:
+        """
+        (str) ID of the Enrichment Project.
+        """
         return self._id
 
     @property
     def name(self) -> str:
+        """
+        (str) Name of the Enrichment Project.
+        """
         return self._name
 
     @property
     def created_at(self) -> datetime:
-        if self._created_at_string is None:
-            self._created_at_string = self._get_enrichment_project_dict()["created_at"]
+        """
+        (datetime.datetime) When the Enrichment Project was created.
+        """
+        if self._created_at is None:
+            self._created_at = _response_timestamp_to_datetime(
+                self._get_enrichment_project_dict()["created_at"]
+            )
 
-        return _response_timestamp_to_datetime(self._created_at_string)
+        return self._created_at
 
     @property
     def updated_at(self) -> datetime:
+        """
+        (datetime.datetime) When the Enrichment Project was last updated.
+        """
         updated_at = self._get_enrichment_project_dict()["updated_at"]
         return _response_timestamp_to_datetime(updated_at)
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a dictionary of EnrichmentProject metadata.
+        """
         return {
             "id": self.id,
             "name": self.name,
@@ -74,3 +96,17 @@ class EnrichmentProject:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
+
+    @staticmethod
+    def from_dict(d: EnrichmentProjectFromDict) -> "EnrichmentProject":
+        """
+        **Objects of this class are not meant to be constructed directly.**
+        Instead, use [`Studio.get_enrichment_project()`](../studio/#method-get_enrichment_project).
+        """
+        return EnrichmentProject(
+            api_key=d.get("api_key"),
+            id=d.get("id"),
+            name=d.get("name"),
+            target_column_in_dataset=d.get("target_column_in_dataset"),
+            created_at=d.get("created_at", None),
+        )
