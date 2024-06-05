@@ -129,10 +129,12 @@ def process_regex(
 
     Use this function for: tuning regex replacements to obtain the best outputs from the raw LLM responses for your dataset obtained via ``enrich_data()``, without having to re-run the LLM.
 
-    If a string is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, it will return None).
-    If a tuple is passed in, the function will perform regex replacements on the response according to the given matching patterns and replacement strings.
-    If a list of tuples is passed in, the replacements are applied in the order they appear in the list.
-    Note that you cannot pass in a list of strings (chaining of multiple regex steps is only allowed for replacements).
+    If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
+    Specifically the provided string will be passed into Python's `re.match()` method.
+    Pass in a tuple `(R1, R2)` instead if you wish to perform find and replace operations rather than matching/extraction. 
+    `R1` should be a string containing the regex pattern to match, and `R2` should be a string to replace matches with.
+    Pass in a list of tuples instead if you wish to apply multiple replacements. Replacements will be applied in the order they appear in the list.
+    Note that you cannot pass in a list of strings (chaining of multiple regex processing steps is only allowed for replacement operations).
 
     **Example 1:** ``regex = '.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response.
     **Example 2:** ``regex = [('True', 'T'), ('False', 'F')]`` will replace the words True and False with T and F.
@@ -141,9 +143,7 @@ def process_regex(
 
     Args:
         column_data (pd.Series | List[str]): A pandas Series or list of strings, where you want to apply a regex to extract matches from each element. This could be the `metadata` column output by ``enrich_data()``.
-        regex (str | Replacement | List[Replacement]): A string, a tuple or list of tuples each containing:
-            - a string containing the regex pattern to match
-            - a string to replace the matched pattern with
+        regex (str | Replacement | List[Replacement]): A string, tuple, or list of tuples specifying regular expressions to apply for post-processing the raw LLM outputs.
 
     Returns:
         Extracted matches to the provided regular expression from each element of the data column (specifically, the first match is returned).
