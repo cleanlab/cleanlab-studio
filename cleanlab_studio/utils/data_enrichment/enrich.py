@@ -40,7 +40,7 @@ def enrich_data(
 
             If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
             Specifically the provided string will be passed into Python's `re.match()` method.
-            Pass in a tuple `(R1, R2)` instead if you wish to perform find and replace operations rather than matching/extraction. 
+            Pass in a tuple `(R1, R2)` instead if you wish to perform find and replace operations rather than matching/extraction.
             `R1` should be a string containing the regex pattern to match, and `R2` should be a string to replace matches with.
             Pass in a list of tuples instead if you wish to apply multiple replacements. Replacements will be applied in the order they appear in the list.
             Note that you cannot pass in a list of strings (chaining of multiple regex processing steps is only allowed for replacement operations).
@@ -131,7 +131,7 @@ def process_regex(
 
     If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
     Specifically the provided string will be passed into Python's `re.match()` method.
-    Pass in a tuple `(R1, R2)` instead if you wish to perform find and replace operations rather than matching/extraction. 
+    Pass in a tuple `(R1, R2)` instead if you wish to perform find and replace operations rather than matching/extraction.
     `R1` should be a string containing the regex pattern to match, and `R2` should be a string to replace matches with.
     Pass in a list of tuples instead if you wish to apply multiple replacements. Replacements will be applied in the order they appear in the list.
     Note that you cannot pass in a list of strings (chaining of multiple regex processing steps is only allowed for replacement operations).
