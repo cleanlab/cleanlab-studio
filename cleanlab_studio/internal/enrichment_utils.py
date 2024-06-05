@@ -43,18 +43,35 @@ def extract_df_subset(
     return subset_df
 
 
-def get_regex_replacement(
-    response: str, replacements: Union[Replacement, List[Replacement]]
+def get_regex_match_or_replacement(
+    response: str, regex: Union[str, Replacement, List[Replacement]]
 ) -> Optional[str]:
-    """Performs regex replacements to the given string according to the given matching patterns and replacement strings."""
-    if isinstance(replacements, tuple):
-        replacements_list = [replacements]
-    elif isinstance(replacements, list):
-        replacements_list = replacements
-    else:
-        raise ValidationError("Passed in regex has to be either a tuple or a list of tuples.")
+    """Performs regex matching (if input is a string) or replacements (if input is a tuple) to the response
+    given the matching patterns and replacement strings.
+    """
+    # if the regex is a string, do matching
+    if isinstance(regex, str):
+        compiled_pattern = re.compile(regex)
+        pattern_match = compiled_pattern.match(response)
+        if pattern_match:
+            return pattern_match.group(1)
+        return None
 
-    for replacement_pair in replacements_list:
+    # if the regex is a tuple (or list of tuples), do replacement
+    if isinstance(regex, tuple):
+        regex_list = [regex]
+    elif isinstance(regex, list):
+        regex_list = regex
+    else:
+        raise ValidationError(
+            "Passed in regex has to be either a string (pattern to match), a tuple (pair of patterns to match and replace), "
+            "or a list of tuples (pairs of patterns to match and replace)."
+        )
+
+    for replacement_pair in regex_list:
+        if isinstance(replacement_pair, str):
+            raise ValidationError("Only a single regex pattern can be used for matching.")
+
         if not isinstance(replacement_pair, tuple) or len(replacement_pair) != 2:
             raise ValidationError(
                 "Every item of the regex list must be a tuple that contains 2 strings: "

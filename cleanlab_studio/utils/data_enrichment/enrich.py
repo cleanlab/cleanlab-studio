@@ -3,7 +3,7 @@ import pandas as pd
 from cleanlab_studio.internal.enrichment_utils import (
     extract_df_subset,
     get_prompt_outputs,
-    get_regex_replacement,
+    get_regex_match_or_replacement,
     get_constrain_outputs_match,
     get_optimized_prompt,
     Replacement,
@@ -17,7 +17,7 @@ def enrich_data(
     data: pd.DataFrame,
     prompt: str,
     *,
-    replacements: Optional[Union[Replacement, List[Replacement]]] = None,
+    regex: Optional[Union[str, Replacement, List[Replacement]]] = None,
     constrain_outputs: Optional[List[str]] = None,
     optimize_prompt: bool = True,
     subset_indices: Optional[Union[Tuple[int, int], List[int]]] = (0, 3),
@@ -36,16 +36,22 @@ def enrich_data(
         data (pd.DataFrame): A pandas DataFrame containing your data.
         prompt (str): Formatted f-string, that contains both the prompt, and names of columns to embed.
             **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
-        replacements (Replacement | List[Replacement], optional): A tuple or list of tuples each containing a pair of strings:
+        regex (str | Replacement | List[Replacement], optional): A string, a tuple or list of tuples each containing:
             - a string containing the regex pattern to match
             - a string to replace the matched pattern with
-            These tuples specify the desired patterns to match and replace from the raw LLM response,
-            it is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time,
-            but can easily transform the raw LLM outputs to be valid through regular expressions that extract and replace parts of the raw output string.
-            If a list of tuples is passed in, the replacements are applied in the order they appear in the list.
 
-            **Example 1:** ``replacements = ('\\b(?!(True|False)\\b)\\w+\\b', '')`` will replace all words not True or False with an empty string.
-            **Example 2:** ``replacements = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
+            If a string is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, it will return None).
+            If a tuple is passed in, the function will perform regex replacements on the response according to the given matching patterns and replacement strings.
+            If a list of tuples is passed in, the replacements are applied in the order they appear in the list.
+            Note that you cannot pass in a list of strings (chaining of multiple regex steps is only allowed for replacements).
+
+            These tuples specify the desired patterns to match and replace from the raw LLM response,
+            This regex processing is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time,
+            but can easily transform the raw LLM outputs to be valid through regular expressions that extract and replace parts of the raw output string.
+
+            **Example 1:** ``regex = '.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response.
+            **Example 2:** ``regex = [('True', 'T'), ('False', 'F')]`` will replace the words True and False with T and F.
+            **Example 3:** ``regex = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
             For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True" after the regex replacement.
         constrain_outputs (List[str], optional): List of all possible output values for the `metadata` column.
             If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
@@ -84,7 +90,7 @@ def enrich_data(
     ]
 
     if (
-        replacements is None and constrain_outputs is None
+        regex is None and constrain_outputs is None
     ):  # we do not need to have a "log" column as original output is not augmented by regex replacements or contrained outputs
         return df[[f"{new_column_name}", f"{column_name_prefix}trustworthiness"]]
 
@@ -92,9 +98,9 @@ def enrich_data(
         output["response"] if output is not None else None for output in outputs
     ]
 
-    if replacements:
+    if regex:
         df[f"{new_column_name}"] = df[f"{new_column_name}"].apply(
-            lambda x: get_regex_replacement(x, replacements)
+            lambda x: get_regex_match_or_replacement(x, regex)
         )
 
     if constrain_outputs:
@@ -114,23 +120,28 @@ def enrich_data(
     ]
 
 
-def get_regex_replacements(
+def process_regex(
     column_data: Union[pd.Series, List[str]],
-    replacements: Union[Replacement, List[Replacement]],
+    regex: Optional[Union[str, Replacement, List[Replacement]]] = None,
 ) -> Union[pd.Series, List[str]]:
     """
-    Performs regex replacements to the given string according to the given matching patterns and replacement strings.
+    Performs regex matches or replacements to the given string according to the given matching patterns and replacement strings.
 
     Use this function for: tuning regex replacements to obtain the best outputs from the raw LLM responses for your dataset obtained via ``enrich_data()``, without having to re-run the LLM.
-    If a list of tuples is passed in, the replacements are applied in the order they appear in the list.
 
-    **Example 1:** ``replacements = ('\\b(?!(True|False)\\b)\\w+\\b', '')`` will replace all words not True or False with an empty string.
-    **Example 2:** ``replacements = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
+    If a string is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, it will return None).
+    If a tuple is passed in, the function will perform regex replacements on the response according to the given matching patterns and replacement strings.
+    If a list of tuples is passed in, the replacements are applied in the order they appear in the list.
+    Note that you cannot pass in a list of strings (chaining of multiple regex steps is only allowed for replacements).
+
+    **Example 1:** ``regex = '.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response.
+    **Example 2:** ``regex = [('True', 'T'), ('False', 'F')]`` will replace the words True and False with T and F.
+    **Example 3:** ``regex = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
     For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True" after the regex replacement.
 
     Args:
         column_data (pd.Series | List[str]): A pandas Series or list of strings, where you want to apply a regex to extract matches from each element. This could be the `metadata` column output by ``enrich_data()``.
-        replacements (Replacement | List[Replacement]): A tuple or list of tuples each containing a pair of strings:
+        regex (str | Replacement | List[Replacement]): A string, a tuple or list of tuples each containing:
             - a string containing the regex pattern to match
             - a string to replace the matched pattern with
 
@@ -138,8 +149,8 @@ def get_regex_replacements(
         Extracted matches to the provided regular expression from each element of the data column (specifically, the first match is returned).
     """
     if isinstance(column_data, list):
-        return [get_regex_replacement(x, replacements) for x in column_data]
+        return [get_regex_match_or_replacement(x, regex) for x in column_data]
     elif isinstance(column_data, pd.Series):
-        return column_data.apply(lambda x: get_regex_replacement(x, replacements))
+        return column_data.apply(lambda x: get_regex_match_or_replacement(x, regex))
     else:
         raise TypeError("column_data should be a pandas Series or a list of strings.")
