@@ -54,7 +54,7 @@ def enrich_data(
             **Example 1:** ``regex = '.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response.
             **Example 2:** ``regex = [('True', 'T'), ('False', 'F')]`` will replace the words True and False with T and F.
             **Example 3:** ``regex = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
-            For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True" after the regex replacement.
+            For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True." after the regex replacement.
         constrain_outputs (List[str], optional): List of all possible output values for the `metadata` column.
             If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
            There may be additional transformations applied to ensure the returned value is one of these. If regex is also specified, then these transformations occur after your regex is applied.
@@ -141,7 +141,7 @@ def process_regex(
     **Example 1:** ``regex = '.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response.
     **Example 2:** ``regex = [('True', 'T'), ('False', 'F')]`` will replace the words True and False with T and F.
     **Example 3:** ``regex = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
-    For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True" after the regex replacement.
+    For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True." after the regex replacement.
 
     Args:
         column_data (pd.Series | List[str]): A pandas Series or list of strings, where you want to apply a regex to extract matches from each element. This could be the `metadata` column output by ``enrich_data()``.
