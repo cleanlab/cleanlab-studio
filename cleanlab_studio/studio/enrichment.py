@@ -30,7 +30,6 @@ class EnrichmentProject:
         api_key: str,
         id: str,
         name: str,
-        target_column_in_dataset: str,
         created_at: Optional[Union[str, datetime]] = None,
     ) -> None:
         """Initialize an EnrichmentProject.
@@ -41,7 +40,6 @@ class EnrichmentProject:
         self._api_key = api_key
         self._id = id
         self._name = name
-        self.target_column_in_dataset = target_column_in_dataset
         if isinstance(created_at, str):
             self._created_at = _response_timestamp_to_datetime(created_at)
         else:
@@ -90,7 +88,6 @@ class EnrichmentProject:
         return {
             "id": self.id,
             "name": self.name,
-            "target_column_in_dataset": self.target_column_in_dataset,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }

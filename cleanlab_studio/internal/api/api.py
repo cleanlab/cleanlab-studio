@@ -579,14 +579,12 @@ def create_enrichment_project(
     api_key: str,
     dataset_id: str,
     name: str,
-    target_column_in_dataset: str,
 ) -> JSONDict:
     """Create a new enrichment project."""
     check_uuid_well_formed(dataset_id, "dataset ID")
     request_json = dict(
         dataset_id=dataset_id,
         name=name,
-        target_column_in_dataset=target_column_in_dataset,
     )
     res = requests.post(
         f"{enrichment_base_url}/projects",

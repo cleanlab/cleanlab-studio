@@ -401,7 +401,6 @@ class Studio:
         self,
         name: str,
         dataset_id: str,
-        target_column_in_dataset: str = "metadata",
     ) -> enrichment.EnrichmentProject:
         """
         Creates a Cleanlab Studio Enrichment Project.
@@ -409,7 +408,6 @@ class Studio:
         Args:
             name (str): Name of the enrichment project to create.
             dataset_id (str): ID of dataset to be enriched.
-            target_column_in_dataset: (str): Name of the column to populate with new data. Defaults to "metadata".
 
         Returns:
             EnrichmentProject: The [EnrichmentProject](../enrichment#class-enrichmentproject) object
@@ -419,14 +417,12 @@ class Studio:
             api_key=self._api_key,
             name=name,
             dataset_id=dataset_id,
-            target_column_in_dataset=target_column_in_dataset,
         )
 
         return enrichment.EnrichmentProject(
             api_key=self._api_key,
             id=enrichment_project_dict["id"],
             name=enrichment_project_dict["name"],
-            target_column_in_dataset=enrichment_project_dict["target_column_in_dataset"],
             created_at=enrichment_project_dict["created_at"],
         )
 
@@ -463,7 +459,6 @@ class Studio:
             self._api_key,
             id=project_id,
             name=enrichment_project_dict["name"],
-            target_column_in_dataset=enrichment_project_dict["target_column_in_dataset"],
             created_at=enrichment_project_dict["created_at"],
         )
 
@@ -485,7 +480,6 @@ class Studio:
                 self._api_key,
                 id=enrichment_project_dict["id"],
                 name=enrichment_project_dict["name"],
-                target_column_in_dataset=enrichment_project_dict["target_column_in_dataset"],
             )
             for enrichment_project_dict in enrichment_project_dicts
         ]
