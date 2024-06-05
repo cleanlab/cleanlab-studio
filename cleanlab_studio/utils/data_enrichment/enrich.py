@@ -1,13 +1,12 @@
-import re
 from typing import Any, List, Optional, Tuple, Union
 import pandas as pd
 from cleanlab_studio.internal.enrichment_utils import (
     extract_df_subset,
-    get_compiled_regex_list,
     get_prompt_outputs,
-    get_regex_match,
-    get_return_values_match,
+    get_regex_match_or_replacement,
+    get_constrain_outputs_match,
     get_optimized_prompt,
+    Replacement,
 )
 
 from cleanlab_studio.studio.studio import Studio
@@ -15,14 +14,14 @@ from cleanlab_studio.studio.studio import Studio
 
 def enrich_data(
     studio: Studio,
-    prompt: str,
     data: pd.DataFrame,
+    prompt: str,
     *,
-    regex: Optional[Union[str, re.Pattern[str], List[re.Pattern[str]]]] = None,
-    return_values: Optional[List[str]] = None,
+    regex: Optional[Union[str, Replacement, List[Replacement]]] = None,
+    constrain_outputs: Optional[List[str]] = None,
     optimize_prompt: bool = True,
     subset_indices: Optional[Union[Tuple[int, int], List[int]]] = (0, 3),
-    metadata_column_name: str = "metadata",
+    new_column_name: str = "metadata",
     disable_warnings: bool = False,
     **kwargs: Any,
 ) -> pd.DataFrame:
@@ -33,34 +32,46 @@ def enrich_data(
     You can optionally apply regular expressions to further reformat your metadata beyond raw LLM outputs, or specify that each row of the metadata must be constrained to a particular set of values.
 
     Args:
-        studio: Cleanlab Studio client object, which you must instantiate before calling this method.
-        prompt: Formatted f-string, that contains both the prompt, and names of columns to embed.
+        studio (Studio): Cleanlab Studio client object, which you must instantiate before calling this method.
+        data (pd.DataFrame): A pandas DataFrame containing your data.
+        prompt (str): Formatted f-string, that contains both the prompt, and names of columns to embed.
             **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
-        regex: A string expression that will be passed into ``re.compile()``, a compiled regular expression, or a list of multiple already compiled regular expressions.
-            Optional expressions passed here will be applied to the raw LLM outputs from your prompt, enabling additional control to better format the final metadata output column.
-            This `regex` argument is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time, but can easily transform the raw LLM outputs to be valid through regular expressions that extract parts of the raw output string.
-            If a list of expressions is provided, the expressions are applied in order and first valid extraction is returned.
+        regex (str | Replacement | List[Replacement], optional): A string, tuple, or list of tuples specifying regular expressions to apply for post-processing the raw LLM outputs.
 
-            **Note:** Each regex pattern should specify 1 group that represents the desired characters to extract from the raw LLM response using parenthesis like so: ``'(<desired match group pattern>)'``.
-            **Example 1:** ``regex = r'.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw LLM response. This might be useful if your prompt instructed the LLM to respond in this format.
-            **Example 2:** ``regex = r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'`` will extract an email in the raw LLM response. Similar patterns can be used to extract a specifically structured part of the LLM response.
-        return_values: List of all possible values for the `metadata` column.
+            If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
+            Specifically the provided string will be passed into Python's `re.match()` method.
+            Pass in a tuple `(R1, R2)` instead if you wish to perform find and replace operations rather than matching/extraction.
+            `R1` should be a string containing the regex pattern to match, and `R2` should be a string to replace matches with.
+            Pass in a list of tuples instead if you wish to apply multiple replacements. Replacements will be applied in the order they appear in the list.
+            Note that you cannot pass in a list of strings (chaining of multiple regex processing steps is only allowed for replacement operations).
+
+            These tuples specify the desired patterns to match and replace from the raw LLM response,
+            This regex processing is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time,
+            but can easily transform the raw LLM outputs to be valid through regular expressions that extract and replace parts of the raw output string.
+            When this regex is applied, the processed results can be seen ithe ``{new_column_name}`` column, and the raw outpus (before any regex processing)
+            will be saved in the ``{new_column_name}_log`` column of the results dataframe.
+
+            **Example 1:** ``regex = '.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response.
+            **Example 2:** ``regex = [('True', 'T'), ('False', 'F')]`` will replace the words True and False with T and F.
+            **Example 3:** ``regex = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
+            For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True." after the regex replacement.
+        constrain_outputs (List[str], optional): List of all possible output values for the `metadata` column.
             If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
-            After your regex is applied, there may be additional transformations applied to ensure the returned value is one of these.
-            If `optimize_prompt` is True, the prompt will be automatically adjusted to include a statement that the response must match one of the `return_values`.
-        optimize_prompt: When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
-            For instance, if the return_values are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `return_values`."
-        subset_indices: What subset of the supplied data rows to generate metadata for. If None, we run on all of the data.
+           There may be additional transformations applied to ensure the returned value is one of these. If regex is also specified, then these transformations occur after your regex is applied.
+            If `optimize_prompt` is True, the prompt will be automatically adjusted to include a statement that the response must match one of the `constrain_outputs`.
+        optimize_prompt (bool, default = True): When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
+            For instance, if the constrain_outputs are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `constrain_outputs`."
+        subset_indices (Tuple[int, int] | List[int], optional): What subset of the supplied data rows to generate metadata for. If None, we run on all of the data.
             This can be either a list of unique indices or a range. These indices are passed into pandas ``.iloc`` method, so should be integers based on row order as opposed to row-index labels pointing to `df.index`.
             We advise against collecting results for all of your data at first. First collect results for a smaller data subset, and use this subset to experiment with different values of the `prompt` or `regex` arguments. Only once the results look good for your subset should you run on the full dataset.
-        metadata_column_name: Optional name for the returned metadata column. Name acts as a prefix appended to all additional columns that are returned.
-        disable_warnings: When True, warnings are disabled.
+        new_column_name (str): Optional name for the returned enriched column. Name acts as a prefix appended to all additional columns that are returned.
+        disable_warnings (bool, default = False): When True, warnings are disabled.
 
     Returns:
-        A DataFrame that contains `metadata` and `trustworthiness` columns related to the prompt in order of original data. Some columns names will have `metadata_column_name` prepended to them.
-        `metadata` column = responses to the prompt and other data mutations if `regex` or `return_values` is not specified.
+        A DataFrame that contains `metadata` and `trustworthiness` columns related to the prompt in order of original data. Some columns names will have `new_column_name` prepended to them.
+        `metadata` column = responses to the prompt and other data mutations if `regex` or `constrain_outputs` is not specified.
         `trustworthiness` column = trustworthiness of the prompt responses (which ignore the data mutations).
-        **Note**: If you specified the `regex` or `return_values` arguments, some additional transformations may be applied to raw LLM outputs to produce the returned values. In these cases, an additional `log` column will be added to the returned DataFrame that records the raw LLM outputs (feel free to disregard these).
+        **Note**: If you specified the `regex` or `constrain_outputs` arguments, some additional transformations may be applied to raw LLM outputs to produce the returned values. In these cases, an additional `log` column will be added to the returned DataFrame that records the raw LLM outputs (feel free to disregard these).
     """
     if subset_indices:
         df = extract_df_subset(data, subset_indices)
@@ -68,77 +79,80 @@ def enrich_data(
         df = data.copy()
 
     if optimize_prompt:
-        prompt = get_optimized_prompt(prompt, return_values)
+        prompt = get_optimized_prompt(prompt, constrain_outputs)
 
     outputs = get_prompt_outputs(studio, prompt, df, **kwargs)
-    column_name_prefix = metadata_column_name + "_"
+    column_name_prefix = new_column_name + "_"
 
     df[f"{column_name_prefix}trustworthiness"] = [
         output["trustworthiness_score"] if output is not None else None for output in outputs
     ]
-    df[f"{metadata_column_name}"] = [
+    df[f"{new_column_name}"] = [
         output["response"] if output is not None else None for output in outputs
     ]
 
     if (
-        regex is None and return_values is None
-    ):  # we do not need to have a "log" column as original output is not augmented by regex or return values
-        return df[[f"{metadata_column_name}", f"{column_name_prefix}trustworthiness"]]
+        regex is None and constrain_outputs is None
+    ):  # we do not need to have a "log" column as original output is not augmented by regex replacements or contrained outputs
+        return df[[f"{new_column_name}", f"{column_name_prefix}trustworthiness"]]
 
     df[f"{column_name_prefix}log"] = [
         output["response"] if output is not None else None for output in outputs
     ]
 
     if regex:
-        regex_list = get_compiled_regex_list(regex)
-        df[f"{metadata_column_name}"] = df[f"{metadata_column_name}"].apply(
-            lambda x: get_regex_match(x, regex_list, disable_warnings)
+        df[f"{new_column_name}"] = df[f"{new_column_name}"].apply(
+            lambda x: get_regex_match_or_replacement(x, regex)
         )
 
-    if return_values:
-        return_values_pattern = r"(" + "|".join(return_values) + ")"
-        df[f"{metadata_column_name}"] = df[f"{metadata_column_name}"].apply(
-            lambda x: get_return_values_match(
-                x, return_values, return_values_pattern, disable_warnings
+    if constrain_outputs:
+        constrain_outputs_pattern = r"(" + "|".join(constrain_outputs) + ")"
+        df[f"{new_column_name}"] = df[f"{new_column_name}"].apply(
+            lambda x: get_constrain_outputs_match(
+                x, constrain_outputs, constrain_outputs_pattern, disable_warnings
             )
         )
 
     return df[
         [
-            f"{metadata_column_name}",
+            f"{new_column_name}",
             f"{column_name_prefix}trustworthiness",
             f"{column_name_prefix}log",
         ]
     ]
 
 
-def get_regex_matches(
+def process_regex(
     column_data: Union[pd.Series, List[str]],
-    regex: Union[str, re.Pattern[str], List[re.Pattern[str]]],
-    disable_warnings: bool = False,
+    regex: Union[str, Replacement, List[Replacement]],
 ) -> Union[pd.Series, List[str]]:
     """
-    Extracts the first match to the provided regular expression pattern from each example in the provided column of data.
+    Performs regex matches or replacements to the given string according to the given matching patterns and replacement strings.
 
-    Use this function for: tuning regex patterns to extract the best outputs from the raw LLM responses for your dataset obtained via ``enrich_data()``, without having to re-run the LLM.
-    If a list of regular expressions is provided, the expressions are applied in order, and the first valid regex match is returned.
+    Use this function for: tuning regex replacements to obtain the best outputs from the raw LLM responses for your dataset obtained via ``enrich_data()``, without having to re-run the LLM.
 
-    **Note:** Regex patterns should each specify exactly 1 group that is represents the desired characters to be extracted from the raw response using parenthesis like so ``'(<desired match group pattern>)'``.
-    **Example 1:** `r'.*The answer is: (Bird|[Rr]abbit).*'` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response text.
-    **Example 2:** `r'.*(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b).*'` will match an email in the raw response LLM response.
+    If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
+    Specifically the provided string will be passed into Python's `re.match()` method.
+    Pass in a tuple `(R1, R2)` instead if you wish to perform find and replace operations rather than matching/extraction.
+    `R1` should be a string containing the regex pattern to match, and `R2` should be a string to replace matches with.
+    Pass in a list of tuples instead if you wish to apply multiple replacements. Replacements will be applied in the order they appear in the list.
+    Note that you cannot pass in a list of strings (chaining of multiple regex processing steps is only allowed for replacement operations).
+
+    **Example 1:** ``regex = '.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response.
+    **Example 2:** ``regex = [('True', 'T'), ('False', 'F')]`` will replace the words True and False with T and F.
+    **Example 3:** ``regex = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
+    For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True." after the regex replacement.
 
     Args:
-        column_data: A pandas Series or list of strings, where you want to apply a regex to extract matches from each element. This could be the `metadata` column output by ``enrich_data()``.
-        regex: A string expression that will be passed into ``re.compile()``, a compiled regular expression, or a list of multiple already compiled regular expressions.
-        disable_warnings: When True, warnings are disabled.
+        column_data (pd.Series | List[str]): A pandas Series or list of strings, where you want to apply a regex to extract matches from each element. This could be the `metadata` column output by ``enrich_data()``.
+        regex (str | Replacement | List[Replacement]): A string, tuple, or list of tuples specifying regular expressions to apply for post-processing the raw LLM outputs.
 
     Returns:
         Extracted matches to the provided regular expression from each element of the data column (specifically, the first match is returned).
     """
-    regex_list = get_compiled_regex_list(regex)
     if isinstance(column_data, list):
-        return [get_regex_match(x, regex_list, disable_warnings) for x in column_data]
+        return [get_regex_match_or_replacement(x, regex) for x in column_data]
     elif isinstance(column_data, pd.Series):
-        return column_data.apply(lambda x: get_regex_match(x, regex_list, disable_warnings))
+        return column_data.apply(lambda x: get_regex_match_or_replacement(x, regex))
     else:
         raise TypeError("column_data should be a pandas Series or a list of strings.")

@@ -9,11 +9,17 @@ from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.studio.studio import Studio
 from cleanlab_studio.studio.trustworthy_language_model import TLMResponse
 
+Replacement = Tuple[str, str]
+
 
 def get_prompt_outputs(
     studio: Studio, prompt: str, data: pd.DataFrame, **kwargs: Any
 ) -> List[Optional[TLMResponse]]:
     """Returns the outputs of the prompt for each row in the dataframe."""
+    default_tlm_options = {"model": "claude-3-haiku"}
+    tlm_options = kwargs.get("options", {})
+    kwargs["options"] = {**default_tlm_options, **tlm_options}
+
     tlm = studio.TLM(**kwargs)
     formatted_prompts = data.apply(lambda x: prompt.format(**x), axis=1).to_list()
     outputs = tlm.try_prompt(formatted_prompts)
@@ -37,83 +43,97 @@ def extract_df_subset(
     return subset_df
 
 
-def get_compiled_regex_list(
-    regex: Union[str, re.Pattern[str], List[re.Pattern[str]]]
-) -> List[re.Pattern[str]]:
-    """Compile the regex pattern(s) provided and return a list of compiled regex patterns."""
-    if isinstance(regex, str):
-        return [re.compile(rf"{regex}")]
-    elif isinstance(regex, re.Pattern):
-        return [regex]
-    elif isinstance(regex, list):
-        return regex
-    else:
-        raise ValidationError(
-            "Passed in regex can only be type one of: str, re.Pattern, or list of re.Pattern."
-        )
-
-
-def get_regex_match(
-    response: str, regex_list: List[re.Pattern[str]], disable_warnings: bool
+def get_regex_match_or_replacement(
+    response: str, regex: Union[str, Replacement, List[Replacement]]
 ) -> Optional[str]:
-    """Extract the first match from the response using the provided regex patterns. Return first match if multiple exist.
-    Note: This function assumes the regex patterns each specify exactly 1 group that is the match group using ``'(<group>)'``."""
-    for regex_pattern in regex_list:
-        pattern_match = regex_pattern.match(response)
+    """Performs regex matching (if input is a string) or replacements (if input is a tuple) to the response
+    given the matching patterns and replacement strings.
+    """
+    # if the regex is a string, do matching
+    if isinstance(regex, str):
+        compiled_pattern = re.compile(regex)
+        pattern_match = compiled_pattern.match(response)
         if pattern_match:
             return pattern_match.group(1)
-    if not disable_warnings:
-        warnings.warn(
-            f"Your provided regex: {str(regex_list)} did not match a single LLM output across the dataset. This message is simply to inform you that the regex is not having any effect."
+        return None
+
+    # if the regex is a tuple (or list of tuples), do replacement
+    if isinstance(regex, tuple):
+        regex_list = [regex]
+    elif isinstance(regex, list):
+        regex_list = regex
+    else:
+        raise ValidationError(
+            "Passed in regex has to be either a string (pattern to match), a tuple (pair of patterns to match and replace), "
+            "or a list of tuples (pairs of patterns to match and replace)."
         )
-    return None
+
+    for replacement_pair in regex_list:
+        if isinstance(replacement_pair, str):
+            raise ValidationError("Only a single regex pattern can be used for matching.")
+
+        if not isinstance(replacement_pair, tuple) or len(replacement_pair) != 2:
+            raise ValidationError(
+                "Every item of the regex list must be a tuple that contains 2 strings: "
+                "(the regex pattern to match, the string to replace the matched pattern with)"
+            )
+
+        compiled_pattern = re.compile(replacement_pair[0])
+        replacement = replacement_pair[1]
+        response = compiled_pattern.sub(replacement, response)
+
+    return response
 
 
-def get_optimized_prompt(prompt: str, return_values: Optional[List[str]] = None) -> str:
+def get_optimized_prompt(prompt: str, constrain_outputs: Optional[List[str]] = None) -> str:
     """Optimize the prompt by ammending original.
-    Adds a pre-prompt message if return_values are provided. This will help the LLM understand it's response must exactly match one of the return values."""
+    Adds a pre-prompt message if constrain_outputs are provided. This will help the LLM understand it's response must exactly match one of the return values.
+    """
 
-    if return_values is not None:
-        string_return_values = str(return_values).replace("'", "")
-        pre_prompt = f"Your answer must exactly match one of the following values: [{string_return_values}].\n"
+    if constrain_outputs is not None:
+        string_constrain_outputs = str(constrain_outputs).replace("'", "")
+        pre_prompt = f"Your answer must exactly match one of the following values: [{string_constrain_outputs}].\n"
         optimal_prompt = f"{pre_prompt}{prompt}"
     else:
         optimal_prompt = prompt
     return optimal_prompt
 
 
-def get_return_values_match(
+def get_constrain_outputs_match(
     response: str,
-    return_values: List[str],
-    return_values_pattern: Optional[str] = None,
+    constrain_outputs: List[str],
+    constrain_outputs_pattern: Optional[str] = None,
     disable_warnings: bool = True,
 ) -> str:
-    """Extracts the provided return values from the response using regex patterns. Return first extracted value if multiple exist. If no value out of the possible `return_values` is directly mentioned in the response, the return value with greatest string similarity to the response is returned (along with a warning).
+    """Extracts the provided output values from the response using regex patterns. Return first extracted value if multiple exist.
+    If no value out of the possible `constrain_outputs` is directly mentioned in the response, the return value with greatest string similarity to the response is returned (along with a warning).
 
     Params
     ------
     response: Response from the LLM
-    return_values: List of expected return values
-    return_values_pattern: Pre-compiled pattern of all return values. If not specified, pattern is created.
+    constrain_outputs: List of expected output values
+    constrain_outputs_pattern: Pre-compiled pattern of all output values. If not specified, pattern is created.
     disable_warnings: If True, print warnings are disabled
     """
 
     response_str = str(response)
 
-    if return_values_pattern is None:
-        return_values_pattern = r"(" + "|".join(return_values) + ")"
+    if constrain_outputs_pattern is None:
+        constrain_outputs_pattern = r"(" + "|".join(constrain_outputs) + ")"
 
     # Parse category if LLM response is properly formatted
-    exact_matches = re.findall(return_values_pattern, response_str, re.IGNORECASE)
+    exact_matches = re.findall(constrain_outputs_pattern, response_str, re.IGNORECASE)
     if len(exact_matches) > 0:
         return str(exact_matches[0])
 
     # If there are no exact matches to a specific category, return the closest category based on string similarity.
-    closest_match = max(return_values, key=lambda x: SequenceMatcher(None, response_str, x).ratio())
+    closest_match = max(
+        constrain_outputs, key=lambda x: SequenceMatcher(None, response_str, x).ratio()
+    )
     similarity_score = SequenceMatcher(None, response_str, closest_match).ratio()
     str_warning = "match"
     if similarity_score < 0.5:
         str_warning = "remotely match"
     if not disable_warnings:
-        warnings.warn(f"None of the return_values {str_warning} raw LLM output: {response_str}")
+        warnings.warn(f"None of the constrain_outputs {str_warning} raw LLM output: {response_str}")
     return closest_match
