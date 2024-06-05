@@ -48,6 +48,8 @@ def enrich_data(
             These tuples specify the desired patterns to match and replace from the raw LLM response,
             This regex processing is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time,
             but can easily transform the raw LLM outputs to be valid through regular expressions that extract and replace parts of the raw output string.
+            When this regex is applied, the processed results can be seen ithe ``{new_column_name}`` column, and the raw outpus (before any regex processing)
+            will be saved in the ``{new_column_name}_log`` column of the results dataframe.
 
             **Example 1:** ``regex = '.*The answer is: (Bird|[Rr]abbit).*'`` will extract strings that are the words 'Bird', 'Rabbit' or 'rabbit' after the characters "The answer is: " from the raw response.
             **Example 2:** ``regex = [('True', 'T'), ('False', 'F')]`` will replace the words True and False with T and F.
@@ -67,9 +69,9 @@ def enrich_data(
 
     Returns:
         A DataFrame that contains `metadata` and `trustworthiness` columns related to the prompt in order of original data. Some columns names will have `new_column_name` prepended to them.
-        `metadata` column = responses to the prompt and other data mutations if `replacements` or `constrain_outputs` is not specified.
+        `metadata` column = responses to the prompt and other data mutations if `regex` or `constrain_outputs` is not specified.
         `trustworthiness` column = trustworthiness of the prompt responses (which ignore the data mutations).
-        **Note**: If you specified the `replacements` or `constrain_outputs` arguments, some additional transformations may be applied to raw LLM outputs to produce the returned values. In these cases, an additional `log` column will be added to the returned DataFrame that records the raw LLM outputs (feel free to disregard these).
+        **Note**: If you specified the `regex` or `constrain_outputs` arguments, some additional transformations may be applied to raw LLM outputs to produce the returned values. In these cases, an additional `log` column will be added to the returned DataFrame that records the raw LLM outputs (feel free to disregard these).
     """
     if subset_indices:
         df = extract_df_subset(data, subset_indices)
