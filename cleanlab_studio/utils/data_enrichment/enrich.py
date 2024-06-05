@@ -36,14 +36,14 @@ def enrich_data(
         data (pd.DataFrame): A pandas DataFrame containing your data.
         prompt (str): Formatted f-string, that contains both the prompt, and names of columns to embed.
             **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
-        regex (str | Replacement | List[Replacement], optional): A string, a tuple or list of tuples each containing:
-            - a string containing the regex pattern to match
-            - a string to replace the matched pattern with
+        regex (str | Replacement | List[Replacement], optional): A string, tuple, or list of tuples specifying regular expressions to apply for post-processing the raw LLM outputs.
 
-            If a string is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, it will return None).
-            If a tuple is passed in, the function will perform regex replacements on the response according to the given matching patterns and replacement strings.
-            If a list of tuples is passed in, the replacements are applied in the order they appear in the list.
-            Note that you cannot pass in a list of strings (chaining of multiple regex steps is only allowed for replacements).
+            If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
+            Specifically the provided string will be passed into Python's `re.match()` method.
+            Pass in a tuple `(R1, R2)` instead if you wish to perform find and replace operations rather than matching/extraction. 
+            `R1` should be a string containing the regex pattern to match, and `R2` should be a string to replace matches with.
+            Pass in a list of tuples instead if you wish to apply multiple replacements. Replacements will be applied in the order they appear in the list.
+            Note that you cannot pass in a list of strings (chaining of multiple regex processing steps is only allowed for replacement operations).
 
             These tuples specify the desired patterns to match and replace from the raw LLM response,
             This regex processing is useful in settings where you are unable to prompt the LLM to generate valid outputs 100% of the time,
