@@ -138,8 +138,7 @@ class InvalidSchemaTypeError(ValueError):
 class InvalidProjectConfiguration(HandledError):
     pass
 
+
 class InvalidFilepathError(HandledError):
-    def __init__(self) -> None:
-        super().__init__(
-            "File could not be found. Please check the file path."
-        )
+    def __init__(self, filepath: str = "") -> None:
+        super().__init__(f"File could not be found at {filepath}. Please check the file path.")
