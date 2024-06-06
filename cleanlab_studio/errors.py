@@ -139,7 +139,7 @@ class InvalidProjectConfiguration(HandledError):
     pass
 
 class InvalidFilepathError(HandledError):
-    def __init__(self) -> None:
+    def __init__(self, filepath: str = "" ) -> None:
         super().__init__(
-            "File could not be found. Please check the file path."
+           f"File could not be found at {filepath}. Please check the file path."
         )

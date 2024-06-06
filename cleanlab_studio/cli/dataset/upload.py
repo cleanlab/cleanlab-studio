@@ -44,8 +44,7 @@ def upload(
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
     if not os.path.exists(filepath):
-        abort(f"cannot upload '{filepath}': no such file or directory")
-        raise InvalidFilepathError
+        raise InvalidFilepathError(filepath=filepath)
 
 
     dataset_source = FilepathDatasetSource(filepath=pathlib.Path(filepath))
