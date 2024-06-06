@@ -11,6 +11,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from . import inference
+from . import enrichment
 from . import trustworthy_language_model
 from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, upload_helpers
@@ -395,6 +396,94 @@ class Studio:
             3. If there are rows flagged as `is_not_analyzed`, the rows of the feature embeddings will correspond to the rows of the original dataset after filtering out the rows that are not analyzed.
         """
         return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
+
+    def create_enrichment_project(
+        self,
+        name: str,
+        dataset_id: str,
+    ) -> enrichment.EnrichmentProject:
+        """
+        Creates a Cleanlab Studio Enrichment Project.
+
+        Args:
+            name (str): Name of the enrichment project to create.
+            dataset_id (str): ID of dataset to be enriched.
+
+        Returns:
+            EnrichmentProject: The [EnrichmentProject](../enrichment#class-enrichmentproject) object
+            for the new enrichment project.
+        """
+        enrichment_project_dict = api.create_enrichment_project(
+            api_key=self._api_key,
+            name=name,
+            dataset_id=dataset_id,
+        )
+
+        return enrichment.EnrichmentProject(
+            api_key=self._api_key,
+            id=enrichment_project_dict["id"],
+            name=enrichment_project_dict["name"],
+            created_at=enrichment_project_dict["created_at"],
+        )
+
+    def delete_enrichment_project(self, project_id: str) -> None:
+        """
+        Deletes an Enrichment Project from Cleanlab Studio.
+
+        Args:
+            project_id: ID of enrichment project to delete.
+        """
+        api.delete_enrichment_project(self._api_key, project_id=project_id)
+        print(f"Successfully deleted enrichment project: {project_id}")
+
+    def get_enrichment_project(
+        self,
+        project_id: str,
+    ) -> enrichment.EnrichmentProject:
+        """
+        Get an EnrichmentProject objection for a given Cleanlab Studio Enrichment Project's ID.
+
+        Args:
+            project_id (str): ID of the enrichment project.
+
+        Returns:
+            EnrichmentProject: The [EnrichmentProject](../enrichment#class-enrichmentproject) object
+            for the enrichment project.
+        """
+        enrichment_project_dict = api.get_enrichment_project(
+            api_key=self._api_key,
+            project_id=project_id,
+        )
+
+        return enrichment.EnrichmentProject(
+            self._api_key,
+            id=project_id,
+            name=enrichment_project_dict["name"],
+            created_at=enrichment_project_dict["created_at"],
+        )
+
+    def get_enrichment_projects(
+        self,
+    ) -> List[enrichment.EnrichmentProject]:
+        """
+        Get a list of all EnrichmentProjects.
+
+        Returns:
+            List[EnrichmentProject]: A list of [EnrichmentProject](../enrichment#class-enrichmentproject) objects.
+        """
+        enrichment_project_dicts = api.list_all_enrichment_projects(
+            api_key=self._api_key,
+        )
+
+        return [
+            enrichment.EnrichmentProject(
+                self._api_key,
+                id=enrichment_project_dict["id"],
+                name=enrichment_project_dict["name"],
+                created_at=enrichment_project_dict["created_at"],
+            )
+            for enrichment_project_dict in enrichment_project_dicts
+        ]
 
     def TLM(
         self,
