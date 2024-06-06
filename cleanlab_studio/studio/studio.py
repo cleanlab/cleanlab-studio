@@ -480,6 +480,7 @@ class Studio:
                 self._api_key,
                 id=enrichment_project_dict["id"],
                 name=enrichment_project_dict["name"],
+                created_at=enrichment_project_dict["created_at"],
             )
             for enrichment_project_dict in enrichment_project_dicts
         ]
