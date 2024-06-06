@@ -16,6 +16,7 @@ from cleanlab_studio.cli.decorators import auth_config
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.internal.dataset_source import FilepathDatasetSource
 from cleanlab_studio.internal.util import telemetry
+from cleanlab_studio.errors import InvalidFilepathError
 
 
 @click.command(help="upload your dataset to Cleanlab Studio")
@@ -44,6 +45,8 @@ def upload(
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
     if not os.path.exists(filepath):
         abort(f"cannot upload '{filepath}': no such file or directory")
+        raise InvalidFilepathError
+
 
     dataset_source = FilepathDatasetSource(filepath=pathlib.Path(filepath))
 
