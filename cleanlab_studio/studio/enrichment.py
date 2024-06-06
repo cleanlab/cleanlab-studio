@@ -40,6 +40,7 @@ class EnrichmentProject:
         self._api_key = api_key
         self._id = id
         self._name = name
+        self._created_at: Optional[datetime]
         if isinstance(created_at, str):
             self._created_at = _response_timestamp_to_datetime(created_at)
         else:
