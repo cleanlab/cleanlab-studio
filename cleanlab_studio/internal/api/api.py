@@ -636,6 +636,29 @@ def list_all_enrichment_projects(api_key: str) -> List[JSONDict]:
     return all_projects
 
 
+def enrichment_preview(
+    api_key: str,
+    project_id: str,
+    options: JSONDict,
+    new_column_name: str,
+    indices: Optional[List[int]] = None,
+) -> JSONDict:
+    check_uuid_well_formed(project_id, "project_id")
+    request_json = dict(
+        **options,
+        new_column_name=new_column_name,
+        indices=indices,
+        project_id=project_id,
+    )
+    res = requests.post(
+        f"{enrichment_base_url}/preview",
+        headers=_construct_headers(api_key),
+        json=request_json,
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
 def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
     """Implements TLM retry decorator, with special handling for rate limit retries."""
 
