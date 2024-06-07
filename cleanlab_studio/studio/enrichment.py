@@ -14,8 +14,7 @@ from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.types import JSONDict
 from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
 
-RegExp = str
-Replacement = Tuple[RegExp, str]
+Replacement = Tuple[str, str]
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
@@ -126,7 +125,15 @@ class EnrichmentOptions(TypedDict):
     Args:
         prompt (str): Formatted f-string, that contains both the prompt, and names of columns to embed.
             **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
-        replacements (Union[Replacement, List[Replacement]]):             If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
+        constrain_outputs (List[str], optional): List of all possible output values for the `metadata` column.
+            If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
+           There may be additional transformations applied to ensure the returned value is one of these. If regex is also specified, then these transformations occur after your regex is applied.
+            If `optimize_prompt` is True, the prompt will be automatically adjusted to include a statement that the response must match one of the `constrain_outputs`.
+        optimize_prompt (bool, default = True): When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
+            For instance, if the constrain_outputs are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `constrain_outputs`."
+        replacements (str | Replacement | List[Replacement], optional): A string, tuple, or list of tuples specifying regular expressions to apply for post-processing the raw LLM outputs.
+
+            If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
             Specifically the provided string will be passed into Python's `re.match()` method.
             Pass in a tuple `(R1, R2)` instead if you wish to perform find and replace operations rather than matching/extraction.
             `R1` should be a string containing the regex pattern to match, and `R2` should be a string to replace matches with.
@@ -143,24 +150,14 @@ class EnrichmentOptions(TypedDict):
             **Example 2:** ``regex = [('True', 'T'), ('False', 'F')]`` will replace the words True and False with T and F.
             **Example 3:** ``regex = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
             For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True." after the regex replacement.
-
-        constrain_outputs (List[str], optional): List of all possible output values for the `metadata` column.
-            If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
-           There may be additional transformations applied to ensure the returned value is one of these. If regex is also specified, then these transformations occur after your regex is applied.
-            If `optimize_prompt` is True, the prompt will be automatically adjusted to include a statement that the response must match one of the `constrain_outputs`.
-        optimize_prompt (bool, default = True): When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
-            For instance, if the constrain_outputs are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `constrain_outputs`."
-        indices (Tuple[int, int] | List[int], optional): What subset of the supplied data rows to generate metadata for. If None, we run on all of the data.
-            This can be either a list of unique indices or a range. These indices are passed into pandas ``.iloc`` method, so should be integers based on row order as opposed to row-index labels pointing to `df.index`.
-            We advise against collecting results for all of your data at first. First collect results for a smaller data subset, and use this subset to experiment with different values of the `prompt` or `regex` arguments. Only once the results look good for your subset should you run on the full dataset.
-        new_column_name (str): Optional name for the returned enriched column. Name acts as a prefix appended to all additional columns that are returned.
+        tlm_options (TLMOptions, optional): Options for the Trustworthy Language Model (TLM) to use for data enrichment.
     """
 
     prompt: str
-    replacements: Optional[Union[Replacement, List[Replacement]]]
-    optimize_prompt: Optional[bool]
-    tlm_options: Optional[TLMOptions]
     constrain_outputs: Optional[List[str]]
+    optimize_prompt: Optional[bool]
+    replacements: Optional[Union[str, Replacement, List[Replacement]]]
+    tlm_options: Optional[TLMOptions]
 
 
 class EnrichmentResult:
