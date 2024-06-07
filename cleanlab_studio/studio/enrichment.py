@@ -167,7 +167,7 @@ class EnrichmentResult:
     _indices: Optional[List[int]]
     _results: pd.DataFrame
 
-    def from_dict(self, json_dict: JSONDict) -> None:
+    def from_dict(self, json_dict: JSONDict) -> EnrichmentResult:
         pass
 
     def to_list(self) -> List[Tuple[Optional[str], float]]:
