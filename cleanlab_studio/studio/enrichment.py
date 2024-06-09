@@ -106,7 +106,7 @@ class EnrichmentProject:
         new_column_name: str,
         indices: Optional[List[int]] = None,
         disable_warnings: bool = False,
-    ) -> EnrichmentResult:
+    ) -> EnrichmentPreviewResult:
         response = api.enrichment_preview(
             api_key=self._api_key,
             project_id=self._id,
@@ -114,8 +114,12 @@ class EnrichmentProject:
             new_column_name=new_column_name,
             indices=indices,
         )
-        return EnrichmentResult.from_dict(response)
-
+        epr = EnrichmentPreviewResult.from_dict(response)
+        if not disable_warnings and epr._is_timeout:
+            print(
+                "Warning: The preview operation timed out for a subset of data. Set those results to None."
+            )
+        return epr
 
 class EnrichmentOptions(TypedDict):
     """Options for enriching a dataset with a Trustworthy Language Model (TLM).
@@ -161,17 +165,54 @@ class EnrichmentOptions(TypedDict):
 
 
 class EnrichmentResult:
-    _indices: Optional[List[int]]
-    _results: pd.DataFrame
+    def __init__(self, results: pd.DataFrame, new_column_name: str):
+        self._results = results
+        self._new_column_name = new_column_name
 
-    def from_dict(self, json_dict: JSONDict) -> EnrichmentResult:
-        pass
+    @classmethod
+    def from_dict(cls, json_dict: JSONDict) -> EnrichmentResult:
+        raise NotImplementedError()
 
     def to_list(self) -> List[Tuple[Optional[str], float]]:
-        pass
+        raise NotImplementedError()
 
     def details(self) -> pd.DataFrame:
         return self._results
 
     def join(self, data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
-        pass
+        raise NotImplementedError()
+
+
+class EnrichmentPreviewResult(EnrichmentResult):
+
+    def __init__(self, new_column_name: str, indices: List[int], results: pd.DataFrame, errors: Dict, is_timeout: bool, total_count: int, successful_count: int, failed_count: int):
+        super().__init__(results, new_column_name)
+        self._indices = indices
+        self._errors = errors
+        self._is_timeout = is_timeout
+        self._total_count = total_count
+        self._successful_count = successful_count
+        self._failed_count = failed_count
+
+
+    @classmethod
+    def from_dict(cls, json_dict: JSONDict) -> EnrichmentPreviewResult:
+        new_column_name = json_dict["new_column_name"]
+        indices = json_dict["indices"]
+        df = pd.DataFrame.from_dict(json_dict["results"], orient='index', columns=[new_column_name, f"{new_column_name}_trustworthiness"])
+        errors = json_dict["errors"]
+        is_timeout = json_dict["is_timeout"]
+        total_count = json_dict["total_count"]
+        successful_count = json_dict["successful_count"]
+        failed_count = json_dict["failed_count"]
+
+        return cls(new_column_name, indices, df, errors, is_timeout, total_count, successful_count, failed_count)
+
+    
+    def get_preview_status(self) -> Dict:
+        return {
+            "is_timeout": self._is_timeout,
+            "total_count": self._total_count,
+            "successful_count": self._successful_count,
+            "failed_count": self._failed_count,
+        }
