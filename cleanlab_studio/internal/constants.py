@@ -8,3 +8,4 @@ _TLM_MAX_RETRIES: int = 3  # TODO: finalize this number
 TLM_MAX_TOKEN_RANGE: Tuple[int, int] = (64, 512)  # (min, max)
 TLM_NUM_CANDIDATE_RESPONSES_RANGE: Tuple[int, int] = (1, 20)  # (min, max)
 TLM_NUM_CONSISTENCY_SAMPLES_RANGE: Tuple[int, int] = (0, 20)  # (min, max)
+TLM_VALID_LOG_OPTIONS: set[str] = {"logprobs"}

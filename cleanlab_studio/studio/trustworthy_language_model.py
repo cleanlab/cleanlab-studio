@@ -61,8 +61,11 @@ class TLM:
                 f"Invalid quality preset {quality_preset} -- must be one of {_VALID_TLM_QUALITY_PRESETS}"
             )
 
+        self._return_logs = False
         if options is not None:
             validate_tlm_options(options)
+            if "logs" in options.keys():  # TODO: figure out check
+                self._return_logs = True
 
         if timeout is not None and not (isinstance(timeout, int) or isinstance(timeout, float)):
             raise ValidationError("timeout must be a integer or float value")
@@ -353,7 +356,7 @@ class TLM:
         """
 
         try:
-            tlm_response = await asyncio.wait_for(
+            response_json = await asyncio.wait_for(
                 api.tlm_prompt(
                     self._api_key,
                     prompt,
@@ -371,10 +374,15 @@ class TLM:
                 return None
             raise e
 
-        return {
-            "response": tlm_response["response"],
-            "trustworthiness_score": tlm_response["confidence_score"],
+        tlm_response = {
+            "response": response_json["response"],
+            "trustworthiness_score": response_json["confidence_score"],
         }
+
+        if self._return_logs:
+            tlm_response["logs"] = response_json["logs"]
+
+        return tlm_response
 
     def get_trustworthiness_score(
         self,
@@ -500,7 +508,7 @@ class TLM:
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,
         batch_index: Optional[int] = None,
-    ) -> Optional[float]:
+    ) -> Union[float, dict]:
         """Private asynchronous method to get trustworthiness score for prompt-response pairs.
 
         Args:
@@ -520,7 +528,7 @@ class TLM:
             )
 
         try:
-            tlm_response = await asyncio.wait_for(
+            response_json = await asyncio.wait_for(
                 api.tlm_get_confidence_score(
                     self._api_key,
                     prompt,
@@ -535,7 +543,13 @@ class TLM:
                 timeout=timeout,
             )
 
-            return cast(float, tlm_response["confidence_score"])
+            if self._return_logs:
+                return {
+                    "trustworthiness_score": response_json["confidence_score"],
+                    "logs": response_json["logs"],
+                }
+
+            return cast(float, response_json["confidence_score"])
 
         except Exception as e:
             if capture_exceptions:
@@ -552,10 +566,13 @@ class TLMResponse(TypedDict):
         trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
         A higher score indicates a higher confidence that the response is correct/trustworthy. The trustworthiness score
         is omitted if TLM is run with quality preset "base".
+
+        logs (dict, optional): a dictionary containing additional logs and metadata from the LLM call.
     """
 
     response: str
     trustworthiness_score: Optional[float]
+    logs: Optional[dict]
 
 
 class TLMOptions(TypedDict):
@@ -607,6 +624,8 @@ class TLMOptions(TypedDict):
         This self-reflection forms a big part of the trustworthiness score, helping quantify aleatoric uncertainty associated with challenging prompts
         and helping catch answers that are obviously incorrect/bad for a prompt asking for a well-defined answer that LLMs should be able to handle.
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
+
+        logs (List[str], default = None): specify what additional logs or metadata should be returned. Types of logs available: ["logprobs"].
     """
 
     model: NotRequired[str]
@@ -614,6 +633,7 @@ class TLMOptions(TypedDict):
     num_candidate_responses: NotRequired[int]
     num_consistency_samples: NotRequired[int]
     use_self_reflection: NotRequired[bool]
+    logs: NotRequired[List[str]]
 
 
 def is_notebook() -> bool:
