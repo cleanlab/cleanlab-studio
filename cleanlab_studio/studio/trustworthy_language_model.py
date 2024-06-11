@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Coroutine, List, Optional, Union, cast, Sequence
+from typing import Coroutine, List, Optional, Union, cast, Sequence, Dict
 from tqdm.asyncio import tqdm_asyncio
 
 import aiohttp
@@ -25,7 +25,7 @@ from cleanlab_studio.internal.tlm.validation import (
     validate_try_tlm_prompt_response,
     validate_tlm_options,
 )
-from cleanlab_studio.internal.types import TLMQualityPreset
+from cleanlab_studio.internal.types import TLMQualityPreset, TLMScoreResponse
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
@@ -134,8 +134,9 @@ class TLM:
         self,
         prompts: Sequence[str],
         responses: Sequence[str],
+        logprobs: Optional[Sequence[float]] = None,
         capture_exceptions: bool = False,
-    ) -> Union[List[float], List[Optional[float]]]:
+    ) -> Union[List[TLMScoreResponse], List[Optional[TLMScoreResponse]]]:
         """Run batch of TLM get trustworthiness score.
 
         capture_exceptions behavior:
@@ -165,6 +166,7 @@ class TLM:
                 self._get_trustworthiness_score_async(
                     prompt,
                     response,
+                    logprobs,
                     timeout=per_query_timeout,
                     capture_exceptions=capture_exceptions,
                     batch_index=batch_index,
@@ -388,13 +390,15 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
-    ) -> Union[float, List[float]]:
+        logprobs: Optional[Union[float, Sequence[float]]] = None,
+    ) -> Union[TLMScoreResponse, List[TLMScoreResponse]]:
         """Computes trustworthiness score for arbitrary given prompt-response pairs.
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
             response (str | Sequence[str]): existing response (or list of responses) associated with the input prompts.
                 These can be from any LLM or human-written responses.
+            logprobs (float | Sequence[float]): log probabilities (or list of log probs) associated with the given responses.
         Returns:
             float | List[float]: float or list of floats (if multiple prompt-responses were provided) corresponding
                 to the TLM's trustworthiness score.
@@ -413,7 +417,7 @@ class TLM:
                 float,
                 self._event_loop.run_until_complete(
                     self._get_trustworthiness_score_async(
-                        prompt, response, timeout=self._timeout, capture_exceptions=False
+                        prompt, response, logprobs, timeout=self._timeout, capture_exceptions=False
                     )
                 ),
             )
@@ -421,7 +425,9 @@ class TLM:
         return cast(
             List[float],
             self._event_loop.run_until_complete(
-                self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=False)
+                self._batch_get_trustworthiness_score(
+                    prompt, response, logprobs, capture_exceptions=False
+                )
             ),
         )
 
@@ -429,7 +435,8 @@ class TLM:
         self,
         prompt: Sequence[str],
         response: Sequence[str],
-    ) -> List[Optional[float]]:
+        logprobs: Optional[Sequence[float]] = None,
+    ) -> List[Optional[TLMScoreResponse]]:
         """Gets trustworthiness score for batches of many prompt-response pairs.
 
         The list returned will have the same length as the input list, if TLM hits any
@@ -442,6 +449,7 @@ class TLM:
         Args:
             prompt (Sequence[str]): list of prompts for the TLM to evaluate
             response (Sequence[str]): list of existing responses corresponding to the input prompts (from any LLM or human-written)
+            logprobs (Sequence[float]): list of log probabilities associated with the given responses
         Returns:
             List[float]: list of floats corresponding to the TLM's trustworthiness score.
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
@@ -458,7 +466,9 @@ class TLM:
         return cast(
             List[Optional[float]],
             self._event_loop.run_until_complete(
-                self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=True)
+                self._batch_get_trustworthiness_score(
+                    prompt, response, logprobs, capture_exceptions=True
+                )
             ),
         )
 
@@ -466,7 +476,8 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
-    ) -> Union[float, List[float]]:
+        logprobs: Optional[Union[float, Sequence[float]]] = None,
+    ) -> Union[TLMScoreResponse, List[TLMScoreResponse]]:
         """Asynchronously gets trustworthiness score for prompt-response pairs.
         This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously,
         allowing for non-blocking concurrent operations.
@@ -478,25 +489,32 @@ class TLM:
         Args:
             prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
             response (str | Sequence[str]): response (or list of responses) corresponding to the input prompts
+            logprobs (Sequence[float]): list of log probabilities associated with the given responses
         Returns:
             float | List[float]: float or list of floats (if multiple prompt-responses were provided) corresponding
                 to the TLM's trustworthiness score.
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
+        # TODO: add validation for logprobs
         validate_tlm_prompt_response(prompt, response)
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str) and isinstance(response, str):
                 trustworthiness_score = await self._get_trustworthiness_score_async(
-                    prompt, response, session, timeout=self._timeout, capture_exceptions=False
+                    prompt,
+                    response,
+                    logprobs,
+                    session,
+                    timeout=self._timeout,
+                    capture_exceptions=False,
                 )
                 return cast(float, trustworthiness_score)
 
             return cast(
                 List[float],
                 await self._batch_get_trustworthiness_score(
-                    prompt, response, capture_exceptions=False
+                    prompt, response, logprobs, capture_exceptions=False
                 ),
             )
 
@@ -504,11 +522,12 @@ class TLM:
         self,
         prompt: str,
         response: str,
+        logprobs: Optional[float] = None,
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,
         batch_index: Optional[int] = None,
-    ) -> Union[float, dict]:
+    ) -> TLMScoreResponse:
         """Private asynchronous method to get trustworthiness score for prompt-response pairs.
 
         Args:
@@ -533,6 +552,7 @@ class TLM:
                     self._api_key,
                     prompt,
                     response,
+                    logprobs,
                     self._quality_preset,
                     self._options,
                     self._rate_handler,
