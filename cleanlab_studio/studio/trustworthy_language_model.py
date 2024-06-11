@@ -384,7 +384,7 @@ class TLM:
         if self._return_logs:
             tlm_response["logs"] = response_json["logs"]
 
-        return tlm_response
+        return cast(TLMResponse, tlm_response)
 
     def get_trustworthiness_score(
         self,
@@ -410,6 +410,7 @@ class TLM:
                 If saving partial results is important, you can call this method on smaller batches of prompt-response pairs at a time
                 (and save intermediate results) or use the [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) method instead.
         """
+        # TODO: validate logprobs as well
         validate_tlm_prompt_response(prompt, response)
 
         if isinstance(prompt, str) and isinstance(response, str):
@@ -533,6 +534,7 @@ class TLM:
         Args:
             prompt: prompt for the TLM to evaluate
             response: response corresponding to the input prompt
+            logprobs: log probabilities associated with the given responses
             client_session: async HTTP session to use for TLM query. Defaults to None.
             timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
             capture_exceptions: if should return None in place of the response for any errors
