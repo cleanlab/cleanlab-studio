@@ -179,8 +179,13 @@ class EnrichmentResult:
     def details(self) -> pd.DataFrame:
         return self._results
 
-    def join(self, data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
-        raise NotImplementedError()
+    def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
+        df = self._results
+        if not with_details:
+            df = self._results[[self._new_column_name]]
+
+        joined_data = original_data.join(df, how="left")
+        return joined_data
 
 
 class EnrichmentPreviewResult(EnrichmentResult):
@@ -219,7 +224,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
 
         # Set the additional attributes
         instance._indices = df.index.tolist()
-        instance._errors = json_dict["errors"]
+        instance._errors = json_dict.get("errors", {})
         instance._is_timeout = json_dict["is_timeout"]
         instance._total_count = len(results)
         instance._successful_count = json_dict["completed_jobs_count"]
@@ -236,66 +241,16 @@ class EnrichmentPreviewResult(EnrichmentResult):
         }
     
     def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
-        # Join the results DataFrame with the original data
-        joined_data = original_data.join(self._results, how="inner")
+        """Join the original data with the enrichment results. 
+        The result only contains those rows that were enriched by preview.
+        
+        Args:
+            original_data (pd.DataFrame): The original data to join with the enrichment results.
+            with_details (bool): If `with_details` is True, the details of the enrichment results will be included in the output DataFrame.
+        """
+        df = self._results
+        if not with_details:
+            df = self._results[[self._new_column_name]]
+        joined_data = original_data.join(df, how="inner")
 
-        # Return the joined data
         return joined_data
-    
-# json_response = {
-#     "completed_jobs_count": 3,
-#     "failed_jobs_count": 0,
-#     "is_timeout": False,
-#     "new_column_name": "metadata",
-#     "errors": {},
-#     "results": [
-#         {
-#             "final_result": "yes",
-#             "log": "xyz",
-#             "row_id": 2,
-#             "raw_result": "It does.",
-#             "trustworthy_score": 0.5
-#         },
-#         {
-#             "final_result": "yes",
-#             "log": "def",
-#             "row_id": 5,
-#             "raw_result": "It does.",
-#             "trustworthy_score": 0.5
-#         },
-#         {
-#             "final_result": "yes",
-#             "log": "abc",
-#             "row_id": 3,
-#             "raw_result": "It does.",
-#             "trustworthy_score": 0.5
-#         }
-#     ]
-# }
-
-# enrichment_preview_result = EnrichmentPreviewResult.from_dict(json_response)
-# print(enrichment_preview_result._results)
-#        metadata  metadata_trustworthy_score metadata_log
-# row_id                                                  
-# 2           yes                         0.5          xyz
-# 5           yes                         0.5          def
-# 3           yes                         0.5          abc
-
-
-# data = {
-#     'row_id': [1, 2, 3, 4, 5],
-#     'existing_column': ['a', 'b', 'c', 'd', 'e']
-# }
-# other_df = pd.DataFrame(data).set_index('row_id')
-
-# # Perform the join
-# joined_df = enrichment_preview_result.join(other_df)
-
-# # Display the result
-# print(joined_df)
-
-#        existing_column metadata  metadata_trustworthy_score metadata_log
-# row_id                                                                  
-# 2                    b      yes                         0.5          xyz
-# 3                    c      yes                         0.5          abc
-# 5                    e      yes                         0.5          def
