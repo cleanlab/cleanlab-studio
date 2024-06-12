@@ -121,6 +121,7 @@ class EnrichmentProject:
             )
         return epr
 
+
 class EnrichmentOptions(TypedDict):
     """Options for enriching a dataset with a Trustworthy Language Model (TLM).
 
@@ -210,17 +211,17 @@ class EnrichmentPreviewResult(EnrichmentResult):
 
         # Select and rename the columns to match the expected format
         df = df[["final_result", "trustworthy_score", "log"]]
-        df.rename(columns={
-            "final_result": new_column_name,
-            "trustworthy_score": f"{new_column_name}_trustworthy_score",
-            "log": f"{new_column_name}_log"
-        }, inplace=True)
+        df.rename(
+            columns={
+                "final_result": new_column_name,
+                "trustworthy_score": f"{new_column_name}_trustworthy_score",
+                "log": f"{new_column_name}_log",
+            },
+            inplace=True,
+        )
 
         # Create an instance of EnrichmentPreviewResult
-        instance = cls(
-            results=df,
-            new_column_name=new_column_name
-        )
+        instance = cls(results=df, new_column_name=new_column_name)
 
         # Set the additional attributes
         instance._indices = df.index.tolist()
@@ -231,7 +232,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
         instance._failed_count = json_dict["failed_jobs_count"]
 
         return instance
-    
+
     def get_preview_status(self) -> Dict:
         return {
             "is_timeout": self._is_timeout,
@@ -239,11 +240,11 @@ class EnrichmentPreviewResult(EnrichmentResult):
             "successful_count": self._successful_count,
             "failed_count": self._failed_count,
         }
-    
+
     def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
-        """Join the original data with the enrichment results. 
+        """Join the original data with the enrichment results.
         The result only contains those rows that were enriched by preview.
-        
+
         Args:
             original_data (pd.DataFrame): The original data to join with the enrichment results.
             with_details (bool): If `with_details` is True, the details of the enrichment results will be included in the output DataFrame.
