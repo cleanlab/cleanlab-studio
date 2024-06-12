@@ -650,6 +650,16 @@ def enrichment_preview(
         indices=indices,
         project_id=project_id,
     )
+
+    if request_json.get("replacements", None) is not None:
+        if isinstance(request_json["replacements"], dict):
+            request_json["replacements"] = [
+                request_json["replacements"]
+            ]
+        elif isinstance(request_json["replacements"], str):
+            request_json["match_extraction"] = request_json["replacements"]
+            request_json["replacements"] = None
+
     res = requests.post(
         f"{enrichment_base_url}/preview",
         headers=_construct_headers(api_key),

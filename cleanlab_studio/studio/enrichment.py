@@ -6,7 +6,7 @@ Methods for interfacing with Enrichment Projects.
 
 from __future__ import annotations
 from datetime import datetime
-from typing import Any, Dict, Optional, Union, List, TypedDict, Tuple
+from typing import Any, Dict, Optional, Union, List, TypedDict, Tuple, cast
 
 import pandas as pd
 
@@ -107,10 +107,11 @@ class EnrichmentProject:
         indices: Optional[List[int]] = None,
         disable_warnings: bool = False,
     ) -> EnrichmentPreviewResult:
+        """Run a subset of data through the enrichment service and preview the results."""
         response = api.enrichment_preview(
             api_key=self._api_key,
             project_id=self._id,
-            options=options,
+            options=cast(JSONDict, options),    # https://stackoverflow.com/a/76515675
             new_column_name=new_column_name,
             indices=indices,
         )
@@ -188,7 +189,8 @@ class EnrichmentResult:
         joined_data = original_data.join(df, how="left")
         return joined_data
 
-
+# undecided on whether to include this class or just use EnrichmentResult
+# for now, I get some buy-in from Anish. Need to finalize after preview endpoint reach a stable state
 class EnrichmentPreviewResult(EnrichmentResult):
     _indices: List[int]
     _errors: Dict
@@ -233,7 +235,9 @@ class EnrichmentPreviewResult(EnrichmentResult):
 
         return instance
 
+    # undecided on whether to include this method
     def get_preview_status(self) -> Dict:
+        """Get the status of the preview operation."""
         return {
             "is_timeout": self._is_timeout,
             "total_count": self._total_count,
