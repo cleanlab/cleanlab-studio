@@ -652,8 +652,14 @@ def enrichment_preview(
     )
 
     if request_json.get("replacements", None) is not None:
-        if isinstance(request_json["replacements"], dict):
-            request_json["replacements"] = [request_json["replacements"]]
+        if isinstance(request_json["replacements"], tuple):
+            request_json["replacements"] = [
+                {request_json["replacements"][0], request_json["replacements"][1]}
+            ]
+        elif isinstance(request_json["replacements"], list):
+            request_json["replacements"] = [
+                {replacement[0], replacement[1]} for replacement in request_json["replacements"]
+            ]
         elif isinstance(request_json["replacements"], str):
             request_json["match_extraction"] = request_json["replacements"]
             request_json["replacements"] = None
