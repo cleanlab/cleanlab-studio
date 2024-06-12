@@ -184,30 +184,48 @@ class EnrichmentResult:
 
 
 class EnrichmentPreviewResult(EnrichmentResult):
-
-    def __init__(self, new_column_name: str, indices: List[int], results: pd.DataFrame, errors: Dict, is_timeout: bool, total_count: int, successful_count: int, failed_count: int):
-        super().__init__(results, new_column_name)
-        self._indices = indices
-        self._errors = errors
-        self._is_timeout = is_timeout
-        self._total_count = total_count
-        self._successful_count = successful_count
-        self._failed_count = failed_count
-
+    _indices: List[int]
+    _errors: Dict
+    _is_timeout: bool
+    _total_count: int
+    _successful_count: int
+    _failed_count: int
 
     @classmethod
-    def from_dict(cls, json_dict: JSONDict) -> EnrichmentPreviewResult:
+    def from_dict(cls, json_dict: Dict) -> EnrichmentPreviewResult:
+        # Extract the new column name from the response
         new_column_name = json_dict["new_column_name"]
-        indices = json_dict["indices"]
-        df = pd.DataFrame.from_dict(json_dict["results"], orient='index', columns=[new_column_name, f"{new_column_name}_trustworthiness"])
-        errors = json_dict["errors"]
-        is_timeout = json_dict["is_timeout"]
-        total_count = json_dict["total_count"]
-        successful_count = json_dict["successful_count"]
-        failed_count = json_dict["failed_count"]
 
-        return cls(new_column_name, indices, df, errors, is_timeout, total_count, successful_count, failed_count)
+        # Prepare the results DataFrame from the 'results' list
+        results = json_dict["results"]
+        df = pd.DataFrame(results)
 
+        # Set the index to row_id for easier joining later
+        df.set_index("row_id", inplace=True)
+
+        # Select and rename the columns to match the expected format
+        df = df[["final_result", "trustworthy_score", "log"]]
+        df.rename(columns={
+            "final_result": new_column_name,
+            "trustworthy_score": f"{new_column_name}_trustworthy_score",
+            "log": f"{new_column_name}_log"
+        }, inplace=True)
+
+        # Create an instance of EnrichmentPreviewResult
+        instance = cls(
+            results=df,
+            new_column_name=new_column_name
+        )
+
+        # Set the additional attributes
+        instance._indices = df.index.tolist()
+        instance._errors = json_dict["errors"]
+        instance._is_timeout = json_dict["is_timeout"]
+        instance._total_count = len(results)
+        instance._successful_count = json_dict["completed_jobs_count"]
+        instance._failed_count = json_dict["failed_jobs_count"]
+
+        return instance
     
     def get_preview_status(self) -> Dict:
         return {
@@ -216,3 +234,68 @@ class EnrichmentPreviewResult(EnrichmentResult):
             "successful_count": self._successful_count,
             "failed_count": self._failed_count,
         }
+    
+    def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
+        # Join the results DataFrame with the original data
+        joined_data = original_data.join(self._results, how="inner")
+
+        # Return the joined data
+        return joined_data
+    
+# json_response = {
+#     "completed_jobs_count": 3,
+#     "failed_jobs_count": 0,
+#     "is_timeout": False,
+#     "new_column_name": "metadata",
+#     "errors": {},
+#     "results": [
+#         {
+#             "final_result": "yes",
+#             "log": "xyz",
+#             "row_id": 2,
+#             "raw_result": "It does.",
+#             "trustworthy_score": 0.5
+#         },
+#         {
+#             "final_result": "yes",
+#             "log": "def",
+#             "row_id": 5,
+#             "raw_result": "It does.",
+#             "trustworthy_score": 0.5
+#         },
+#         {
+#             "final_result": "yes",
+#             "log": "abc",
+#             "row_id": 3,
+#             "raw_result": "It does.",
+#             "trustworthy_score": 0.5
+#         }
+#     ]
+# }
+
+# enrichment_preview_result = EnrichmentPreviewResult.from_dict(json_response)
+# print(enrichment_preview_result._results)
+#        metadata  metadata_trustworthy_score metadata_log
+# row_id                                                  
+# 2           yes                         0.5          xyz
+# 5           yes                         0.5          def
+# 3           yes                         0.5          abc
+
+
+# data = {
+#     'row_id': [1, 2, 3, 4, 5],
+#     'existing_column': ['a', 'b', 'c', 'd', 'e']
+# }
+# other_df = pd.DataFrame(data).set_index('row_id')
+
+# # Perform the join
+# joined_df = enrichment_preview_result.join(other_df)
+
+# # Display the result
+# print(joined_df)
+
+#        existing_column metadata  metadata_trustworthy_score metadata_log
+# row_id                                                                  
+# 2                    b      yes                         0.5          xyz
+# 3                    c      yes                         0.5          abc
+# 5                    e      yes                         0.5          def
