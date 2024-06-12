@@ -111,7 +111,7 @@ class EnrichmentProject:
         response = api.enrichment_preview(
             api_key=self._api_key,
             project_id=self._id,
-            options=cast(JSONDict, options),    # https://stackoverflow.com/a/76515675
+            options=cast(JSONDict, options),  # https://stackoverflow.com/a/76515675
             new_column_name=new_column_name,
             indices=indices,
         )
@@ -188,6 +188,7 @@ class EnrichmentResult:
 
         joined_data = original_data.join(df, how="left")
         return joined_data
+
 
 # undecided on whether to include this class or just use EnrichmentResult
 # for now, I get some buy-in from Anish. Need to finalize after preview endpoint reach a stable state
