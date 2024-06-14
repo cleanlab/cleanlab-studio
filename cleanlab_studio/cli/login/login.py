@@ -29,7 +29,7 @@ def login(prev_state: PreviousState, key: str) -> None:
         raise AuthError(
             {
                 "code": "invalid_api_key",
-                "description":"API key is invalid. Check https://app.cleanlab.ai/upload for your current API key.",
+                "description": "API key is invalid. Check https://app.cleanlab.ai/upload for your current API key.",
             },
             401,
         )
