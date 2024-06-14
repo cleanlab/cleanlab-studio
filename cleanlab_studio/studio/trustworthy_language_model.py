@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Coroutine, List, Optional, Union, cast, Sequence, Dict
+from typing import Coroutine, List, Optional, Union, cast, Sequence, Any
 from tqdm.asyncio import tqdm_asyncio
 
 import aiohttp
@@ -61,11 +61,11 @@ class TLM:
                 f"Invalid quality preset {quality_preset} -- must be one of {_VALID_TLM_QUALITY_PRESETS}"
             )
 
-        self._return_logs = False
+        self._return_log = False
         if options is not None:
             validate_tlm_options(options)
-            if "logs" in options.keys():  # TODO: figure out check
-                self._return_logs = True
+            if "log" in options.keys():  # TODO: figure out check
+                self._return_log = True
 
         if timeout is not None and not (isinstance(timeout, int) or isinstance(timeout, float)):
             raise ValidationError("timeout must be a integer or float value")
@@ -381,8 +381,8 @@ class TLM:
             "trustworthiness_score": response_json["confidence_score"],
         }
 
-        if self._return_logs:
-            tlm_response["logs"] = response_json["logs"]
+        if self._return_log:
+            tlm_response["log"] = response_json["log"]
 
         return cast(TLMResponse, tlm_response)
 
@@ -390,7 +390,7 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
-        logprobs: Optional[Union[float, Sequence[float]]] = None,
+        **kwargs: Any,
     ) -> Union[TLMScoreResponse, List[TLMScoreResponse]]:
         """Computes trustworthiness score for arbitrary given prompt-response pairs.
 
@@ -410,7 +410,7 @@ class TLM:
                 If saving partial results is important, you can call this method on smaller batches of prompt-response pairs at a time
                 (and save intermediate results) or use the [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) method instead.
         """
-        # TODO: validate logprobs as well
+        # TODO: validate kwargs
         validate_tlm_prompt_response(prompt, response)
 
         if isinstance(prompt, str) and isinstance(response, str):
@@ -418,7 +418,7 @@ class TLM:
                 float,
                 self._event_loop.run_until_complete(
                     self._get_trustworthiness_score_async(
-                        prompt, response, logprobs, timeout=self._timeout, capture_exceptions=False
+                        prompt, response, timeout=self._timeout, capture_exceptions=False, **kwargs
                     )
                 ),
             )
@@ -427,7 +427,7 @@ class TLM:
             List[float],
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(
-                    prompt, response, logprobs, capture_exceptions=False
+                    prompt, response, capture_exceptions=False, **kwargs
                 )
             ),
         )
@@ -436,7 +436,7 @@ class TLM:
         self,
         prompt: Sequence[str],
         response: Sequence[str],
-        logprobs: Optional[Sequence[float]] = None,
+        **kwargs: Any,
     ) -> List[Optional[TLMScoreResponse]]:
         """Gets trustworthiness score for batches of many prompt-response pairs.
 
@@ -565,10 +565,10 @@ class TLM:
                 timeout=timeout,
             )
 
-            if self._return_logs:
+            if self._return_log:
                 return {
                     "trustworthiness_score": response_json["confidence_score"],
-                    "logs": response_json["logs"],
+                    "log": response_json["log"],
                 }
 
             return cast(float, response_json["confidence_score"])
@@ -589,12 +589,12 @@ class TLMResponse(TypedDict):
         A higher score indicates a higher confidence that the response is correct/trustworthy. The trustworthiness score
         is omitted if TLM is run with quality preset "base".
 
-        logs (dict, optional): a dictionary containing additional logs and metadata from the LLM call.
+        log (dict, optional): additional logs and metadata returned from the LLM call only if the `log` key was specified in TLMOptions.
     """
 
     response: str
     trustworthiness_score: Optional[float]
-    logs: Optional[dict]
+    log: Optional[dict]
 
 
 class TLMOptions(TypedDict):
@@ -647,7 +647,7 @@ class TLMOptions(TypedDict):
         and helping catch answers that are obviously incorrect/bad for a prompt asking for a well-defined answer that LLMs should be able to handle.
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
 
-        logs (List[str], default = None): specify what additional logs or metadata should be returned. Types of logs available: ["logprobs"].
+        log (List[str], default = None): optionally specify additional logs or metadata to return.
     """
 
     model: NotRequired[str]
@@ -655,7 +655,7 @@ class TLMOptions(TypedDict):
     num_candidate_responses: NotRequired[int]
     num_consistency_samples: NotRequired[int]
     use_self_reflection: NotRequired[bool]
-    logs: NotRequired[List[str]]
+    log: NotRequired[List[str]]
 
 
 def is_notebook() -> bool:
