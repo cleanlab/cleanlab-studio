@@ -26,13 +26,7 @@ def login(prev_state: PreviousState, key: str) -> None:
     # validate API key
     valid_key = validate_api_key(key)
     if not valid_key:
-        raise AuthError(
-            {
-                "code": "invalid_api_key",
-                "description": "API key is invalid. Check https://app.cleanlab.ai/upload for your current API key.",
-            },
-            401,
-        )
+        raise AuthError("API key is invalid. Check https://app.cleanlab.ai/upload for your current API key.")
 
     # save API key
     try:
