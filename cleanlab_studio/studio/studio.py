@@ -13,7 +13,7 @@ import pandas as pd
 from . import inference
 from . import trustworthy_language_model
 from cleanlab_studio.errors import CleansetError
-from cleanlab_studio.internal import clean_helpers, upload_helpers
+from cleanlab_studio.internal import clean_helpers, deploy_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.util import (
     init_dataset_source,
@@ -317,6 +317,29 @@ class Studio:
         """
         api.delete_project(self._api_key, project_id)
         print(f"Successfully deleted project: {project_id}")
+
+    def deploy_model(self, cleanset_id: str, model_name: str) -> str:
+        """
+        Trains and deploys a model with an improved dataset created by applying any corrections you've made to your cleanset in Cleanlab Studio.
+
+        Args:
+            cleanset_id: ID of cleanset to deploy model for.
+            model_name: Name for resulting model.
+        """
+        return api.deploy_model(self._api_key, cleanset_id, model_name)
+
+    def wait_until_model_ready(self, model_id: str, timeout: Optional[float] = None) -> str:
+        """Blocks until a model is ready or the timeout is reached.
+
+        Args:
+            model_id (str): ID of model to check status for.
+            timeout (Optional[float], optional): timeout for polling, in seconds. Defaults to None.
+
+        Raises:
+            TimeoutError: if model is not ready by end of timeout
+            DeploymentError: if model errored while training
+        """
+        deploy_helpers.poll_deployment_status(self._api_key, model_id, timeout)
 
     def get_model(self, model_id: str) -> inference.Model:
         """
