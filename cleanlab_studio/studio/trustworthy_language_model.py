@@ -450,7 +450,6 @@ class TLM:
         Args:
             prompt (Sequence[str]): list of prompts for the TLM to evaluate
             response (Sequence[str]): list of existing responses corresponding to the input prompts (from any LLM or human-written)
-            logprobs (Sequence[float]): list of log probabilities associated with the given responses
         Returns:
             List[float]: list of floats corresponding to the TLM's trustworthiness score.
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
@@ -477,7 +476,7 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
-        logprobs: Optional[Union[float, Sequence[float]]] = None,
+        **kwargs: Any,
     ) -> Union[TLMScoreResponse, List[TLMScoreResponse]]:
         """Asynchronously gets trustworthiness score for prompt-response pairs.
         This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously,
@@ -490,14 +489,13 @@ class TLM:
         Args:
             prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
             response (str | Sequence[str]): response (or list of responses) corresponding to the input prompts
-            logprobs (Sequence[float]): list of log probabilities associated with the given responses
         Returns:
             float | List[float]: float or list of floats (if multiple prompt-responses were provided) corresponding
                 to the TLM's trustworthiness score.
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
-        # TODO: add validation for logprobs
+        # TODO: add validation for kwargs
         validate_tlm_prompt_response(prompt, response)
 
         async with aiohttp.ClientSession() as session:
