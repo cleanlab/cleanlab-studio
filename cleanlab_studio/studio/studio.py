@@ -24,7 +24,7 @@ from cleanlab_studio.internal.util import (
 )
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import SchemaOverride, TLMQualityPreset
-from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
+from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError, AuthError
 
 _snowflake_exists = api.snowflake_exists
 if _snowflake_exists:
@@ -60,9 +60,7 @@ class Studio:
                     "No API key found; either specify API key or log in with 'cleanlab login' first"
                 )
         if not api.validate_api_key(api_key):
-            raise ValueError(
-                f"Invalid API key, please check if it is properly specified: {api_key}"
-            )
+            raise AuthError()
 
         self._api_key = api_key
 
