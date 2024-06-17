@@ -534,7 +534,7 @@ def deploy_model(api_key: str, cleanset_id: str, model_name: str) -> str:
     return model_id
 
 
-def get_deployment_status(api_key: str, model_id: str) -> JSONDict:
+def get_deployment_status(api_key: str, model_id: str) -> str:
     """Gets status of model deployment."""
     check_uuid_well_formed(model_id, "model ID")
     res = requests.get(

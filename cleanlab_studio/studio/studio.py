@@ -328,7 +328,7 @@ class Studio:
         """
         return api.deploy_model(self._api_key, cleanset_id, model_name)
 
-    def wait_until_model_ready(self, model_id: str, timeout: Optional[float] = None) -> str:
+    def wait_until_model_ready(self, model_id: str, timeout: Optional[float] = None) -> None:
         """Blocks until a model is ready or the timeout is reached.
 
         Args:
