@@ -91,8 +91,8 @@ def get_optimized_prompt(prompt: str, constrain_outputs: Optional[List[str]] = N
     """
 
     if constrain_outputs is not None:
-        string_constrain_outputs = str(constrain_outputs).replace("'", "")
-        pre_prompt = f"Your answer must exactly match one of the following values: [{string_constrain_outputs}].\n"
+        string_constrain_outputs = ", ".join(constrain_outputs)
+        pre_prompt = f"Your answer must only contain one of the following values: [{string_constrain_outputs}].\n"
         optimal_prompt = f"{pre_prompt}{prompt}"
     else:
         optimal_prompt = prompt
@@ -107,12 +107,12 @@ def get_constrain_outputs_match(
 ) -> str:
     """Extracts the provided output values from the response using regex patterns. Return first extracted value if multiple exist.
     If no value out of the possible `constrain_outputs` is directly mentioned in the response, the return value with greatest string similarity to the response is returned (along with a warning).
-    If there are no close matches between the LLM response and any of the possible `constrain_outputs`, then the first entry of the `constrain_outputs` list is returned.
+    If there are no close matches between the LLM response and any of the possible `constrain_outputs`, then the last entry of the `constrain_outputs` list is returned.
 
     Params
     ------
     response: Response from the LLM
-    constrain_outputs: List of expected output values, the first value of this list should be considered the baseline value (eg. “other”),
+    constrain_outputs: List of expected output values, the last value of this list should be considered the deafult/baseline value (eg. “other”),
       that value will be returned if there are no close matches.
     constrain_outputs_pattern: Pre-compiled pattern of all output values. If not specified, pattern is created.
     disable_warnings: If True, print warnings are disabled
@@ -137,9 +137,9 @@ def get_constrain_outputs_match(
     if similarity_score < 0.5:
         warning_message = (
             f"None of the constrain_outputs remotely match raw LLM output: {response_str}.\n"
-            + "Returning the first entry in the constrain outputs list."
+            + "Returning the last entry in the constrain outputs list."
         )
-        best_match = constrain_outputs[0]
+        best_match = constrain_outputs[-1]
 
     else:
         warning_message = f"None of the constrain_outputs match raw LLM output: {response_str}"
