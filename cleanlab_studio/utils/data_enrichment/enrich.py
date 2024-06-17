@@ -66,6 +66,8 @@ def enrich_data(
             We advise against collecting results for all of your data at first. First collect results for a smaller data subset, and use this subset to experiment with different values of the `prompt` or `regex` arguments. Only once the results look good for your subset should you run on the full dataset.
         new_column_name (str): Optional name for the returned enriched column. Name acts as a prefix appended to all additional columns that are returned.
         disable_warnings (bool, default = False): When True, warnings are disabled.
+        **kwargs: Optional keyword arguments to pass to the underlying TLM object, such as ``quality_preset`` and ``options`` to specify the TLM quality present and TLMOptions respectively.
+            For more information on valid TLM arguments, view the TLM documentation here: https://help.cleanlab.ai/reference/python/studio/#method-tlm
 
     Returns:
         A DataFrame that contains `metadata` and `trustworthiness` columns related to the prompt in order of original data. Some columns names will have `new_column_name` prepended to them.
