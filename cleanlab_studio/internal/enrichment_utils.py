@@ -112,7 +112,7 @@ def get_constrain_outputs_match(
     Params
     ------
     response: Response from the LLM
-    constrain_outputs: List of expected output values, the last value of this list should be considered the deafult/baseline value (eg. “other”),
+    constrain_outputs: List of expected output values, the last value of this list should be considered the default/baseline value (eg. “other”),
       that value will be returned if there are no close matches.
     constrain_outputs_pattern: Pre-compiled pattern of all output values. If not specified, pattern is created.
     disable_warnings: If True, print warnings are disabled
