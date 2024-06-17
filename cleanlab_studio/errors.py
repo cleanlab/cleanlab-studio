@@ -101,7 +101,9 @@ class UnsupportedVersionError(HandledError):
 
 class AuthError(HandledError):
     def __init__(self) -> None:
-        super().__init__("API key is invalid. Check https://app.cleanlab.ai/upload for your current API key.")
+        super().__init__(
+            "API key is invalid. Check https://app.cleanlab.ai/upload for your current API key."
+        )
 
 
 class InternalError(HandledError):
