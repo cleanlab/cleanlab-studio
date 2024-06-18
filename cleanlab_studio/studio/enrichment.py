@@ -20,6 +20,11 @@ ROW_ID_COLUMN_NAME = "row_id"
 FINAL_RESULT_COLUMN_NAME = "final_result"
 TRUSTWORTHY_SCORE_COLUMN_NAME = "trustworthy_score"
 LOG_COLUMN_NAME = "log"
+RAW_RESULT_COLUMN_NAME = "raw_result"
+REGEX_PARAMETER_ERROR_MESSAGE = (
+    "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
+)
+
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
     """
@@ -115,26 +120,27 @@ class EnrichmentProject:
         extraction_pattern = None
         replacements = list()
 
+        def _validate_tuple_is_replacement(t: Tuple) -> None:
+            if isinstance(t, tuple) and len(t) == 2 and all(isinstance(x, str) for x in t):
+                return None
+            raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+
         user_input_regex = options.get("regex")
         if user_input_regex:
             if isinstance(user_input_regex, str):
                 extraction_pattern = user_input_regex
-            elif isinstance(user_input_regex, Replacement):
-                replacements.append({
-                    "pattern": user_input_regex[0],
-                    "replacement": user_input_regex[1]
-                })
+            elif isinstance(user_input_regex, tuple):
+                _validate_tuple_is_replacement(user_input_regex)
+                replacements.append(
+                    {"pattern": user_input_regex[0], "replacement": user_input_regex[1]}
+                )
             elif isinstance(user_input_regex, list):
                 for replacement in user_input_regex:
-                    replacements.append({
-                        "pattern": replacement[0],
-                        "replacement": replacement[1]
-                    })
+                    _validate_tuple_is_replacement(replacement)
+                    replacements.append({"pattern": replacement[0], "replacement": replacement[1]})
             else:
-                raise ValueError(
-                    "The 'regex' parameter must be a string, a tuple, or a list of tuples."
-                )
-    
+                raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+
         response = api.enrichment_preview(
             api_key=self._api_key,
             project_id=self._id,
@@ -144,9 +150,9 @@ class EnrichmentProject:
             indices=indices,
             optimize_prompt=options.get("optimize_prompt"),
             prompt=options.get("prompt"),
+            quality_preset=options.get("quality_preset"),
             replacements=replacements,
             tlm_options=options.get("tlm_options"),
-            tlm_quality_preset=options.get("tlm_quality_preset"),
         )
         epr = EnrichmentPreviewResult.from_dict(response)
         if not disable_warnings and epr._is_timeout:
@@ -159,8 +165,6 @@ class EnrichmentProject:
 class EnrichmentOptions(TypedDict):
     """Options for enriching a dataset with a Trustworthy Language Model (TLM).
 
-    ref: https://github.com/cleanlab/cleanlab-studio/blob/main/cleanlab_studio/utils/data_enrichment/enrich.py#L34
-
     Args:
         prompt (str): Formatted f-string, that contains both the prompt, and names of columns to embed.
             **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
@@ -170,6 +174,7 @@ class EnrichmentOptions(TypedDict):
             If `optimize_prompt` is True, the prompt will be automatically adjusted to include a statement that the response must match one of the `constrain_outputs`.
         optimize_prompt (bool, default = True): When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
             For instance, if the constrain_outputs are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `constrain_outputs`."
+        quality_preset (TLMQualityPreset, optional): The quality preset to use for the Trustworthy Language Model (TLM) to use for data enrichment.
         regex (str | Replacement | List[Replacement], optional): A string, tuple, or list of tuples specifying regular expressions to apply for post-processing the raw LLM outputs.
             If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
             Specifically the provided string will be passed into Python's `re.match()` method.
@@ -189,18 +194,19 @@ class EnrichmentOptions(TypedDict):
             **Example 3:** ``regex = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
             For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True." after the regex replacement.
         tlm_options (TLMOptions, optional): Options for the Trustworthy Language Model (TLM) to use for data enrichment.
-        tlm_quality_preset (TLMQualityPreset, optional): The quality preset to use for the Trustworthy Language Model (TLM) to use for data enrichment.
     """
+
     prompt: str
     constrain_outputs: Optional[List[str]]
     optimize_prompt: Optional[bool]
+    quality_preset: Optional[TLMQualityPreset]
     regex: Optional[Union[str, Replacement, List[Replacement]]]
     tlm_options: Optional[TLMOptions]
-    tlm_quality_preset: Optional[TLMQualityPreset]
 
 
 class EnrichmentResult:
     """Enrichment result."""
+
     def __init__(self, results: pd.DataFrame):
         self._results = results
 
@@ -223,13 +229,13 @@ class EnrichmentResult:
         return joined_data
 
 
-# undecided on whether to include this class or just use EnrichmentResult
-# for now, I get some buy-in from Anish. Need to finalize after preview endpoint reach a stable state
 class EnrichmentPreviewResult(EnrichmentResult):
     """Enrichment preview result."""
+
     _is_timeout: bool
     _failed_jobs_count: int
     _completed_jobs_count: int
+    _final_result_name: str
 
     @classmethod
     def from_dict(cls, json_dict: Dict) -> EnrichmentPreviewResult:
@@ -242,13 +248,22 @@ class EnrichmentPreviewResult(EnrichmentResult):
         # Set the index to row_id for easier joining later
         df.set_index(ROW_ID_COLUMN_NAME, inplace=True)
 
-        
         # Select and rename the columns to match the expected format
-        df = df[[FINAL_RESULT_COLUMN_NAME, TRUSTWORTHY_SCORE_COLUMN_NAME, LOG_COLUMN_NAME]]
+        df = df[
+            [
+                FINAL_RESULT_COLUMN_NAME,
+                TRUSTWORTHY_SCORE_COLUMN_NAME,
+                RAW_RESULT_COLUMN_NAME,
+                LOG_COLUMN_NAME,
+            ]
+        ]
         df.rename(
             columns={
                 FINAL_RESULT_COLUMN_NAME: new_column_name_mapping[FINAL_RESULT_COLUMN_NAME],
-                TRUSTWORTHY_SCORE_COLUMN_NAME: new_column_name_mapping[TRUSTWORTHY_SCORE_COLUMN_NAME],
+                TRUSTWORTHY_SCORE_COLUMN_NAME: new_column_name_mapping[
+                    TRUSTWORTHY_SCORE_COLUMN_NAME
+                ],
+                RAW_RESULT_COLUMN_NAME: new_column_name_mapping[RAW_RESULT_COLUMN_NAME],
                 LOG_COLUMN_NAME: new_column_name_mapping[LOG_COLUMN_NAME],
             },
             inplace=True,
@@ -261,6 +276,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
         instance._is_timeout = json_dict["is_timeout"]
         instance._completed_jobs_count = json_dict["completed_jobs_count"]
         instance._failed_jobs_count = json_dict["failed_jobs_count"]
+        instance._final_result_name = new_column_name_mapping[FINAL_RESULT_COLUMN_NAME]
 
         return instance
 
@@ -284,7 +300,9 @@ class EnrichmentPreviewResult(EnrichmentResult):
         """
         df = self._results
         if not with_details:
-            df = self._results[[self._new_column_name]]
+            df = self._results[[self._final_result_name]]
         joined_data = original_data.join(df, how="inner")
+
+        joined_data = joined_data.drop(columns=[ROW_ID_COLUMN_NAME])
 
         return joined_data

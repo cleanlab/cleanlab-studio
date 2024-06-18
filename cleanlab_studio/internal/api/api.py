@@ -645,9 +645,9 @@ def enrichment_preview(
     extraction_pattern: Optional[str] = None,
     indices: Optional[List[int]] = None,
     optimize_prompt: Optional[bool] = None,
+    quality_preset: Optional[TLMQualityPreset] = None,
     replacements: Optional[List[Dict[str, str]]] = None,
     tlm_options: Optional[Dict[str, Any]] = None,
-    tlm_quality_preset: Optional[TLMQualityPreset] = None,
 ) -> JSONDict:
     """Call Enrichment Preview API and get response."""
     check_uuid_well_formed(project_id, "project_id")
@@ -661,7 +661,7 @@ def enrichment_preview(
         optimize_prompt=optimize_prompt,
         replacements=replacements,
         tlm_options=tlm_options,
-        tlm_quality_preset=tlm_quality_preset,
+        tlm_quality_preset=quality_preset,
     )
 
     res = requests.post(
