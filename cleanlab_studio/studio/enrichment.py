@@ -7,15 +7,19 @@ Methods for interfacing with Enrichment Projects.
 from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, Optional, Union, List, TypedDict, Tuple, cast
+import warnings
 
 import pandas as pd
 
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.types import JSONDict
+from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
 
 Replacement = Tuple[str, str]
-
+ROW_ID_COLUMN_NAME = "row_id"
+FINAL_RESULT_COLUMN_NAME = "final_result"
+TRUSTWORTHY_SCORE_COLUMN_NAME = "trustworthy_score"
+LOG_COLUMN_NAME = "log"
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
     """
@@ -108,16 +112,45 @@ class EnrichmentProject:
         disable_warnings: bool = False,
     ) -> EnrichmentPreviewResult:
         """Run a subset of data through the enrichment service and preview the results."""
+        extraction_pattern = None
+        replacements = list()
+
+        user_input_regex = options.get("regex")
+        if user_input_regex:
+            if isinstance(user_input_regex, str):
+                extraction_pattern = user_input_regex
+            elif isinstance(user_input_regex, Replacement):
+                replacements.append({
+                    "pattern": user_input_regex[0],
+                    "replacement": user_input_regex[1]
+                })
+            elif isinstance(user_input_regex, list):
+                for replacement in user_input_regex:
+                    replacements.append({
+                        "pattern": replacement[0],
+                        "replacement": replacement[1]
+                    })
+            else:
+                raise ValueError(
+                    "The 'regex' parameter must be a string, a tuple, or a list of tuples."
+                )
+    
         response = api.enrichment_preview(
             api_key=self._api_key,
             project_id=self._id,
-            options=cast(JSONDict, options),  # https://stackoverflow.com/a/76515675
             new_column_name=new_column_name,
+            constrain_outputs=options.get("constrain_outputs"),
+            extraction_pattern=extraction_pattern,
             indices=indices,
+            optimize_prompt=options.get("optimize_prompt"),
+            prompt=options.get("prompt"),
+            replacements=replacements,
+            tlm_options=options.get("tlm_options"),
+            tlm_quality_preset=options.get("tlm_quality_preset"),
         )
         epr = EnrichmentPreviewResult.from_dict(response)
         if not disable_warnings and epr._is_timeout:
-            print(
+            warnings.warn(
                 "Warning: The preview operation timed out for a subset of data. Set those results to None."
             )
         return epr
@@ -137,8 +170,7 @@ class EnrichmentOptions(TypedDict):
             If `optimize_prompt` is True, the prompt will be automatically adjusted to include a statement that the response must match one of the `constrain_outputs`.
         optimize_prompt (bool, default = True): When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
             For instance, if the constrain_outputs are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `constrain_outputs`."
-        replacements (str | Replacement | List[Replacement], optional): A string, tuple, or list of tuples specifying regular expressions to apply for post-processing the raw LLM outputs.
-
+        regex (str | Replacement | List[Replacement], optional): A string, tuple, or list of tuples specifying regular expressions to apply for post-processing the raw LLM outputs.
             If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
             Specifically the provided string will be passed into Python's `re.match()` method.
             Pass in a tuple `(R1, R2)` instead if you wish to perform find and replace operations rather than matching/extraction.
@@ -157,19 +189,20 @@ class EnrichmentOptions(TypedDict):
             **Example 3:** ``regex = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
             For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True." after the regex replacement.
         tlm_options (TLMOptions, optional): Options for the Trustworthy Language Model (TLM) to use for data enrichment.
+        tlm_quality_preset (TLMQualityPreset, optional): The quality preset to use for the Trustworthy Language Model (TLM) to use for data enrichment.
     """
-
     prompt: str
     constrain_outputs: Optional[List[str]]
     optimize_prompt: Optional[bool]
-    replacements: Optional[Union[str, Replacement, List[Replacement]]]
+    regex: Optional[Union[str, Replacement, List[Replacement]]]
     tlm_options: Optional[TLMOptions]
+    tlm_quality_preset: Optional[TLMQualityPreset]
 
 
 class EnrichmentResult:
-    def __init__(self, results: pd.DataFrame, new_column_name: str):
+    """Enrichment result."""
+    def __init__(self, results: pd.DataFrame):
         self._results = results
-        self._new_column_name = new_column_name
 
     @classmethod
     def from_dict(cls, json_dict: JSONDict) -> EnrichmentResult:
@@ -193,46 +226,41 @@ class EnrichmentResult:
 # undecided on whether to include this class or just use EnrichmentResult
 # for now, I get some buy-in from Anish. Need to finalize after preview endpoint reach a stable state
 class EnrichmentPreviewResult(EnrichmentResult):
-    _indices: List[int]
-    _errors: Dict
+    """Enrichment preview result."""
     _is_timeout: bool
-    _total_count: int
-    _successful_count: int
-    _failed_count: int
+    _failed_jobs_count: int
+    _completed_jobs_count: int
 
     @classmethod
     def from_dict(cls, json_dict: Dict) -> EnrichmentPreviewResult:
-        # Extract the new column name from the response
-        new_column_name = json_dict["new_column_name"]
+        new_column_name_mapping = json_dict["new_column_name_mapping"]
 
         # Prepare the results DataFrame from the 'results' list
         results = json_dict["results"]
         df = pd.DataFrame(results)
 
         # Set the index to row_id for easier joining later
-        df.set_index("row_id", inplace=True)
+        df.set_index(ROW_ID_COLUMN_NAME, inplace=True)
 
+        
         # Select and rename the columns to match the expected format
-        df = df[["final_result", "trustworthy_score", "log"]]
+        df = df[[FINAL_RESULT_COLUMN_NAME, TRUSTWORTHY_SCORE_COLUMN_NAME, LOG_COLUMN_NAME]]
         df.rename(
             columns={
-                "final_result": new_column_name,
-                "trustworthy_score": f"{new_column_name}_trustworthy_score",
-                "log": f"{new_column_name}_log",
+                FINAL_RESULT_COLUMN_NAME: new_column_name_mapping[FINAL_RESULT_COLUMN_NAME],
+                TRUSTWORTHY_SCORE_COLUMN_NAME: new_column_name_mapping[TRUSTWORTHY_SCORE_COLUMN_NAME],
+                LOG_COLUMN_NAME: new_column_name_mapping[LOG_COLUMN_NAME],
             },
             inplace=True,
         )
 
         # Create an instance of EnrichmentPreviewResult
-        instance = cls(results=df, new_column_name=new_column_name)
+        instance = cls(results=df)
 
         # Set the additional attributes
-        instance._indices = df.index.tolist()
-        instance._errors = json_dict.get("errors", {})
         instance._is_timeout = json_dict["is_timeout"]
-        instance._total_count = len(results)
-        instance._successful_count = json_dict["completed_jobs_count"]
-        instance._failed_count = json_dict["failed_jobs_count"]
+        instance._completed_jobs_count = json_dict["completed_jobs_count"]
+        instance._failed_jobs_count = json_dict["failed_jobs_count"]
 
         return instance
 

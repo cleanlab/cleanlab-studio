@@ -38,7 +38,7 @@ try:
 except ImportError:
     pyspark_exists = False
 
-from cleanlab_studio.internal.types import JSONDict, SchemaOverride
+from cleanlab_studio.internal.types import JSONDict, SchemaOverride, TLMQualityPreset
 from cleanlab_studio.version import __version__
 from cleanlab_studio.errors import NotInstalledError
 from cleanlab_studio.internal.api.api_helper import (
@@ -638,31 +638,31 @@ def list_all_enrichment_projects(api_key: str) -> List[JSONDict]:
 
 def enrichment_preview(
     api_key: str,
-    project_id: str,
-    options: JSONDict,
     new_column_name: str,
+    project_id: str,
+    prompt: str,
+    constrain_outputs: Optional[List[str]] = None,
+    extraction_pattern: Optional[str] = None,
     indices: Optional[List[int]] = None,
+    optimize_prompt: Optional[bool] = None,
+    replacements: Optional[List[Dict[str, str]]] = None,
+    tlm_options: Optional[Dict[str, Any]] = None,
+    tlm_quality_preset: Optional[TLMQualityPreset] = None,
 ) -> JSONDict:
+    """Call Enrichment Preview API and get response."""
     check_uuid_well_formed(project_id, "project_id")
     request_json = dict(
-        **options,
         new_column_name=new_column_name,
-        indices=indices,
         project_id=project_id,
+        prompt=prompt,
+        constrain_outputs=constrain_outputs,
+        extraction_pattern=extraction_pattern,
+        indices=indices,
+        optimize_prompt=optimize_prompt,
+        replacements=replacements,
+        tlm_options=tlm_options,
+        tlm_quality_preset=tlm_quality_preset,
     )
-
-    if request_json.get("replacements", None) is not None:
-        if isinstance(request_json["replacements"], tuple):
-            request_json["replacements"] = [
-                {request_json["replacements"][0], request_json["replacements"][1]}
-            ]
-        elif isinstance(request_json["replacements"], list):
-            request_json["replacements"] = [
-                {replacement[0], replacement[1]} for replacement in request_json["replacements"]
-            ]
-        elif isinstance(request_json["replacements"], str):
-            request_json["match_extraction"] = request_json["replacements"]
-            request_json["replacements"] = None
 
     res = requests.post(
         f"{enrichment_base_url}/preview",
