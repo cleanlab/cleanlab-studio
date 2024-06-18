@@ -52,9 +52,9 @@ def get_regex_match_or_replacement(
     # if the regex is a string, do matching
     if isinstance(regex, str):
         compiled_pattern = re.compile(regex)
-        pattern_match = compiled_pattern.match(response)
-        if pattern_match:
-            return pattern_match.group(1)
+        pattern_match = compiled_pattern.findall(response)
+        if len(pattern_match) > 0:
+            return pattern_match[0]
         return None
 
     # if the regex is a tuple (or list of tuples), do replacement
