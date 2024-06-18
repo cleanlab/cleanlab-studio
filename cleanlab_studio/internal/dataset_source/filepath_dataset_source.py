@@ -18,7 +18,7 @@ class FilepathDatasetSource(DatasetSource):
         super().__init__(*args, **kwargs)
         if not os.path.exists(filepath):
             raise InvalidFilepathError(filepath=filepath)
-        
+
         self.dataset_name = dataset_name if dataset_name is not None else filepath.name
         self.file_size = filepath.stat().st_size
         maybe_file_type = mimetypes.guess_type(filepath)[0]
@@ -28,6 +28,7 @@ class FilepathDatasetSource(DatasetSource):
             )
         self.file_type = maybe_file_type
         self._filepath = filepath
+
     def get_filename(self) -> str:
         assert self._filepath is not None
         return self._filepath.name
