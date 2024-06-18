@@ -54,7 +54,7 @@ def get_regex_match_or_replacement(
         compiled_pattern = re.compile(regex)
         pattern_match = compiled_pattern.findall(response)
         if len(pattern_match) > 0:
-            return pattern_match[0]
+            return str(pattern_match[0])
         return None
 
     # if the regex is a tuple (or list of tuples), do replacement
