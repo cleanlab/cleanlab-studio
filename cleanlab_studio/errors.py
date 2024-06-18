@@ -1,4 +1,5 @@
 from asyncio import Handle
+import pathlib
 
 
 class HandledError(Exception):
@@ -140,5 +141,7 @@ class InvalidProjectConfiguration(HandledError):
 
 
 class InvalidFilepathError(HandledError):
-    def __init__(self, filepath: str = "") -> None:
+    def __init__(self, filepath: str | pathlib.Path = "") -> None:
+        if isinstance(filepath, pathlib.Path):
+            filepath=str(filepath)
         super().__init__(f"File could not be found at {filepath}. Please check the file path.")
