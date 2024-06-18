@@ -92,7 +92,7 @@ def get_optimized_prompt(prompt: str, constrain_outputs: Optional[List[str]] = N
 
     if constrain_outputs is not None:
         string_constrain_outputs = ", ".join(constrain_outputs)
-        pre_prompt = f"Your answer must only contain one of the following values: [{string_constrain_outputs}].\n"
+        pre_prompt = f"Your answer must exactly match one of the following values: [{string_constrain_outputs}].\n"
         optimal_prompt = f"{pre_prompt}{prompt}"
     else:
         optimal_prompt = prompt
