@@ -1,6 +1,6 @@
 from asyncio import Handle
 import pathlib
-from mypy import Union
+from typing import Union
 
 
 class HandledError(Exception):
