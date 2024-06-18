@@ -1,6 +1,5 @@
 import pathlib
 from typing import cast, List, Optional
-import os
 
 from cleanlab_studio.internal.types import SchemaOverride
 from cleanlab_studio.internal.upload_helpers import upload_dataset
@@ -16,7 +15,6 @@ from cleanlab_studio.cli.decorators import auth_config
 from cleanlab_studio.cli.decorators.auth_config import AuthConfig
 from cleanlab_studio.internal.dataset_source import FilepathDatasetSource
 from cleanlab_studio.internal.util import telemetry
-from cleanlab_studio.errors import InvalidFilepathError
 
 
 @click.command(help="upload your dataset to Cleanlab Studio")
@@ -43,8 +41,6 @@ def upload(
 
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
-    if not os.path.exists(filepath):
-        raise InvalidFilepathError(filepath=filepath)
 
     dataset_source = FilepathDatasetSource(filepath=pathlib.Path(filepath))
 
