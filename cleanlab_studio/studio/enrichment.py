@@ -115,9 +115,8 @@ class EnrichmentProject:
         *,
         new_column_name: str,
         indices: Optional[List[int]] = None,
-        disable_warnings: bool = False,
     ) -> EnrichmentPreviewResult:
-        """Run a subset of data through the enrichment service and preview the results."""
+        """Enrich a subset of data for a preview."""
         extraction_pattern = None
         replacements: List[Dict[str, str]] = []
 
@@ -153,10 +152,7 @@ class EnrichmentProject:
             else None,
         )
         epr = EnrichmentPreviewResult.from_dict(response)
-        if not disable_warnings and epr._is_timeout:
-            warnings.warn(
-                "Warning: The preview operation timed out for a subset of data. Set those results to None."
-            )
+
         return epr
 
 
@@ -265,7 +261,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
 
     @classmethod
     def from_dict(cls, json_dict: Dict[str, Any]) -> EnrichmentPreviewResult:
-        new_column_name_mapping = json_dict["new_column_name_mapping"]
+        enrichment_column_name_mapping = json_dict["enrichment_column_name_mapping"]
 
         # Prepare the results DataFrame from the 'results' list
         results = json_dict["results"]
@@ -285,12 +281,12 @@ class EnrichmentPreviewResult(EnrichmentResult):
         ]
         df.rename(
             columns={
-                FINAL_RESULT_COLUMN_NAME: new_column_name_mapping[FINAL_RESULT_COLUMN_NAME],
-                TRUSTWORTHY_SCORE_COLUMN_NAME: new_column_name_mapping[
+                FINAL_RESULT_COLUMN_NAME: enrichment_column_name_mapping[FINAL_RESULT_COLUMN_NAME],
+                TRUSTWORTHY_SCORE_COLUMN_NAME: enrichment_column_name_mapping[
                     TRUSTWORTHY_SCORE_COLUMN_NAME
                 ],
-                RAW_RESULT_COLUMN_NAME: new_column_name_mapping[RAW_RESULT_COLUMN_NAME],
-                LOG_COLUMN_NAME: new_column_name_mapping[LOG_COLUMN_NAME],
+                RAW_RESULT_COLUMN_NAME: enrichment_column_name_mapping[RAW_RESULT_COLUMN_NAME],
+                LOG_COLUMN_NAME: enrichment_column_name_mapping[LOG_COLUMN_NAME],
             },
             inplace=True,
         )
@@ -302,7 +298,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
         instance._is_timeout = json_dict["is_timeout"]
         instance._completed_jobs_count = json_dict["completed_jobs_count"]
         instance._failed_jobs_count = json_dict["failed_jobs_count"]
-        instance._final_result_name = new_column_name_mapping[FINAL_RESULT_COLUMN_NAME]
+        instance._final_result_name = enrichment_column_name_mapping[FINAL_RESULT_COLUMN_NAME]
 
         return instance
 
