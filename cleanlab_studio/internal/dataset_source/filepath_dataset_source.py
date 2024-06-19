@@ -1,9 +1,10 @@
 import mimetypes
 import pathlib
 from typing import Any, Optional
+import os
 
 from .dataset_source import DatasetSource
-from cleanlab_studio.errors import InvalidDatasetError
+from cleanlab_studio.errors import InvalidDatasetError, InvalidFilepathError
 
 
 class FilepathDatasetSource(DatasetSource):
@@ -15,6 +16,9 @@ class FilepathDatasetSource(DatasetSource):
         **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
+        if not os.path.exists(filepath):
+            raise InvalidFilepathError(filepath=filepath)
+
         self.dataset_name = dataset_name if dataset_name is not None else filepath.name
         self.file_size = filepath.stat().st_size
         maybe_file_type = mimetypes.guess_type(filepath)[0]

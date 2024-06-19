@@ -300,7 +300,7 @@ def download_cleanlab_columns(
 
 def download_array(
     api_key: str, cleanset_id: str, name: str
-) -> Union[npt.NDArray[np.float_], pd.DataFrame]:
+) -> Union[npt.NDArray[np.float64], pd.DataFrame]:
     check_uuid_well_formed(cleanset_id, "cleanset ID")
     res = requests.get(
         cli_base_url + f"/cleansets/{cleanset_id}/{name}",
@@ -310,7 +310,7 @@ def download_array(
     res_json: JSONDict = res.json()
     if res_json["success"]:
         if res_json["array_type"] == "numpy":
-            np_data: npt.NDArray[np.float_] = np.array(res_json[name])
+            np_data: npt.NDArray[np.float64] = np.array(res_json[name])
             return np_data
         pd_data: pd.DataFrame = pd.read_json(StringIO(res_json[name]), orient="records")
         return pd_data
