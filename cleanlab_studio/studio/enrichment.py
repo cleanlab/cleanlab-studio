@@ -214,7 +214,7 @@ def _validate_enrichment_options(options: EnrichmentOptions) -> None:
         )
 
     # Validate the regex
-    def _validate_tuple_is_replacement(t: Tuple) -> None:
+    def _validate_tuple_is_replacement(t: Tuple[Any, ...]) -> None:
         if isinstance(t, tuple) and len(t) == 2 and all(isinstance(x, str) for x in t):
             return None
         raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
@@ -264,7 +264,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
     _final_result_name: str
 
     @classmethod
-    def from_dict(cls, json_dict: Dict) -> EnrichmentPreviewResult:
+    def from_dict(cls, json_dict: Dict[str, Any]) -> EnrichmentPreviewResult:
         new_column_name_mapping = json_dict["new_column_name_mapping"]
 
         # Prepare the results DataFrame from the 'results' list
@@ -307,7 +307,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
         return instance
 
     # undecided on whether to include this method
-    def get_preview_status(self) -> Dict:
+    def get_preview_status(self) -> Dict[str, bool | int]:
         """Get the status of the preview operation."""
         return {
             "is_timeout": self._is_timeout,
