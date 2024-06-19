@@ -149,7 +149,7 @@ class EnrichmentProject:
             replacements=replacements,
             tlm_options=cast(Dict[str, Any], options.get("tlm_options"))
             if options.get("tlm_options")
-            else None,
+            else {},
         )
         epr = EnrichmentPreviewResult.from_dict(response)
 
@@ -203,11 +203,6 @@ def _validate_enrichment_options(options: EnrichmentOptions) -> None:
     # Validate the prompt
     if len(options["prompt"]) == 0:
         raise ValueError("The 'prompt' parameter must be a non-empty string.")
-    prompt_pattern = r"\$\{.*?\}"
-    if re.search(prompt_pattern, options["prompt"]):
-        raise ValueError(
-            "The 'prompt' parameter should contains at least one dataset column name as '$\{my_column_name\}'."
-        )
 
     # Validate the regex
     def _validate_tuple_is_replacement(t: Tuple[Any, ...]) -> None:
@@ -323,7 +318,5 @@ class EnrichmentPreviewResult(EnrichmentResult):
         if not with_details:
             df = self._results[[self._final_result_name]]
         joined_data = original_data.join(df, how="inner")
-
-        joined_data = joined_data.drop(columns=[ROW_ID_COLUMN_NAME])
 
         return joined_data
