@@ -644,10 +644,10 @@ def enrichment_preview(
     constrain_outputs: Optional[List[str]] = None,
     extraction_pattern: Optional[str] = None,
     indices: Optional[List[int]] = None,
-    optimize_prompt: Optional[bool] = None,
+    optimize_prompt: Optional[bool] = True,
     quality_preset: Optional[TLMQualityPreset] = "medium",
-    replacements: Optional[List[Dict[str, str]]] = None,
-    tlm_options: Optional[Dict[str, Any]] = None,
+    replacements: Optional[List[Dict[str, str]]] = [],
+    tlm_options: Optional[Dict[str, Any]] = {},
 ) -> JSONDict:
     """Call Enrichment Preview API and get response."""
     check_uuid_well_formed(project_id, "project_id")

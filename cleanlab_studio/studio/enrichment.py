@@ -7,6 +7,7 @@ Methods for interfacing with Enrichment Projects.
 from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, Optional, Union, List, TypedDict, Tuple, cast
+import re
 import warnings
 
 import pandas as pd
@@ -118,25 +119,20 @@ class EnrichmentProject:
     ) -> EnrichmentPreviewResult:
         """Run a subset of data through the enrichment service and preview the results."""
         extraction_pattern = None
-        replacements = list()
+        replacements: List[Dict[str, str]] = []
 
-        def _validate_tuple_is_replacement(t: Tuple) -> None:
-            if isinstance(t, tuple) and len(t) == 2 and all(isinstance(x, str) for x in t):
-                return None
-            raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+        _validate_enrichment_options(options)
 
         user_input_regex = options.get("regex")
         if user_input_regex:
             if isinstance(user_input_regex, str):
                 extraction_pattern = user_input_regex
             elif isinstance(user_input_regex, tuple):
-                _validate_tuple_is_replacement(user_input_regex)
                 replacements.append(
                     {"pattern": user_input_regex[0], "replacement": user_input_regex[1]}
                 )
             elif isinstance(user_input_regex, list):
                 for replacement in user_input_regex:
-                    _validate_tuple_is_replacement(replacement)
                     replacements.append({"pattern": replacement[0], "replacement": replacement[1]})
             else:
                 raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
@@ -152,7 +148,9 @@ class EnrichmentProject:
             prompt=options["prompt"],
             quality_preset=options.get("quality_preset"),
             replacements=replacements,
-            tlm_options=options.get("tlm_options"),
+            tlm_options=cast(Dict[str, Any], options.get("tlm_options"))
+            if options.get("tlm_options")
+            else None,
         )
         epr = EnrichmentPreviewResult.from_dict(response)
         if not disable_warnings and epr._is_timeout:
@@ -166,8 +164,8 @@ class EnrichmentOptions(TypedDict):
     """Options for enriching a dataset with a Trustworthy Language Model (TLM).
 
     Args:
-        prompt (str): Formatted f-string, that contains both the prompt, and names of columns to embed.
-            **Example:** "Is this a numeric value, answer Yes or No only. Value: {column_name}"
+        prompt (str): Using string.Template, that contains both the prompt, and names of columns to embed.
+            **Example:** "Is this a numeric value, answer Yes or No only. Value: ${column_name}"
         constrain_outputs (List[str], optional): List of all possible output values for the `metadata` column.
             If specified, every entry in the `metadata` column will exactly match one of these values (for less open-ended data enrichment tasks). If None, the `metadata` column can contain arbitrary values (for more open-ended data enrichment tasks).
            There may be additional transformations applied to ensure the returned value is one of these. If regex is also specified, then these transformations occur after your regex is applied.
@@ -204,6 +202,37 @@ class EnrichmentOptions(TypedDict):
     tlm_options: Optional[TLMOptions]
 
 
+def _validate_enrichment_options(options: EnrichmentOptions) -> None:
+    """Validate the enrichment options."""
+    # Validate the prompt
+    if len(options["prompt"]) == 0:
+        raise ValueError("The 'prompt' parameter must be a non-empty string.")
+    prompt_pattern = r"\$\{.*?\}"
+    if re.search(prompt_pattern, options["prompt"]):
+        raise ValueError(
+            "The 'prompt' parameter should contains at least one dataset column name as '$\{my_column_name\}'."
+        )
+
+    # Validate the regex
+    def _validate_tuple_is_replacement(t: Tuple) -> None:
+        if isinstance(t, tuple) and len(t) == 2 and all(isinstance(x, str) for x in t):
+            return None
+        raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+
+    if "regex" in options:
+        user_input_regex = options["regex"]
+        if user_input_regex:
+            if isinstance(user_input_regex, str):
+                return None
+            elif isinstance(user_input_regex, tuple):
+                _validate_tuple_is_replacement(user_input_regex)
+            elif isinstance(user_input_regex, list):
+                for replacement in user_input_regex:
+                    _validate_tuple_is_replacement(replacement)
+            else:
+                raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+
+
 class EnrichmentResult:
     """Enrichment result."""
 
@@ -222,9 +251,6 @@ class EnrichmentResult:
 
     def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
         df = self._results
-        if not with_details:
-            df = self._results[[self._new_column_name]]
-
         joined_data = original_data.join(df, how="left")
         return joined_data
 
@@ -285,9 +311,8 @@ class EnrichmentPreviewResult(EnrichmentResult):
         """Get the status of the preview operation."""
         return {
             "is_timeout": self._is_timeout,
-            "total_count": self._total_count,
-            "successful_count": self._successful_count,
-            "failed_count": self._failed_count,
+            "completed_jobs_count": self._completed_jobs_count,
+            "failed_jobs_count": self._failed_jobs_count,
         }
 
     def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
