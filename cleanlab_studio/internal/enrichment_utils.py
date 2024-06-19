@@ -52,9 +52,9 @@ def get_regex_match_or_replacement(
     # if the regex is a string, do matching
     if isinstance(regex, str):
         compiled_pattern = re.compile(regex)
-        pattern_match = compiled_pattern.match(response)
-        if pattern_match:
-            return pattern_match.group(1)
+        pattern_match = compiled_pattern.findall(response)
+        if len(pattern_match) > 0:
+            return str(pattern_match[0])
         return None
 
     # if the regex is a tuple (or list of tuples), do replacement
@@ -91,7 +91,7 @@ def get_optimized_prompt(prompt: str, constrain_outputs: Optional[List[str]] = N
     """
 
     if constrain_outputs is not None:
-        string_constrain_outputs = str(constrain_outputs).replace("'", "")
+        string_constrain_outputs = ", ".join(constrain_outputs)
         pre_prompt = f"Your answer must exactly match one of the following values: [{string_constrain_outputs}].\n"
         optimal_prompt = f"{pre_prompt}{prompt}"
     else:
@@ -107,11 +107,13 @@ def get_constrain_outputs_match(
 ) -> str:
     """Extracts the provided output values from the response using regex patterns. Return first extracted value if multiple exist.
     If no value out of the possible `constrain_outputs` is directly mentioned in the response, the return value with greatest string similarity to the response is returned (along with a warning).
+    If there are no close matches between the LLM response and any of the possible `constrain_outputs`, then the last entry of the `constrain_outputs` list is returned.
 
     Params
     ------
     response: Response from the LLM
-    constrain_outputs: List of expected output values
+    constrain_outputs: List of expected output values, the last value of this list should be considered the default/baseline value (eg. “other”),
+      that value will be returned if there are no close matches.
     constrain_outputs_pattern: Pre-compiled pattern of all output values. If not specified, pattern is created.
     disable_warnings: If True, print warnings are disabled
     """
@@ -127,13 +129,22 @@ def get_constrain_outputs_match(
         return str(exact_matches[0])
 
     # If there are no exact matches to a specific category, return the closest category based on string similarity.
-    closest_match = max(
+    best_match = max(
         constrain_outputs, key=lambda x: SequenceMatcher(None, response_str, x).ratio()
     )
-    similarity_score = SequenceMatcher(None, response_str, closest_match).ratio()
-    str_warning = "match"
+    similarity_score = SequenceMatcher(None, response_str, best_match).ratio()
+
     if similarity_score < 0.5:
-        str_warning = "remotely match"
+        warning_message = (
+            f"None of the constrain_outputs remotely match raw LLM output: {response_str}.\n"
+            + "Returning the last entry in the constrain outputs list."
+        )
+        best_match = constrain_outputs[-1]
+
+    else:
+        warning_message = f"None of the constrain_outputs match raw LLM output: {response_str}"
+
     if not disable_warnings:
-        warnings.warn(f"None of the constrain_outputs {str_warning} raw LLM output: {response_str}")
-    return closest_match
+        warnings.warn(warning_message)
+
+    return best_match
