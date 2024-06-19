@@ -1,6 +1,5 @@
 import pathlib
 from typing import cast, List, Optional
-import os
 
 from cleanlab_studio.internal.types import SchemaOverride
 from cleanlab_studio.internal.upload_helpers import upload_dataset
@@ -42,8 +41,6 @@ def upload(
 
     if filepath is None:
         filepath = click_helpers.prompt_for_filepath("Specify your dataset filepath")
-    if not os.path.exists(filepath):
-        abort(f"cannot upload '{filepath}': no such file or directory")
 
     dataset_source = FilepathDatasetSource(filepath=pathlib.Path(filepath))
 

@@ -357,7 +357,7 @@ class Studio:
         If you want to work with predicted probabilities for an image project, the recommended workflow is to download probabilities with the option `keep_id=True`, and then do a join with the original dataset on the ID column.
         Alternatively, you can follow the steps [here](/reference/python/studio#method-download_embeddings), and filter out the rows that were not analyzed. The filtered dataset will then have rows that align with the predicted probabilities DataFrame.
         """
-        pred_probs: Union[npt.NDArray[np.float_], pd.DataFrame] = api.download_array(
+        pred_probs: Union[npt.NDArray[np.float64], pd.DataFrame] = api.download_array(
             self._api_key, cleanset_id, "pred_probs"
         )
         if not isinstance(pred_probs, pd.DataFrame):
@@ -374,7 +374,7 @@ class Studio:
     def download_embeddings(
         self,
         cleanset_id: str,
-    ) -> npt.NDArray[np.float_]:
+    ) -> npt.NDArray[np.float64]:
         """
         Downloads feature embeddings for a cleanset (available only for text and image projects).
         These are numeric vectors produced via neural network representations of each data point in your dataset.
