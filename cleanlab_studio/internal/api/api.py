@@ -645,7 +645,7 @@ def enrichment_preview(
     extraction_pattern: Optional[str] = None,
     indices: Optional[List[int]] = None,
     optimize_prompt: Optional[bool] = None,
-    quality_preset: Optional[TLMQualityPreset] = None,
+    quality_preset: Optional[TLMQualityPreset] = "medium",
     replacements: Optional[List[Dict[str, str]]] = None,
     tlm_options: Optional[Dict[str, Any]] = None,
 ) -> JSONDict:

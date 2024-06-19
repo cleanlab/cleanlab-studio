@@ -149,7 +149,7 @@ class EnrichmentProject:
             extraction_pattern=extraction_pattern,
             indices=indices,
             optimize_prompt=options.get("optimize_prompt"),
-            prompt=options.get("prompt"),
+            prompt=options["prompt"],
             quality_preset=options.get("quality_preset"),
             replacements=replacements,
             tlm_options=options.get("tlm_options"),
