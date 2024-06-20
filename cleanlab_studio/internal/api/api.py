@@ -667,7 +667,7 @@ async def tlm_get_confidence_score(
     api_key: str,
     prompt: str,
     response: str,
-    logprobs: float,
+    input_metadata: Optional[JSONDict],
     quality_preset: str,
     options: Optional[JSONDict],
     rate_handler: TlmRateHandler,
@@ -681,7 +681,7 @@ async def tlm_get_confidence_score(
         api_key (str): studio API key for auth
         prompt (str): prompt for TLM to get confidence score for
         response (str): response for TLM to get confidence score for
-        logprobs (float): log probabilities associated with the given responses
+        input_metadata (JSONDict): additional input metadata for TLM
         quality_preset (str): quality preset to use to generate confidence score
         options (JSONDict): additional parameters for TLM
         rate_handler (TlmRateHandler): concurrency handler used to manage TLM request rate
@@ -703,7 +703,7 @@ async def tlm_get_confidence_score(
                 json=dict(
                     prompt=prompt,
                     response=response,
-                    logprobs=logprobs,
+                    input_metadata=input_metadata or {},
                     quality=quality_preset,
                     options=options or {},
                 ),

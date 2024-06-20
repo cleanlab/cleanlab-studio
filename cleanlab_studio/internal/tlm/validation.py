@@ -1,5 +1,5 @@
 import os
-from typing import Union, Sequence, Any
+from typing import Union, Sequence, List, Dict, Any
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.constants import (
     _VALID_TLM_MODELS,
@@ -7,6 +7,7 @@ from cleanlab_studio.internal.constants import (
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
     TLM_VALID_LOG_OPTIONS,
+    TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
 )
 
 
@@ -190,3 +191,57 @@ def validate_tlm_options(options: Any) -> None:
                 raise ValidationError(
                     f"Invalid options for logs: {invalid_log_options}. Valid options include: {TLM_VALID_LOG_OPTIONS}"
                 )
+
+
+def process_get_trustworthiness_score_kwargs(
+    prompt: Union[str, Sequence[str]], kwargs_dict: Dict[str, Any]
+) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+
+    invalid_kwargs = set(kwargs_dict.keys()) - TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS
+    if invalid_kwargs:
+        raise ValidationError(
+            f"Invalid kwargs provided: {invalid_kwargs}. Valid kwargs include: {TLM_VALID_LOG_OPTIONS}"
+        )
+
+    # checking validity/format of each input kwarg, each one might require a different format
+    for key, val in kwargs_dict.items():
+        if key == "perplexity":
+            if isinstance(val, float) or isinstance(val, int):
+                if not isinstance(prompt, str):
+                    raise ValidationError(
+                        f"Invalid type {type(val)}, perplexity should be a float if prompt is a str, and should be a sequence if prompt is a sequence"
+                    )
+                if not 0 <= val <= 1:
+                    raise ValidationError("Perplexity values must be between 0 and 1")
+
+            elif isinstance(val, Sequence):
+                if not isinstance(prompt, Sequence) or isinstance(prompt, str):  # str is a Sequence
+                    raise ValidationError(
+                        f"Invalid type {type(val)}, perplexity should be a float if prompt is a str, and should be a sequence if prompt is a sequence"
+                    )
+                if len(prompt) != len(val):
+                    raise ValidationError("Length of the prompt and perplexity lists must match.")
+                if not all(0 <= v <= 1 for v in val):
+                    raise ValidationError("Perplexity values must be between 0 and 1")
+
+            else:
+                raise ValidationError(
+                    f"Invalid type {type(val)}, perplexity must be either a sequence or a float"
+                )
+
+    # format kwargs into a list of dictionaries (each dict representing one example)
+    # if only one input, this is already the right format
+    if isinstance(prompt, str):
+        return kwargs_dict
+
+    # otherwise, prompt is a sequence (this was validated prior)
+    # if kwargs_dict is empty, return empty dicts that has the same length as prompt sequence
+    if len(kwargs_dict) == 0:
+        return [{}] * len(prompt)
+
+    # kwargs_dict is not empty, transpose the dict of lists -> list of dicts, same length as prompt sequence
+    kwarg_keys = kwargs_dict.keys()
+    kwarg_values_transposed = zip(*kwargs_dict.values())
+    return [
+        {key: value for key, value in zip(kwarg_keys, values)} for values in kwarg_values_transposed
+    ]
