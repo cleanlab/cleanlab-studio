@@ -38,7 +38,7 @@ try:
 except ImportError:
     pyspark_exists = False
 
-from cleanlab_studio.internal.types import JSONDict, SchemaOverride
+from cleanlab_studio.internal.types import JSONDict, SchemaOverride, TLMQualityPreset
 from cleanlab_studio.version import __version__
 from cleanlab_studio.errors import NotInstalledError
 from cleanlab_studio.internal.api.api_helper import (
@@ -634,6 +634,43 @@ def list_all_enrichment_projects(api_key: str) -> List[JSONDict]:
         page = res_json.get("next_page", None)
 
     return all_projects
+
+
+def enrichment_preview(
+    api_key: str,
+    new_column_name: str,
+    project_id: str,
+    prompt: str,
+    constrain_outputs: Optional[List[str]] = None,
+    extraction_pattern: Optional[str] = None,
+    indices: Optional[List[int]] = None,
+    optimize_prompt: Optional[bool] = True,
+    quality_preset: Optional[TLMQualityPreset] = "medium",
+    replacements: Optional[List[Dict[str, str]]] = [],
+    tlm_options: Optional[Dict[str, Any]] = {},
+) -> JSONDict:
+    """Call Enrichment Preview API and get response."""
+    check_uuid_well_formed(project_id, "project_id")
+    request_json = dict(
+        new_column_name=new_column_name,
+        project_id=project_id,
+        prompt=prompt,
+        constrain_outputs=constrain_outputs,
+        extraction_pattern=extraction_pattern,
+        indices=indices,
+        optimize_prompt=optimize_prompt,
+        replacements=replacements,
+        tlm_options=tlm_options,
+        tlm_quality_preset=quality_preset,
+    )
+
+    res = requests.post(
+        f"{enrichment_base_url}/preview",
+        headers=_construct_headers(api_key),
+        json=request_json,
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
 
 
 def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
