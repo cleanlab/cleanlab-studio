@@ -5,10 +5,11 @@ Methods for interfacing with Enrichment Projects.
 """
 
 from __future__ import annotations
-from datetime import datetime
-from typing import Any, Dict, Optional, Union, List, TypedDict, Tuple, cast
+
 import re
 import warnings
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
 import pandas as pd
 
@@ -228,7 +229,7 @@ class EnrichmentResult:
     """Enrichment result."""
 
     def __init__(self, results: pd.DataFrame):
-        self._results = results
+        self._results = results.sort_values(by=ROW_ID_COLUMN_NAME)
 
     @classmethod
     def from_dict(cls, json_dict: JSONDict) -> EnrichmentResult:
