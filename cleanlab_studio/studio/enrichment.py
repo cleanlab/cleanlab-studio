@@ -256,7 +256,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
 
     @classmethod
     def from_dict(cls, json_dict: Dict[str, Any]) -> EnrichmentPreviewResult:
-        enrichment_column_name_mapping = json_dict["enrichment_column_name_mapping"]
+        new_column_name_mapping = json_dict["new_column_name_mapping"]
 
         # Prepare the results DataFrame from the 'results' list
         results = json_dict["results"]
@@ -276,12 +276,12 @@ class EnrichmentPreviewResult(EnrichmentResult):
         ]
         df.rename(
             columns={
-                FINAL_RESULT_COLUMN_NAME: enrichment_column_name_mapping[FINAL_RESULT_COLUMN_NAME],
-                TRUSTWORTHY_SCORE_COLUMN_NAME: enrichment_column_name_mapping[
+                FINAL_RESULT_COLUMN_NAME: new_column_name_mapping[FINAL_RESULT_COLUMN_NAME],
+                TRUSTWORTHY_SCORE_COLUMN_NAME: new_column_name_mapping[
                     TRUSTWORTHY_SCORE_COLUMN_NAME
                 ],
-                RAW_RESULT_COLUMN_NAME: enrichment_column_name_mapping[RAW_RESULT_COLUMN_NAME],
-                LOG_COLUMN_NAME: enrichment_column_name_mapping[LOG_COLUMN_NAME],
+                RAW_RESULT_COLUMN_NAME: new_column_name_mapping[RAW_RESULT_COLUMN_NAME],
+                LOG_COLUMN_NAME: new_column_name_mapping[LOG_COLUMN_NAME],
             },
             inplace=True,
         )
@@ -293,7 +293,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
         instance._is_timeout = json_dict["is_timeout"]
         instance._completed_jobs_count = json_dict["completed_jobs_count"]
         instance._failed_jobs_count = json_dict["failed_jobs_count"]
-        instance._final_result_name = enrichment_column_name_mapping[FINAL_RESULT_COLUMN_NAME]
+        instance._final_result_name = new_column_name_mapping[FINAL_RESULT_COLUMN_NAME]
 
         return instance
 
