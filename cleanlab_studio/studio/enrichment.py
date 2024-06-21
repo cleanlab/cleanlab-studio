@@ -6,12 +6,11 @@ Methods for interfacing with Enrichment Projects.
 
 from __future__ import annotations
 
-import re
-import warnings
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
 import pandas as pd
+from typing_extensions import NotRequired
 
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
@@ -141,12 +140,12 @@ class EnrichmentProject:
             api_key=self._api_key,
             project_id=self._id,
             new_column_name=new_column_name,
-            constrain_outputs=options.get("constrain_outputs"),
+            constrain_outputs=options.get("constrain_outputs", None),
             extraction_pattern=extraction_pattern,
             indices=indices,
-            optimize_prompt=options.get("optimize_prompt"),
+            optimize_prompt=options.get("optimize_prompt", True),
             prompt=options["prompt"],
-            quality_preset=options.get("quality_preset"),
+            quality_preset=options.get("quality_preset", "medium"),
             replacements=replacements,
             tlm_options=cast(Dict[str, Any], options.get("tlm_options"))
             if options.get("tlm_options")
@@ -169,7 +168,7 @@ class EnrichmentOptions(TypedDict):
             If `optimize_prompt` is True, the prompt will be automatically adjusted to include a statement that the response must match one of the `constrain_outputs`.
         optimize_prompt (bool, default = True): When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
             For instance, if the constrain_outputs are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `constrain_outputs`."
-        quality_preset (TLMQualityPreset, optional): The quality preset to use for the Trustworthy Language Model (TLM) to use for data enrichment.
+        quality_preset (TLMQualityPreset): The quality preset to use for the Trustworthy Language Model (TLM) to use for data enrichment. Defaults to "medium"
         regex (str | Replacement | List[Replacement], optional): A string, tuple, or list of tuples specifying regular expressions to apply for post-processing the raw LLM outputs.
             If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
             Specifically the provided string will be passed into Python's `re.match()` method.
@@ -192,11 +191,11 @@ class EnrichmentOptions(TypedDict):
     """
 
     prompt: str
-    constrain_outputs: Optional[List[str]]
-    optimize_prompt: Optional[bool]
-    quality_preset: Optional[TLMQualityPreset]
-    regex: Optional[Union[str, Replacement, List[Replacement]]]
-    tlm_options: Optional[TLMOptions]
+    constrain_outputs: NotRequired[List[str]]
+    optimize_prompt: NotRequired[bool]
+    quality_preset: NotRequired[TLMQualityPreset]
+    regex: NotRequired[Union[str, Replacement, List[Replacement]]]
+    tlm_options: NotRequired[TLMOptions]
 
 
 def _validate_enrichment_options(options: EnrichmentOptions) -> None:
