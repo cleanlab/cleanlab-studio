@@ -252,7 +252,8 @@ class EnrichmentPreviewResult(EnrichmentResult):
     _is_timeout: bool
     _failed_jobs_count: int
     _completed_jobs_count: int
-    _final_result_name: str
+    _final_result_column_name: str
+    _trustworthiness_score_column_name: str
 
     @classmethod
     def from_dict(cls, json_dict: Dict[str, Any]) -> EnrichmentPreviewResult:
@@ -293,7 +294,10 @@ class EnrichmentPreviewResult(EnrichmentResult):
         instance._is_timeout = json_dict["is_timeout"]
         instance._completed_jobs_count = json_dict["completed_jobs_count"]
         instance._failed_jobs_count = json_dict["failed_jobs_count"]
-        instance._final_result_name = new_column_name_mapping[FINAL_RESULT_COLUMN_NAME]
+        instance._final_result_column_name = new_column_name_mapping[FINAL_RESULT_COLUMN_NAME]
+        instance._trustworthiness_score_column_name = new_column_name_mapping[
+            TRUSTWORTHY_SCORE_COLUMN_NAME
+        ]
 
         return instance
 
@@ -316,7 +320,9 @@ class EnrichmentPreviewResult(EnrichmentResult):
         """
         df = self._results
         if not with_details:
-            df = self._results[[self._final_result_name]]
+            df = self._results[
+                [self._final_result_column_name, self._trustworthiness_score_column_name]
+            ]
         joined_data = original_data.join(df, how="inner")
 
         return joined_data
