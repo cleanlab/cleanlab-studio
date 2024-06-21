@@ -206,12 +206,13 @@ def process_get_trustworthiness_score_kwargs(
     # checking validity/format of each input kwarg, each one might require a different format
     for key, val in kwargs_dict.items():
         if key == "perplexity":
-            if isinstance(val, float) or isinstance(val, int):
+            if val is None or isinstance(val, float) or isinstance(val, int):
                 if not isinstance(prompt, str):
                     raise ValidationError(
                         f"Invalid type {type(val)}, perplexity should be a float if prompt is a str, and should be a sequence if prompt is a sequence"
                     )
-                if not 0 <= val <= 1:
+                # TODO: should we raise warning if perplexity is None?
+                if val is not None and not 0 <= val <= 1:
                     raise ValidationError("Perplexity values must be between 0 and 1")
 
             elif isinstance(val, Sequence):
@@ -221,7 +222,7 @@ def process_get_trustworthiness_score_kwargs(
                     )
                 if len(prompt) != len(val):
                     raise ValidationError("Length of the prompt and perplexity lists must match.")
-                if not all(0 <= v <= 1 for v in val):
+                if not all(v is None or 0 <= v <= 1 for v in val):
                     raise ValidationError("Perplexity values must be between 0 and 1")
 
             else:

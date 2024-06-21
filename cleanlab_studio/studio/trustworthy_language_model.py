@@ -417,7 +417,7 @@ class TLM:
 
         if isinstance(prompt, str) and isinstance(response, str):
             return cast(
-                float,
+                TLMScoreResponse,
                 self._event_loop.run_until_complete(
                     self._get_trustworthiness_score_async(
                         prompt,
@@ -430,7 +430,7 @@ class TLM:
             )
 
         return cast(
-            List[float],
+            List[TLMScoreResponse],
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(
                     prompt, response, input_metadata, capture_exceptions=False
