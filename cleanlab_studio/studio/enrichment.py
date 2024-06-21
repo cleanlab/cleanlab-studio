@@ -168,7 +168,7 @@ class EnrichmentOptions(TypedDict):
             If `optimize_prompt` is True, the prompt will be automatically adjusted to include a statement that the response must match one of the `constrain_outputs`.
         optimize_prompt (bool, default = True): When False, your provided prompt will not be modified in any way. When True, your provided prompt may be automatically adjusted in an effort to produce better results.
             For instance, if the constrain_outputs are constrained, we may automatically append the following statement to your prompt: "Your answer must exactly match one of the following values: `constrain_outputs`."
-        quality_preset (TLMQualityPreset): The quality preset to use for the Trustworthy Language Model (TLM) to use for data enrichment. Defaults to "medium"
+        quality_preset (TLMQualityPreset, default = "medium"): The quality preset to use for the Trustworthy Language Model (TLM) to use for data enrichment.
         regex (str | Replacement | List[Replacement], optional): A string, tuple, or list of tuples specifying regular expressions to apply for post-processing the raw LLM outputs.
             If a string value is passed in, a regex match will be performed and the matched pattern will be returned (if the pattern cannot be matched, None will be returned).
             Specifically the provided string will be passed into Python's `re.match()` method.
