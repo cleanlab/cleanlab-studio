@@ -187,14 +187,14 @@ class EnrichmentOptions(TypedDict):
             **Example 2:** ``regex = [('True', 'T'), ('False', 'F')]`` will replace the words True and False with T and F.
             **Example 3:** ``regex = (' Explanation:.*', '') will remove everything after and including the words "Explanation:".
             For instance, the response "True. Explanation: 3+4=7, and 7 is an odd number." would return "True." after the regex replacement.
-        tlm_options (TLMOptions, optional): Options for the Trustworthy Language Model (TLM) to use for data enrichment.
+        tlm_options (TLMOptions, default = {}): Options for the Trustworthy Language Model (TLM) to use for data enrichment.
     """
 
     prompt: str
-    constrain_outputs: NotRequired[List[str]]
+    constrain_outputs: NotRequired[Optional[List[str]]]
     optimize_prompt: NotRequired[bool]
     quality_preset: NotRequired[TLMQualityPreset]
-    regex: NotRequired[Union[str, Replacement, List[Replacement]]]
+    regex: NotRequired[Optional[Union[str, Replacement, List[Replacement]]]]
     tlm_options: NotRequired[TLMOptions]
 
 
