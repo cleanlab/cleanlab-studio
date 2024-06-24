@@ -186,7 +186,7 @@ class TLM:
 
     async def _batch_async(
         self,
-        tlm_coroutines: Sequence[Coroutine[None, None, Union[TLMResponse, float, None]]],
+        tlm_coroutines: Sequence[Coroutine[None, None, Union[TLMResponse, TLMScoreResponse, None]]],
         batch_timeout: Optional[float] = None,
     ) -> Sequence[Union[TLMResponse, float, None]]:
         """Runs batch of TLM queries.
@@ -433,6 +433,12 @@ class TLM:
                 ),
             )
 
+        assert (
+            isinstance(prompt, Sequence)
+            and isinstance(prompt, Sequence)
+            and isinstance(input_metadata, list)
+        )
+
         return cast(
             List[TLMScoreResponse],
             self._event_loop.run_until_complete(
@@ -472,15 +478,16 @@ class TLM:
                 use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
         validate_try_tlm_prompt_response(prompt, response)
-        input_metadata = cast(
-            List[Dict[str, Any]], process_get_trustworthiness_score_kwargs(prompt, kwargs)
-        )
+        input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
 
         return cast(
             List[Optional[TLMScoreResponse]],
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(
-                    prompt, response, input_metadata, capture_exceptions=True
+                    prompt,
+                    response,
+                    cast(List[Dict[str, Any]], input_metadata),
+                    capture_exceptions=True,
                 )
             ),
         )
@@ -526,6 +533,12 @@ class TLM:
                     capture_exceptions=False,
                 )
                 return cast(TLMScoreResponse, trustworthiness_score)
+
+            assert (
+                isinstance(prompt, Sequence)
+                and isinstance(prompt, Sequence)
+                and isinstance(input_metadata, list)
+            )
 
             return cast(
                 List[TLMScoreResponse],
