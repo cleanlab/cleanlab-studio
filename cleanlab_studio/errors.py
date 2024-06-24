@@ -1,4 +1,6 @@
 from asyncio import Handle
+import pathlib
+from typing import Union
 
 
 class HandledError(Exception):
@@ -101,7 +103,9 @@ class UnsupportedVersionError(HandledError):
 
 class AuthError(HandledError):
     def __init__(self) -> None:
-        super().__init__("invalid API key")
+        super().__init__(
+            "API key is invalid. Check https://app.cleanlab.ai/upload for your current API key."
+        )
 
 
 class InternalError(HandledError):
@@ -137,3 +141,10 @@ class InvalidSchemaTypeError(ValueError):
 
 class InvalidProjectConfiguration(HandledError):
     pass
+
+
+class InvalidFilepathError(HandledError):
+    def __init__(self, filepath: Union[str, pathlib.Path] = "") -> None:
+        if isinstance(filepath, pathlib.Path):
+            filepath = str(filepath)
+        super().__init__(f"File could not be found at {filepath}. Please check the file path.")
