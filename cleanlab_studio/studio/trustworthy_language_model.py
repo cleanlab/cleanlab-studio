@@ -621,7 +621,7 @@ class TLMResponse(TypedDict):
 
     response: str
     trustworthiness_score: Optional[float]
-    log: Optional[dict]
+    log: Optional[Dict[str, Any]]
 
 
 class TLMOptions(TypedDict):
