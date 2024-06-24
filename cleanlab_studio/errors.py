@@ -1,5 +1,5 @@
-from asyncio import Handle
 import pathlib
+from asyncio import Handle
 from typing import Union
 
 
@@ -143,11 +143,10 @@ class InvalidProjectConfiguration(HandledError):
     pass
 
 
-
 class DeploymentError(HandledError):
     pass
 
-  
+
 class InvalidFilepathError(HandledError):
     def __init__(self, filepath: Union[str, pathlib.Path] = "") -> None:
         if isinstance(filepath, pathlib.Path):
