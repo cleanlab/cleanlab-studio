@@ -180,9 +180,9 @@ class TLM:
         )
 
         if capture_exceptions:
-            return cast(List[Optional[float]], tlm_responses)
+            return cast(List[Optional[TLMScoreResponse]], tlm_responses)
 
-        return cast(List[float], tlm_responses)
+        return cast(List[TLMScoreResponse], tlm_responses)
 
     async def _batch_async(
         self,
@@ -418,7 +418,7 @@ class TLM:
         if (
             isinstance(prompt, str)
             and isinstance(response, str)
-            and isinstance(input_metadata, Dict)
+            and isinstance(input_metadata, dict)
         ):
             return cast(
                 TLMScoreResponse,
@@ -472,7 +472,9 @@ class TLM:
                 use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
         validate_try_tlm_prompt_response(prompt, response)
-        input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
+        input_metadata = cast(
+            List[Dict[str, Any]], process_get_trustworthiness_score_kwargs(prompt, kwargs)
+        )
 
         return cast(
             List[Optional[TLMScoreResponse]],
@@ -513,7 +515,7 @@ class TLM:
             if (
                 isinstance(prompt, str)
                 and isinstance(response, str)
-                and isinstance(input_metadata, Dict)
+                and isinstance(input_metadata, dict)
             ):
                 trustworthiness_score = await self._get_trustworthiness_score_async(
                     prompt,
@@ -523,10 +525,10 @@ class TLM:
                     timeout=self._timeout,
                     capture_exceptions=False,
                 )
-                return cast(float, trustworthiness_score)
+                return cast(TLMScoreResponse, trustworthiness_score)
 
             return cast(
-                List[float],
+                List[TLMScoreResponse],
                 await self._batch_get_trustworthiness_score(
                     prompt, response, input_metadata, capture_exceptions=False
                 ),
@@ -541,7 +543,7 @@ class TLM:
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,
         batch_index: Optional[int] = None,
-    ) -> TLMScoreResponse:
+    ) -> Optional[TLMScoreResponse]:
         """Private asynchronous method to get trustworthiness score for prompt-response pairs.
 
         Args:
