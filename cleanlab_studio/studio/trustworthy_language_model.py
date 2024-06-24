@@ -415,7 +415,11 @@ class TLM:
         validate_tlm_prompt_response(prompt, response)
         input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
 
-        if isinstance(prompt, str) and isinstance(response, str):
+        if (
+            isinstance(prompt, str)
+            and isinstance(response, str)
+            and isinstance(input_metadata, Dict)
+        ):
             return cast(
                 TLMScoreResponse,
                 self._event_loop.run_until_complete(
@@ -471,7 +475,7 @@ class TLM:
         input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
 
         return cast(
-            List[Optional[float]],
+            List[Optional[TLMScoreResponse]],
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(
                     prompt, response, input_metadata, capture_exceptions=True
@@ -506,7 +510,11 @@ class TLM:
         input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
 
         async with aiohttp.ClientSession() as session:
-            if isinstance(prompt, str) and isinstance(response, str):
+            if (
+                isinstance(prompt, str)
+                and isinstance(response, str)
+                and isinstance(input_metadata, Dict)
+            ):
                 trustworthiness_score = await self._get_trustworthiness_score_async(
                     prompt,
                     response,
