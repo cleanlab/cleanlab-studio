@@ -65,7 +65,7 @@ class TLM:
         self._return_log = False
         if options is not None:
             validate_tlm_options(options)
-            if "log" in options.keys():  # TODO: figure out check
+            if "log" in options.keys():
                 self._return_log = True
 
         if timeout is not None and not (isinstance(timeout, int) or isinstance(timeout, float)):

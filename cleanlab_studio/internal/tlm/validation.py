@@ -59,7 +59,8 @@ def validate_tlm_prompt_response(
             )
 
     elif isinstance(prompt, Sequence):
-        if not isinstance(response, Sequence):
+        # str is considered a Sequence, we want to explicitly check that response is not a string
+        if not isinstance(response, Sequence) or isinstance(response, str):
             raise ValidationError(
                 "response type must match prompt type. "
                 f"prompt was provided as type {type(prompt)} but response is of type {type(response)}"
@@ -206,19 +207,18 @@ def process_get_trustworthiness_score_kwargs(
     # checking validity/format of each input kwarg, each one might require a different format
     for key, val in kwargs_dict.items():
         if key == "perplexity":
-            if val is None or isinstance(val, float) or isinstance(val, int):
-                if not isinstance(prompt, str):
+            if isinstance(prompt, str):
+                if not (val is None or isinstance(val, float) or isinstance(val, int)):
                     raise ValidationError(
-                        f"Invalid type {type(val)}, perplexity should be a float if prompt is a str, and should be a sequence if prompt is a sequence"
+                        f"Invalid type {type(val)}, perplexity should be a float when prompt is a str."
                     )
-                # TODO: should we raise warning if perplexity is None?
                 if val is not None and not 0 <= val <= 1:
                     raise ValidationError("Perplexity values must be between 0 and 1")
 
-            elif isinstance(val, Sequence):
-                if not isinstance(prompt, Sequence) or isinstance(prompt, str):  # str is a Sequence
+            elif isinstance(prompt, Sequence):
+                if not isinstance(val, Sequence):
                     raise ValidationError(
-                        f"Invalid type {type(val)}, perplexity should be a float if prompt is a str, and should be a sequence if prompt is a sequence"
+                        f"Invalid type {type(val)}, perplexity should be a sequence when prompt is a sequence"
                     )
                 if len(prompt) != len(val):
                     raise ValidationError("Length of the prompt and perplexity lists must match.")
