@@ -181,15 +181,15 @@ def validate_tlm_options(options: Any) -> None:
                     f"Invalid type {type(val)}, use_self_reflection must be a boolean"
                 )
 
-        elif option == "logs":
+        elif option == "log":
             if not isinstance(val, list):
-                raise ValidationError(f"Invalid type {type(val)}, logs must be a list of strings.")
+                raise ValidationError(f"Invalid type {type(val)}, log must be a list of strings.")
 
-            invalid_log_options = set(option["logs"]) - TLM_VALID_LOG_OPTIONS
+            invalid_log_options = set(option["log"]) - TLM_VALID_LOG_OPTIONS
 
             if invalid_log_options:
                 raise ValidationError(
-                    f"Invalid options for logs: {invalid_log_options}. Valid options include: {TLM_VALID_LOG_OPTIONS}"
+                    f"Invalid options for log: {invalid_log_options}. Valid options include: {TLM_VALID_LOG_OPTIONS}"
                 )
 
 
