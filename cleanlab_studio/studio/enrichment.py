@@ -19,7 +19,7 @@ from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
 Replacement = Tuple[str, str]
 ROW_ID_COLUMN_NAME = "row_id"
 FINAL_RESULT_COLUMN_NAME = "final_result"
-TRUSTWORTHY_SCORE_COLUMN_NAME = "trustworthiness_score"
+TRUSTWORTHINESS_SCORE_COLUMN_NAME = "trustworthiness_score"
 LOG_COLUMN_NAME = "log"
 RAW_RESULT_COLUMN_NAME = "raw_result"
 REGEX_PARAMETER_ERROR_MESSAGE = (
@@ -270,7 +270,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
         df = df[
             [
                 FINAL_RESULT_COLUMN_NAME,
-                TRUSTWORTHY_SCORE_COLUMN_NAME,
+                TRUSTWORTHINESS_SCORE_COLUMN_NAME,
                 RAW_RESULT_COLUMN_NAME,
                 LOG_COLUMN_NAME,
             ]
@@ -278,8 +278,8 @@ class EnrichmentPreviewResult(EnrichmentResult):
         df.rename(
             columns={
                 FINAL_RESULT_COLUMN_NAME: new_column_name_mapping[FINAL_RESULT_COLUMN_NAME],
-                TRUSTWORTHY_SCORE_COLUMN_NAME: new_column_name_mapping[
-                    TRUSTWORTHY_SCORE_COLUMN_NAME
+                TRUSTWORTHINESS_SCORE_COLUMN_NAME: new_column_name_mapping[
+                    TRUSTWORTHINESS_SCORE_COLUMN_NAME
                 ],
                 RAW_RESULT_COLUMN_NAME: new_column_name_mapping[RAW_RESULT_COLUMN_NAME],
                 LOG_COLUMN_NAME: new_column_name_mapping[LOG_COLUMN_NAME],
@@ -296,7 +296,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
         instance._failed_jobs_count = json_dict["failed_jobs_count"]
         instance._final_result_column_name = new_column_name_mapping[FINAL_RESULT_COLUMN_NAME]
         instance._trustworthiness_score_column_name = new_column_name_mapping[
-            TRUSTWORTHY_SCORE_COLUMN_NAME
+            TRUSTWORTHINESS_SCORE_COLUMN_NAME
         ]
 
         return instance
