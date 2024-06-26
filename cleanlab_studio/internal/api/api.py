@@ -520,6 +520,32 @@ def poll_ingestion_progress(api_key: str, upload_id: str, description: str) -> s
     return str(dataset_id)
 
 
+def deploy_model(api_key: str, cleanset_id: str, model_name: str) -> str:
+    """Deploys model and returns model ID."""
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
+    res = requests.post(
+        model_base_url,
+        headers=_construct_headers(api_key),
+        json=dict(cleanset_id=cleanset_id, deployment_name=model_name),
+    )
+
+    handle_api_error(res)
+    model_id: str = res.json()["id"]
+    return model_id
+
+
+def get_deployment_status(api_key: str, model_id: str) -> str:
+    """Gets status of model deployment."""
+    check_uuid_well_formed(model_id, "model ID")
+    res = requests.get(
+        f"{model_base_url}/{model_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    deployment: JSONDict = res.json()
+    return str(deployment["status"])
+
+
 def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:
     """Uploads prediction batch and returns query ID."""
     check_uuid_well_formed(model_id, "model ID")

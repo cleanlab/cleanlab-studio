@@ -1,5 +1,5 @@
-from asyncio import Handle
 import pathlib
+from asyncio import Handle
 from typing import Union
 
 
@@ -140,6 +140,10 @@ class InvalidSchemaTypeError(ValueError):
 
 
 class InvalidProjectConfiguration(HandledError):
+    pass
+
+
+class DeploymentError(HandledError):
     pass
 
 
