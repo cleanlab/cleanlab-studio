@@ -463,10 +463,10 @@ def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
     return status
 
 
-def get_enrichment_status(api_key: str, project_id: str) -> JSONDict:
-    check_uuid_well_formed(project_id, "project ID")
+def get_enrichment_status(api_key: str, job_id: str) -> JSONDict:
+    check_uuid_well_formed(job_id, "job ID")
     res = requests.get(
-        enrichment_base_url + f"/{project_id}/status",
+        enrichment_base_url + f"/jobs/{job_id}",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)

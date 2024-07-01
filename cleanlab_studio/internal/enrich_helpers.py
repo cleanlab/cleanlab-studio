@@ -14,8 +14,9 @@ import traceback
 def poll_enrichment_status(
     api_key: str,
     project_id: str,
+    job_id: str,
 ) -> None:
-    res = api.get_enrichment_status(api_key, project_id)
+    res = api.get_enrichment_status(api_key, job_id)
     spinner = itertools.cycle("|/-\\")
 
     with tqdm(
@@ -35,7 +36,7 @@ def poll_enrichment_status(
                 time.sleep(0.1)
                 pbar.set_description_str(f"Enrichment Progress: {next(spinner)}")
 
-            res = api.get_enrichment_status(api_key, project_id)
+            res = api.get_enrichment_status(api_key, job_id)
 
         if res["is_ready"]:
             pbar.update(pbar.total - pbar.n)
@@ -64,7 +65,7 @@ def poll_enrichment_status(
 
 def enrichment_ready(
     api_key: str,
-    project_id: str,
+    job_id: str,
 ) -> bool:
-    res = api.get_enrichment_status(api_key, project_id)
+    res = api.get_enrichment_status(api_key, job_id)
     return res["is_ready"] and not res["has_error"]

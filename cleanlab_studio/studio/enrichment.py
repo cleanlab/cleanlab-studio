@@ -29,6 +29,7 @@ REGEX_PARAMETER_ERROR_MESSAGE = (
     "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
 )
 RUN_ALREADY_CALLED_ERROR_MESSAGE = "The run method can only be called once for each project, and it has already been called on this project."
+RUN_NOT_CALLED_ERROR_MESSAGE = "The run method must be called before calling {funtion_name}."
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
@@ -83,6 +84,10 @@ class EnrichmentProject:
         (str) Name of the Enrichment Project.
         """
         return self._name
+
+    @property
+    def _get_job_id(self) -> str:
+        return self._get_enrichment_project_dict()["id"]
 
     @property
     def created_at(self) -> datetime:
@@ -162,9 +167,6 @@ class EnrichmentProject:
         else:
             self._run_called = True
 
-        # TODO: #1.3 Error is thrown if {new_column_name} or {new_column_name}_log or {new_column_name}_trustworthiness_score exist in dataset
-        # For this we need to keep track of the columns that are in the project and I am not sure how to do that.
-
         extraction_pattern = None
         replacements: List[Dict[str, str]] = []
 
@@ -195,16 +197,21 @@ class EnrichmentProject:
 
     def wait_until_ready(self) -> None:
         if not self._run_called:
-            raise ValueError("The run method must be called before calling wait_until_ready.")
+            raise ValueError(RUN_NOT_CALLED_ERROR_MESSAGE.format(function_name="wait_until_ready"))
         else:
+            job_id = self._get_job_id()
             cleanlab_studio.internal.enrich_helpers.poll_enrichment_status(
-                api_key=self._api_key, project_id=self._id
+                api_key=self._api_key, project_id=job_id
             )
 
     def ready(self) -> bool:
-        return cleanlab_studio.internal.enrich_helpers.enrichment_ready(
-            api_key=self._api_key, project_id=self._id
-        )
+        if not self._run_called:
+            raise ValueError(RUN_NOT_CALLED_ERROR_MESSAGE.format(function_name="ready"))
+        else:
+            job_id = self._get_job_id()
+            return cleanlab_studio.internal.enrich_helpers.enrichment_ready(
+                api_key=self._api_key, job_id=job_id
+            )
 
 
 class EnrichmentOptions(TypedDict):
