@@ -13,9 +13,10 @@ import pandas as pd
 from typing_extensions import NotRequired
 
 from cleanlab_studio.internal.api import api
-import cleanlab_studio.internal.enrich_helpers
 from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
+from cleanlab_studio.internal.enrich_helpers import enrichment_ready, poll_enrichment_status
+
 
 Replacement = Tuple[str, str]
 RegexInput = Optional[Union[str, Replacement, List[Replacement]]]
@@ -86,7 +87,7 @@ class EnrichmentProject:
         return self._name
 
     @property
-    def _get_job_id(self) -> str:
+    def _job_id(self) -> str:
         return self._get_enrichment_project_dict()["id"]
 
     @property
@@ -199,18 +200,19 @@ class EnrichmentProject:
         if not self._run_called:
             raise ValueError(RUN_NOT_CALLED_ERROR_MESSAGE.format(function_name="wait_until_ready"))
         else:
-            job_id = self._get_job_id()
-            cleanlab_studio.internal.enrich_helpers.poll_enrichment_status(
-                api_key=self._api_key, project_id=job_id
+            return poll_enrichment_status(
+                api_key=self._api_key,
+                project_id=self._id,
+                job_id=self._job_id,
             )
 
     def ready(self) -> bool:
         if not self._run_called:
             raise ValueError(RUN_NOT_CALLED_ERROR_MESSAGE.format(function_name="ready"))
         else:
-            job_id = self._get_job_id()
-            return cleanlab_studio.internal.enrich_helpers.enrichment_ready(
-                api_key=self._api_key, job_id=job_id
+            return enrichment_ready(
+                api_key=self._api_key,
+                job_id=self._job_id,
             )
 
 
