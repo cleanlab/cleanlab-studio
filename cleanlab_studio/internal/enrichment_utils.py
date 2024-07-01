@@ -5,7 +5,9 @@ import warnings
 
 import pandas as pd
 
-from cleanlab_studio.errors import ValidationError
+from cleanlab_studio.errors import (
+    ValidationError,
+)
 from cleanlab_studio.studio.studio import Studio
 from cleanlab_studio.studio.trustworthy_language_model import TLMResponse
 
