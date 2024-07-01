@@ -463,7 +463,6 @@ def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
     return status
 
 
-## TODO: add this into the backend
 def get_enrichment_status(api_key: str, project_id: str) -> JSONDict:
     check_uuid_well_formed(project_id, "project ID")
     res = requests.get(

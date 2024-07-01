@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
 import pandas as pd
 from typing_extensions import NotRequired
 
-from cleanlab_studio.internal import enrichment_utils
 from cleanlab_studio.internal.api import api
+import cleanlab_studio.internal.enrich_helpers
 from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
 
@@ -197,10 +197,14 @@ class EnrichmentProject:
         if not self._run_called:
             raise ValueError("The run method must be called before calling wait_until_ready.")
         else:
-            enrichment_utils.poll_enrichment_status(api_key=self._api_key, project_id=self._id)
+            cleanlab_studio.internal.enrich_helpers.poll_enrichment_status(
+                api_key=self._api_key, project_id=self._id
+            )
 
     def ready(self) -> bool:
-        return enrichment_utils.enrichment_ready(api_key=self._api_key, project_id=self._id)
+        return cleanlab_studio.internal.enrich_helpers.enrichment_ready(
+            api_key=self._api_key, project_id=self._id
+        )
 
 
 class EnrichmentOptions(TypedDict):
