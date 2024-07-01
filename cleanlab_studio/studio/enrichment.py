@@ -152,9 +152,9 @@ class EnrichmentProject:
             if options.get("tlm_options")
             else {},
         )
-        epr = EnrichmentPreviewResult.from_dict(response)
+        enrichment_results = EnrichmentPreviewResult.from_dict(response)
 
-        return epr
+        return enrichment_results
 
     def run(
         self,
@@ -192,9 +192,9 @@ class EnrichmentProject:
             if options.get("tlm_options")
             else {},
         )
-        epr = EnrichmentResult.from_dict(response)
+        enrichment_results = EnrichmentResult.from_dict(response)
 
-        return epr
+        return enrichment_results
 
     def wait_until_ready(self) -> None:
         if not self._run_called:
