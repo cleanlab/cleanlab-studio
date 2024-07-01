@@ -88,7 +88,8 @@ class EnrichmentProject:
 
     @property
     def _job_id(self) -> str:
-        return self._get_enrichment_project_dict()["id"]
+        job_id: str = self._get_enrichment_project_dict()["id"]
+        return job_id
 
     @property
     def created_at(self) -> datetime:
