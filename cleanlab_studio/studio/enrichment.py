@@ -12,11 +12,14 @@ from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
 import pandas as pd
 from typing_extensions import NotRequired
 
+from cleanlab_studio.internal import enrichment_utils
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
 
 Replacement = Tuple[str, str]
+RegexInput = Optional[Union[str, Replacement, List[Replacement]]]
+
 ROW_ID_COLUMN_NAME = "row_id"
 FINAL_RESULT_COLUMN_NAME = "final_result"
 TRUSTWORTHINESS_SCORE_COLUMN_NAME = "trustworthiness_score"
@@ -25,6 +28,7 @@ RAW_RESULT_COLUMN_NAME = "raw_result"
 REGEX_PARAMETER_ERROR_MESSAGE = (
     "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
 )
+RUN_ALREADY_CALLED_ERROR_MESSAGE = "The run method can only be called once for each project, and it has already been called on this project."
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
@@ -57,6 +61,7 @@ class EnrichmentProject:
         self._id = id
         self._name = name
         self._created_at: Optional[datetime]
+        self._run_called = False  # Flag to check if run has been called on the entire dataset
         if isinstance(created_at, str):
             self._created_at = _response_timestamp_to_datetime(created_at)
         else:
@@ -121,20 +126,10 @@ class EnrichmentProject:
         replacements: List[Dict[str, str]] = []
 
         _validate_enrichment_options(options)
-
         user_input_regex = options.get("regex")
         if user_input_regex:
-            if isinstance(user_input_regex, str):
-                extraction_pattern = user_input_regex
-            elif isinstance(user_input_regex, tuple):
-                replacements.append(
-                    {"pattern": user_input_regex[0], "replacement": user_input_regex[1]}
-                )
-            elif isinstance(user_input_regex, list):
-                for replacement in user_input_regex:
-                    replacements.append({"pattern": replacement[0], "replacement": replacement[1]})
-            else:
-                raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+            replacements = _get_regex_replacemenets_dictionary(user_input_regex)
+            extraction_pattern = _get_extraction_pattern_dictionary(user_input_regex)
 
         response = api.enrichment_preview(
             api_key=self._api_key,
@@ -154,6 +149,58 @@ class EnrichmentProject:
         epr = EnrichmentPreviewResult.from_dict(response)
 
         return epr
+
+    def run(
+        self,
+        options: EnrichmentOptions,
+        *,
+        new_column_name: str,
+    ) -> EnrichmentResult:
+        """Enrich the full dataset."""
+        if self._run_called:
+            raise ValueError(RUN_ALREADY_CALLED_ERROR_MESSAGE)
+        else:
+            self._run_called = True
+
+        # TODO: #1.3 Error is thrown if {new_column_name} or {new_column_name}_log or {new_column_name}_trustworthiness_score exist in dataset
+        # For this we need to keep track of the columns that are in the project and I am not sure how to do that.
+
+        extraction_pattern = None
+        replacements: List[Dict[str, str]] = []
+
+        _validate_enrichment_options(options)
+
+        user_input_regex = options.get("regex")
+        if user_input_regex:
+            replacements = _get_regex_replacemenets_dictionary(user_input_regex)
+            extraction_pattern = _get_extraction_pattern_dictionary(user_input_regex)
+
+        response = api.run(
+            api_key=self._api_key,
+            project_id=self._id,
+            new_column_name=new_column_name,
+            constrain_outputs=options.get("constrain_outputs", None),
+            extraction_pattern=extraction_pattern,
+            optimize_prompt=options.get("optimize_prompt", True),
+            prompt=options["prompt"],
+            quality_preset=options.get("quality_preset", "medium"),
+            replacements=replacements,
+            tlm_options=cast(Dict[str, Any], options.get("tlm_options"))
+            if options.get("tlm_options")
+            else {},
+        )
+        epr = EnrichmentResult.from_dict(response)
+
+        return epr
+
+    def wait_until_ready(self) -> None:
+        if not self._run_called:
+            raise ValueError("The run method must be called before calling wait_until_ready.")
+        else:
+            enrichment_utils.poll_enrichment_status(api_key=self._api_key, project_id=self._id)
+
+    def ready(self) -> bool:
+        return enrichment_utils.enrichment_ready(api_key=self._api_key, project_id=self._id)
 
 
 class EnrichmentOptions(TypedDict):
@@ -194,7 +241,7 @@ class EnrichmentOptions(TypedDict):
     constrain_outputs: NotRequired[Optional[List[str]]]
     optimize_prompt: NotRequired[bool]
     quality_preset: NotRequired[TLMQualityPreset]
-    regex: NotRequired[Optional[Union[str, Replacement, List[Replacement]]]]
+    regex: NotRequired[RegexInput]
     tlm_options: NotRequired[TLMOptions]
 
 
@@ -222,6 +269,24 @@ def _validate_enrichment_options(options: EnrichmentOptions) -> None:
                     _validate_tuple_is_replacement(replacement)
             else:
                 raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+
+
+def _get_regex_replacemenets_dictionary(user_input_regex: RegexInput) -> List[Dict[str, Any]]:
+    replacements: List[Dict[str, str]] = []
+    if isinstance(user_input_regex, tuple):
+        replacements.append({"pattern": user_input_regex[0], "replacement": user_input_regex[1]})
+    elif isinstance(user_input_regex, list):
+        for replacement in user_input_regex:
+            replacements.append({"pattern": replacement[0], "replacement": replacement[1]})
+    return replacements
+
+
+def _get_extraction_pattern_dictionary(user_input_regex: RegexInput) -> Optional[str]:
+    extraction_pattern = None
+    if isinstance(user_input_regex, str):
+        extraction_pattern = user_input_regex
+
+    return extraction_pattern
 
 
 class EnrichmentResult:

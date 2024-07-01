@@ -463,6 +463,18 @@ def get_cleanset_status(api_key: str, cleanset_id: str) -> JSONDict:
     return status
 
 
+## TODO: add this into the backend
+def get_enrichment_status(api_key: str, project_id: str) -> JSONDict:
+    check_uuid_well_formed(project_id, "project ID")
+    res = requests.get(
+        enrichment_base_url + f"/{project_id}/status",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    status: JSONDict = res.json()
+    return status
+
+
 def delete_dataset(api_key: str, dataset_id: str) -> None:
     check_uuid_well_formed(dataset_id, "dataset ID")
     res = requests.delete(dataset_base_url + f"/{dataset_id}", headers=_construct_headers(api_key))
@@ -666,6 +678,41 @@ def enrichment_preview(
 
     res = requests.post(
         f"{enrichment_base_url}/preview",
+        headers=_construct_headers(api_key),
+        json=request_json,
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
+def run(
+    api_key: str,
+    new_column_name: str,
+    project_id: str,
+    prompt: str,
+    constrain_outputs: Optional[List[str]] = None,
+    extraction_pattern: Optional[str] = None,
+    optimize_prompt: Optional[bool] = True,
+    quality_preset: Optional[TLMQualityPreset] = "medium",
+    replacements: Optional[List[Dict[str, str]]] = [],
+    tlm_options: Optional[Dict[str, Any]] = {},
+) -> JSONDict:
+    """Call Enrichment API and get response."""
+    check_uuid_well_formed(project_id, "project_id")
+    request_json = dict(
+        new_column_name=new_column_name,
+        project_id=project_id,
+        prompt=prompt,
+        constrain_outputs=constrain_outputs,
+        extraction_pattern=extraction_pattern,
+        optimize_prompt=optimize_prompt,
+        replacements=replacements,
+        tlm_options=tlm_options,
+        tlm_quality_preset=quality_preset,
+    )
+
+    res = requests.post(
+        f"{enrichment_base_url}/run",
         headers=_construct_headers(api_key),
         json=request_json,
     )

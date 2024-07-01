@@ -116,6 +116,10 @@ class CleansetError(InternalError):
     pass
 
 
+class EnrichmentProjectError(InternalError):
+    pass
+
+
 class CleansetHandledError(InternalError):
     DEFAULT_ERROR_MESSAGE = "Please try again or contact support@cleanlab.ai if the issue persists."
 
@@ -129,6 +133,10 @@ class CleansetHandledError(InternalError):
             error_msg += f"{self.error_message}\n"
         error_msg += f"{self.DEFAULT_ERROR_MESSAGE}"
         return error_msg
+
+
+class EnrichmentProjectHandledError(CleansetHandledError):
+    pass
 
 
 class InvalidSchemaTypeError(ValueError):
