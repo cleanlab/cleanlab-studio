@@ -1,5 +1,5 @@
-from asyncio import Handle
 import pathlib
+from asyncio import Handle
 from typing import Union
 
 
@@ -116,7 +116,11 @@ class CleansetError(InternalError):
     pass
 
 
-class CleansetHandledError(InternalError):
+class EnrichmentProjectError(InternalError):
+    pass
+
+
+class HandledError(InternalError):
     DEFAULT_ERROR_MESSAGE = "Please try again or contact support@cleanlab.ai if the issue persists."
 
     def __init__(self, error_type: str, error_message: str) -> None:
@@ -129,6 +133,14 @@ class CleansetHandledError(InternalError):
             error_msg += f"{self.error_message}\n"
         error_msg += f"{self.DEFAULT_ERROR_MESSAGE}"
         return error_msg
+
+
+class CleansetHandledError(HandledError):
+    pass
+
+
+class EnrichmentProjectHandledError(HandledError):
+    pass
 
 
 class InvalidSchemaTypeError(ValueError):
