@@ -120,7 +120,7 @@ class EnrichmentProjectError(InternalError):
     pass
 
 
-class CleansetHandledError(InternalError):
+class HandledError(InternalError):
     DEFAULT_ERROR_MESSAGE = "Please try again or contact support@cleanlab.ai if the issue persists."
 
     def __init__(self, error_type: str, error_message: str) -> None:
@@ -135,7 +135,11 @@ class CleansetHandledError(InternalError):
         return error_msg
 
 
-class EnrichmentProjectHandledError(CleansetHandledError):
+class CleansetHandledError(HandledError):
+    pass
+
+
+class EnrichmentProjectHandledError(HandledError):
     pass
 
 
