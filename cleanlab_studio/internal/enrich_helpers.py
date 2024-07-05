@@ -1,14 +1,12 @@
-from cleanlab_studio.errors import EnrichmentProjectError, EnrichmentProjectHandledError
-from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import log_internal_error
-
-
-from tqdm import tqdm
-
-
 import itertools
 import time
 import traceback
+
+from tqdm import tqdm
+
+from cleanlab_studio.errors import EnrichmentProjectError, EnrichmentProjectHandledError
+from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.util import log_internal_error
 
 
 def poll_enrichment_status(

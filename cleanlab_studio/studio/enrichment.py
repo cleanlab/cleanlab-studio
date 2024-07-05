@@ -13,10 +13,12 @@ import pandas as pd
 from typing_extensions import NotRequired
 
 from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.enrich_helpers import (
+    enrichment_ready,
+    poll_enrichment_status,
+)
 from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
-from cleanlab_studio.internal.enrich_helpers import enrichment_ready, poll_enrichment_status
-
 
 Replacement = Tuple[str, str]
 RegexInput = Optional[Union[str, Replacement, List[Replacement]]]
