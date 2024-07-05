@@ -80,7 +80,11 @@ def handle_api_error_from_json(res_json: JSONDict, status_code: Optional[int] = 
 
     if res_json.get("error", None) is not None:
         error = res_json["error"]
-        if status_code == 422 and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION":
+        if (
+            status_code == 422
+            and isinstance(error, dict)
+            and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION"
+        ):
             raise InvalidProjectConfiguration(error["description"])
         raise APIError(res_json["error"])
 
