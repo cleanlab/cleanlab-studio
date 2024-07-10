@@ -1,6 +1,5 @@
 from typing import Any, List, Optional, Tuple, Union
 import pandas as pd
-import re
 from cleanlab_studio.internal.enrichment_utils import (
     extract_df_subset,
     get_prompt_outputs,
@@ -111,11 +110,9 @@ def enrich_data(
         )
 
     if constrain_outputs:
-        escaped_constrain_outputs = [re.escape(output) for output in constrain_outputs]
-        constrain_outputs_pattern = "(" + "|".join(escaped_constrain_outputs) + ")"
         df[f"{new_column_name}"] = df[f"{new_column_name}"].apply(
             lambda x: get_constrain_outputs_match(
-                x, constrain_outputs, constrain_outputs_pattern, disable_warnings
+                x, constrain_outputs, disable_warnings=disable_warnings
             )
         )
 
