@@ -1,5 +1,6 @@
 from typing import Any, List, Optional, Tuple, Union
 import pandas as pd
+import re
 from cleanlab_studio.internal.enrichment_utils import (
     extract_df_subset,
     get_prompt_outputs,
