@@ -121,7 +121,8 @@ def get_constrain_outputs_match(
     response_str = str(response)
 
     if constrain_outputs_pattern is None:
-        constrain_outputs_pattern = r"(" + "|".join(constrain_outputs) + ")"
+        escaped_constrain_outputs = [re.escape(output) for output in constrain_outputs]
+        constrain_outputs_pattern = "(" + "|".join(escaped_constrain_outputs) + ")"
 
     # Parse category if LLM response is properly formatted
     exact_matches = re.findall(constrain_outputs_pattern, response_str, re.IGNORECASE)
