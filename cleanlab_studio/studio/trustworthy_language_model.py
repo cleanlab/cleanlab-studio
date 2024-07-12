@@ -24,7 +24,7 @@ from cleanlab_studio.internal.tlm.validation import (
     validate_tlm_prompt_response,
     validate_try_tlm_prompt_response,
     validate_tlm_options,
-    process_get_trustworthiness_score_kwargs,
+    process_response_and_kwargs,
 )
 from cleanlab_studio.internal.types import TLMQualityPreset, TLMScoreResponse
 from cleanlab_studio.errors import ValidationError
@@ -135,7 +135,6 @@ class TLM:
         self,
         prompts: Sequence[str],
         responses: Sequence[str],
-        input_metadata: Sequence[Dict[str, Any]],
         capture_exceptions: bool = False,
     ) -> Union[List[TLMScoreResponse], List[Optional[TLMScoreResponse]]]:
         """Run batch of TLM get trustworthiness score.
@@ -167,14 +166,11 @@ class TLM:
                 self._get_trustworthiness_score_async(
                     prompt,
                     response,
-                    metadata,
                     timeout=per_query_timeout,
                     capture_exceptions=capture_exceptions,
                     batch_index=batch_index,
                 )
-                for batch_index, (prompt, response, metadata) in enumerate(
-                    zip(prompts, responses, input_metadata)
-                )
+                for batch_index, (prompt, response) in enumerate(zip(prompts, responses))
             ],
             per_batch_timeout,
         )
@@ -413,37 +409,30 @@ class TLM:
                 (and save intermediate results) or use the [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) method instead.
         """
         validate_tlm_prompt_response(prompt, response)
-        input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
+        processed_response = process_response_and_kwargs(response, kwargs)
 
-        if (
-            isinstance(prompt, str)
-            and isinstance(response, str)
-            and isinstance(input_metadata, dict)
+        if isinstance(prompt, str) and (
+            isinstance(processed_response, str) or isinstance(processed_response, dict)
         ):
             return cast(
                 TLMScoreResponse,
                 self._event_loop.run_until_complete(
                     self._get_trustworthiness_score_async(
                         prompt,
-                        response,
-                        input_metadata,
+                        processed_response,
                         timeout=self._timeout,
                         capture_exceptions=False,
                     )
                 ),
             )
 
-        assert (
-            isinstance(prompt, Sequence)
-            and isinstance(prompt, Sequence)
-            and isinstance(input_metadata, list)
-        )
+        assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
 
         return cast(
             List[TLMScoreResponse],
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(
-                    prompt, response, input_metadata, capture_exceptions=False
+                    prompt, processed_response, capture_exceptions=False
                 )
             ),
         )
@@ -478,15 +467,14 @@ class TLM:
                 use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
         validate_try_tlm_prompt_response(prompt, response)
-        input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
+        processed_response = process_response_and_kwargs(response, kwargs)
 
         return cast(
             List[Optional[TLMScoreResponse]],
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(
                     prompt,
-                    response,
-                    cast(List[Dict[str, Any]], input_metadata),
+                    processed_response,
                     capture_exceptions=True,
                 )
             ),
@@ -516,34 +504,25 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt_response(prompt, response)
-        input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
+        processed_response = process_response_and_kwargs(response, kwargs)
 
         async with aiohttp.ClientSession() as session:
-            if (
-                isinstance(prompt, str)
-                and isinstance(response, str)
-                and isinstance(input_metadata, dict)
-            ):
+            if isinstance(prompt, str) and isinstance(processed_response, str):
                 trustworthiness_score = await self._get_trustworthiness_score_async(
                     prompt,
-                    response,
-                    input_metadata,
+                    processed_response,
                     session,
                     timeout=self._timeout,
                     capture_exceptions=False,
                 )
                 return cast(TLMScoreResponse, trustworthiness_score)
 
-            assert (
-                isinstance(prompt, Sequence)
-                and isinstance(prompt, Sequence)
-                and isinstance(input_metadata, list)
-            )
+            assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
 
             return cast(
                 List[TLMScoreResponse],
                 await self._batch_get_trustworthiness_score(
-                    prompt, response, input_metadata, capture_exceptions=False
+                    prompt, processed_response, capture_exceptions=False
                 ),
             )
 
@@ -551,7 +530,6 @@ class TLM:
         self,
         prompt: str,
         response: str,
-        input_metadata: Dict[str, Any],
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,
@@ -581,7 +559,6 @@ class TLM:
                     self._api_key,
                     prompt,
                     response,
-                    input_metadata,
                     self._quality_preset,
                     self._options,
                     self._rate_handler,

@@ -194,8 +194,9 @@ def validate_tlm_options(options: Any) -> None:
                 )
 
 
-def process_get_trustworthiness_score_kwargs(
-    prompt: Union[str, Sequence[str]], kwargs_dict: Dict[str, Any]
+def process_response_and_kwargs(
+    response: Union[str, Sequence[str]],
+    kwargs_dict: Dict[str, Any],
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
 
     invalid_kwargs = set(kwargs_dict.keys()) - TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS
@@ -207,21 +208,21 @@ def process_get_trustworthiness_score_kwargs(
     # checking validity/format of each input kwarg, each one might require a different format
     for key, val in kwargs_dict.items():
         if key == "perplexity":
-            if isinstance(prompt, str):
+            if isinstance(response, str):
                 if not (val is None or isinstance(val, float) or isinstance(val, int)):
                     raise ValidationError(
-                        f"Invalid type {type(val)}, perplexity should be a float when prompt is a str."
+                        f"Invalid type {type(val)}, perplexity should be a float when response is a str."
                     )
                 if val is not None and not 0 <= val <= 1:
                     raise ValidationError("Perplexity values must be between 0 and 1")
 
-            elif isinstance(prompt, Sequence):
+            elif isinstance(response, Sequence):
                 if not isinstance(val, Sequence):
                     raise ValidationError(
-                        f"Invalid type {type(val)}, perplexity should be a sequence when prompt is a sequence"
+                        f"Invalid type {type(val)}, perplexity should be a sequence when response is a sequence"
                     )
-                if len(prompt) != len(val):
-                    raise ValidationError("Length of the prompt and perplexity lists must match.")
+                if len(response) != len(val):
+                    raise ValidationError("Length of the response and perplexity lists must match.")
                 if not all(v is None or 0 <= v <= 1 for v in val):
                     raise ValidationError("Perplexity values must be between 0 and 1")
 
@@ -230,19 +231,21 @@ def process_get_trustworthiness_score_kwargs(
                     f"Invalid type {type(val)}, perplexity must be either a sequence or a float"
                 )
 
-    # format kwargs into a list of dictionaries (each dict representing one example)
-    # if only one input, this is already the right format
-    if isinstance(prompt, str):
-        return kwargs_dict
-
-    # otherwise, prompt is a sequence (this was validated prior)
-    # if kwargs_dict is empty, return empty dicts that has the same length as prompt sequence
+    # if kwargs_dict is empty, return the responses (save the transformation computations below)
     if len(kwargs_dict) == 0:
-        return [{}] * len(prompt)
+        return response
 
-    # kwargs_dict is not empty, transpose the dict of lists -> list of dicts, same length as prompt sequence
-    kwarg_keys = kwargs_dict.keys()
-    kwarg_values_transposed = zip(*kwargs_dict.values())
+    # format responses and kwargs into the appropriate formats
+    combined_response = {"response": response, **kwargs_dict}
+
+    if isinstance(response, str):
+        return combined_response
+
+    # else, there are multiple responses
+    # transpose the dict of lists -> list of dicts, same length as prompt/response sequence
+    combined_response_keys = combined_response.keys()
+    combined_response_values_transposed = zip(*combined_response.values())
     return [
-        {key: value for key, value in zip(kwarg_keys, values)} for values in kwarg_values_transposed
+        {key: value for key, value in zip(combined_response_keys, values)}
+        for values in combined_response_values_transposed
     ]
