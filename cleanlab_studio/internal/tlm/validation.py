@@ -232,8 +232,8 @@ def process_response_and_kwargs(
                 )
 
     # if kwargs_dict is empty, return the responses (save the transformation computations below)
-    if len(kwargs_dict) == 0:
-        return response
+    # if len(kwargs_dict) == 0:
+    #     return response
 
     # format responses and kwargs into the appropriate formats
     combined_response = {"response": response, **kwargs_dict}

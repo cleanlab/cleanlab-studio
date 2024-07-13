@@ -134,7 +134,7 @@ class TLM:
     async def _batch_get_trustworthiness_score(
         self,
         prompts: Sequence[str],
-        responses: Sequence[str],
+        responses: Sequence[Dict[str, Any]],
         capture_exceptions: bool = False,
     ) -> Union[List[TLMScoreResponse], List[Optional[TLMScoreResponse]]]:
         """Run batch of TLM get trustworthiness score.
@@ -411,9 +411,7 @@ class TLM:
         validate_tlm_prompt_response(prompt, response)
         processed_response = process_response_and_kwargs(response, kwargs)
 
-        if isinstance(prompt, str) and (
-            isinstance(processed_response, str) or isinstance(processed_response, dict)
-        ):
+        if isinstance(prompt, str) and isinstance(processed_response, dict):
             return cast(
                 TLMScoreResponse,
                 self._event_loop.run_until_complete(
@@ -468,6 +466,8 @@ class TLM:
         """
         validate_try_tlm_prompt_response(prompt, response)
         processed_response = process_response_and_kwargs(response, kwargs)
+
+        assert isinstance(processed_response, list)
 
         return cast(
             List[Optional[TLMScoreResponse]],
@@ -529,7 +529,7 @@ class TLM:
     async def _get_trustworthiness_score_async(
         self,
         prompt: str,
-        response: str,
+        response: Dict[str, Any],
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,
