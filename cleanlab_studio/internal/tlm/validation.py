@@ -186,7 +186,7 @@ def validate_tlm_options(options: Any) -> None:
             if not isinstance(val, list):
                 raise ValidationError(f"Invalid type {type(val)}, log must be a list of strings.")
 
-            invalid_log_options = set(option["log"]) - TLM_VALID_LOG_OPTIONS
+            invalid_log_options = set(val) - TLM_VALID_LOG_OPTIONS
 
             if invalid_log_options:
                 raise ValidationError(
@@ -199,41 +199,40 @@ def process_response_and_kwargs(
     kwargs_dict: Dict[str, Any],
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
 
-    invalid_kwargs = set(kwargs_dict.keys()) - TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS
-    if invalid_kwargs:
-        raise ValidationError(
-            f"Invalid kwargs provided: {invalid_kwargs}. Valid kwargs include: {TLM_VALID_LOG_OPTIONS}"
-        )
+    if not SKIP_VALIDATE_TLM_OPTIONS:
+        invalid_kwargs = set(kwargs_dict.keys()) - TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS
+        if invalid_kwargs:
+            raise ValidationError(
+                f"Invalid kwargs provided: {invalid_kwargs}. Valid kwargs include: {TLM_VALID_LOG_OPTIONS}"
+            )
 
-    # checking validity/format of each input kwarg, each one might require a different format
-    for key, val in kwargs_dict.items():
-        if key == "perplexity":
-            if isinstance(response, str):
-                if not (val is None or isinstance(val, float) or isinstance(val, int)):
+        # checking validity/format of each input kwarg, each one might require a different format
+        for key, val in kwargs_dict.items():
+            if key == "perplexity":
+                if isinstance(response, str):
+                    if not (val is None or isinstance(val, float) or isinstance(val, int)):
+                        raise ValidationError(
+                            f"Invalid type {type(val)}, perplexity should be a float when response is a str."
+                        )
+                    if val is not None and not 0 <= val <= 1:
+                        raise ValidationError("Perplexity values must be between 0 and 1")
+
+                elif isinstance(response, Sequence):
+                    if not isinstance(val, Sequence):
+                        raise ValidationError(
+                            f"Invalid type {type(val)}, perplexity should be a sequence when response is a sequence"
+                        )
+                    if len(response) != len(val):
+                        raise ValidationError(
+                            "Length of the response and perplexity lists must match."
+                        )
+                    if not all(v is None or 0 <= v <= 1 for v in val):
+                        raise ValidationError("Perplexity values must be between 0 and 1")
+
+                else:
                     raise ValidationError(
-                        f"Invalid type {type(val)}, perplexity should be a float when response is a str."
+                        f"Invalid type {type(val)}, perplexity must be either a sequence or a float"
                     )
-                if val is not None and not 0 <= val <= 1:
-                    raise ValidationError("Perplexity values must be between 0 and 1")
-
-            elif isinstance(response, Sequence):
-                if not isinstance(val, Sequence):
-                    raise ValidationError(
-                        f"Invalid type {type(val)}, perplexity should be a sequence when response is a sequence"
-                    )
-                if len(response) != len(val):
-                    raise ValidationError("Length of the response and perplexity lists must match.")
-                if not all(v is None or 0 <= v <= 1 for v in val):
-                    raise ValidationError("Perplexity values must be between 0 and 1")
-
-            else:
-                raise ValidationError(
-                    f"Invalid type {type(val)}, perplexity must be either a sequence or a float"
-                )
-
-    # if kwargs_dict is empty, return the responses (save the transformation computations below)
-    # if len(kwargs_dict) == 0:
-    #     return response
 
     # format responses and kwargs into the appropriate formats
     combined_response = {"response": response, **kwargs_dict}

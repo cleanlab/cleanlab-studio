@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional, TypedDict, Literal
 
+
 JSONDict = Dict[str, Any]
 
 
