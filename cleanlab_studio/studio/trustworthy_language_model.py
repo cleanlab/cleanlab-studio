@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Coroutine, List, Optional, Union, cast, Sequence, Any, Dict, TYPE_CHECKING
+from typing import Coroutine, List, Optional, Union, cast, Sequence, Any, Dict
 from tqdm.asyncio import tqdm_asyncio
 
 import aiohttp
@@ -26,14 +26,12 @@ from cleanlab_studio.internal.tlm.validation import (
     validate_tlm_options,
     process_response_and_kwargs,
 )
+from cleanlab_studio.internal.types import TLMQualityPreset
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
     _TLM_MAX_RETRIES,
 )
-
-if TYPE_CHECKING:
-    from cleanlab_studio.internal.types import TLMQualityPreset, TLMScoreResponse
 
 
 class TLM:
@@ -611,6 +609,9 @@ class TLMScore(TypedDict):
 
     trustworthiness_score: Optional[float]
     log: Optional[Dict[str, Any]]
+
+
+TLMScoreResponse = Union[float, TLMScore]
 
 
 class TLMOptions(TypedDict):
