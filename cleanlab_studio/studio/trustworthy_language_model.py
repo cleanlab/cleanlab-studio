@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Coroutine, List, Optional, Union, cast, Sequence, Any, Dict
+from typing import Coroutine, List, Optional, Union, cast, Sequence, Any, Dict, TYPE_CHECKING
 from tqdm.asyncio import tqdm_asyncio
 
 import aiohttp
@@ -26,12 +26,14 @@ from cleanlab_studio.internal.tlm.validation import (
     validate_tlm_options,
     process_response_and_kwargs,
 )
-from cleanlab_studio.internal.types import TLMQualityPreset, TLMScoreResponse
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
     _TLM_MAX_RETRIES,
 )
+
+if TYPE_CHECKING:
+    from cleanlab_studio.internal.types import TLMQualityPreset, TLMScoreResponse
 
 
 class TLM:
@@ -584,7 +586,7 @@ class TLM:
 
 
 class TLMResponse(TypedDict):
-    """A typed dict containing the response and trustworthiness score from the Trustworthy Language Model.
+    """A typed dict containing the response, trustworthiness score and additional logs from the Trustworthy Language Model.
 
     Attributes:
         response (str): text response from the Trustworthy Language Model.
@@ -597,6 +599,16 @@ class TLMResponse(TypedDict):
     """
 
     response: str
+    trustworthiness_score: Optional[float]
+    log: Optional[Dict[str, Any]]
+
+
+class TLMScore(TypedDict):
+    """A typed dict containing the trustworthiness score and additional logs from the Trustworthy Language Model.
+
+    This dictionary is similar to TLMResponse, except it does not contain the response key.
+    """
+
     trustworthiness_score: Optional[float]
     log: Optional[Dict[str, Any]]
 

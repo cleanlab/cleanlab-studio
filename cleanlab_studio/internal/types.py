@@ -1,5 +1,5 @@
 from typing import Any, Dict, Optional, TypedDict, Literal, Union
-
+from cleanlab_studio.studio.trustworthy_language_model import TLMScore
 
 JSONDict = Dict[str, Any]
 
@@ -11,7 +11,7 @@ class SchemaOverride(TypedDict):
 
 TLMQualityPreset = Literal["best", "high", "medium", "low", "base"]
 
-TLMScoreResponse = Union[float, Dict[str, Any]]
+TLMScoreResponse = Union[float, TLMScore]
 
 
 class CleanlabSettingsDict(TypedDict):
