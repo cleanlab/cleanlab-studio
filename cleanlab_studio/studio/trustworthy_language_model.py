@@ -74,9 +74,6 @@ Possible arguments for `Studio.TLM()` are documented below.
 
         verbose (bool, optional): whether to print outputs during execution, i.e., whether to show a progress bar when TLM is prompted with batches of data.
         If None, this will be determined automatically based on whether the code is running in an interactive environment such as a Jupyter notebook.
-
-    Returns:
-        TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
     """
 
     def __init__(
