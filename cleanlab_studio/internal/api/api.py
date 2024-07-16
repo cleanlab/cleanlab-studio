@@ -80,7 +80,11 @@ def handle_api_error_from_json(res_json: JSONDict, status_code: Optional[int] = 
 
     if res_json.get("error", None) is not None:
         error = res_json["error"]
-        if status_code == 422 and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION":
+        if (
+            status_code == 422
+            and isinstance(error, dict)
+            and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION"
+        ):
             raise InvalidProjectConfiguration(error["description"])
         raise APIError(res_json["error"])
 
@@ -518,6 +522,32 @@ def poll_ingestion_progress(api_key: str, upload_id: str, description: str) -> s
     # get dataset ID
     dataset_id = get_dataset_id(api_key, upload_id)["dataset_id"]
     return str(dataset_id)
+
+
+def deploy_model(api_key: str, cleanset_id: str, model_name: str) -> str:
+    """Deploys model and returns model ID."""
+    check_uuid_well_formed(cleanset_id, "cleanset ID")
+    res = requests.post(
+        model_base_url,
+        headers=_construct_headers(api_key),
+        json=dict(cleanset_id=cleanset_id, deployment_name=model_name),
+    )
+
+    handle_api_error(res)
+    model_id: str = res.json()["id"]
+    return model_id
+
+
+def get_deployment_status(api_key: str, model_id: str) -> str:
+    """Gets status of model deployment."""
+    check_uuid_well_formed(model_id, "model ID")
+    res = requests.get(
+        f"{model_base_url}/{model_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    deployment: JSONDict = res.json()
+    return str(deployment["status"])
 
 
 def upload_predict_batch(api_key: str, model_id: str, batch: io.StringIO) -> str:

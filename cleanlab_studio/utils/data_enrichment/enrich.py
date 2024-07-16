@@ -110,10 +110,9 @@ def enrich_data(
         )
 
     if constrain_outputs:
-        constrain_outputs_pattern = r"(" + "|".join(constrain_outputs) + ")"
         df[f"{new_column_name}"] = df[f"{new_column_name}"].apply(
             lambda x: get_constrain_outputs_match(
-                x, constrain_outputs, constrain_outputs_pattern, disable_warnings
+                x, constrain_outputs, disable_warnings=disable_warnings
             )
         )
 
