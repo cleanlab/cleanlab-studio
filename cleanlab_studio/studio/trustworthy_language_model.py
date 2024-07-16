@@ -35,7 +35,7 @@ from cleanlab_studio.internal.constants import (
 
 class TLM:
     """Represents a Trustworthy Language Model (TLM) instance, which is bound to a Cleanlab Studio account.
-    
+
     The TLM object can be used as a drop-in replacement for an LLM, or, for estimating trustworthiness scores for arbitrary text prompt/response pairs.
 
     For advanced use, TLM offers configuration options. The documentation below summarizes these options, and more details are explained in the [TLM tutorial](/tutorials/tlm).
