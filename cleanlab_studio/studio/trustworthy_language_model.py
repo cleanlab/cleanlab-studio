@@ -34,7 +34,8 @@ from cleanlab_studio.internal.constants import (
 
 
 class TLM:
-    """Represents a Trustworthy Language Model (TLM) instance, which is bound to a Cleanlab Studio account.
+    """
+    Represents a Trustworthy Language Model (TLM) instance, which is bound to a Cleanlab Studio account.
 
     The TLM object can be used as a drop-in replacement for an LLM, or, for estimating trustworthiness scores for arbitrary text prompt/response pairs.
 
@@ -42,14 +43,12 @@ class TLM:
 
     ** The TLM object is not meant to be constructed directly.** Instead, use the [`Studio.TLM()`](../studio/#method-tlm)
     method to configure and instantiate a TLM object.
-    After you've instantiated the TLM object using [`Studio.TLM()`](../studio/#method-tlm), you can use the instance methods documented on this page.
-Possible arguments for `Studio.TLM()` are documented below.
+    After you've instantiated the TLM object using [`Studio.TLM()`](../studio/#method-tlm), you can use the instance methods documented on this page. Possible arguments for `Studio.TLM()` are documented below.
 
     Args:
         api_key: You can find your API key on your [account page](https://app.cleanlab.ai/account) in Cleanlab Studio. Instead of specifying the API key here, you can also log in with `cleanlab login` on the command-line.
 
-        quality_preset (TLMQualityPreset, default = "medium"): An optional preset configuration to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs.
-            TLMQualityPreset is a string specifying one of the supported presets: "best", "high", "medium", "low", "base".
+        quality_preset (TLMQualityPreset, default = "medium"): An optional preset configuration to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs. TLMQualityPreset is a string specifying one of the supported presets: "best", "high", "medium", "low", "base".
 
             The "best" and "high" presets return improved LLM responses,
             with "best" also returning more reliable trustworthiness scores than "high".
