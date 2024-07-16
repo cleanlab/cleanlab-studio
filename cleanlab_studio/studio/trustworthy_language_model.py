@@ -48,7 +48,7 @@ Possible arguments for `Studio.TLM()` are documented below.
     Args:
         api_key: You can find your API key on your [account page](https://app.cleanlab.ai/account) in Cleanlab Studio. Instead of specifying the API key here, you can also log in with `cleanlab login` on the command-line.
 
-        quality_preset (TLMQualityPreset): An optional preset to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs.
+        quality_preset (TLMQualityPreset, optional): A pre-configured preset to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs.
             TLMQualityPreset is a string specifying one of the supported presets: "best", "high", "medium", "low", "base" (default is "medium").
 
             The "best" and "high" presets return improved LLM responses,
