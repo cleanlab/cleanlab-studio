@@ -226,8 +226,15 @@ def process_response_and_kwargs(
                         raise ValidationError(
                             "Length of the response and perplexity lists must match."
                         )
-                    if not all(v is None or 0 <= v <= 1 for v in val):
-                        raise ValidationError("Perplexity values must be between 0 and 1")
+
+                    for v in val:
+                        if not (v is None or isinstance(v, float) or isinstance(v, int)):
+                            raise ValidationError(
+                                f"Invalid type {type(v)}, perplexity values must be a float"
+                            )
+
+                        if v is not None and not 0 <= v <= 1:
+                            raise ValidationError("Perplexity values must be between 0 and 1")
 
                 else:
                     raise ValidationError(
