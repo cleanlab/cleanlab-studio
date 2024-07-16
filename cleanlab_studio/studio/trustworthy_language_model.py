@@ -64,7 +64,7 @@ Possible arguments for `Studio.TLM()` are documented below.
             These presets have higher runtime/cost and are optimized to return more accurate LLM outputs, but not necessarily more reliable trustworthiness scores.
 
         options (TLMOptions, optional): a typed dict of advanced configuration options.
-        Avaialable options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
+        Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
         For more details about the options, see the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
         If specified, these override any settings from the choice of `quality_preset`.
 
