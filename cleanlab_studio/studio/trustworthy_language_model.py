@@ -59,7 +59,7 @@ Possible arguments for `Studio.TLM()` are documented below.
 
             Higher presets have increased runtime and cost (and may internally consume more tokens).
             Reduce your preset if you see token-limit errors.
-            Details about each present are in the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
+            Details about each present are in the documentation for [TLMOptions](#class-tlmoptions).
             Avoid using "best" or "high" presets if you primarily want to get trustworthiness scores, and are less concerned with improving LLM responses.
             These presets have higher runtime/cost and are optimized to return more accurate LLM outputs, but not necessarily more reliable trustworthiness scores.
 
