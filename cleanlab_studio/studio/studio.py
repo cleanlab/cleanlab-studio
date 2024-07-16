@@ -427,42 +427,10 @@ class Studio:
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
     ) -> trustworthy_language_model.TLM:
-        """Instantiates a configured Trustworthy Language Model (TLM) instance.
-
-        The TLM object can be used as a drop-in replacement for an LLM, or, for estimating trustworthiness scores for arbitrary text prompt/response pairs, and more (see the [TLM documentation](../trustworthy_language_model#class-tlm)).
-
-        For advanced use, TLM offers configuration options. The documentation below summarizes these options, and more details are explained in the [TLM tutorial](/tutorials/tlm).
-
-        Args:
-            quality_preset (TLMQualityPreset): An optional preset to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs.
-                TLMQualityPreset is a string specifying one of the supported presets, including "best", "high", "medium", "low", "base".
-
-                The "best" and "high" presets return improved LLM responses,
-                with "best" also returning more reliable trustworthiness scores than "high".
-                The "medium" and "low" presets return standard LLM responses along with associated trustworthiness scores,
-                with "medium" producing more reliable trustworthiness scores than low.
-                The "base" preset will not return any trustworthiness score, just a standard LLM response, and is similar to directly using your favorite LLM API.
-
-                Higher presets have increased runtime and cost (and may internally consume more tokens).
-                Reduce your preset if you see token-limit errors.
-                Details about each present are in the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
-                Avoid using "best" or "high" presets if you primarily want to get trustworthiness scores, and are less concerned with improving LLM responses.
-                These presets have higher runtime/cost and are optimized to return more accurate LLM outputs, but not necessarily more reliable trustworthiness scores.
-
-            options (TLMOptions, optional): a typed dict of advanced configuration options.
-            Avaialable options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
-            For more details about the options, see the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
-            If specified, these override any settings from the choice of `quality_preset`.
-
-            timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
-            If a batch of data is passed in, the timeout will be applied to each individual item in the batch.
-            If a result is not produced within the timeout, a TimeoutError will be raised. Defaults to None, which does not apply a timeout.
-
-            verbose (bool, optional): whether to print outputs during execution, i.e., whether to show a progress bar when TLM is prompted with batches of data.
-            If None, this will be determined automatically based on whether the code is running in an interactive environment such as a Jupyter notebook.
-
-        Returns:
-            TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
+        """
+        Instantiate a Trustworthy Language Model (TLM).
+        For more details, see the documentation of:
+        [cleanlab_studio.studio.trustworthy_language_model.TLM](../trustworthy_language_model/#class-tlm)
         """
         return trustworthy_language_model.TLM(
             self._api_key, quality_preset, options=options, timeout=timeout, verbose=verbose
