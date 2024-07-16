@@ -65,7 +65,7 @@ Possible arguments for `Studio.TLM()` are documented below.
 
         options (TLMOptions, optional): a typed dict of advanced configuration options.
         Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
-        For more details about the options, see the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
+        For more details about the options, see the documentation for [TLMOptions](#class-tlmoptions).
         If specified, these override any settings from the choice of `quality_preset`.
 
         timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
