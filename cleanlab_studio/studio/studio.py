@@ -428,8 +428,9 @@ class Studio:
         verbose: Optional[bool] = None,
     ) -> trustworthy_language_model.TLM:
         """
-        For more details, see the documentation at:
-        [cleanlab_studio.studio.trustworthy_language_model.TLM](http://localhost:3000/reference/python/trustworthy_language_model/#method-__init__)
+        Instantiate a Trustworthy Language Model (TLM).
+        For more details, see the documentation of:
+        [cleanlab_studio.studio.trustworthy_language_model.TLM](../trustworthy_language_model/#class-tlm)
         """
         return trustworthy_language_model.TLM(
             self._api_key, quality_preset, options=options, timeout=timeout, verbose=verbose
