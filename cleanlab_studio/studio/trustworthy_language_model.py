@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Coroutine, List, Optional, Union, cast, Sequence
+from typing import Coroutine, List, Optional, Union, cast, Sequence, Any, Dict
 from tqdm.asyncio import tqdm_asyncio
 
 import aiohttp
@@ -24,6 +24,7 @@ from cleanlab_studio.internal.tlm.validation import (
     validate_tlm_prompt_response,
     validate_try_tlm_prompt_response,
     validate_tlm_options,
+    process_response_and_kwargs,
 )
 from cleanlab_studio.internal.types import TLMQualityPreset
 from cleanlab_studio.errors import ValidationError
@@ -94,8 +95,11 @@ class TLM:
                 f"Invalid quality preset {quality_preset} -- must be one of {_VALID_TLM_QUALITY_PRESETS}"
             )
 
+        self._return_log = False
         if options is not None:
             validate_tlm_options(options)
+            if "log" in options.keys():
+                self._return_log = True
 
         if timeout is not None and not (isinstance(timeout, int) or isinstance(timeout, float)):
             raise ValidationError("timeout must be a integer or float value")
@@ -163,9 +167,9 @@ class TLM:
     async def _batch_get_trustworthiness_score(
         self,
         prompts: Sequence[str],
-        responses: Sequence[str],
+        responses: Sequence[Dict[str, Any]],
         capture_exceptions: bool = False,
-    ) -> Union[List[float], List[Optional[float]]]:
+    ) -> Union[List[TLMScoreResponse], List[Optional[TLMScoreResponse]]]:
         """Run batch of TLM get trustworthiness score.
 
         capture_exceptions behavior:
@@ -205,13 +209,13 @@ class TLM:
         )
 
         if capture_exceptions:
-            return cast(List[Optional[float]], tlm_responses)
+            return cast(List[Optional[TLMScoreResponse]], tlm_responses)
 
-        return cast(List[float], tlm_responses)
+        return cast(List[TLMScoreResponse], tlm_responses)
 
     async def _batch_async(
         self,
-        tlm_coroutines: Sequence[Coroutine[None, None, Union[TLMResponse, float, None]]],
+        tlm_coroutines: Sequence[Coroutine[None, None, Union[TLMResponse, TLMScoreResponse, None]]],
         batch_timeout: Optional[float] = None,
     ) -> Sequence[Union[TLMResponse, float, None]]:
         """Runs batch of TLM queries.
@@ -386,7 +390,7 @@ class TLM:
         """
 
         try:
-            tlm_response = await asyncio.wait_for(
+            response_json = await asyncio.wait_for(
                 api.tlm_prompt(
                     self._api_key,
                     prompt,
@@ -404,16 +408,22 @@ class TLM:
                 return None
             raise e
 
-        return {
-            "response": tlm_response["response"],
-            "trustworthiness_score": tlm_response["confidence_score"],
+        tlm_response = {
+            "response": response_json["response"],
+            "trustworthiness_score": response_json["confidence_score"],
         }
+
+        if self._return_log:
+            tlm_response["log"] = response_json["log"]
+
+        return cast(TLMResponse, tlm_response)
 
     def get_trustworthiness_score(
         self,
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
-    ) -> Union[float, List[float]]:
+        **kwargs: Any,
+    ) -> Union[TLMScoreResponse, List[TLMScoreResponse]]:
         """Computes trustworthiness score for arbitrary given prompt-response pairs.
 
         Args:
@@ -432,21 +442,29 @@ class TLM:
                 (and save intermediate results) or use the [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) method instead.
         """
         validate_tlm_prompt_response(prompt, response)
+        processed_response = process_response_and_kwargs(response, kwargs)
 
-        if isinstance(prompt, str) and isinstance(response, str):
+        if isinstance(prompt, str) and isinstance(processed_response, dict):
             return cast(
-                float,
+                TLMScoreResponse,
                 self._event_loop.run_until_complete(
                     self._get_trustworthiness_score_async(
-                        prompt, response, timeout=self._timeout, capture_exceptions=False
+                        prompt,
+                        processed_response,
+                        timeout=self._timeout,
+                        capture_exceptions=False,
                     )
                 ),
             )
 
+        assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
+
         return cast(
-            List[float],
+            List[TLMScoreResponse],
             self._event_loop.run_until_complete(
-                self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=False)
+                self._batch_get_trustworthiness_score(
+                    prompt, processed_response, capture_exceptions=False
+                )
             ),
         )
 
@@ -454,7 +472,8 @@ class TLM:
         self,
         prompt: Sequence[str],
         response: Sequence[str],
-    ) -> List[Optional[float]]:
+        **kwargs: Any,
+    ) -> List[Optional[TLMScoreResponse]]:
         """Gets trustworthiness score for batches of many prompt-response pairs.
 
         The list returned will have the same length as the input list, if TLM hits any
@@ -479,11 +498,18 @@ class TLM:
                 use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
         validate_try_tlm_prompt_response(prompt, response)
+        processed_response = process_response_and_kwargs(response, kwargs)
+
+        assert isinstance(processed_response, list)
 
         return cast(
-            List[Optional[float]],
+            List[Optional[TLMScoreResponse]],
             self._event_loop.run_until_complete(
-                self._batch_get_trustworthiness_score(prompt, response, capture_exceptions=True)
+                self._batch_get_trustworthiness_score(
+                    prompt,
+                    processed_response,
+                    capture_exceptions=True,
+                )
             ),
         )
 
@@ -491,7 +517,8 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
-    ) -> Union[float, List[float]]:
+        **kwargs: Any,
+    ) -> Union[TLMScoreResponse, List[TLMScoreResponse]]:
         """Asynchronously gets trustworthiness score for prompt-response pairs.
         This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously,
         allowing for non-blocking concurrent operations.
@@ -510,30 +537,37 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt_response(prompt, response)
+        processed_response = process_response_and_kwargs(response, kwargs)
 
         async with aiohttp.ClientSession() as session:
-            if isinstance(prompt, str) and isinstance(response, str):
+            if isinstance(prompt, str) and isinstance(processed_response, str):
                 trustworthiness_score = await self._get_trustworthiness_score_async(
-                    prompt, response, session, timeout=self._timeout, capture_exceptions=False
+                    prompt,
+                    processed_response,
+                    session,
+                    timeout=self._timeout,
+                    capture_exceptions=False,
                 )
-                return cast(float, trustworthiness_score)
+                return cast(TLMScoreResponse, trustworthiness_score)
+
+            assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
 
             return cast(
-                List[float],
+                List[TLMScoreResponse],
                 await self._batch_get_trustworthiness_score(
-                    prompt, response, capture_exceptions=False
+                    prompt, processed_response, capture_exceptions=False
                 ),
             )
 
     async def _get_trustworthiness_score_async(
         self,
         prompt: str,
-        response: str,
+        response: Dict[str, Any],
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,
         batch_index: Optional[int] = None,
-    ) -> Optional[float]:
+    ) -> Optional[TLMScoreResponse]:
         """Private asynchronous method to get trustworthiness score for prompt-response pairs.
 
         Args:
@@ -553,7 +587,7 @@ class TLM:
             )
 
         try:
-            tlm_response = await asyncio.wait_for(
+            response_json = await asyncio.wait_for(
                 api.tlm_get_confidence_score(
                     self._api_key,
                     prompt,
@@ -568,7 +602,13 @@ class TLM:
                 timeout=timeout,
             )
 
-            return cast(float, tlm_response["confidence_score"])
+            if self._return_log:
+                return {
+                    "trustworthiness_score": response_json["confidence_score"],
+                    "log": response_json["log"],
+                }
+
+            return cast(float, response_json["confidence_score"])
 
         except Exception as e:
             if capture_exceptions:
@@ -577,7 +617,7 @@ class TLM:
 
 
 class TLMResponse(TypedDict):
-    """A typed dict containing the response and trustworthiness score from the Trustworthy Language Model.
+    """A typed dict containing the response, trustworthiness score and additional logs from the Trustworthy Language Model.
 
     Attributes:
         response (str): text response from the Trustworthy Language Model.
@@ -585,10 +625,26 @@ class TLMResponse(TypedDict):
         trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
         A higher score indicates a higher confidence that the response is correct/trustworthy. The trustworthiness score
         is omitted if TLM is run with quality preset "base".
+
+        log (dict, optional): additional logs and metadata returned from the LLM call only if the `log` key was specified in TLMOptions.
     """
 
     response: str
     trustworthiness_score: Optional[float]
+    log: Optional[Dict[str, Any]]
+
+
+class TLMScore(TypedDict):
+    """A typed dict containing the trustworthiness score and additional logs from the Trustworthy Language Model.
+
+    This dictionary is similar to TLMResponse, except it does not contain the response key.
+    """
+
+    trustworthiness_score: Optional[float]
+    log: Optional[Dict[str, Any]]
+
+
+TLMScoreResponse = Union[float, TLMScore]
 
 
 class TLMOptions(TypedDict):
@@ -640,6 +696,8 @@ class TLMOptions(TypedDict):
         This self-reflection forms a big part of the trustworthiness score, helping quantify aleatoric uncertainty associated with challenging prompts
         and helping catch answers that are obviously incorrect/bad for a prompt asking for a well-defined answer that LLMs should be able to handle.
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
+
+        log (List[str], default = None): optionally specify additional logs or metadata to return.
     """
 
     model: NotRequired[str]
@@ -647,6 +705,7 @@ class TLMOptions(TypedDict):
     num_candidate_responses: NotRequired[int]
     num_consistency_samples: NotRequired[int]
     use_self_reflection: NotRequired[bool]
+    log: NotRequired[List[str]]
 
 
 def is_notebook() -> bool:

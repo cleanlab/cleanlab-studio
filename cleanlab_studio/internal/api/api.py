@@ -729,7 +729,10 @@ async def tlm_get_confidence_score(
             res = await client_session.post(
                 f"{tlm_base_url}/get_confidence_score",
                 json=dict(
-                    prompt=prompt, response=response, quality=quality_preset, options=options or {}
+                    prompt=prompt,
+                    response=response,
+                    quality=quality_preset,
+                    options=options or {},
                 ),
                 headers=_construct_headers(api_key),
             )
