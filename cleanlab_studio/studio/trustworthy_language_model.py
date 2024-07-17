@@ -614,7 +614,7 @@ class TLMOptions(TypedDict):
 
     Args:
         model (str, default = "gpt-3.5-turbo-16k"): underlying LLM to use (better models will yield better results).
-        Models currently supported include "gpt-3.5-turbo-16k", "gpt-4", "gpt-4o".
+        Models currently supported include "gpt-3.5-turbo-16k", "gpt-4", "gpt-4o", "claude-3-haiku".
 
         max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
         This number will impact the maximum number of tokens you will see in the output response, and also the number of tokens
