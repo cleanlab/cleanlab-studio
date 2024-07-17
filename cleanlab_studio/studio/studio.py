@@ -12,6 +12,7 @@ import pandas as pd
 
 from . import inference
 from . import trustworthy_language_model
+from . import trustworthy_language_model_hybrid
 from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, deploy_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
@@ -434,6 +435,27 @@ class Studio:
         """
         return trustworthy_language_model.TLM(
             self._api_key, quality_preset, options=options, timeout=timeout, verbose=verbose
+        )
+
+    def TLMHybrid(
+        self,
+        response_model: str,
+        quality_preset: TLMQualityPreset = "medium",
+        *,
+        options: Optional[trustworthy_language_model.TLMOptions] = None,
+        timeout: Optional[float] = None,
+        verbose: Optional[bool] = None,
+    ) -> trustworthy_language_model.TLM:
+        """
+        TODO
+        """
+        return trustworthy_language_model_hybrid.TLMHybrid(
+            self._api_key,
+            response_model,
+            quality_preset,
+            options=options,
+            timeout=timeout,
+            verbose=verbose,
         )
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
