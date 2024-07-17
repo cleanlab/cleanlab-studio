@@ -631,7 +631,7 @@ class TLMResponse(TypedDict):
 
     response: str
     trustworthiness_score: Optional[float]
-    log: Optional[Dict[str, Any]]
+    log: NotRequired[Dict[str, Any]]
 
 
 class TLMScore(TypedDict):
@@ -641,7 +641,7 @@ class TLMScore(TypedDict):
     """
 
     trustworthiness_score: Optional[float]
-    log: Optional[Dict[str, Any]]
+    log: NotRequired[Dict[str, Any]]
 
 
 TLMScoreResponse = Union[float, TLMScore]
