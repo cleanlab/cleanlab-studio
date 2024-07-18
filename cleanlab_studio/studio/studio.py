@@ -12,7 +12,6 @@ import pandas as pd
 
 from . import inference
 from . import trustworthy_language_model
-from . import trustworthy_language_model_hybrid
 from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, deploy_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
@@ -445,11 +444,11 @@ class Studio:
         options: Optional[trustworthy_language_model.TLMOptions] = None,
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
-    ) -> trustworthy_language_model_hybrid.TLMHybrid:
+    ) -> trustworthy_language_model.TLMHybrid:
         """
         TODO
         """
-        return trustworthy_language_model_hybrid.TLMHybrid(
+        return trustworthy_language_model.TLMHybrid(
             self._api_key,
             response_model,
             quality_preset,
