@@ -216,7 +216,6 @@ def process_response_and_kwargs(
                         )
                     if val is not None and not 0 <= val <= 1:
                         raise ValidationError("Perplexity values must be between 0 and 1")
-
                 elif isinstance(response, Sequence):
                     if not isinstance(val, Sequence):
                         raise ValidationError(
@@ -235,10 +234,14 @@ def process_response_and_kwargs(
 
                         if v is not None and not 0 <= v <= 1:
                             raise ValidationError("Perplexity values must be between 0 and 1")
-
                 else:
                     raise ValidationError(
                         f"Invalid type {type(val)}, perplexity must be either a sequence or a float"
+                    )
+            elif key == "explanation":
+                if not isinstance(response, bool):
+                    raise ValidationError(
+                        "Explanation value must be a boolean. Set it to True if you want explanation regarding the score returned."
                     )
 
     # format responses and kwargs into the appropriate formats
