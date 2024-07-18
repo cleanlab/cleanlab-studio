@@ -446,7 +446,9 @@ class Studio:
         verbose: Optional[bool] = None,
     ) -> trustworthy_language_model.TLMHybrid:
         """
-        TODO
+        Instantiate a TLMHybrid instance.
+        For more details, see the documentation of:
+        [cleanlab_studio.studio.trustworthy_language_model.TLMHybrid](../trustworthy_language_model/#class-tlmhybrid)
         """
         return trustworthy_language_model.TLMHybrid(
             self._api_key,
