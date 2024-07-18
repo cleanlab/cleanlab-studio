@@ -445,7 +445,7 @@ class Studio:
         options: Optional[trustworthy_language_model.TLMOptions] = None,
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
-    ) -> trustworthy_language_model.TLM:
+    ) -> trustworthy_language_model_hybrid.TLMHybrid:
         """
         TODO
         """

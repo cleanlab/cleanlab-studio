@@ -1,7 +1,7 @@
 from typing import List, Optional, Union, cast, Sequence, Any, Dict
 import numpy as np
 
-from .trustworthy_language_model import TLM, TLMOptions, TLMResponse
+from .trustworthy_language_model import TLM, TLMOptions, TLMResponse, TLMScore, TLMScoreResponse
 from cleanlab_studio.internal.tlm.validation import (
     validate_tlm_hybrid_score_options,
     get_tlm_hybrid_prompt_options,
@@ -107,7 +107,7 @@ class TLMHybrid:
         tlm_response = np.full(len(prompt), None)
         tlm_response[prompt_succeeded_mask] = score_response_succeeded
 
-        return tlm_response.tolist()
+        return cast(List[Optional[TLMResponse]], tlm_response.tolist())
 
     def _score(
         self,
@@ -140,32 +140,40 @@ class TLMHybrid:
         assert len(prompt) == len(score_response)
 
         if all(isinstance(score, dict) for score in score_response):
+            score_response = cast(List[TLMScore], score_response)
             return [{"response": res, **score} for res, score in zip(response, score_response)]
-
-        return [
-            {"response": res, "trustworthiness_score": score}
-            for res, score in zip(response, score_response)
-        ]
+        elif all(isinstance(score, (int, float)) for score in score_response):
+            score_response = cast(List[float], score_response)
+            return [
+                {"response": res, "trustworthiness_score": score}
+                for res, score in zip(response, score_response)
+            ]
+        else:
+            raise ValueError(f"score_response has invalid type")
 
     def _try_batch_score(
         self,
         prompt: Sequence[str],
         response: Sequence[str],
         perplexity: Sequence[Optional[float]],
-    ) -> List[TLMResponse]:
+    ) -> List[Optional[TLMResponse]]:
         score_response = self.tlm_score.try_get_trustworthiness_score(
             prompt, response, perplexity=perplexity
         )
 
         assert len(prompt) == len(score_response)
 
-        if all(isinstance(score, dict) for score in score_response):
+        if all(score is None or isinstance(score, dict) for score in score_response):
+            score_response = cast(List[Optional[TLMScore]], score_response)
             return [
                 {"response": res, **score} if score else None
                 for res, score in zip(response, score_response)
             ]
-
-        return [
-            {"response": res, "trustworthiness_score": score} if score else None
-            for res, score in zip(response, score_response)
-        ]
+        elif all(score is None or isinstance(score, (int, float)) for score in score_response):
+            score_response = cast(List[Optional[float]], score_response)
+            return [
+                {"response": res, "trustworthiness_score": score} if score else None
+                for res, score in zip(response, score_response)
+            ]
+        else:
+            raise ValueError(f"score_response has invalid type")
