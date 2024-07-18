@@ -9,6 +9,7 @@ _VALID_TLM_MODELS: List[str] = [
     "gpt-4o",
     "claude-3-haiku",
     "claude-3-sonnet",
+    "claude-3.5-sonnet",
 ]
 _TLM_MAX_RETRIES: int = 3  # TODO: finalize this number
 TLM_MAX_TOKEN_RANGE: Tuple[int, int] = (64, 512)  # (min, max)
