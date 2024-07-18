@@ -10,36 +10,73 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Coroutine, List, Optional, Union, cast, Sequence, Any, Dict
-from tqdm.asyncio import tqdm_asyncio
+from typing import Any, Coroutine, Dict, List, Optional, Sequence, Union, cast
 
 import aiohttp
-from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
+from tqdm.asyncio import tqdm_asyncio
+from typing_extensions import (  # for Python <3.11 with (Not)Required
+    NotRequired,
+    TypedDict,
+)
 
+from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.constants import (
+    _TLM_MAX_RETRIES,
+    _VALID_TLM_QUALITY_PRESETS,
+)
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 from cleanlab_studio.internal.tlm.validation import (
-    validate_tlm_prompt,
-    validate_tlm_try_prompt,
-    validate_tlm_prompt_response,
-    validate_try_tlm_prompt_response,
+    process_response_and_kwargs,
     validate_tlm_options,
-    process_get_trustworthiness_score_kwargs,
+    validate_tlm_prompt,
+    validate_tlm_prompt_response,
+    validate_tlm_try_prompt,
+    validate_try_tlm_prompt_response,
 )
 from cleanlab_studio.internal.types import TLMQualityPreset, TLMScoreResponse
-from cleanlab_studio.errors import ValidationError
-from cleanlab_studio.internal.constants import (
-    _VALID_TLM_QUALITY_PRESETS,
-    _TLM_MAX_RETRIES,
-)
 
 
 class TLM:
-    """Represents a Trustworthy Language Model (TLM) instance, which is bound to a Cleanlab Studio account.
+    """
+    Represents a Trustworthy Language Model (TLM) instance, which is bound to a Cleanlab Studio account.
+
+    The TLM object can be used as a drop-in replacement for an LLM, or, for estimating trustworthiness scores for arbitrary text prompt/response pairs.
+
+    For advanced use, TLM offers configuration options. The documentation below summarizes these options, and more details are explained in the [TLM tutorial](/tutorials/tlm).
 
     ** The TLM object is not meant to be constructed directly.** Instead, use the [`Studio.TLM()`](../studio/#method-tlm)
     method to configure and instantiate a TLM object.
-    After you've instantiated the TLM object using [`Studio.TLM()`](../studio/#method-tlm), you can use the instance methods documented on this page.
+    After you've instantiated the TLM object using [`Studio.TLM()`](../studio/#method-tlm), you can use the instance methods documented on this page. Possible arguments for `Studio.TLM()` are documented below.
+
+    Args:
+        api_key: You can find your API key on your [account page](https://app.cleanlab.ai/account) in Cleanlab Studio. Instead of specifying the API key here, you can also log in with `cleanlab login` on the command-line.
+
+        quality_preset (TLMQualityPreset, default = "medium"): An optional preset configuration to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs. TLMQualityPreset is a string specifying one of the supported presets: "best", "high", "medium", "low", "base".
+
+            The "best" and "high" presets return improved LLM responses,
+            with "best" also returning more reliable trustworthiness scores than "high".
+            The "medium" and "low" presets return standard LLM responses along with associated trustworthiness scores,
+            with "medium" producing more reliable trustworthiness scores than low.
+            The "base" preset will not return any trustworthiness score, just a standard LLM response, and is similar to directly using your favorite LLM API.
+
+            Higher presets have increased runtime and cost (and may internally consume more tokens).
+            Reduce your preset if you see token-limit errors.
+            Details about each present are in the documentation for [TLMOptions](#class-tlmoptions).
+            Avoid using "best" or "high" presets if you primarily want to get trustworthiness scores, and are less concerned with improving LLM responses.
+            These presets have higher runtime/cost and are optimized to return more accurate LLM outputs, but not necessarily more reliable trustworthiness scores.
+
+        options (TLMOptions, optional): a typed dict of advanced configuration options.
+        Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
+        For more details about the options, see the documentation for [TLMOptions](#class-tlmoptions).
+        If specified, these override any settings from the choice of `quality_preset`.
+
+        timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
+        If a batch of data is passed in, the timeout will be applied to each individual item in the batch.
+        If a result is not produced within the timeout, a TimeoutError will be raised. Defaults to None, which does not apply a timeout.
+
+        verbose (bool, optional): whether to print outputs during execution, i.e., whether to show a progress bar when TLM is prompted with batches of data.
+        If None, this will be determined automatically based on whether the code is running in an interactive environment such as a Jupyter notebook.
     """
 
     def __init__(
@@ -52,7 +89,6 @@ class TLM:
         verbose: Optional[bool] = None,
     ) -> None:
         """Use `Studio.TLM()` instead of this method to initialize a TLM.
-
         lazydocs: ignore
         """
         self._api_key = api_key
@@ -134,8 +170,7 @@ class TLM:
     async def _batch_get_trustworthiness_score(
         self,
         prompts: Sequence[str],
-        responses: Sequence[str],
-        input_metadata: Sequence[Dict[str, Any]],
+        responses: Sequence[Dict[str, Any]],
         capture_exceptions: bool = False,
     ) -> Union[List[TLMScoreResponse], List[Optional[TLMScoreResponse]]]:
         """Run batch of TLM get trustworthiness score.
@@ -413,37 +448,28 @@ class TLM:
                 (and save intermediate results) or use the [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) method instead.
         """
         validate_tlm_prompt_response(prompt, response)
-        input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
+        processed_response = process_response_and_kwargs(response, kwargs)
 
-        if (
-            isinstance(prompt, str)
-            and isinstance(response, str)
-            and isinstance(input_metadata, dict)
-        ):
+        if isinstance(prompt, str) and isinstance(processed_response, dict):
             return cast(
                 TLMScoreResponse,
                 self._event_loop.run_until_complete(
                     self._get_trustworthiness_score_async(
                         prompt,
-                        response,
-                        input_metadata,
+                        processed_response,
                         timeout=self._timeout,
                         capture_exceptions=False,
                     )
                 ),
             )
 
-        assert (
-            isinstance(prompt, Sequence)
-            and isinstance(prompt, Sequence)
-            and isinstance(input_metadata, list)
-        )
+        assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
 
         return cast(
             List[TLMScoreResponse],
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(
-                    prompt, response, input_metadata, capture_exceptions=False
+                    prompt, processed_response, capture_exceptions=False
                 )
             ),
         )
@@ -478,15 +504,16 @@ class TLM:
                 use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
         validate_try_tlm_prompt_response(prompt, response)
-        input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
+        processed_response = process_response_and_kwargs(response, kwargs)
+
+        assert isinstance(processed_response, list)
 
         return cast(
             List[Optional[TLMScoreResponse]],
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(
                     prompt,
-                    response,
-                    cast(List[Dict[str, Any]], input_metadata),
+                    processed_response,
                     capture_exceptions=True,
                 )
             ),
@@ -516,42 +543,32 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt_response(prompt, response)
-        input_metadata = process_get_trustworthiness_score_kwargs(prompt, kwargs)
+        processed_response = process_response_and_kwargs(response, kwargs)
 
         async with aiohttp.ClientSession() as session:
-            if (
-                isinstance(prompt, str)
-                and isinstance(response, str)
-                and isinstance(input_metadata, dict)
-            ):
+            if isinstance(prompt, str) and isinstance(processed_response, str):
                 trustworthiness_score = await self._get_trustworthiness_score_async(
                     prompt,
-                    response,
-                    input_metadata,
+                    processed_response,
                     session,
                     timeout=self._timeout,
                     capture_exceptions=False,
                 )
                 return cast(TLMScoreResponse, trustworthiness_score)
 
-            assert (
-                isinstance(prompt, Sequence)
-                and isinstance(prompt, Sequence)
-                and isinstance(input_metadata, list)
-            )
+            assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
 
             return cast(
                 List[TLMScoreResponse],
                 await self._batch_get_trustworthiness_score(
-                    prompt, response, input_metadata, capture_exceptions=False
+                    prompt, processed_response, capture_exceptions=False
                 ),
             )
 
     async def _get_trustworthiness_score_async(
         self,
         prompt: str,
-        response: str,
-        input_metadata: Dict[str, Any],
+        response: Dict[str, Any],
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,
@@ -607,7 +624,7 @@ class TLM:
 
 
 class TLMResponse(TypedDict):
-    """A typed dict containing the response and trustworthiness score from the Trustworthy Language Model.
+    """A typed dict containing the response, trustworthiness score and additional logs from the Trustworthy Language Model.
 
     Attributes:
         response (str): text response from the Trustworthy Language Model.
@@ -622,6 +639,19 @@ class TLMResponse(TypedDict):
     response: str
     trustworthiness_score: Optional[float]
     log: Optional[Dict[str, Any]]
+
+
+class TLMScore(TypedDict):
+    """A typed dict containing the trustworthiness score and additional logs from the Trustworthy Language Model.
+
+    This dictionary is similar to TLMResponse, except it does not contain the response key.
+    """
+
+    trustworthiness_score: Optional[float]
+    log: Optional[Dict[str, Any]]
+
+
+TLMScoreResponse = Union[float, TLMScore]
 
 
 class TLMOptions(TypedDict):
@@ -647,7 +677,7 @@ class TLMOptions(TypedDict):
 
     Args:
         model (str, default = "gpt-3.5-turbo-16k"): underlying LLM to use (better models will yield better results).
-        Models currently supported include "gpt-3.5-turbo-16k", "gpt-4".
+        Models currently supported include "gpt-3.5-turbo-16k", "gpt-4", "gpt-4o", "claude-3-haiku".
 
         max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
         This number will impact the maximum number of tokens you will see in the output response, and also the number of tokens
