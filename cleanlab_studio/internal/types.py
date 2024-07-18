@@ -1,5 +1,4 @@
-from typing import Any, Dict, Optional, TypedDict, Literal, Union
-
+from typing import Any, Dict, Literal, Optional, TypedDict
 
 JSONDict = Dict[str, Any]
 
@@ -10,8 +9,6 @@ class SchemaOverride(TypedDict):
 
 
 TLMQualityPreset = Literal["best", "high", "medium", "low", "base"]
-
-TLMScoreResponse = Union[float, Dict[str, Any]]
 
 
 class CleanlabSettingsDict(TypedDict):

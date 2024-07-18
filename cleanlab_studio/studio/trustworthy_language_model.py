@@ -34,7 +34,7 @@ from cleanlab_studio.internal.tlm.validation import (
     validate_tlm_try_prompt,
     validate_try_tlm_prompt_response,
 )
-from cleanlab_studio.internal.types import TLMQualityPreset, TLMScoreResponse
+from cleanlab_studio.internal.types import TLMQualityPreset
 
 
 class TLM:
@@ -200,14 +200,11 @@ class TLM:
                 self._get_trustworthiness_score_async(
                     prompt,
                     response,
-                    metadata,
                     timeout=per_query_timeout,
                     capture_exceptions=capture_exceptions,
                     batch_index=batch_index,
                 )
-                for batch_index, (prompt, response, metadata) in enumerate(
-                    zip(prompts, responses, input_metadata)
-                )
+                for batch_index, (prompt, response) in enumerate(zip(prompts, responses))
             ],
             per_batch_timeout,
         )
@@ -596,7 +593,6 @@ class TLM:
                     self._api_key,
                     prompt,
                     response,
-                    input_metadata,
                     self._quality_preset,
                     self._options,
                     self._rate_handler,
