@@ -634,8 +634,6 @@ class TLMHybrid:
     Most of the input arguments for this class are similar to those for TLM, major differences will be described below.
 
     Args:
-        api_key: You can find your API key on your [account page](https://app.cleanlab.ai/account) in Cleanlab Studio. Instead of specifying the API key here, you can also log in with `cleanlab login` on the command-line.
-
         response_model (str): LLM used to produce the response to the given prompt.
             Do not specify the model to use for obtaining the trustworthiness score here, instead specify it in the options argument.
             Models currently supported include "gpt-3.5-turbo-16k", "gpt-4", "gpt-4o", "claude-3-haiku".
