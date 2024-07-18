@@ -47,8 +47,6 @@ class TLM:
     After you've instantiated the TLM object using [`Studio.TLM()`](../studio/#method-tlm), you can use the instance methods documented on this page. Possible arguments for `Studio.TLM()` are documented below.
 
     Args:
-        api_key: You can find your API key on your [account page](https://app.cleanlab.ai/account) in Cleanlab Studio. Instead of specifying the API key here, you can also log in with `cleanlab login` on the command-line.
-
         quality_preset (TLMQualityPreset, default = "medium"): An optional preset configuration to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs. TLMQualityPreset is a string specifying one of the supported presets: "best", "high", "medium", "low", "base".
 
             The "best" and "high" presets return improved LLM responses,
