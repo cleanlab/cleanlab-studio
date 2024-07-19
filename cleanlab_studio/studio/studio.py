@@ -446,7 +446,7 @@ class Studio:
         verbose: Optional[bool] = None,
     ) -> trustworthy_language_model.TLMHybrid:
         """
-        Instantiate a TLMHybrid instance.
+        Instantiate a hybrid Trustworthy Language Model that uses one model for response and another for trustworthiness scoring (reduce costs/latency without reducing response quality).
         For more details, see the documentation of:
         [cleanlab_studio.studio.trustworthy_language_model.TLMHybrid](../trustworthy_language_model/#class-tlmhybrid)
         """

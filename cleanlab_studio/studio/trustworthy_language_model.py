@@ -621,7 +621,7 @@ class TLM:
 
 class TLMHybrid:
     """
-    A hybrid version of the Trustworthy Language Model (TLM) that enables the use of different LLMs for the response and for obtaining the trustworthiness score.
+    A hybrid version of the Trustworthy Language Model (TLM) that enables the use of different LLMs for generating the response and for scoring its trustworthiness.
 
     TLMHybrid should be used if you want to use a better model to generate responses but want to get cheaper and quicker trustworthiness score
     evaluations by using smaller models.
@@ -635,16 +635,17 @@ class TLMHybrid:
 
     Args:
         response_model (str): LLM used to produce the response to the given prompt.
-            Do not specify the model to use for obtaining the trustworthiness score here, instead specify it in the options argument.
-            Models currently supported include "gpt-3.5-turbo-16k", "gpt-4", "gpt-4o", "claude-3-haiku".
+            Do not specify the model to use for scoring  trustworthiness here, instead specify that model in the `options` argument.
+            The list of supported model strings can be found in the TLMOptions documentation.
 
         quality_preset (TLMQualityPreset, default = "medium"): preset configuration to control the quality of TLM trustworthiness scores vs. runtimes/costs.
-            Note that this preset only applies to the model computing the trustworthiness score.
-            Supported options include: "medium", "low".
+            This preset only applies to the model computing the trustworthiness score.
+            Supported options are only: "medium" or "low",
+            because TLMHybrid is not intended to improve response accuracy (use the regular TLM for that).
 
         options (TLMOptions, optional): a typed dict of advanced configuration options.
-            Note that most of these options only apply to the model computing the trustworthiness score, except for "max_tokens", which applies to both models.
-            Available options (keys in this dict) include "model", "max_tokens", "num_consistency_samples", "use_self_reflection".
+            Most of these options only apply to the model scoring  trustworthiness, except for "max_tokens", which applies to the response model as well.
+            Specify which model to use for scoring trustworthiness in these options.
             For more details about the options, see the documentation for [TLMOptions](#class-tlmoptions).
 
         timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.

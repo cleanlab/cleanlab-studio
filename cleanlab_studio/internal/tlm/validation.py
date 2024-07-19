@@ -265,7 +265,7 @@ def validate_tlm_hybrid_score_options(score_options: Any) -> None:
     invalid_score_keys = set(score_options.keys()).intersection(INVALID_SCORE_OPTIONS)
     if invalid_score_keys:
         raise ValidationError(
-            f"Invalid keys in options dictionary for TLMHybrid: {invalid_score_keys}.\n"
+            f"Please remove these invalid keys from the `options` dictionary provided for TLMHybrid: {invalid_score_keys}.\n"
         )
 
 
