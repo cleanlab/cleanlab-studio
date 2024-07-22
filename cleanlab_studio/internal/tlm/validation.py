@@ -238,11 +238,6 @@ def process_response_and_kwargs(
                     raise ValidationError(
                         f"Invalid type {type(val)}, perplexity must be either a sequence or a float"
                     )
-            elif key == "explanation":
-                if not isinstance(response, bool):
-                    raise ValidationError(
-                        "Explanation value must be a boolean. Set it to True if you want explanation regarding the score returned."
-                    )
 
     # format responses and kwargs into the appropriate formats
     combined_response = {"response": response, **kwargs_dict}
