@@ -258,8 +258,6 @@ def process_response_and_kwargs(
 
 
 def validate_tlm_hybrid_score_options(score_options: Any) -> None:
-    validate_tlm_options(score_options)
-
     INVALID_SCORE_OPTIONS = {"num_candidate_responses"}
 
     invalid_score_keys = set(score_options.keys()).intersection(INVALID_SCORE_OPTIONS)
@@ -269,19 +267,13 @@ def validate_tlm_hybrid_score_options(score_options: Any) -> None:
         )
 
 
-def get_tlm_hybrid_prompt_options(score_options: Any, response_model: str) -> Dict[str, Any]:
-    VALID_PROMPT_OPTIONS = {"max_tokens"}
+def get_tlm_hybrid_response_options(score_options: Any, response_model: str) -> Dict[str, Any]:
+    VALID_RESPONSE_OPTIONS = {"max_tokens"}
 
-    if response_model not in _VALID_TLM_MODELS:
-        raise ValidationError(
-            f"{response_model} is not a supported model, valid models include: {_VALID_TLM_MODELS}"
-        )
-
-    prompt_options = {"model": response_model, "log": ["perplexity"]}
-
+    response_options = {"model": response_model, "log": ["perplexity"]}
     if score_options is not None:
-        for option_key in VALID_PROMPT_OPTIONS:
+        for option_key in VALID_RESPONSE_OPTIONS:
             if option_key in score_options:
-                prompt_options[option_key] = score_options[option_key]
+                response_options[option_key] = score_options[option_key]
 
-    return prompt_options
+    return response_options

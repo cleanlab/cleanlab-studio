@@ -12,6 +12,7 @@ import pandas as pd
 
 from . import inference
 from . import trustworthy_language_model
+from cleanlab_studio.utils import tlm_hybrid
 from cleanlab_studio.errors import CleansetError
 from cleanlab_studio.internal import clean_helpers, deploy_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
@@ -438,19 +439,19 @@ class Studio:
 
     def TLMHybrid(
         self,
-        response_model: str,
+        response_model: str = "gpt-4o",
         quality_preset: TLMQualityPreset = "medium",
         *,
         options: Optional[trustworthy_language_model.TLMOptions] = None,
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
-    ) -> trustworthy_language_model.TLMHybrid:
+    ) -> tlm_hybrid.TLMHybrid:
         """
         Instantiate a hybrid Trustworthy Language Model that uses one model for response and another for trustworthiness scoring (reduce costs/latency without reducing response quality).
         For more details, see the documentation of:
         [cleanlab_studio.studio.trustworthy_language_model.TLMHybrid](../trustworthy_language_model/#class-tlmhybrid)
         """
-        return trustworthy_language_model.TLMHybrid(
+        return tlm_hybrid.TLMHybrid(
             self._api_key,
             response_model,
             quality_preset,
