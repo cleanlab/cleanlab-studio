@@ -2,7 +2,16 @@ import asyncio
 import io
 import os
 import time
-from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
+from io import StringIO
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+
+import aiohttp
+import aiohttp.client_exceptions
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+import requests
+from tqdm import tqdm
 
 from cleanlab_studio.errors import (
     APIError,
@@ -14,15 +23,6 @@ from cleanlab_studio.errors import (
     TlmServerError,
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
-
-import aiohttp
-import aiohttp.client_exceptions
-import requests
-from tqdm import tqdm
-import pandas as pd
-import numpy as np
-import numpy.typing as npt
-from io import StringIO
 
 try:
     import snowflake
@@ -38,12 +38,10 @@ try:
 except ImportError:
     pyspark_exists = False
 
+from cleanlab_studio.errors import NotInstalledError
+from cleanlab_studio.internal.api.api_helper import check_uuid_well_formed
 from cleanlab_studio.internal.types import JSONDict, SchemaOverride, TLMQualityPreset
 from cleanlab_studio.version import __version__
-from cleanlab_studio.errors import NotInstalledError
-from cleanlab_studio.internal.api.api_helper import (
-    check_uuid_well_formed,
-)
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
@@ -668,6 +666,53 @@ def enrichment_preview(
         f"{enrichment_base_url}/preview",
         headers=_construct_headers(api_key),
         json=request_json,
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
+def enrichment_populate(
+    api_key: str,
+    new_column_name: str,
+    project_id: str,
+    prompt: str,
+    constrain_outputs: Optional[List[str]] = None,
+    extraction_pattern: Optional[str] = None,
+    optimize_prompt: Optional[bool] = True,
+    quality_preset: Optional[TLMQualityPreset] = "medium",
+    replacements: Optional[List[Dict[str, str]]] = [],
+    tlm_options: Optional[Dict[str, Any]] = {},
+) -> JSONDict:
+    """Call Enrichment Enrich_all API and get response."""
+    check_uuid_well_formed(project_id, "project_id")
+    request_json = dict(
+        new_column_name=new_column_name,
+        project_id=project_id,
+        prompt=prompt,
+        constrain_outputs=constrain_outputs,
+        extraction_pattern=extraction_pattern,
+        optimize_prompt=optimize_prompt,
+        replacements=replacements,
+        tlm_options=tlm_options,
+        tlm_quality_preset=quality_preset,
+    )
+
+    res = requests.post(
+        f"{enrichment_base_url}/enrich_all",
+        headers=_construct_headers(api_key),
+        json=request_json,
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
+def get_enrichment_job_status(api_key: str, job_id: str) -> JSONDict:
+    """Get status of enrichment job."""
+    check_uuid_well_formed(job_id, "job_id")
+
+    res = requests.get(
+        f"{enrichment_base_url}/status/{job_id}",
+        headers=_construct_headers(api_key),
     )
     handle_api_error(res)
     return cast(JSONDict, res.json())

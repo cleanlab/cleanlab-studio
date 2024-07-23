@@ -117,24 +117,12 @@ class EnrichmentProject:
         indices: Optional[List[int]] = None,
     ) -> EnrichmentPreviewResult:
         """Enrich a subset of data for a preview."""
-        extraction_pattern = None
-        replacements: List[Dict[str, str]] = []
-
         _validate_enrichment_options(options)
 
         user_input_regex = options.get("regex")
-        if user_input_regex:
-            if isinstance(user_input_regex, str):
-                extraction_pattern = user_input_regex
-            elif isinstance(user_input_regex, tuple):
-                replacements.append(
-                    {"pattern": user_input_regex[0], "replacement": user_input_regex[1]}
-                )
-            elif isinstance(user_input_regex, list):
-                for replacement in user_input_regex:
-                    replacements.append({"pattern": replacement[0], "replacement": replacement[1]})
-            else:
-                raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+        extraction_pattern, replacements = _handle_replacements_and_extraction_pattern(
+            user_input_regex
+        )
 
         response = api.enrichment_preview(
             api_key=self._api_key,
@@ -154,6 +142,36 @@ class EnrichmentProject:
         epr = EnrichmentPreviewResult.from_dict(response)
 
         return epr
+
+    def populate(
+        self,
+        options: EnrichmentOptions,
+        *,
+        new_column_name: str,
+    ) -> EnrichmentPreviewResult:
+        """Enrich the entire dataset."""
+        _validate_enrichment_options(options)
+
+        user_input_regex = options.get("regex")
+        extraction_pattern, replacements = _handle_replacements_and_extraction_pattern(
+            user_input_regex
+        )
+
+        response = api.enrichment_populate(
+            api_key=self._api_key,
+            project_id=self._id,
+            new_column_name=new_column_name,
+            constrain_outputs=options.get("constrain_outputs", None),
+            extraction_pattern=extraction_pattern,
+            optimize_prompt=options.get("optimize_prompt", True),
+            prompt=options["prompt"],
+            quality_preset=options.get("quality_preset", "medium"),
+            replacements=replacements,
+            tlm_options=cast(Dict[str, Any], options.get("tlm_options"))
+            if options.get("tlm_options")
+            else {},
+        )
+        return response
 
 
 class EnrichmentOptions(TypedDict):
@@ -326,3 +344,24 @@ class EnrichmentPreviewResult(EnrichmentResult):
         joined_data = original_data.join(df, how="inner")
 
         return joined_data
+
+
+def _handle_replacements_and_extraction_pattern(
+    user_input_regex: Union[str, Replacement, List[Replacement]]
+) -> Tuple[Optional[str], List[Dict[str, str]]]:
+    extraction_pattern = None
+    replacements: List[Dict[str, str]] = []
+
+    if user_input_regex:
+        if isinstance(user_input_regex, str):
+            extraction_pattern = user_input_regex
+        elif isinstance(user_input_regex, tuple):
+            replacements.append(
+                {"pattern": user_input_regex[0], "replacement": user_input_regex[1]}
+            )
+        elif isinstance(user_input_regex, list):
+            for replacement in user_input_regex:
+                replacements.append({"pattern": replacement[0], "replacement": replacement[1]})
+        else:
+            raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+    return extraction_pattern, replacements

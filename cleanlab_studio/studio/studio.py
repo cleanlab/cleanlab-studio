@@ -2,30 +2,33 @@
 Python API for Cleanlab Studio.
 """
 
-from typing import Any, List, Literal, Optional, Union
-from types import FunctionType
 import warnings
+from types import FunctionType
+from typing import Any, List, Literal, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from . import inference
-from . import enrichment
-from . import trustworthy_language_model
-from cleanlab_studio.errors import CleansetError
+from cleanlab_studio.errors import (
+    CleansetError,
+    InvalidDatasetError,
+    MissingAPIKeyError,
+    VersionError,
+)
 from cleanlab_studio.internal import clean_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import (
-    init_dataset_source,
-    telemetry,
-    apply_corrections_snowpark_df,
-    apply_corrections_spark_df,
-    apply_corrections_pd_df,
-)
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import SchemaOverride, TLMQualityPreset
-from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
+from cleanlab_studio.internal.util import (
+    apply_corrections_pd_df,
+    apply_corrections_snowpark_df,
+    apply_corrections_spark_df,
+    init_dataset_source,
+    telemetry,
+)
+
+from . import enrichment, inference, trustworthy_language_model
 
 _snowflake_exists = api.snowflake_exists
 if _snowflake_exists:
@@ -484,6 +487,18 @@ class Studio:
             )
             for enrichment_project_dict in enrichment_project_dicts
         ]
+
+    def get_enrichment_job_status(self, job_id: str) -> dict[str, Any]:
+        """
+        Get the status of an enrichment job.
+
+        Args:
+            job_id (str): ID of the enrichment job.
+
+        Returns:
+            dict[str, Any]: A dictionary containing the status of the enrichment job.
+        """
+        return api.get_enrichment_job_status(self._api_key, job_id=job_id)
 
     def TLM(
         self,
