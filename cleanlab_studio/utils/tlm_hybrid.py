@@ -80,7 +80,9 @@ class TLMHybrid:
             TLMOptions, get_tlm_hybrid_response_options(self._score_options, self._response_model)
         )
 
-        self._timeout = timeout if timeout is not None and timeout > 0 else None
+        self._timeout = (
+            timeout if timeout is not None and timeout > 0 else None
+        )  # TODO: better timeout handling
         self._verbose = verbose
 
         self._tlm_response = TLM(
