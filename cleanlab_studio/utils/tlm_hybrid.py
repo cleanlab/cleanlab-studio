@@ -1,9 +1,7 @@
 """
-Cleanlab's Trustworthy Language Model (TLM) is a large language model that gives more reliable answers and quantifies its uncertainty in these answers.
+TLMHybrid is a hybrid version of the [Trustworthy Language Model (TLM)](../trustworthy_language_model) that enables the use of different LLMs for generating the response and for scoring its trustworthiness.
 
-**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLM()`](/reference/python/studio/#method-tlm) to instantiate a [TLM](#class-TLM) object, and then you can use the methods like [`prompt()`](#method-prompt) and [`get_trustworthiness_score()`](#method-get_trustworthiness_score) documented on this page.
-
-The [Trustworthy Language Model tutorial](/tutorials/tlm/) further explains TLM and its use cases.
+**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLMHybrid()`](/reference/python/studio/#method-tlmhybrid) to instantiate a [TLMHybrid](#class-TLMHybrid) object, and then you can use the methods like [`prompt()`](#method-prompt) documented on this page.
 """
 
 from typing import List, Optional, Union, cast, Sequence
@@ -45,7 +43,7 @@ class TLMHybrid:
         options (TLMOptions, optional): a typed dict of advanced configuration options.
             Most of these options only apply to the model scoring  trustworthiness, except for "max_tokens", which applies to the response model as well.
             Specify which model to use for scoring trustworthiness in these options.
-            For more details about the options, see the documentation for [TLMOptions](#class-tlmoptions).
+            For more details about the options, see the documentation for [TLMOptions](../trustworthy_language_model/#class-tlmoptions).
 
         timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
 
