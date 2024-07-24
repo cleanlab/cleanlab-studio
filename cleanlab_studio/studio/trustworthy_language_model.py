@@ -12,6 +12,7 @@ import asyncio
 import sys
 from typing import Coroutine, List, Optional, Union, cast, Sequence, Any, Dict
 from tqdm.asyncio import tqdm_asyncio
+import numpy as np
 
 import aiohttp
 from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
@@ -63,7 +64,7 @@ class TLM:
 
         options (TLMOptions, optional): a typed dict of advanced configuration options.
         Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
-        For more details about the options, see the documentation for [TLMOptions](#class-tlmoptions).
+        For more details about the options, see the documentation for [TLMOptions](../studio/#class-tlmoptions).
         If specified, these override any settings from the choice of `quality_preset`.
 
         timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
@@ -167,7 +168,7 @@ class TLM:
         prompts: Sequence[str],
         responses: Sequence[Dict[str, Any]],
         capture_exceptions: bool = False,
-    ) -> Union[List[TLMScoreResponse], List[Optional[TLMScoreResponse]]]:
+    ) -> Union[TLMBatchScoreResponse, TLMOptionalBatchScoreResponse]:
         """Run batch of TLM get trustworthiness score.
 
         capture_exceptions behavior:
@@ -184,7 +185,7 @@ class TLM:
             capture_exceptions (bool): if should return None in place of the response for any errors or timeout processing some inputs
 
         Returns:
-            Union[List[float], List[Optional[float]]]: TLM trustworthiness score for each prompt (in supplied order)
+            Union[TLMBatchScoreResponse, TLMOptionalBatchScoreResponse]: TLM trustworthiness score for each prompt (in supplied order)
         """
         if capture_exceptions:
             per_query_timeout, per_batch_timeout = self._timeout, None
@@ -207,9 +208,9 @@ class TLM:
         )
 
         if capture_exceptions:
-            return cast(List[Optional[TLMScoreResponse]], tlm_responses)
+            return cast(TLMOptionalBatchScoreResponse, tlm_responses)
 
-        return cast(List[TLMScoreResponse], tlm_responses)
+        return cast(TLMBatchScoreResponse, tlm_responses)
 
     async def _batch_async(
         self,
@@ -421,7 +422,7 @@ class TLM:
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
         **kwargs: Any,
-    ) -> Union[TLMScoreResponse, List[TLMScoreResponse]]:
+    ) -> Union[TLMScoreResponse, TLMBatchScoreResponse]:
         """Computes trustworthiness score for arbitrary given prompt-response pairs.
 
         Args:
@@ -458,7 +459,7 @@ class TLM:
         assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
 
         return cast(
-            List[TLMScoreResponse],
+            TLMBatchScoreResponse,
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(
                     prompt, processed_response, capture_exceptions=False
@@ -471,7 +472,7 @@ class TLM:
         prompt: Sequence[str],
         response: Sequence[str],
         **kwargs: Any,
-    ) -> List[Optional[TLMScoreResponse]]:
+    ) -> TLMOptionalBatchScoreResponse:
         """Gets trustworthiness score for batches of many prompt-response pairs.
 
         The list returned will have the same length as the input list, if TLM hits any
@@ -501,7 +502,7 @@ class TLM:
         assert isinstance(processed_response, list)
 
         return cast(
-            List[Optional[TLMScoreResponse]],
+            TLMOptionalBatchScoreResponse,
             self._event_loop.run_until_complete(
                 self._batch_get_trustworthiness_score(
                     prompt,
@@ -516,7 +517,7 @@ class TLM:
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
         **kwargs: Any,
-    ) -> Union[TLMScoreResponse, List[TLMScoreResponse]]:
+    ) -> Union[TLMScoreResponse, List[float], List[TLMScore]]:
         """Asynchronously gets trustworthiness score for prompt-response pairs.
         This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously,
         allowing for non-blocking concurrent operations.
@@ -551,7 +552,7 @@ class TLM:
             assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
 
             return cast(
-                List[TLMScoreResponse],
+                TLMBatchScoreResponse,
                 await self._batch_get_trustworthiness_score(
                     prompt, processed_response, capture_exceptions=False
                 ),
@@ -643,6 +644,8 @@ class TLMScore(TypedDict):
 
 
 TLMScoreResponse = Union[float, TLMScore]
+TLMBatchScoreResponse = Union[List[float], List[TLMScore]]
+TLMOptionalBatchScoreResponse = Union[List[Optional[float]], List[Optional[TLMScore]]]
 
 
 class TLMOptions(TypedDict):
