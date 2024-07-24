@@ -7,6 +7,7 @@ _VALID_TLM_MODELS: List[str] = [
     "gpt-3.5-turbo-16k",
     "gpt-4",
     "gpt-4o",
+    "gpt-4o-mini",
     "claude-3-haiku",
     "claude-3-sonnet",
     "claude-3.5-sonnet",
