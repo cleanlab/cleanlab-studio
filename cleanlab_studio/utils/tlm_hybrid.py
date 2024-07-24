@@ -67,7 +67,7 @@ class TLMHybrid:
         self._api_key = api_key
         self._response_model = response_model
 
-        if quality_preset in {"high", "best"}:
+        if quality_preset not in {"low", "medium"}:
             raise ValidationError(
                 f"Invalid quality preset: {quality_preset}. TLMHybrid only supports 'low' and 'medium' presets."
             )
