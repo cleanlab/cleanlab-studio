@@ -449,7 +449,7 @@ class Studio:
         """
         Instantiate a hybrid Trustworthy Language Model that uses one model for response and another for trustworthiness scoring (reduce costs/latency without reducing response quality).
         For more details, see the documentation of:
-        [cleanlab_studio.utils.tlm_hybrid.TLMHybrid](../../utils/tlm_hybrid/#class-tlmhybrid)
+        [cleanlab_studio.utils.tlm_hybrid.TLMHybrid](../utils.tlm_hybrid/#class-tlmhybrid)
         """
         return tlm_hybrid.TLMHybrid(
             self._api_key,
