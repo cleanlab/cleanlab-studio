@@ -37,8 +37,8 @@ class TLMHybrid:
 
         quality_preset (TLMQualityPreset, default = "medium"): preset configuration to control the quality of TLM trustworthiness scores vs. runtimes/costs.
             This preset only applies to the model computing the trustworthiness score.
-            Supported options are only: "medium" or "low",
-            because TLMHybrid is not intended to improve response accuracy (use the regular TLM for that).
+            Supported options are only "medium" or "low", because TLMHybrid is not intended to improve response accuracy
+            (use the regular [TLM](../trustworthy_language_model) for that).
 
         options (TLMOptions, optional): a typed dict of advanced configuration options.
             Most of these options only apply to the model scoring  trustworthiness, except for "max_tokens", which applies to the response model as well.
