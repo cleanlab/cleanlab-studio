@@ -23,6 +23,7 @@ class FilepathDatasetSource(DatasetSource):
         self.dataset_name = dataset_name if dataset_name is not None else filepath.name
         self.file_size = filepath.stat().st_size
 
+        maybe_file_type: Optional[str]
         if filepath.suffix.lower() == ".jsonl":
             maybe_file_type = "application/json"
         else:
