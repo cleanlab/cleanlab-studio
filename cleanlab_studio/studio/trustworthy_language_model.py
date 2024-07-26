@@ -666,12 +666,12 @@ class TLMOptions(TypedDict):
     - **low:** `num_candidate_responses` = 1, `num_consistency_samples` = 4, `use_self_reflection` = True.
     - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False. This preset is equivalent to a regular LLM call.
 
-    By default, the TLM is set to the "medium" quality preset. The default `model` used is "gpt-3.5-turbo-16k", and `max_tokens` is 512 for all quality presets.
+    By default, the TLM is set to the "medium" quality preset. The default `model` used is "gpt-4o-mini", and `max_tokens` is 512 for all quality presets.
     You can set custom values for these arguments regardless of the quality preset specified.
 
     Args:
-        model (str, default = "gpt-3.5-turbo-16k"): underlying LLM to use (better models will yield better results).
-        Models currently supported include "gpt-3.5-turbo-16k", "gpt-4", "gpt-4o", "claude-3-haiku".
+        model (str, default = "gpt-4o-mini"): underlying LLM to use (better models will yield better results).
+        Models currently supported include "gpt-4o-mini", "gpt-3.5-turbo-16k", "gpt-4", "gpt-4o", "claude-3-haiku".
 
         max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
         This number will impact the maximum number of tokens you will see in the output response, and also the number of tokens
