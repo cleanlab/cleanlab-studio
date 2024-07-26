@@ -1,7 +1,7 @@
 """
 TLMHybrid is a hybrid version of the [Trustworthy Language Model (TLM)](../trustworthy_language_model) that enables the use of different LLMs for generating the response and for scoring its trustworthiness.
 
-**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLMHybrid()`](/reference/python/studio/#method-tlmhybrid) to instantiate a [TLMHybrid](#class-TLMHybrid) object, and then you can use the methods like [`prompt()`](#method-prompt) documented on this page.
+**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLMHybrid()`](/reference/python/studio/#method-tlmhybrid) to instantiate a [TLMHybrid](#class-tlmhybrid) object, and then you can use the methods like [`prompt()`](#method-prompt) documented on this page.
 """
 
 from typing import List, Optional, Union, cast, Sequence
