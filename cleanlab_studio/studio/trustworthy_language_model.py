@@ -1,7 +1,7 @@
 """
 Cleanlab's Trustworthy Language Model (TLM) is a large language model that gives more reliable answers and quantifies its uncertainty in these answers.
 
-**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLM()`](/reference/python/studio/#method-tlm) to instantiate a [TLM](#class-TLM) object, and then you can use the methods like [`prompt()`](#method-prompt) and [`get_trustworthiness_score()`](#method-get_trustworthiness_score) documented on this page.
+**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLM()`](/reference/python/studio/#method-tlm) to instantiate a [TLM](#class-tlm) object, and then you can use the methods like [`prompt()`](#method-prompt) and [`get_trustworthiness_score()`](#method-get_trustworthiness_score) documented on this page.
 
 The [Trustworthy Language Model tutorial](/tutorials/tlm/) further explains TLM and its use cases.
 """
@@ -64,7 +64,7 @@ class TLM:
 
         options (TLMOptions, optional): a typed dict of advanced configuration options.
         Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
-        For more details about the options, see the documentation for [TLMOptions](../studio/#class-tlmoptions).
+        For more details about the options, see the documentation for [TLMOptions](#class-tlmoptions).
         If specified, these override any settings from the choice of `quality_preset`.
 
         timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
