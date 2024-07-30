@@ -701,6 +701,7 @@ class TLMOptions(TypedDict):
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
 
         log (List[str], default = None): optionally specify additional logs or metadata to return.
+        For instance, include "explanation" here to get explanations of why a response is scored with low trustworthiness.
     """
 
     model: NotRequired[str]
