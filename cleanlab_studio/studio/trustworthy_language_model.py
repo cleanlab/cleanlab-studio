@@ -10,29 +10,31 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Coroutine, List, Optional, Union, cast, Sequence, Any, Dict
-from tqdm.asyncio import tqdm_asyncio
-import numpy as np
+from typing import Any, Coroutine, Dict, List, Optional, Sequence, Union, cast
 
 import aiohttp
-from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
+from tqdm.asyncio import tqdm_asyncio
+from typing_extensions import (  # for Python <3.11 with (Not)Required
+    NotRequired,
+    TypedDict,
+)
 
+from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.constants import (
+    _TLM_MAX_RETRIES,
+    _VALID_TLM_QUALITY_PRESETS,
+)
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 from cleanlab_studio.internal.tlm.validation import (
-    validate_tlm_prompt,
-    validate_tlm_try_prompt,
-    validate_tlm_prompt_response,
-    validate_try_tlm_prompt_response,
-    validate_tlm_options,
     process_response_and_kwargs,
+    validate_tlm_options,
+    validate_tlm_prompt,
+    validate_tlm_prompt_response,
+    validate_tlm_try_prompt,
+    validate_try_tlm_prompt_response,
 )
 from cleanlab_studio.internal.types import TLMQualityPreset
-from cleanlab_studio.errors import ValidationError
-from cleanlab_studio.internal.constants import (
-    _VALID_TLM_QUALITY_PRESETS,
-    _TLM_MAX_RETRIES,
-)
 
 
 class TLM:
@@ -699,6 +701,7 @@ class TLMOptions(TypedDict):
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
 
         log (List[str], default = None): optionally specify additional logs or metadata to return.
+        For instance, include "explanation" here to get explanations of why a response is scored with low trustworthiness.
     """
 
     model: NotRequired[str]

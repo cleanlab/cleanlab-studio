@@ -1,15 +1,15 @@
 import os
-from typing import Union, Sequence, List, Dict, Tuple, Any
+from typing import Any, Dict, List, Sequence, Union
+
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.constants import (
     _VALID_TLM_MODELS,
     TLM_MAX_TOKEN_RANGE,
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
-    TLM_VALID_LOG_OPTIONS,
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
+    TLM_VALID_LOG_OPTIONS,
 )
-
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = (
     os.environ.get("CLEANLAB_STUDIO_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
@@ -216,7 +216,6 @@ def process_response_and_kwargs(
                         )
                     if val is not None and not 0 <= val <= 1:
                         raise ValidationError("Perplexity values must be between 0 and 1")
-
                 elif isinstance(response, Sequence):
                     if not isinstance(val, Sequence):
                         raise ValidationError(
@@ -235,7 +234,6 @@ def process_response_and_kwargs(
 
                         if v is not None and not 0 <= v <= 1:
                             raise ValidationError("Perplexity values must be between 0 and 1")
-
                 else:
                     raise ValidationError(
                         f"Invalid type {type(val)}, perplexity must be either a sequence or a float"
