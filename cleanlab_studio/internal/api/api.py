@@ -26,6 +26,7 @@ from io import StringIO
 
 try:
     import snowflake
+    import snowflake.snowpark as snowpark
 
     snowflake_exists = True
 except ImportError:
@@ -80,7 +81,11 @@ def handle_api_error_from_json(res_json: JSONDict, status_code: Optional[int] = 
 
     if res_json.get("error", None) is not None:
         error = res_json["error"]
-        if status_code == 422 and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION":
+        if (
+            status_code == 422
+            and isinstance(error, dict)
+            and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION"
+        ):
             raise InvalidProjectConfiguration(error["description"])
         raise APIError(res_json["error"])
 
@@ -725,7 +730,10 @@ async def tlm_get_confidence_score(
             res = await client_session.post(
                 f"{tlm_base_url}/get_confidence_score",
                 json=dict(
-                    prompt=prompt, response=response, quality=quality_preset, options=options or {}
+                    prompt=prompt,
+                    response=response,
+                    quality=quality_preset,
+                    options=options or {},
                 ),
                 headers=_construct_headers(api_key),
             )
