@@ -26,6 +26,7 @@ from io import StringIO
 
 try:
     import snowflake
+    import snowflake.snowpark as snowpark
 
     snowflake_exists = True
 except ImportError:
