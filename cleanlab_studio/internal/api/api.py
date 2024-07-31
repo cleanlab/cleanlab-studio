@@ -43,7 +43,7 @@ from cleanlab_studio.internal.api.api_helper import check_uuid_well_formed
 from cleanlab_studio.internal.types import JSONDict, SchemaOverride, TLMQualityPreset
 from cleanlab_studio.version import __version__
 
-base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
+base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.dev-bc26qf4m.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
 upload_base_url = f"{base_url}/upload/v1"
 dataset_base_url = f"{base_url}/datasets"
@@ -77,11 +77,14 @@ def handle_api_error_from_json(res_json: JSONDict, status_code: Optional[int] = 
         else:
             raise APIError(res_json["description"])
 
-    if res_json.get("error", None) is not None:
+    if isinstance(res_json, dict) and res_json.get("error", None) is not None:
         error = res_json["error"]
         if status_code == 422 and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION":
             raise InvalidProjectConfiguration(error["description"])
         raise APIError(res_json["error"])
+
+    if status_code != 200:
+        raise APIError(f"API call failed with status code {status_code}")
 
 
 def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
@@ -712,6 +715,31 @@ def get_enrichment_job_status(api_key: str, job_id: str) -> JSONDict:
 
     res = requests.get(
         f"{enrichment_base_url}/status/{job_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
+def get_enrichment_job_result(api_key: str, job_id: str, page: int) -> List[Dict[str, Any]]:
+    """Get result of enrichment job."""
+    check_uuid_well_formed(job_id, "job_id")
+
+    res = requests.get(
+        f"{enrichment_base_url}/enrich_all/{job_id}",
+        headers=_construct_headers(api_key),
+        params=dict(page=page),
+    )
+    handle_api_error(res)
+    return res.json()
+
+
+def get_enrichement_job(api_key: str, job_id: str) -> JSONDict:
+    """Get enrichment job."""
+    check_uuid_well_formed(job_id, "job_id")
+
+    res = requests.get(
+        f"{enrichment_base_url}/jobs/{job_id}",
         headers=_construct_headers(api_key),
     )
     handle_api_error(res)

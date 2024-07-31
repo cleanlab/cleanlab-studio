@@ -25,6 +25,7 @@ RAW_RESULT_COLUMN_NAME = "raw_result"
 REGEX_PARAMETER_ERROR_MESSAGE = (
     "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
 )
+CLEANLAB_ROW_ID_COLUMN_NAME = "cleanlab_row_ID"
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
@@ -173,6 +174,27 @@ class EnrichmentProject:
         )
         return response
 
+    def get_populate_results(self, job_id: str, fetch_all_result: bool = False) -> EnrichmentResult:
+        """Get the results of a populate job.
+
+        Args:
+            job_id (str): The ID of the populate job.
+            fetch_all_result (bool): If True, fetch all the results of the populate job. If False, fetch only the first page of results.
+        """
+        page = 1
+        results = []
+        resp = api.get_enrichment_job_result(api_key=self._api_key, job_id=job_id, page=page)
+        results.extend(resp)
+        if fetch_all_result:
+            while resp:
+                page += 1
+                resp = api.get_enrichment_job_result(
+                    api_key=self._api_key, job_id=job_id, page=page
+                )
+                results.extend(resp)
+
+        return EnrichmentResult.from_dict(results)
+
 
 class EnrichmentOptions(TypedDict):
     """Options for enriching a dataset with a Trustworthy Language Model (TLM).
@@ -246,14 +268,17 @@ class EnrichmentResult:
     """Enrichment result."""
 
     def __init__(self, results: pd.DataFrame):
-        self._results = results.sort_values(by=ROW_ID_COLUMN_NAME)
+        if results.index.name != CLEANLAB_ROW_ID_COLUMN_NAME:
+
+            self._results = results.sort_values(by=ROW_ID_COLUMN_NAME)
+        else:
+            self._results = results
 
     @classmethod
     def from_dict(cls, json_dict: JSONDict) -> EnrichmentResult:
-        raise NotImplementedError()
-
-    def to_list(self) -> List[Tuple[Optional[str], float]]:
-        raise NotImplementedError()
+        df = pd.DataFrame(json_dict)
+        df.set_index("cleanlab_row_ID", inplace=True)
+        return cls(results=df)
 
     def details(self) -> pd.DataFrame:
         return self._results
@@ -270,40 +295,13 @@ class EnrichmentPreviewResult(EnrichmentResult):
     _is_timeout: bool
     _failed_jobs_count: int
     _completed_jobs_count: int
-    _final_result_column_name: str
-    _trustworthiness_score_column_name: str
 
     @classmethod
     def from_dict(cls, json_dict: Dict[str, Any]) -> EnrichmentPreviewResult:
-        new_column_name_mapping = json_dict["new_column_name_mapping"]
-
         # Prepare the results DataFrame from the 'results' list
         results = json_dict["results"]
         df = pd.DataFrame(results)
-
-        # Set the index to row_id for easier joining later
         df.set_index(ROW_ID_COLUMN_NAME, inplace=True)
-
-        # Select and rename the columns to match the expected format
-        df = df[
-            [
-                FINAL_RESULT_COLUMN_NAME,
-                TRUSTWORTHINESS_SCORE_COLUMN_NAME,
-                RAW_RESULT_COLUMN_NAME,
-                LOG_COLUMN_NAME,
-            ]
-        ]
-        df.rename(
-            columns={
-                FINAL_RESULT_COLUMN_NAME: new_column_name_mapping[FINAL_RESULT_COLUMN_NAME],
-                TRUSTWORTHINESS_SCORE_COLUMN_NAME: new_column_name_mapping[
-                    TRUSTWORTHINESS_SCORE_COLUMN_NAME
-                ],
-                RAW_RESULT_COLUMN_NAME: new_column_name_mapping[RAW_RESULT_COLUMN_NAME],
-                LOG_COLUMN_NAME: new_column_name_mapping[LOG_COLUMN_NAME],
-            },
-            inplace=True,
-        )
 
         # Create an instance of EnrichmentPreviewResult
         instance = cls(results=df)
@@ -312,10 +310,6 @@ class EnrichmentPreviewResult(EnrichmentResult):
         instance._is_timeout = json_dict["is_timeout"]
         instance._completed_jobs_count = json_dict["completed_jobs_count"]
         instance._failed_jobs_count = json_dict["failed_jobs_count"]
-        instance._final_result_column_name = new_column_name_mapping[FINAL_RESULT_COLUMN_NAME]
-        instance._trustworthiness_score_column_name = new_column_name_mapping[
-            TRUSTWORTHINESS_SCORE_COLUMN_NAME
-        ]
 
         return instance
 
@@ -337,10 +331,10 @@ class EnrichmentPreviewResult(EnrichmentResult):
             with_details (bool): If `with_details` is True, the details of the enrichment results will be included in the output DataFrame.
         """
         df = self._results
-        if not with_details:
-            df = self._results[
-                [self._final_result_column_name, self._trustworthiness_score_column_name]
-            ]
+        # if not with_details:
+        #     df = self._results[
+        #         [self._final_result_column_name, self._trustworthiness_score_column_name]
+        #     ]
         joined_data = original_data.join(df, how="inner")
 
         return joined_data
