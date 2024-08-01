@@ -768,6 +768,22 @@ def get_enrichement_job(api_key: str, job_id: str) -> JSONDict:
     return cast(JSONDict, res.json())
 
 
+def export_results(api_key: str, job_id: str) -> JSONDict:
+    """"""
+    check_uuid_well_formed(job_id, "job_id")
+    filename = f"enrichment_results_{job_id}.csv"
+    res = requests.get(
+        f"{enrichment_base_url}/export/{job_id}",
+        headers=_construct_headers(api_key),
+    )
+    if res.status_code == 200:
+        with open(filename, "wb") as file:
+            file.write(res.content)
+    else:
+        handle_api_error(res)
+    return f"CSV file saved as {filename}"
+
+
 def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
     """Implements TLM retry decorator, with special handling for rate limit retries."""
 
