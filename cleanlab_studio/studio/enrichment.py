@@ -254,6 +254,9 @@ class EnrichmentProject:
         plt.tight_layout()
         plt.show()
 
+    def export_to_csv(self, job_id: str, filename: str | None = None) -> str:
+        return api.export_results(api_key=self._api_key, job_id=job_id, filename=filename)
+
 
 class EnrichmentJob(TypedDict):
     """Represents an Enrichment Job instance.
@@ -343,26 +346,21 @@ def _validate_enrichment_options(options: EnrichmentOptions) -> None:
 class EnrichmentResult:
     """Enrichment result."""
 
-    def __init__(self, results: pd.DataFrame, api_key: str, job_id: str):
+    def __init__(self, results: pd.DataFrame):
         self._results = results
-        self._job_id = job_id
-        self._api_key = api_key
 
     @classmethod
-    def from_dict(cls, results: List[JSONDict], job_id: str, api_key: str) -> EnrichmentResult:
-        df = pd.DataFrame(results)
+    def from_dict(cls, json_dict: List[JSONDict]) -> EnrichmentResult:
+        df = pd.DataFrame(json_dict)
         df.set_index(CLEANLAB_ROW_ID_COLUMN_NAME, inplace=True)
 
         # cleanlab_row_ID is the row ID of the original data + 1. so need to change to 0-based index
         df.index = df.index - 1
         df.index.name = None
-        return cls(results=df, job_id=job_id, api_key=api_key)
+        return cls(results=df)
 
     def details(self) -> pd.DataFrame:
         return self._results
-
-    def export_to_csv(self, filename: str | None = None) -> str:
-        return api.export_results(self._api_key, self._job_id, filename)
 
     def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
         df = self._results
