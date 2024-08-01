@@ -5,7 +5,7 @@ import itertools
 import pathlib
 import time
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 import requests
 from tqdm import tqdm
@@ -142,7 +142,7 @@ class BetaJob:
         output_path.write_bytes(resp.content)
 
     @classmethod
-    def list(cls, api_key: str) -> None:
+    def list(cls, api_key: str) -> List[BetaJob]:
         jobs = list_jobs(api_key)
         return [
             cls(

@@ -41,6 +41,7 @@ except ImportError:
 
 from cleanlab_studio.errors import NotInstalledError
 from cleanlab_studio.internal.api.api_helper import (
+    UploadParts,
     check_uuid_well_formed,
     construct_headers,
     handle_api_error,
@@ -133,7 +134,7 @@ def initialize_upload(
     return upload_id, part_sizes, presigned_posts
 
 
-def complete_file_upload(api_key: str, upload_id: str, upload_parts: List[JSONDict]) -> None:
+def complete_file_upload(api_key: str, upload_id: str, upload_parts: UploadParts) -> None:
     check_uuid_well_formed(upload_id, "upload ID")
     request_json = dict(upload_id=upload_id, upload_parts=upload_parts)
     res = requests.post(
