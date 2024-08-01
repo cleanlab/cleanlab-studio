@@ -24,6 +24,7 @@ from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.constants import (
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
+    _TLM_DEFAULT_MODEL,
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 from cleanlab_studio.internal.tlm.validation import (
@@ -615,6 +616,13 @@ class TLM:
             if capture_exceptions:
                 return None
             raise e
+
+    def print_model_name(self) -> None:
+        """Prints the underlying LLM used to obtain responses and scoring trustworthiness."""
+        model_name = (
+            self._options.get("model", _TLM_DEFAULT_MODEL) if self._options else _TLM_DEFAULT_MODEL
+        )
+        print(model_name)
 
 
 class TLMResponse(TypedDict):

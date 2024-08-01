@@ -253,3 +253,10 @@ class TLMHybrid:
             ]
         else:
             raise ValueError(f"score_response has invalid type")
+
+    def print_model_name(self) -> None:
+        """Prints the underlying LLMs used to obtain responses and scoring trustworthiness."""
+        print("Response model:", end=" ")
+        self._tlm_response.print_model_name()
+        print("Score model:", end=" ")
+        self._tlm_score.print_model_name()
