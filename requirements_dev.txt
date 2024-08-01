@@ -2,4 +2,3 @@ black
 pre-commit
 twine
 mypy
-types-requests
