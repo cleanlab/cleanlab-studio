@@ -98,10 +98,16 @@ class TLM:
             )
 
         self._return_log = False
-        if options is not None:
-            validate_tlm_options(options)
-            if "log" in options.keys():
-                self._return_log = True
+
+        options_dict = options or {}
+        validate_tlm_options(options_dict)
+        if "log" in options_dict.keys():
+            self._return_log = True
+
+        # explicitly specify the default model
+        self._options = {**{"model": _TLM_DEFAULT_MODEL}, **options_dict}
+
+        self._quality_preset = quality_preset
 
         if timeout is not None and not (isinstance(timeout, int) or isinstance(timeout, float)):
             raise ValidationError("timeout must be a integer or float value")
@@ -111,8 +117,6 @@ class TLM:
 
         is_notebook_flag = is_notebook()
 
-        self._quality_preset = quality_preset
-        self._options = options
         self._timeout = timeout if timeout is not None and timeout > 0 else None
         self._verbose = verbose if verbose is not None else is_notebook_flag
 
@@ -619,10 +623,7 @@ class TLM:
 
     def print_model_name(self) -> None:
         """Prints the underlying LLM used to obtain responses and scoring trustworthiness."""
-        model_name = (
-            self._options.get("model", _TLM_DEFAULT_MODEL) if self._options else _TLM_DEFAULT_MODEL
-        )
-        print(model_name)
+        print(self._options["model"])
 
 
 class TLMResponse(TypedDict):
