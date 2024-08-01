@@ -361,7 +361,7 @@ class EnrichmentResult:
     def details(self) -> pd.DataFrame:
         return self._results
 
-    def export_to_csv(self, filename: str = None) -> str:
+    def export_to_csv(self, filename: str | None = None) -> str:
         return api.export_results(self._api_key, self._job_id, filename)
 
     def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:

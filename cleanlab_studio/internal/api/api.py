@@ -771,7 +771,7 @@ def get_enrichement_job(api_key: str, job_id: str) -> JSONDict:
     return cast(JSONDict, res.json())
 
 
-def export_results(api_key: str, job_id: str, filename: str | None) -> JSONDict:
+def export_results(api_key: str, job_id: str, filename: str | None) -> str:
     """
     Exports the results of a job to a CSV file.
 
