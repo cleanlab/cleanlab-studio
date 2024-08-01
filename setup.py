@@ -46,7 +46,6 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         "aiohttp>=3.8.1",
-        "aiohttp-retry>=2.4.0",
         "Click>=8.1.0,<=8.1.3",
         "colorama>=0.4.4",
         "nest_asyncio>=1.5.0",

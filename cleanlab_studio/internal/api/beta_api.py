@@ -1,16 +1,16 @@
-from typing import Any, Dict, List
+from typing import List, cast
 
 import requests
 
-from .api import API_BASE_URL, construct_headers
-from .api_helper import JSONDict, UploadParts, handle_api_error
+from cleanlab_studio.internal.types import JSONDict
+
+from .api import API_BASE_URL
+from .api_helper import UploadParts, construct_headers, handle_api_error
 
 experimental_jobs_base_url = f"{API_BASE_URL}/v0/experimental_jobs"
 
 
-def initialize_upload(
-    api_key: str, filename: str, file_type: str, file_size: int
-) -> Dict[str, Any]:
+def initialize_upload(api_key: str, filename: str, file_type: str, file_size: int) -> JSONDict:
     url = f"{experimental_jobs_base_url}/upload/initialize"
     headers = construct_headers(api_key)
     data = {
@@ -20,7 +20,7 @@ def initialize_upload(
     }
     resp = requests.post(url, headers=headers, json=data)
     resp.raise_for_status()
-    return resp.json()
+    return cast(JSONDict, resp.json())
 
 
 def complete_upload(api_key: str, dataset_id: str, upload_parts: UploadParts) -> JSONDict:
@@ -32,7 +32,7 @@ def complete_upload(api_key: str, dataset_id: str, upload_parts: UploadParts) ->
     }
     resp = requests.post(url, headers=headers, json=data)
     handle_api_error(resp)
-    return resp.json()
+    return cast(JSONDict, resp.json())
 
 
 def get_dataset(api_key: str, dataset_id: str) -> JSONDict:
@@ -40,7 +40,7 @@ def get_dataset(api_key: str, dataset_id: str) -> JSONDict:
     headers = construct_headers(api_key)
     resp = requests.get(url, headers=headers)
     handle_api_error(resp)
-    return resp.json()
+    return cast(JSONDict, resp.json())
 
 
 def run_job(api_key: str, dataset_id: str, job_definition_name: str) -> JSONDict:
@@ -52,7 +52,7 @@ def run_job(api_key: str, dataset_id: str, job_definition_name: str) -> JSONDict
     }
     resp = requests.post(url, headers=headers, json=data)
     handle_api_error(resp)
-    return resp.json()
+    return cast(JSONDict, resp.json())
 
 
 def get_job(api_key: str, job_id: str) -> JSONDict:
@@ -60,7 +60,7 @@ def get_job(api_key: str, job_id: str) -> JSONDict:
     headers = construct_headers(api_key)
     resp = requests.get(url, headers=headers)
     handle_api_error(resp)
-    return resp.json()
+    return cast(JSONDict, resp.json())
 
 
 def get_job_status(api_key: str, job_id: str) -> JSONDict:
@@ -68,7 +68,7 @@ def get_job_status(api_key: str, job_id: str) -> JSONDict:
     headers = construct_headers(api_key)
     resp = requests.get(url, headers=headers)
     resp.raise_for_status()
-    return resp.json()
+    return cast(JSONDict, resp.json())
 
 
 def get_results(api_key: str, job_id: str) -> JSONDict:
@@ -76,7 +76,7 @@ def get_results(api_key: str, job_id: str) -> JSONDict:
     headers = construct_headers(api_key)
     resp = requests.get(url, headers=headers)
     resp.raise_for_status()
-    return resp.json()
+    return cast(JSONDict, resp.json())
 
 
 def list_datasets(api_key: str) -> List[JSONDict]:
@@ -84,7 +84,7 @@ def list_datasets(api_key: str) -> List[JSONDict]:
     headers = construct_headers(api_key)
     resp = requests.get(url, headers=headers)
     handle_api_error(resp)
-    return resp.json()["datasets"]
+    return cast(List[JSONDict], resp.json()["datasets"])
 
 
 def list_jobs(api_key: str) -> List[JSONDict]:
@@ -92,4 +92,4 @@ def list_jobs(api_key: str) -> List[JSONDict]:
     headers = construct_headers(api_key)
     resp = requests.get(url, headers=headers)
     handle_api_error(resp)
-    return resp.json()["jobs"]
+    return cast(List[JSONDict], resp.json()["jobs"])

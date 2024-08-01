@@ -125,11 +125,12 @@ class BetaJob:
 
     def download_results(self, output_filepath: str) -> None:
         output_path = pathlib.Path(output_filepath)
-        if self.status != JobStatus.READY:
-            raise BetaJobError("Job must be ready to download results")
 
         if self.status == JobStatus.FAILED:
             raise BetaJobError("Job failed, cannot download results")
+
+        if self.status != JobStatus.READY:
+            raise BetaJobError("Job must be ready to download results")
 
         results = get_results(self._api_key, self.id)
         if output_path.suffix != results["result_file_type"]:

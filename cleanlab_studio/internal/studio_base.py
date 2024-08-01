@@ -1,4 +1,4 @@
-from aiohttp_retry import Optional
+from typing import Optional
 
 from cleanlab_studio.errors import MissingAPIKeyError, VersionError
 from cleanlab_studio.internal.api import api
