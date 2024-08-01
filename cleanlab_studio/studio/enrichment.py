@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
+import matplotlib.pyplot as plt
 import pandas as pd
 from typing_extensions import NotRequired
 
@@ -196,6 +197,75 @@ class EnrichmentProject:
                 results.extend(resp)
 
         return EnrichmentResult.from_dict(results)
+
+    def list_all_jobs(self) -> List[Dict[str, Any]]:
+        """List all jobs in the project."""
+        jobs = api.list_enrichment_jobs(api_key=self._api_key, project_id=self._id)
+        typed_jobs = []
+        for job in jobs:
+            enrichment_options = EnrichmentOptions(
+                prompt=job["prompt"],
+                constrain_outputs=job.get("constrain_outputs"),
+                optimize_prompt=job.get("optimize_prompt"),
+                quality_preset=job.get("quality_preset"),
+                regex=job.get("regex"),
+                tlm_options=job.get("tlm_options"),
+            )
+            enrichment_job = EnrichmentJob(
+                id=job["id"],
+                status=job["status"],
+                created_at=_response_timestamp_to_datetime(job["created_at"]),
+                updated_at=_response_timestamp_to_datetime(job["updated_at"]),
+                enrichment_options=enrichment_options,
+                average_trustworthiness_score=job["average_trustworthiness_score"],
+                job_type=job["type"],
+                new_column_name=job["new_column_name"],
+                indices=job.get("indices"),
+            )
+            typed_jobs.append(enrichment_job)
+        return typed_jobs
+
+    def show_trustworthiness_score_history(self) -> None:
+        """Show the trustworthiness score history of all jobs in the project."""
+        data = self.list_all_jobs()
+        data_sorted = sorted(data, key=lambda x: x["created_at"])
+        scores = []
+        dates = []
+
+        for entry in data_sorted:
+            score = entry["average_trustworthiness_score"]
+            created_at = entry["created_at"].strftime("%Y-%m-%d %H:%M:%S")
+
+            if score is not None:
+                scores.append(score)
+                dates.append(created_at)
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(range(len(scores)), scores, marker="o", linestyle="-", color="b")
+        plt.xlabel("Time (Ordered Events)")
+        plt.ylabel("Average Trustworthiness Score")
+        plt.title("Average Trustworthiness Score Over Time (Evenly Spaced)")
+        plt.grid(True)
+        plt.xticks(range(len(dates)), dates, rotation=45, ha="right")
+        plt.tight_layout()
+        plt.show()
+
+
+class EnrichmentJob(TypedDict):
+    """Represents an Enrichment Job instance.
+
+    **This class is not meant to be constructed directly.** Instead, use the `EnrichmentProject` methods to create and manage Enrichment Jobs.
+    """
+
+    id: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    enrichment_options: EnrichmentOptions
+    average_trustworthiness_score: float
+    job_type: str
+    new_column_name: str
+    indices: Optional[List[int]]
 
 
 class EnrichmentOptions(TypedDict):

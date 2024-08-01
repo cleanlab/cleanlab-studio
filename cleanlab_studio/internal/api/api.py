@@ -721,17 +721,37 @@ def get_enrichment_job_status(api_key: str, job_id: str) -> JSONDict:
     return cast(JSONDict, res.json())
 
 
-def get_enrichment_job_result(api_key: str, job_id: str, page: int) -> List[Dict[str, Any]]:
-    """Get result of enrichment job."""
+def get_enrichment_job_result(
+    api_key: str, job_id: str, page: int, only_return_results: bool = True
+) -> List[JSONDict]:
+    """Get result of enrichment job.
+
+    Args:
+        api_key (str): studio API key for auth
+        job_id (str): job id
+        page (int): page number
+        only_return_results (bool): whether to return only results or merged results and original dataset directly from the backend
+    """
     check_uuid_well_formed(job_id, "job_id")
 
     res = requests.get(
         f"{enrichment_base_url}/enrich_all/{job_id}",
         headers=_construct_headers(api_key),
-        params=dict(page=page),
+        params=dict(page=page, only_return_results=only_return_results),
     )
     handle_api_error(res)
-    return res.json()
+    return cast(List[JSONDict], res.json())
+
+
+def list_enrichment_jobs(api_key: str, project_id: str) -> List[JSONDict]:
+    """List all enrichment jobs for a project."""
+    check_uuid_well_formed(project_id, "project_id")
+    res = requests.get(
+        f"{enrichment_base_url}/projects/{project_id}/jobs",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(List[JSONDict], res.json())
 
 
 def get_enrichement_job(api_key: str, job_id: str) -> JSONDict:
