@@ -782,7 +782,7 @@ def export_results(api_key: str, job_id: str, filename: str | None) -> JSONDict:
 
     Returns:
         str: A message indicating the CSV file has been saved, including the filename.
-    """    
+    """
     check_uuid_well_formed(job_id, "job_id")
     if filename is None:
         filename = f"enrichment_results_{job_id}.csv"

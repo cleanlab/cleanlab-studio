@@ -38,7 +38,8 @@ class Model(abc.ABC):
     def __init__(self, api_key: str, model_id: str):
         """Initializes a model.
 
-        **Objects of this class are not meant to be constructed directly.** Instead, use [`Studio.get_model()`](../studio/#method-get_model)."""
+        **Objects of this class are not meant to be constructed directly.** Instead, use [`Studio.get_model()`](../studio/#method-get_model).
+        """
         self._api_key = api_key
         self._model_id = model_id
 
