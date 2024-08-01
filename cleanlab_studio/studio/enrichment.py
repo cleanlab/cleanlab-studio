@@ -345,8 +345,8 @@ class EnrichmentResult:
 
     def __init__(self, results: pd.DataFrame, api_key: str, job_id: str):
         self._results = results
-        self.job_id = job_id
-        self.api_key = api_key
+        self._job_id = job_id
+        self._api_key = api_key
 
     @classmethod
     def from_dict(cls, results: List[JSONDict], job_id: str, api_key: str) -> EnrichmentResult:
@@ -362,7 +362,7 @@ class EnrichmentResult:
         return self._results
 
     def export_to_csv(self, filename: str = None) -> str:
-        return api.export_results(self.api_key, self.job_id, filename)
+        return api.export_results(self._api_key, self._job_id, filename)
 
     def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
         df = self._results
