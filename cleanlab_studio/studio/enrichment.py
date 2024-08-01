@@ -200,7 +200,7 @@ class EnrichmentProject:
                 )
                 results.extend(resp)
 
-        return EnrichmentResult.from_dict(results=results, job_id=job_id, api_key=self._api_key)
+        return EnrichmentResult.from_dict(results)
 
     def list_all_jobs(self) -> List[EnrichmentJob]:
         """List all jobs in the project."""
