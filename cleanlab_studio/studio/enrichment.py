@@ -150,7 +150,7 @@ class EnrichmentProject:
         options: EnrichmentOptions,
         *,
         new_column_name: str,
-    ) -> EnrichmentPreviewResult:
+    ) -> dict[str, Any]:
         """Enrich the entire dataset."""
         _validate_enrichment_options(options)
 
@@ -198,7 +198,7 @@ class EnrichmentProject:
 
         return EnrichmentResult.from_dict(results)
 
-    def list_all_jobs(self) -> List[Dict[str, Any]]:
+    def list_all_jobs(self) -> List[EnrichmentJob]:
         """List all jobs in the project."""
         jobs = api.list_enrichment_jobs(api_key=self._api_key, project_id=self._id)
         typed_jobs = []
@@ -268,7 +268,7 @@ class EnrichmentJob(TypedDict):
     indices: Optional[List[int]]
 
 
-class EnrichmentOptions(TypedDict):
+class EnrichmentOptions(TypedDict, total=False):
     """Options for enriching a dataset with a Trustworthy Language Model (TLM).
 
     Args:
@@ -303,11 +303,11 @@ class EnrichmentOptions(TypedDict):
     """
 
     prompt: str
-    constrain_outputs: NotRequired[Optional[List[str]]]
-    optimize_prompt: NotRequired[bool]
-    quality_preset: NotRequired[TLMQualityPreset]
-    regex: NotRequired[Optional[Union[str, Replacement, List[Replacement]]]]
-    tlm_options: NotRequired[TLMOptions]
+    constrain_outputs: Optional[List[str]]
+    optimize_prompt: Optional[bool]
+    quality_preset: Optional[TLMQualityPreset]
+    regex: Optional[Union[str, Replacement, List[Replacement]]]
+    tlm_options: Optional[TLMOptions]
 
 
 def _validate_enrichment_options(options: EnrichmentOptions) -> None:
@@ -343,7 +343,7 @@ class EnrichmentResult:
         self._results = results
 
     @classmethod
-    def from_dict(cls, json_dict: JSONDict) -> EnrichmentResult:
+    def from_dict(cls, json_dict: List[JSONDict]) -> EnrichmentResult:
         df = pd.DataFrame(json_dict)
         df.set_index(CLEANLAB_ROW_ID_COLUMN_NAME, inplace=True)
 
@@ -361,12 +361,15 @@ class EnrichmentResult:
         return joined_data
 
 
-class EnrichmentPreviewResult(EnrichmentResult):
+class EnrichmentPreviewResult:
     """Enrichment preview result."""
 
     _is_timeout: bool
     _failed_jobs_count: int
     _completed_jobs_count: int
+
+    def __init__(self, results: pd.DataFrame):
+        self._results = results
 
     @classmethod
     def from_dict(cls, json_dict: Dict[str, Any]) -> EnrichmentPreviewResult:
@@ -413,7 +416,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
 
 
 def _handle_replacements_and_extraction_pattern(
-    user_input_regex: Union[str, Replacement, List[Replacement]]
+    user_input_regex: Union[str, Replacement, List[Replacement], None]
 ) -> Tuple[Optional[str], List[Dict[str, str]]]:
     extraction_pattern = None
     replacements: List[Dict[str, str]] = []
