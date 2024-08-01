@@ -1,6 +1,7 @@
 """
 Python API for Cleanlab Studio.
 """
+from __future__ import annotations
 
 import warnings
 from types import FunctionType
