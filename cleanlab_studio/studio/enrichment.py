@@ -183,13 +183,15 @@ class EnrichmentProject:
         """
         page = 1
         results = []
-        resp = api.get_enrichment_job_result(api_key=self._api_key, job_id=job_id, page=page)
+        resp = api.get_enrichment_job_result(
+            api_key=self._api_key, job_id=job_id, page=page, only_return_results=True
+        )
         results.extend(resp)
         if fetch_all_result:
             while resp:
                 page += 1
                 resp = api.get_enrichment_job_result(
-                    api_key=self._api_key, job_id=job_id, page=page
+                    api_key=self._api_key, job_id=job_id, page=page, only_return_results=True
                 )
                 results.extend(resp)
 
@@ -268,16 +270,16 @@ class EnrichmentResult:
     """Enrichment result."""
 
     def __init__(self, results: pd.DataFrame):
-        if results.index.name != CLEANLAB_ROW_ID_COLUMN_NAME:
-
-            self._results = results.sort_values(by=ROW_ID_COLUMN_NAME)
-        else:
-            self._results = results
+        self._results = results
 
     @classmethod
     def from_dict(cls, json_dict: JSONDict) -> EnrichmentResult:
         df = pd.DataFrame(json_dict)
-        df.set_index("cleanlab_row_ID", inplace=True)
+        df.set_index(CLEANLAB_ROW_ID_COLUMN_NAME, inplace=True)
+
+        # cleanlab_row_ID is the row ID of the original data + 1. so need to change to 0-based index
+        df.index = df.index - 1
+        df.index.name = None
         return cls(results=df)
 
     def details(self) -> pd.DataFrame:
@@ -302,7 +304,7 @@ class EnrichmentPreviewResult(EnrichmentResult):
         results = json_dict["results"]
         df = pd.DataFrame(results)
         df.set_index(ROW_ID_COLUMN_NAME, inplace=True)
-
+        df.sort_index(inplace=True)
         # Create an instance of EnrichmentPreviewResult
         instance = cls(results=df)
 
