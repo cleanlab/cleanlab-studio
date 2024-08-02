@@ -622,7 +622,7 @@ class TLM:
             raise e
 
     def get_model_name(self) -> str:
-        """Returns the underlying LLM used to obtain responses and scoring trustworthiness."""
+        """Returns the underlying LLM used to generate responses and score their trustworthiness."""
         return cast(str, self._options["model"])
 
 

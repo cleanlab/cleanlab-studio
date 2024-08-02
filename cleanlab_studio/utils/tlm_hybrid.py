@@ -255,7 +255,7 @@ class TLMHybrid:
             raise ValueError(f"score_response has invalid type")
 
     def get_model_names(self) -> Dict[str, str]:
-        """Returns the underlying LLMs used to obtain responses and scoring trustworthiness."""
+        """Returns the underlying LLMs used to generate responses and score their trustworthiness."""
         return {
             "response_model": self._tlm_response.get_model_name(),
             "score_model": self._tlm_score.get_model_name(),
