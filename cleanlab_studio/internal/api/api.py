@@ -759,7 +759,7 @@ def list_enrichment_jobs(api_key: str, project_id: str) -> List[JSONDict]:
     return cast(List[JSONDict], res.json())
 
 
-def get_enrichement_job(api_key: str, job_id: str) -> JSONDict:
+def get_enrichment_job(api_key: str, job_id: str) -> JSONDict:
     """Get enrichment job."""
     check_uuid_well_formed(job_id, "job_id")
 
