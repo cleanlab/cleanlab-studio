@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
+import matplotlib.pyplot as plt
 import pandas as pd
 from typing_extensions import NotRequired
 
@@ -25,6 +26,7 @@ RAW_RESULT_COLUMN_NAME = "raw_result"
 REGEX_PARAMETER_ERROR_MESSAGE = (
     "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
 )
+CLEANLAB_ROW_ID_COLUMN_NAME = "cleanlab_row_ID"
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
@@ -117,24 +119,12 @@ class EnrichmentProject:
         indices: Optional[List[int]] = None,
     ) -> EnrichmentPreviewResult:
         """Enrich a subset of data for a preview."""
-        extraction_pattern = None
-        replacements: List[Dict[str, str]] = []
-
         _validate_enrichment_options(options)
 
         user_input_regex = options.get("regex")
-        if user_input_regex:
-            if isinstance(user_input_regex, str):
-                extraction_pattern = user_input_regex
-            elif isinstance(user_input_regex, tuple):
-                replacements.append(
-                    {"pattern": user_input_regex[0], "replacement": user_input_regex[1]}
-                )
-            elif isinstance(user_input_regex, list):
-                for replacement in user_input_regex:
-                    replacements.append({"pattern": replacement[0], "replacement": replacement[1]})
-            else:
-                raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+        extraction_pattern, replacements = _handle_replacements_and_extraction_pattern(
+            user_input_regex
+        )
 
         response = api.enrichment_preview(
             api_key=self._api_key,
@@ -147,16 +137,145 @@ class EnrichmentProject:
             prompt=options["prompt"],
             quality_preset=options.get("quality_preset", "medium"),
             replacements=replacements,
-            tlm_options=cast(Dict[str, Any], options.get("tlm_options"))
-            if options.get("tlm_options")
-            else {},
+            tlm_options=(
+                cast(Dict[str, Any], options.get("tlm_options"))
+                if options.get("tlm_options")
+                else {}
+            ),
         )
         epr = EnrichmentPreviewResult.from_dict(response)
 
         return epr
 
+    def populate(
+        self,
+        options: EnrichmentOptions,
+        *,
+        new_column_name: str,
+    ) -> dict[str, Any]:
+        """Enrich the entire dataset."""
+        _validate_enrichment_options(options)
 
-class EnrichmentOptions(TypedDict):
+        user_input_regex = options.get("regex")
+        extraction_pattern, replacements = _handle_replacements_and_extraction_pattern(
+            user_input_regex
+        )
+
+        response = api.enrichment_populate(
+            api_key=self._api_key,
+            project_id=self._id,
+            new_column_name=new_column_name,
+            constrain_outputs=options.get("constrain_outputs", None),
+            extraction_pattern=extraction_pattern,
+            optimize_prompt=options.get("optimize_prompt", True),
+            prompt=options["prompt"],
+            quality_preset=options.get("quality_preset", "medium"),
+            replacements=replacements,
+            tlm_options=(
+                cast(Dict[str, Any], options.get("tlm_options"))
+                if options.get("tlm_options")
+                else {}
+            ),
+        )
+        return response
+
+    def get_populate_results(self, job_id: str, fetch_all_result: bool = False) -> EnrichmentResult:
+        """Get the results of a populate job.
+
+        Args:
+            job_id (str): The ID of the populate job.
+            fetch_all_result (bool): If True, fetch all the results of the populate job. If False, fetch only the first page of results.
+        """
+        page = 1
+        results = []
+        resp = api.get_enrichment_job_result(
+            api_key=self._api_key, job_id=job_id, page=page, only_return_results=True
+        )
+        results.extend(resp)
+        if fetch_all_result:
+            while resp:
+                page += 1
+                resp = api.get_enrichment_job_result(
+                    api_key=self._api_key, job_id=job_id, page=page, only_return_results=True
+                )
+                results.extend(resp)
+
+        return EnrichmentResult.from_dict(results)
+
+    def list_all_jobs(self) -> List[EnrichmentJob]:
+        """List all jobs in the project."""
+        jobs = api.list_enrichment_jobs(api_key=self._api_key, project_id=self._id)
+        typed_jobs = []
+        for job in jobs:
+            enrichment_options = EnrichmentOptions(
+                prompt=job["prompt"],
+                constrain_outputs=job.get("constrain_outputs"),
+                optimize_prompt=job.get("optimize_prompt"),
+                quality_preset=job.get("quality_preset"),
+                regex=job.get("regex"),
+                tlm_options=job.get("tlm_options"),
+            )
+            enrichment_job = EnrichmentJob(
+                id=job["id"],
+                status=job["status"],
+                created_at=_response_timestamp_to_datetime(job["created_at"]),
+                updated_at=_response_timestamp_to_datetime(job["updated_at"]),
+                enrichment_options=enrichment_options,
+                average_trustworthiness_score=job["average_trustworthiness_score"],
+                job_type=job["type"],
+                new_column_name=job["new_column_name"],
+                indices=job.get("indices"),
+            )
+            typed_jobs.append(enrichment_job)
+        return typed_jobs
+
+    def show_trustworthiness_score_history(self) -> None:
+        """Show the trustworthiness score history of all jobs in the project."""
+        data = self.list_all_jobs()
+        data_sorted = sorted(data, key=lambda x: x["created_at"])
+        scores = []
+        dates = []
+
+        for entry in data_sorted:
+            score = entry["average_trustworthiness_score"]
+            created_at = entry["created_at"].strftime("%Y-%m-%d %H:%M:%S")
+
+            if score is not None:
+                scores.append(score)
+                dates.append(created_at)
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(range(len(scores)), scores, marker="o", linestyle="-", color="b")
+        plt.xlabel("Time (Ordered Events)")
+        plt.ylabel("Average Trustworthiness Score")
+        plt.title("Average Trustworthiness Score Over Time (Evenly Spaced)")
+        plt.grid(True)
+        plt.xticks(range(len(dates)), dates, rotation=45, ha="right")
+        plt.tight_layout()
+        plt.show()
+
+    def export_to_csv(self, job_id: str, filename: str | None = None) -> str:
+        return api.export_results(api_key=self._api_key, job_id=job_id, filename=filename)
+
+
+class EnrichmentJob(TypedDict):
+    """Represents an Enrichment Job instance.
+
+    **This class is not meant to be constructed directly.** Instead, use the `EnrichmentProject` methods to create and manage Enrichment Jobs.
+    """
+
+    id: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    enrichment_options: EnrichmentOptions
+    average_trustworthiness_score: float
+    job_type: str
+    new_column_name: str
+    indices: Optional[List[int]]
+
+
+class EnrichmentOptions(TypedDict, total=False):
     """Options for enriching a dataset with a Trustworthy Language Model (TLM).
 
     Args:
@@ -191,11 +310,11 @@ class EnrichmentOptions(TypedDict):
     """
 
     prompt: str
-    constrain_outputs: NotRequired[Optional[List[str]]]
-    optimize_prompt: NotRequired[bool]
-    quality_preset: NotRequired[TLMQualityPreset]
-    regex: NotRequired[Optional[Union[str, Replacement, List[Replacement]]]]
-    tlm_options: NotRequired[TLMOptions]
+    constrain_outputs: Optional[List[str]]
+    optimize_prompt: Optional[bool]
+    quality_preset: Optional[TLMQualityPreset]
+    regex: Optional[Union[str, Replacement, List[Replacement]]]
+    tlm_options: Optional[TLMOptions]
 
 
 def _validate_enrichment_options(options: EnrichmentOptions) -> None:
@@ -228,14 +347,17 @@ class EnrichmentResult:
     """Enrichment result."""
 
     def __init__(self, results: pd.DataFrame):
-        self._results = results.sort_values(by=ROW_ID_COLUMN_NAME)
+        self._results = results
 
     @classmethod
-    def from_dict(cls, json_dict: JSONDict) -> EnrichmentResult:
-        raise NotImplementedError()
+    def from_dict(cls, json_dict: List[JSONDict]) -> EnrichmentResult:
+        df = pd.DataFrame(json_dict)
+        df.set_index(CLEANLAB_ROW_ID_COLUMN_NAME, inplace=True)
 
-    def to_list(self) -> List[Tuple[Optional[str], float]]:
-        raise NotImplementedError()
+        # cleanlab_row_ID is the row ID of the original data + 1. so need to change to 0-based index
+        df.index = df.index - 1
+        df.index.name = None
+        return cls(results=df)
 
     def details(self) -> pd.DataFrame:
         return self._results
@@ -246,47 +368,23 @@ class EnrichmentResult:
         return joined_data
 
 
-class EnrichmentPreviewResult(EnrichmentResult):
+class EnrichmentPreviewResult:
     """Enrichment preview result."""
 
     _is_timeout: bool
     _failed_jobs_count: int
     _completed_jobs_count: int
-    _final_result_column_name: str
-    _trustworthiness_score_column_name: str
+
+    def __init__(self, results: pd.DataFrame):
+        self._results = results
 
     @classmethod
     def from_dict(cls, json_dict: Dict[str, Any]) -> EnrichmentPreviewResult:
-        new_column_name_mapping = json_dict["new_column_name_mapping"]
-
         # Prepare the results DataFrame from the 'results' list
         results = json_dict["results"]
         df = pd.DataFrame(results)
-
-        # Set the index to row_id for easier joining later
         df.set_index(ROW_ID_COLUMN_NAME, inplace=True)
-
-        # Select and rename the columns to match the expected format
-        df = df[
-            [
-                FINAL_RESULT_COLUMN_NAME,
-                TRUSTWORTHINESS_SCORE_COLUMN_NAME,
-                RAW_RESULT_COLUMN_NAME,
-                LOG_COLUMN_NAME,
-            ]
-        ]
-        df.rename(
-            columns={
-                FINAL_RESULT_COLUMN_NAME: new_column_name_mapping[FINAL_RESULT_COLUMN_NAME],
-                TRUSTWORTHINESS_SCORE_COLUMN_NAME: new_column_name_mapping[
-                    TRUSTWORTHINESS_SCORE_COLUMN_NAME
-                ],
-                RAW_RESULT_COLUMN_NAME: new_column_name_mapping[RAW_RESULT_COLUMN_NAME],
-                LOG_COLUMN_NAME: new_column_name_mapping[LOG_COLUMN_NAME],
-            },
-            inplace=True,
-        )
-
+        df.sort_index(inplace=True)
         # Create an instance of EnrichmentPreviewResult
         instance = cls(results=df)
 
@@ -294,10 +392,6 @@ class EnrichmentPreviewResult(EnrichmentResult):
         instance._is_timeout = json_dict["is_timeout"]
         instance._completed_jobs_count = json_dict["completed_jobs_count"]
         instance._failed_jobs_count = json_dict["failed_jobs_count"]
-        instance._final_result_column_name = new_column_name_mapping[FINAL_RESULT_COLUMN_NAME]
-        instance._trustworthiness_score_column_name = new_column_name_mapping[
-            TRUSTWORTHINESS_SCORE_COLUMN_NAME
-        ]
 
         return instance
 
@@ -319,10 +413,31 @@ class EnrichmentPreviewResult(EnrichmentResult):
             with_details (bool): If `with_details` is True, the details of the enrichment results will be included in the output DataFrame.
         """
         df = self._results
-        if not with_details:
-            df = self._results[
-                [self._final_result_column_name, self._trustworthiness_score_column_name]
-            ]
+        # if not with_details:
+        #     df = self._results[
+        #         [self._final_result_column_name, self._trustworthiness_score_column_name]
+        #     ]
         joined_data = original_data.join(df, how="inner")
 
         return joined_data
+
+
+def _handle_replacements_and_extraction_pattern(
+    user_input_regex: Union[str, Replacement, List[Replacement], None]
+) -> Tuple[Optional[str], List[Dict[str, str]]]:
+    extraction_pattern = None
+    replacements: List[Dict[str, str]] = []
+
+    if user_input_regex:
+        if isinstance(user_input_regex, str):
+            extraction_pattern = user_input_regex
+        elif isinstance(user_input_regex, tuple):
+            replacements.append(
+                {"pattern": user_input_regex[0], "replacement": user_input_regex[1]}
+            )
+        elif isinstance(user_input_regex, list):
+            for replacement in user_input_regex:
+                replacements.append({"pattern": replacement[0], "replacement": replacement[1]})
+        else:
+            raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+    return extraction_pattern, replacements

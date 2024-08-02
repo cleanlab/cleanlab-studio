@@ -1,8 +1,19 @@
+from __future__ import annotations
+
 import asyncio
 import io
 import os
 import time
-from typing import Callable, cast, List, Optional, Tuple, Dict, Union, Any
+from io import StringIO
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+
+import aiohttp
+import aiohttp.client_exceptions
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+import requests
+from tqdm import tqdm
 
 from cleanlab_studio.errors import (
     APIError,
@@ -14,15 +25,6 @@ from cleanlab_studio.errors import (
     TlmServerError,
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
-
-import aiohttp
-import aiohttp.client_exceptions
-import requests
-from tqdm import tqdm
-import pandas as pd
-import numpy as np
-import numpy.typing as npt
-from io import StringIO
 
 try:
     import snowflake
@@ -38,12 +40,13 @@ try:
 except ImportError:
     pyspark_exists = False
 
-from cleanlab_studio.internal.types import JSONDict, SchemaOverride, TLMQualityPreset
-from cleanlab_studio.version import __version__
 from cleanlab_studio.errors import NotInstalledError
 from cleanlab_studio.internal.api.api_helper import (
     check_uuid_well_formed,
+    check_valid_csv_filename,
 )
+from cleanlab_studio.internal.types import JSONDict, SchemaOverride, TLMQualityPreset
+from cleanlab_studio.version import __version__
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 cli_base_url = f"{base_url}/cli/v0"
@@ -79,11 +82,14 @@ def handle_api_error_from_json(res_json: JSONDict, status_code: Optional[int] = 
         else:
             raise APIError(res_json["description"])
 
-    if res_json.get("error", None) is not None:
+    if isinstance(res_json, dict) and res_json.get("error", None) is not None:
         error = res_json["error"]
         if status_code == 422 and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION":
             raise InvalidProjectConfiguration(error["description"])
         raise APIError(res_json["error"])
+
+    if status_code != 200:
+        raise APIError(f"API call failed with status code {status_code}")
 
 
 def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
@@ -671,6 +677,126 @@ def enrichment_preview(
     )
     handle_api_error(res)
     return cast(JSONDict, res.json())
+
+
+def enrichment_populate(
+    api_key: str,
+    new_column_name: str,
+    project_id: str,
+    prompt: str,
+    constrain_outputs: Optional[List[str]] = None,
+    extraction_pattern: Optional[str] = None,
+    optimize_prompt: Optional[bool] = True,
+    quality_preset: Optional[TLMQualityPreset] = "medium",
+    replacements: Optional[List[Dict[str, str]]] = [],
+    tlm_options: Optional[Dict[str, Any]] = {},
+) -> JSONDict:
+    """Call Enrichment Enrich_all API and get response."""
+    check_uuid_well_formed(project_id, "project_id")
+    request_json = dict(
+        new_column_name=new_column_name,
+        project_id=project_id,
+        prompt=prompt,
+        constrain_outputs=constrain_outputs,
+        extraction_pattern=extraction_pattern,
+        optimize_prompt=optimize_prompt,
+        replacements=replacements,
+        tlm_options=tlm_options,
+        tlm_quality_preset=quality_preset,
+    )
+
+    res = requests.post(
+        f"{enrichment_base_url}/enrich_all",
+        headers=_construct_headers(api_key),
+        json=request_json,
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
+def get_enrichment_job_status(api_key: str, job_id: str) -> JSONDict:
+    """Get status of enrichment job."""
+    check_uuid_well_formed(job_id, "job_id")
+
+    res = requests.get(
+        f"{enrichment_base_url}/status/{job_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
+def get_enrichment_job_result(
+    api_key: str, job_id: str, page: int, only_return_results: bool = True
+) -> List[JSONDict]:
+    """Get result of enrichment job.
+
+    Args:
+        api_key (str): studio API key for auth
+        job_id (str): job id
+        page (int): page number
+        only_return_results (bool): whether to return only results or merged results and original dataset directly from the backend
+    """
+    check_uuid_well_formed(job_id, "job_id")
+
+    res = requests.get(
+        f"{enrichment_base_url}/enrich_all/{job_id}",
+        headers=_construct_headers(api_key),
+        params=dict(page=page, only_return_results=only_return_results),
+    )
+    handle_api_error(res)
+    return cast(List[JSONDict], res.json())
+
+
+def list_enrichment_jobs(api_key: str, project_id: str) -> List[JSONDict]:
+    """List all enrichment jobs for a project."""
+    check_uuid_well_formed(project_id, "project_id")
+    res = requests.get(
+        f"{enrichment_base_url}/projects/{project_id}/jobs",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(List[JSONDict], res.json())
+
+
+def get_enrichment_job(api_key: str, job_id: str) -> JSONDict:
+    """Get enrichment job."""
+    check_uuid_well_formed(job_id, "job_id")
+
+    res = requests.get(
+        f"{enrichment_base_url}/jobs/{job_id}",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
+def export_results(api_key: str, job_id: str, filename: str | None) -> str:
+    """
+    Exports the results of a job to a CSV file.
+
+    Args:
+        api_key (str): The API key used for authentication.
+        job_id (str): The unique identifier of the job whose results are to be exported.
+        filename (str | None): The name of the CSV file to save the results to. If None, a default filename is generated.
+
+    Returns:
+        str: A message indicating the CSV file has been saved, including the filename.
+    """
+    check_uuid_well_formed(job_id, "job_id")
+    if filename is None:
+        filename = f"enrichment_results_{job_id}.csv"
+    check_valid_csv_filename(filename)
+    res = requests.get(
+        f"{enrichment_base_url}/export/{job_id}",
+        headers=_construct_headers(api_key),
+    )
+    if res.status_code == 200:
+        with open(filename, "wb") as file:
+            file.write(res.content)
+    else:
+        handle_api_error(res)
+    return f"CSV file saved as {filename}"
 
 
 def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
