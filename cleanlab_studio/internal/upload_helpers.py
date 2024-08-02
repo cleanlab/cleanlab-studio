@@ -2,17 +2,19 @@ import asyncio
 import functools
 import json
 from typing import Any, Dict, List, Optional
-from tqdm import tqdm
 
 import aiohttp
-from multidict import CIMultiDictProxy
 import requests
+from multidict import CIMultiDictProxy
 from requests.adapters import HTTPAdapter, Retry
+from tqdm import tqdm
+
+from cleanlab_studio.errors import InvalidSchemaTypeError
 
 from .api import api
+from .api.api_helper import UploadParts
 from .dataset_source import DatasetSource
 from .types import JSONDict, SchemaOverride
-from cleanlab_studio.errors import InvalidSchemaTypeError
 
 
 def upload_dataset(
@@ -64,7 +66,7 @@ async def upload_file_parts_async(
 
 def upload_file_parts(
     dataset_source: DatasetSource, part_sizes: List[int], presigned_posts: List[str]
-) -> List[JSONDict]:
+) -> UploadParts:
     session = requests.Session()
     session.mount("https://", adapter=HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1)))
 
