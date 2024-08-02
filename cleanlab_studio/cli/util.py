@@ -6,22 +6,26 @@ import io
 import json
 import os
 import pathlib
-import pandas as pd
-from typing import Dict, List, Generator, IO, Union
+from typing import IO, Dict, Generator, List, Union
 
-from cleanlab_studio.cli.classes import CsvDataset, JsonDataset, ExcelDataset
+import pandas as pd
+
+from cleanlab_studio.cli.classes import CsvDataset, ExcelDataset, JsonDataset
 from cleanlab_studio.cli.classes.dataset import Dataset
 from cleanlab_studio.cli.types import (
-    RecordType,
     DatasetFileExtension,
     ImageFileExtension,
+    RecordType,
 )
 from cleanlab_studio.errors import InvalidDatasetError
 
 
 def get_dataset_file_extension(filename: str) -> DatasetFileExtension:
     file_extension = pathlib.Path(filename).suffix.lower()
-    return DatasetFileExtension(file_extension)
+    try:
+        return DatasetFileExtension(file_extension)
+    except ValueError:
+        raise InvalidDatasetError(f"File extension {file_extension} is not supported.")
 
 
 def _standardize_image_file_extension(file_extension: str) -> str:

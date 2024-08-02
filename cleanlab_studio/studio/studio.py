@@ -17,7 +17,7 @@ from cleanlab_studio.errors import (
     MissingAPIKeyError,
     VersionError,
 )
-from cleanlab_studio.internal import clean_helpers, upload_helpers
+from cleanlab_studio.internal import clean_helpers, deploy_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import SchemaOverride, TLMQualityPreset
@@ -28,6 +28,7 @@ from cleanlab_studio.internal.util import (
     init_dataset_source,
     telemetry,
 )
+from cleanlab_studio.utils import tlm_hybrid
 
 from . import enrichment, inference, trustworthy_language_model
 
@@ -323,6 +324,29 @@ class Studio:
         api.delete_project(self._api_key, project_id)
         print(f"Successfully deleted project: {project_id}")
 
+    def deploy_model(self, cleanset_id: str, model_name: str) -> str:
+        """
+        Trains and deploys a model with an improved dataset created by applying any corrections you've made to your cleanset in Cleanlab Studio.
+
+        Args:
+            cleanset_id: ID of cleanset to deploy model for.
+            model_name: Name for resulting model.
+        """
+        return api.deploy_model(self._api_key, cleanset_id, model_name)
+
+    def wait_until_model_ready(self, model_id: str, timeout: Optional[float] = None) -> None:
+        """Blocks until a model is ready or the timeout is reached.
+
+        Args:
+            model_id (str): ID of model to check status for.
+            timeout (Optional[float], optional): timeout for polling, in seconds. Defaults to None.
+
+        Raises:
+            TimeoutError: if model is not ready by end of timeout
+            DeploymentError: if model errored while training
+        """
+        deploy_helpers.poll_deployment_status(self._api_key, model_id, timeout)
+
     def get_model(self, model_id: str) -> inference.Model:
         """
         Gets a model that is deployed in a Cleanlab Studio account.
@@ -509,45 +533,36 @@ class Studio:
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
     ) -> trustworthy_language_model.TLM:
-        """Instantiates a configured Trustworthy Language Model (TLM) instance.
-
-        The TLM object can be used as a drop-in replacement for an LLM, or, for estimating trustworthiness scores for arbitrary text prompt/response pairs, and more (see the [TLM documentation](../trustworthy_language_model#class-tlm)).
-
-        For advanced use, TLM offers configuration options. The documentation below summarizes these options, and more details are explained in the [TLM tutorial](/tutorials/tlm).
-
-        Args:
-            quality_preset (TLMQualityPreset): An optional preset to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs.
-                TLMQualityPreset is a string specifying one of the supported presets, including "best", "high", "medium", "low", "base".
-
-                The "best" and "high" presets return improved LLM responses,
-                with "best" also returning more reliable trustworthiness scores than "high".
-                The "medium" and "low" presets return standard LLM responses along with associated trustworthiness scores,
-                with "medium" producing more reliable trustworthiness scores than low.
-                The "base" preset will not return any trustworthiness score, just a standard LLM response, and is similar to directly using your favorite LLM API.
-
-                Higher presets have increased runtime and cost (and may internally consume more tokens).
-                Reduce your preset if you see token-limit errors.
-                Details about each present are in the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
-                Avoid using "best" or "high" presets if you primarily want to get trustworthiness scores, and are less concerned with improving LLM responses.
-                These presets have higher runtime/cost and are optimized to return more accurate LLM outputs, but not necessarily more reliable trustworthiness scores.
-
-            options (TLMOptions, optional): a typed dict of advanced configuration options.
-            Avaialable options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
-            For more details about the options, see the documentation for [TLMOptions](../trustworthy_language_model#class-tlmoptions).
-            If specified, these override any settings from the choice of `quality_preset`.
-
-            timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
-            If a batch of data is passed in, the timeout will be applied to each individual item in the batch.
-            If a result is not produced within the timeout, a TimeoutError will be raised. Defaults to None, which does not apply a timeout.
-
-            verbose (bool, optional): whether to print outputs during execution, i.e., whether to show a progress bar when TLM is prompted with batches of data.
-            If None, this will be determined automatically based on whether the code is running in an interactive environment such as a Jupyter notebook.
-
-        Returns:
-            TLM: the [Trustworthy Language Model](../trustworthy_language_model#class-tlm) object
+        """
+        Instantiate a Trustworthy Language Model (TLM).
+        For more details, see the documentation of:
+        [cleanlab_studio.studio.trustworthy_language_model.TLM](../trustworthy_language_model/#class-tlm)
         """
         return trustworthy_language_model.TLM(
             self._api_key, quality_preset, options=options, timeout=timeout, verbose=verbose
+        )
+
+    def TLMHybrid(
+        self,
+        response_model: str = "gpt-4o",
+        quality_preset: TLMQualityPreset = "medium",
+        *,
+        options: Optional[trustworthy_language_model.TLMOptions] = None,
+        timeout: Optional[float] = None,
+        verbose: Optional[bool] = None,
+    ) -> tlm_hybrid.TLMHybrid:
+        """
+        Instantiate a hybrid Trustworthy Language Model that uses one model for response and another for trustworthiness scoring (reduce costs/latency without reducing response quality).
+        For more details, see the documentation of:
+        [cleanlab_studio.utils.tlm_hybrid.TLMHybrid](../utils.tlm_hybrid/#class-tlmhybrid)
+        """
+        return tlm_hybrid.TLMHybrid(
+            self._api_key,
+            response_model,
+            quality_preset,
+            options=options,
+            timeout=timeout,
+            verbose=verbose,
         )
 
     def poll_cleanset_status(self, cleanset_id: str, timeout: Optional[int] = None) -> bool:
