@@ -137,9 +137,11 @@ class EnrichmentProject:
             prompt=options["prompt"],
             quality_preset=options.get("quality_preset", "medium"),
             replacements=replacements,
-            tlm_options=cast(Dict[str, Any], options.get("tlm_options"))
-            if options.get("tlm_options")
-            else {},
+            tlm_options=(
+                cast(Dict[str, Any], options.get("tlm_options"))
+                if options.get("tlm_options")
+                else {}
+            ),
         )
         epr = EnrichmentPreviewResult.from_dict(response)
 
@@ -169,9 +171,11 @@ class EnrichmentProject:
             prompt=options["prompt"],
             quality_preset=options.get("quality_preset", "medium"),
             replacements=replacements,
-            tlm_options=cast(Dict[str, Any], options.get("tlm_options"))
-            if options.get("tlm_options")
-            else {},
+            tlm_options=(
+                cast(Dict[str, Any], options.get("tlm_options"))
+                if options.get("tlm_options")
+                else {}
+            ),
         )
         return response
 
@@ -249,6 +253,9 @@ class EnrichmentProject:
         plt.xticks(range(len(dates)), dates, rotation=45, ha="right")
         plt.tight_layout()
         plt.show()
+
+    def export_to_csv(self, job_id: str, filename: str | None = None) -> str:
+        return api.export_results(api_key=self._api_key, job_id=job_id, filename=filename)
 
 
 class EnrichmentJob(TypedDict):

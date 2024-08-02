@@ -41,7 +41,10 @@ except ImportError:
     pyspark_exists = False
 
 from cleanlab_studio.errors import NotInstalledError
-from cleanlab_studio.internal.api.api_helper import check_uuid_well_formed
+from cleanlab_studio.internal.api.api_helper import (
+    check_uuid_well_formed,
+    check_valid_csv_filename,
+)
 from cleanlab_studio.internal.types import JSONDict, SchemaOverride, TLMQualityPreset
 from cleanlab_studio.version import __version__
 
@@ -766,6 +769,34 @@ def get_enrichement_job(api_key: str, job_id: str) -> JSONDict:
     )
     handle_api_error(res)
     return cast(JSONDict, res.json())
+
+
+def export_results(api_key: str, job_id: str, filename: str | None) -> str:
+    """
+    Exports the results of a job to a CSV file.
+
+    Args:
+        api_key (str): The API key used for authentication.
+        job_id (str): The unique identifier of the job whose results are to be exported.
+        filename (str | None): The name of the CSV file to save the results to. If None, a default filename is generated.
+
+    Returns:
+        str: A message indicating the CSV file has been saved, including the filename.
+    """
+    check_uuid_well_formed(job_id, "job_id")
+    if filename is None:
+        filename = f"enrichment_results_{job_id}.csv"
+    check_valid_csv_filename(filename)
+    res = requests.get(
+        f"{enrichment_base_url}/export/{job_id}",
+        headers=_construct_headers(api_key),
+    )
+    if res.status_code == 200:
+        with open(filename, "wb") as file:
+            file.write(res.content)
+    else:
+        handle_api_error(res)
+    return f"CSV file saved as {filename}"
 
 
 def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
