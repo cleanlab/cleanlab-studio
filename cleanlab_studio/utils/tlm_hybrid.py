@@ -4,7 +4,7 @@ TLMHybrid is a hybrid version of the [Trustworthy Language Model (TLM)](../trust
 **This module is not meant to be imported and used directly.** Instead, use [`Studio.TLMHybrid()`](/reference/python/studio/#method-tlmhybrid) to instantiate a [TLMHybrid](#class-tlmhybrid) object, and then you can use the methods like [`prompt()`](#method-prompt) documented on this page.
 """
 
-from typing import List, Optional, Union, cast, Sequence
+from typing import List, Dict, Optional, Union, cast, Sequence
 import numpy as np
 
 from cleanlab_studio.errors import ValidationError
@@ -254,9 +254,9 @@ class TLMHybrid:
         else:
             raise ValueError(f"score_response has invalid type")
 
-    def print_model_name(self) -> None:
-        """Prints the underlying LLMs used to obtain responses and scoring trustworthiness."""
-        print("Response model:", end=" ")
-        self._tlm_response.print_model_name()
-        print("Score model:", end=" ")
-        self._tlm_score.print_model_name()
+    def get_model_names(self) -> Dict[str, str]:
+        """Returns the underlying LLMs used to obtain responses and scoring trustworthiness."""
+        return {
+            "response_model": self._tlm_response.get_model_name(),
+            "score_model": self._tlm_score.get_model_name(),
+        }

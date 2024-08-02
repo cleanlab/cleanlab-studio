@@ -621,9 +621,9 @@ class TLM:
                 return None
             raise e
 
-    def print_model_name(self) -> None:
-        """Prints the underlying LLM used to obtain responses and scoring trustworthiness."""
-        print(self._options["model"])
+    def get_model_name(self) -> str:
+        """Returns the underlying LLM used to obtain responses and scoring trustworthiness."""
+        return cast(str, self._options["model"])
 
 
 class TLMResponse(TypedDict):
