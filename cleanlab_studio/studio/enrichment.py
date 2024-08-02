@@ -179,7 +179,9 @@ class EnrichmentProject:
         )
         return response
 
-    def get_populate_results(self, job_id: str, fetch_all_result: bool = False) -> EnrichmentResult:
+    def get_populate_results(
+        self, job_id: str, fetch_all_result: bool = False, only_return_results: bool = True
+    ) -> EnrichmentResult:
         """Get the results of a populate job.
 
         Args:
@@ -189,14 +191,17 @@ class EnrichmentProject:
         page = 1
         results = []
         resp = api.get_enrichment_job_result(
-            api_key=self._api_key, job_id=job_id, page=page, only_return_results=True
+            api_key=self._api_key, job_id=job_id, page=page, only_return_results=only_return_results
         )
         results.extend(resp)
         if fetch_all_result:
             while resp:
                 page += 1
                 resp = api.get_enrichment_job_result(
-                    api_key=self._api_key, job_id=job_id, page=page, only_return_results=True
+                    api_key=self._api_key,
+                    job_id=job_id,
+                    page=page,
+                    only_return_results=only_return_results,
                 )
                 results.extend(resp)
 
@@ -377,6 +382,9 @@ class EnrichmentPreviewResult:
 
     def __init__(self, results: pd.DataFrame):
         self._results = results
+
+    def details(self) -> pd.DataFrame:
+        return self._results
 
     @classmethod
     def from_dict(cls, json_dict: Dict[str, Any]) -> EnrichmentPreviewResult:
