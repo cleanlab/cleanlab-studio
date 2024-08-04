@@ -6,8 +6,10 @@ Methods for interfacing with Enrichment Projects.
 
 from __future__ import annotations
 
+import re
+import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
+from typing import Any, Dict, List, NotRequired, Optional, Tuple, TypedDict, Union, cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -27,6 +29,7 @@ REGEX_PARAMETER_ERROR_MESSAGE = (
     "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
 )
 CLEANLAB_ROW_ID_COLUMN_NAME = "cleanlab_row_ID"
+CHECK_READY_INTERVAL = 60 * 5
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
@@ -59,6 +62,7 @@ class EnrichmentProject:
         self._id = id
         self._name = name
         self._created_at: Optional[datetime]
+        self._latest_populate_job: EnrichmentJob | None = None
         if isinstance(created_at, str):
             self._created_at = _response_timestamp_to_datetime(created_at)
         else:
@@ -117,7 +121,7 @@ class EnrichmentProject:
         *,
         new_column_name: str,
         indices: Optional[List[int]] = None,
-    ) -> EnrichmentPreviewResult:
+    ) -> EnrichmentPreviewResults:
         """Enrich a subset of data for a preview."""
         _validate_enrichment_options(options)
 
@@ -126,6 +130,7 @@ class EnrichmentProject:
             user_input_regex
         )
 
+        self._latest_populate_job = None
         response = api.enrichment_preview(
             api_key=self._api_key,
             project_id=self._id,
@@ -143,11 +148,11 @@ class EnrichmentProject:
                 else {}
             ),
         )
-        epr = EnrichmentPreviewResult.from_dict(response)
+        epr = EnrichmentPreviewResults.from_dict(response["results"])
 
         return epr
 
-    def populate(
+    def run(
         self,
         options: EnrichmentOptions,
         *,
@@ -179,40 +184,72 @@ class EnrichmentProject:
         )
         return response
 
-    def get_populate_results(
-        self, job_id: str, fetch_all_result: bool = False, only_return_results: bool = True
-    ) -> EnrichmentResult:
-        """Get the results of a populate job.
+    @property
+    def ready(self) -> bool:
+        """Check if the latest populate job is ready."""
+        latest_job = self.list_all_jobs()[0]
+        if latest_job["job_type"] != "ENRICHMENT":
+            raise ValueError(
+                "The latest job is a preview, to execute against entire dataset, please do `run()` first."
+            )
+        self.latest_populate_job = latest_job
+        if latest_job["status"] == "FAILED":
+            raise ValueError("The latest populate job failed.")
+        elif latest_job["status"] == "RUNNING":
+            return False
+        elif latest_job["status"] == "SUCCEEDED":
+            return True
+        else:
+            raise ValueError("The latest populate job has an unknown status.")
 
-        Args:
-            job_id (str): The ID of the populate job.
-            fetch_all_result (bool): If True, fetch all the results of the populate job. If False, fetch only the first page of results.
-        """
+    def wait_until_ready(self) -> None:
+        """Wait until the latest populate job is ready."""
+        while not self.ready:
+            time.sleep(CHECK_READY_INTERVAL)
+            pass
+
+    def download_results(
+        self, job_id: str | None = None, include_original_dataset: bool = False
+    ) -> EnrichmentResults:
+        """Get the results of a populate job."""
+        latest_job_id = None
+        if job_id is not None:
+            latest_job_id = job_id
+        elif self._latest_populate_job is None:
+            self._latest_populate_job = self.list_all_jobs()[0]
+        else:
+            latest_job_id = self._latest_populate_job["id"]
+
         page = 1
         results = []
         resp = api.get_enrichment_job_result(
-            api_key=self._api_key, job_id=job_id, page=page, only_return_results=only_return_results
+            api_key=self._api_key,
+            job_id=latest_job_id,
+            page=page,
+            only_return_results=include_original_dataset,
         )
         results.extend(resp)
-        if fetch_all_result:
-            while resp:
-                page += 1
-                resp = api.get_enrichment_job_result(
-                    api_key=self._api_key,
-                    job_id=job_id,
-                    page=page,
-                    only_return_results=only_return_results,
-                )
-                results.extend(resp)
 
-        return EnrichmentResult.from_dict(results)
+        while resp:
+            page += 1
+            resp = api.get_enrichment_job_result(
+                api_key=self._api_key,
+                job_id=latest_job_id,
+                page=page,
+                include_original_dataset=include_original_dataset,
+            )
+            results.extend(resp)
+
+        return EnrichmentResults.from_dict(
+            results, include_original_dataset=include_original_dataset
+        )
 
     def list_all_jobs(self) -> List[EnrichmentJob]:
         """List all jobs in the project."""
         jobs = api.list_enrichment_jobs(api_key=self._api_key, project_id=self._id)
         typed_jobs = []
         for job in jobs:
-            enrichment_options = EnrichmentOptions(
+            enrichment_options_dict = dict(
                 prompt=job["prompt"],
                 constrain_outputs=job.get("constrain_outputs"),
                 optimize_prompt=job.get("optimize_prompt"),
@@ -220,23 +257,31 @@ class EnrichmentProject:
                 regex=job.get("regex"),
                 tlm_options=job.get("tlm_options"),
             )
+
+            enrichment_options_dict = {
+                k: v for k, v in enrichment_options_dict.items() if v is not None
+            }
+
             enrichment_job = EnrichmentJob(
                 id=job["id"],
                 status=job["status"],
                 created_at=_response_timestamp_to_datetime(job["created_at"]),
                 updated_at=_response_timestamp_to_datetime(job["updated_at"]),
-                enrichment_options=enrichment_options,
+                enrichment_options=EnrichmentOptions(**enrichment_options_dict),
                 average_trustworthiness_score=job["average_trustworthiness_score"],
                 job_type=job["type"],
                 new_column_name=job["new_column_name"],
                 indices=job.get("indices"),
             )
             typed_jobs.append(enrichment_job)
+
+        self._latest_populate_job = typed_jobs[0]
         return typed_jobs
 
     def show_trustworthiness_score_history(self) -> None:
         """Show the trustworthiness score history of all jobs in the project."""
         data = self.list_all_jobs()
+        self._latest_populate_job = data[0]
         data_sorted = sorted(data, key=lambda x: x["created_at"])
         scores = []
         dates = []
@@ -259,8 +304,17 @@ class EnrichmentProject:
         plt.tight_layout()
         plt.show()
 
-    def export_to_csv(self, job_id: str, filename: str | None = None) -> str:
-        return api.export_results(api_key=self._api_key, job_id=job_id, filename=filename)
+    def download_results(self, job_id: str | None) -> str:
+        """Download the results of a job."""
+        latest_job_id = None
+        if job_id is not None:
+            latest_job_id = job_id
+        elif self._latest_populate_job is None:
+            self._latest_populate_job = self.list_all_jobs()[0]
+        else:
+            latest_job_id = self._latest_populate_job["id"]
+
+        csv_file = api.export_results(api_key=self._api_key, job_id=latest_job_id)
 
 
 class EnrichmentJob(TypedDict):
@@ -280,7 +334,7 @@ class EnrichmentJob(TypedDict):
     indices: Optional[List[int]]
 
 
-class EnrichmentOptions(TypedDict, total=False):
+class EnrichmentOptions(TypedDict):
     """Options for enriching a dataset with a Trustworthy Language Model (TLM).
 
     Args:
@@ -315,11 +369,11 @@ class EnrichmentOptions(TypedDict, total=False):
     """
 
     prompt: str
-    constrain_outputs: Optional[List[str]]
-    optimize_prompt: Optional[bool]
-    quality_preset: Optional[TLMQualityPreset]
-    regex: Optional[Union[str, Replacement, List[Replacement]]]
-    tlm_options: Optional[TLMOptions]
+    constrain_outputs: NotRequired[List[str]]
+    optimize_prompt: NotRequired[bool]
+    quality_preset: NotRequired[TLMQualityPreset]
+    regex: NotRequired[Union[str, Replacement, List[Replacement]]]
+    tlm_options: NotRequired[TLMOptions]
 
 
 def _validate_enrichment_options(options: EnrichmentOptions) -> None:
@@ -348,69 +402,93 @@ def _validate_enrichment_options(options: EnrichmentOptions) -> None:
                 raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
 
 
-class EnrichmentResult:
+class EnrichmentResults:
     """Enrichment result."""
+
+    _detailed_column_names: List[str]
+    _include_original_dataset: bool
 
     def __init__(self, results: pd.DataFrame):
         self._results = results
 
     @classmethod
-    def from_dict(cls, json_dict: List[JSONDict]) -> EnrichmentResult:
+    def from_dict(
+        cls, json_dict: List[JSONDict], include_original_dataset: bool = False
+    ) -> EnrichmentResults:
         df = pd.DataFrame(json_dict)
         df.set_index(CLEANLAB_ROW_ID_COLUMN_NAME, inplace=True)
 
         # cleanlab_row_ID is the row ID of the original data + 1. so need to change to 0-based index
         df.index = df.index - 1
         df.index.name = None
+        instance = cls(results=df)
+
+        new_column_names = _find_pattern_columns(df)
+
+        instance._detailed_column_names = [f"{col}_raw" for col in new_column_names] + [
+            f"{col}_log" for col in new_column_names
+        ]
+        instance._include_original_dataset = include_original_dataset
+        return instance
+
+    @classmethod
+    def from_dataframe(cls, df: pd.DataFrame) -> EnrichmentResults:
         return cls(results=df)
 
     def details(self) -> pd.DataFrame:
         return self._results
 
     def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
+        if self._include_original_dataset:
+            raise ValueError(
+                "The current results already contain the original data. You can get the joined data by calling `details()` method."
+            )
+
         df = self._results
         joined_data = original_data.join(df, how="left")
+        if not with_details:
+            joined_data = joined_data.drop(columns=self._detailed_column_names)
         return joined_data
 
 
-class EnrichmentPreviewResult:
-    """Enrichment preview result."""
+def _find_pattern_columns(df) -> List[str]:
+    """Find the columns that match the pattern of the enrichment"""
+    pattern = re.compile(r"(.+)(_trustworthiness_score|_raw|_log)?$")
+    column_groups = {}
 
-    _is_timeout: bool
-    _failed_jobs_count: int
-    _completed_jobs_count: int
+    for col in df.columns:
+        match = pattern.match(col)
+        if match:
+            base_col = match.group(1)
+            if base_col not in column_groups:
+                column_groups[base_col] = []
+            column_groups[base_col].append(col)
 
-    def __init__(self, results: pd.DataFrame):
-        self._results = results
+    # Filter out groups that don't have all 4 expected columns
+    valid_groups = {k: v for k, v in column_groups.items() if len(v) == 4}
 
-    def details(self) -> pd.DataFrame:
-        return self._results
+    return valid_groups.keys()
+
+
+class EnrichmentPreviewResults(EnrichmentResults):
+    """Enrichment preview results."""
 
     @classmethod
-    def from_dict(cls, json_dict: Dict[str, Any]) -> EnrichmentPreviewResult:
-        # Prepare the results DataFrame from the 'results' list
-        results = json_dict["results"]
-        df = pd.DataFrame(results)
+    def from_dict(
+        cls, json_dict: List[JSONDict], include_original_dataset: bool = False
+    ) -> EnrichmentPreviewResults:
+        df = pd.DataFrame(json_dict)
         df.set_index(ROW_ID_COLUMN_NAME, inplace=True)
         df.sort_index(inplace=True)
         # Create an instance of EnrichmentPreviewResult
         instance = cls(results=df)
+        new_column_names = _find_pattern_columns(df)
 
-        # Set the additional attributes
-        instance._is_timeout = json_dict["is_timeout"]
-        instance._completed_jobs_count = json_dict["completed_jobs_count"]
-        instance._failed_jobs_count = json_dict["failed_jobs_count"]
-
+        instance._detailed_column_names = [f"{col}_raw" for col in new_column_names] + [
+            f"{col}_log" for col in new_column_names
+        ]
+        instance._include_original_dataset = include_original_dataset
         return instance
-
-    # undecided on whether to include this method
-    def get_preview_status(self) -> Dict[str, bool | int]:
-        """Get the status of the preview operation."""
-        return {
-            "is_timeout": self._is_timeout,
-            "completed_jobs_count": self._completed_jobs_count,
-            "failed_jobs_count": self._failed_jobs_count,
-        }
 
     def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
         """Join the original data with the enrichment results.
@@ -421,11 +499,9 @@ class EnrichmentPreviewResult:
             with_details (bool): If `with_details` is True, the details of the enrichment results will be included in the output DataFrame.
         """
         df = self._results
-        # if not with_details:
-        #     df = self._results[
-        #         [self._final_result_column_name, self._trustworthiness_score_column_name]
-        #     ]
         joined_data = original_data.join(df, how="inner")
+        if not with_details:
+            joined_data = joined_data.drop(columns=self._detailed_column_names)
 
         return joined_data
 
