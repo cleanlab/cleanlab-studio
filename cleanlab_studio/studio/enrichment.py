@@ -314,7 +314,8 @@ class EnrichmentProject:
         else:
             latest_job_id = self._latest_populate_job["id"]
 
-        csv_file = api.export_results(api_key=self._api_key, job_id=latest_job_id)
+        file_name = api.export_results(api_key=self._api_key, job_id=latest_job_id)
+        print(f"Results exported successfully at ./{file_name}")
 
 
 class EnrichmentJob(TypedDict):
