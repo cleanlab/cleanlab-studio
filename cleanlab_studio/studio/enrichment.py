@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 import time
 from datetime import datetime
-from typing import Any, Dict, List, NotRequired, Optional, Tuple, TypedDict, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
