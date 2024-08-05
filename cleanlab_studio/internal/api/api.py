@@ -758,7 +758,7 @@ def get_enrichment_job_status(api_key: str, job_id: str) -> JSONDict:
 
 
 def get_enrichment_job_result(
-    api_key: str, job_id: str, page: int, include_original_dataset: bool
+    api_key: str, job_id: str, page: int, include_original_dataset: Optional[bool] = False
 ) -> List[JSONDict]:
     """Get result of enrichment job.
 

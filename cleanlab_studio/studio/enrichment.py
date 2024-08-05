@@ -214,13 +214,8 @@ class EnrichmentProject:
         self, job_id: Optional[str] = None, include_original_dataset: Optional[bool] = False
     ) -> EnrichmentResults:
         """Get the results of a populate job."""
-        latest_job_id = None
-        if job_id is not None:
-            latest_job_id = job_id
-        elif self._latest_populate_job is None:
-            self._latest_populate_job = self.list_all_jobs()[0]
-        else:
-            latest_job_id = self._latest_populate_job["id"]
+        self._latest_populate_job = self.list_all_jobs()[0]
+        latest_job_id = job_id or self._latest_populate_job["id"]
 
         page = 1
         results = []
@@ -269,7 +264,7 @@ class EnrichmentProject:
                 status=job["status"],
                 created_at=_response_timestamp_to_datetime(job["created_at"]),
                 updated_at=_response_timestamp_to_datetime(job["updated_at"]),
-                enrichment_options=EnrichmentOptions(**enrichment_options_dict),
+                enrichment_options=EnrichmentOptions(**enrichment_options_dict),  # type: ignore
                 average_trustworthiness_score=job["average_trustworthiness_score"],
                 job_type=job["type"],
                 new_column_name=job["new_column_name"],
@@ -306,15 +301,10 @@ class EnrichmentProject:
         plt.tight_layout()
         plt.show()
 
-    def export_results_as_csv(self, job_id: Optional[str] = None) -> str:
+    def export_results_as_csv(self, job_id: Optional[str] = None) -> None:
         """Download the results of a job."""
-        latest_job_id = None
-        if job_id is not None:
-            latest_job_id = job_id
-        elif self._latest_populate_job is None:
-            self._latest_populate_job = self.list_all_jobs()[0]
-
-        latest_job_id = self._latest_populate_job["id"]
+        self._latest_populate_job = self.list_all_jobs()[0]
+        latest_job_id = job_id or self._latest_populate_job["id"]
 
         file_name = api.export_results(api_key=self._api_key, job_id=latest_job_id)
         print(f"Results exported successfully at ./{file_name}")
@@ -416,7 +406,7 @@ class EnrichmentResults:
 
     @classmethod
     def from_dict(
-        cls, json_dict: List[JSONDict], include_original_dataset: bool = False
+        cls, json_dict: List[JSONDict], include_original_dataset: Optional[bool] = False
     ) -> EnrichmentResults:
         df = pd.DataFrame(json_dict)
         df.set_index(CLEANLAB_ROW_ID_COLUMN_NAME, inplace=True)
@@ -431,7 +421,7 @@ class EnrichmentResults:
         instance._detailed_column_names = [f"{col}_raw" for col in new_column_names] + [
             f"{col}_log" for col in new_column_names
         ]
-        instance._include_original_dataset = include_original_dataset
+        instance._include_original_dataset = include_original_dataset or False
         return instance
 
     @classmethod
@@ -457,7 +447,7 @@ class EnrichmentResults:
 def _find_pattern_columns(df) -> List[str]:
     """Find the columns that match the pattern of the enrichment"""
     pattern = re.compile(r"(.+)(_trustworthiness_score|_raw|_log)?$")
-    column_groups = {}
+    column_groups = {}  # type: Dict[str, List[str]]
 
     for col in df.columns:
         match = pattern.match(col)
@@ -470,7 +460,7 @@ def _find_pattern_columns(df) -> List[str]:
     # Filter out groups that don't have all 4 expected columns
     valid_groups = {k: v for k, v in column_groups.items() if len(v) == 4}
 
-    return valid_groups.keys()
+    return list(valid_groups.keys())
 
 
 class EnrichmentPreviewResults(EnrichmentResults):
@@ -478,7 +468,7 @@ class EnrichmentPreviewResults(EnrichmentResults):
 
     @classmethod
     def from_dict(
-        cls, json_dict: List[JSONDict], include_original_dataset: bool = False
+        cls, json_dict: List[JSONDict], include_original_dataset: Optional[bool] = False
     ) -> EnrichmentPreviewResults:
         df = pd.DataFrame(json_dict)
         df.set_index(ROW_ID_COLUMN_NAME, inplace=True)
@@ -490,7 +480,7 @@ class EnrichmentPreviewResults(EnrichmentResults):
         instance._detailed_column_names = [f"{col}_raw" for col in new_column_names] + [
             f"{col}_log" for col in new_column_names
         ]
-        instance._include_original_dataset = include_original_dataset
+        instance._include_original_dataset = include_original_dataset or False
         return instance
 
     def join(self, original_data: pd.DataFrame, *, with_details: bool = False) -> pd.DataFrame:
