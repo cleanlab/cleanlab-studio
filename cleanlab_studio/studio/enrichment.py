@@ -444,7 +444,7 @@ class EnrichmentResults:
         return joined_data
 
 
-def _find_pattern_columns(df) -> List[str]:
+def _find_pattern_columns(df: pd.DataFrame) -> List[str]:
     """Find the columns that match the pattern of the enrichment"""
     pattern = re.compile(r"(.+)(_trustworthiness_score|_raw|_log)?$")
     column_groups = {}  # type: Dict[str, List[str]]
