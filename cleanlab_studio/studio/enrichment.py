@@ -197,6 +197,8 @@ class EnrichmentProject:
             raise ValueError("The latest populate job failed.")
         elif latest_job["status"] == "RUNNING":
             return False
+        elif latest_job["status"] == "CREATED":
+            return False
         elif latest_job["status"] == "SUCCEEDED":
             return True
         else:
@@ -209,7 +211,7 @@ class EnrichmentProject:
             pass
 
     def download_results(
-        self, job_id: str | None = None, include_original_dataset: bool = False
+        self, job_id: Optional[str] = None, include_original_dataset: Optional[bool] = False
     ) -> EnrichmentResults:
         """Get the results of a populate job."""
         latest_job_id = None
@@ -226,7 +228,7 @@ class EnrichmentProject:
             api_key=self._api_key,
             job_id=latest_job_id,
             page=page,
-            only_return_results=include_original_dataset,
+            include_original_dataset=include_original_dataset,
         )
         results.extend(resp)
 
@@ -304,7 +306,7 @@ class EnrichmentProject:
         plt.tight_layout()
         plt.show()
 
-    def download_results(self, job_id: str | None) -> str:
+    def export_results_as_csv(self, job_id: str | None) -> str:
         """Download the results of a job."""
         latest_job_id = None
         if job_id is not None:
