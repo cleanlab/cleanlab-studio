@@ -758,7 +758,7 @@ def get_enrichment_job_status(api_key: str, job_id: str) -> JSONDict:
 
 
 def get_enrichment_job_result(
-    api_key: str, job_id: str, page: int, only_return_results: bool = True
+    api_key: str, job_id: str, page: int, include_original_dataset: Optional[bool] = False
 ) -> List[JSONDict]:
     """Get result of enrichment job.
 
@@ -766,14 +766,14 @@ def get_enrichment_job_result(
         api_key (str): studio API key for auth
         job_id (str): job id
         page (int): page number
-        only_return_results (bool): whether to return only results or merged results and original dataset directly from the backend
+        include_original_dataset (bool): whether to return only results or merged results and original dataset directly from the backend
     """
     check_uuid_well_formed(job_id, "job_id")
 
     res = requests.get(
         f"{enrichment_base_url}/enrich_all/{job_id}",
         headers=_construct_headers(api_key),
-        params=dict(page=page, only_return_results=only_return_results),
+        params=dict(page=page, include_original_dataset=include_original_dataset),
     )
     handle_api_error(res)
     return cast(List[JSONDict], res.json())
@@ -802,14 +802,14 @@ def get_enrichment_job(api_key: str, job_id: str) -> JSONDict:
     return cast(JSONDict, res.json())
 
 
-def export_results(api_key: str, job_id: str, filename: str | None) -> str:
+def export_results(api_key: str, job_id: str, filename: Optional[str] = None) -> str:
     """
     Exports the results of a job to a CSV file.
 
     Args:
         api_key (str): The API key used for authentication.
         job_id (str): The unique identifier of the job whose results are to be exported.
-        filename (str | None): The name of the CSV file to save the results to. If None, a default filename is generated.
+        filename (str): The name of the CSV file to save the results to. If None, a default filename is generated.
 
     Returns:
         str: A message indicating the CSV file has been saved, including the filename.
@@ -827,7 +827,7 @@ def export_results(api_key: str, job_id: str, filename: str | None) -> str:
             file.write(res.content)
     else:
         handle_api_error(res)
-    return f"CSV file saved as {filename}"
+    return filename
 
 
 def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
