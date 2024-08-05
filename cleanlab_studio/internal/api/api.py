@@ -802,14 +802,14 @@ def get_enrichment_job(api_key: str, job_id: str) -> JSONDict:
     return cast(JSONDict, res.json())
 
 
-def export_results(api_key: str, job_id: str, filename: str | None) -> str:
+def export_results(api_key: str, job_id: str, filename: Optional[str] = None) -> str:
     """
     Exports the results of a job to a CSV file.
 
     Args:
         api_key (str): The API key used for authentication.
         job_id (str): The unique identifier of the job whose results are to be exported.
-        filename (str | None): The name of the CSV file to save the results to. If None, a default filename is generated.
+        filename (str): The name of the CSV file to save the results to. If None, a default filename is generated.
 
     Returns:
         str: A message indicating the CSV file has been saved, including the filename.

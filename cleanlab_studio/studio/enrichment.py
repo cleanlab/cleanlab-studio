@@ -29,7 +29,7 @@ REGEX_PARAMETER_ERROR_MESSAGE = (
     "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
 )
 CLEANLAB_ROW_ID_COLUMN_NAME = "cleanlab_row_ID"
-CHECK_READY_INTERVAL = 60 * 5
+CHECK_READY_INTERVAL = 60 * 2  # 2 minutes
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
@@ -306,15 +306,15 @@ class EnrichmentProject:
         plt.tight_layout()
         plt.show()
 
-    def export_results_as_csv(self, job_id: str | None) -> str:
+    def export_results_as_csv(self, job_id: Optional[str] = None) -> str:
         """Download the results of a job."""
         latest_job_id = None
         if job_id is not None:
             latest_job_id = job_id
         elif self._latest_populate_job is None:
             self._latest_populate_job = self.list_all_jobs()[0]
-        else:
-            latest_job_id = self._latest_populate_job["id"]
+
+        latest_job_id = self._latest_populate_job["id"]
 
         file_name = api.export_results(api_key=self._api_key, job_id=latest_job_id)
         print(f"Results exported successfully at ./{file_name}")
