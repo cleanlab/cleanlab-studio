@@ -214,6 +214,8 @@ class EnrichmentProject:
         """Check if the latest populate job is ready."""
         latest_job = self._get_latest_job()
         if latest_job["job_type"] != "ENRICHMENT":
+            # TODO: consider fetching latest populate job directly instead of throwing an error
+            # This would prevent the user from getting stuck in an error state if preview job is the latest job
             raise ValueError(
                 "The latest job is a preview, to execute against entire dataset, please do `run()` first."
             )
@@ -243,7 +245,6 @@ class EnrichmentProject:
             while not self.ready:
                 latest_job_status = self._get_latest_job_status()
                 self._update_progress_bar(pbar, latest_job_status)
-
                 for _ in range(CHECK_READY_INTERVAL):
                     time.sleep(0.1)
                     pbar.set_description_str(f"Enrichment Progress: {next(spinner)}")
@@ -252,7 +253,6 @@ class EnrichmentProject:
                     raise EnrichmentProjectError(
                         f"Project {self.id} failed to complete. Error: {latest_job_status['error']}"
                     )
-
             latest_job_status = self._get_latest_job_status()
             self._update_progress_bar(pbar, latest_job_status)
 
