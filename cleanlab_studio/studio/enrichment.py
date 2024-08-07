@@ -202,7 +202,7 @@ class EnrichmentProject:
         return api.get_enrichment_job_status(self._api_key, job_id=latest_job["id"])
 
     def _get_num_processed_rows(self) -> int:
-        num_rows = self._get_enrichment_project_dict()["num_rows"]
+        num_rows = int(self._get_enrichment_project_dict()["num_rows"])
         latest_job_status = self._get_latest_job_status()
         status = latest_job_status["status"]
         if status == EnrichmentJobStatusEnum.SUCCEEDED.value:
