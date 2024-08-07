@@ -198,25 +198,16 @@ class EnrichmentProject:
         return self.list_all_jobs()[0]
 
     def _get_latest_job_status(self) -> dict[str, Any]:
-        """Retrieve the latest job status with details, e.g. processed_rows and average_trustworthiness_score."""
+        """
+        Returns:
+            dict: A dictionary containing the latest job status and other helpful details.
+                status (str): The status of the latest job.
+                num_rows (int): The total number of rows in the dataset.
+                processed_rows (int): The number of rows processed by the latest job.
+                average_trustworthiness_score (float): The average trustworthiness score of the latest job.
+        """
         latest_job = self._get_latest_job()
         return api.get_enrichment_job_status(self._api_key, job_id=latest_job["id"])
-
-    def _get_num_processed_rows(self) -> int:
-        num_rows = int(self._get_enrichment_project_dict()["num_rows"])
-        latest_job_status = self._get_latest_job_status()
-        status = latest_job_status["status"]
-        if status == EnrichmentJobStatusEnum.SUCCEEDED.value:
-            return num_rows
-        elif status == EnrichmentJobStatusEnum.RUNNING.value:
-            return latest_job_status.get("processed_rows") or 0
-        elif status in {
-            EnrichmentJobStatusEnum.FAILED.value,
-            EnrichmentJobStatusEnum.CREATED.value,
-        }:
-            return 0
-        else:
-            raise ValueError("The latest populate job has an unknown status.")
 
     @property
     def ready(self) -> bool:
@@ -241,7 +232,8 @@ class EnrichmentProject:
 
     def wait_until_ready(self) -> None:
         """Wait until the latest populate job is ready."""
-        num_rows = self._get_enrichment_project_dict()["num_rows"]
+        latest_job_status = self._get_latest_job_status()
+        num_rows = latest_job_status["num_rows"]
         spinner = itertools.cycle("|/-\\")
         with tqdm(
             total=num_rows,
@@ -250,24 +242,27 @@ class EnrichmentProject:
         ) as pbar:
             while not self.ready:
                 latest_job_status = self._get_latest_job_status()
-                num_processed_rows = self._get_num_processed_rows()
-                if pbar.total is None and num_rows is not None:
-                    pbar.total = num_rows
-                    pbar.refresh()
-
-                pbar.set_postfix_str(latest_job_status["status"])
-                pbar.update(num_processed_rows - pbar.n)
+                self._update_progress_bar(pbar, latest_job_status)
 
                 for _ in range(CHECK_READY_INTERVAL):
                     time.sleep(0.1)
                     pbar.set_description_str(f"Enrichment Progress: {next(spinner)}")
 
-                if latest_job_status.get("error", False):
+                if latest_job_status.get("error"):
                     raise EnrichmentProjectError(
                         f"Project {self.id} failed to complete. Error: {latest_job_status['error']}"
                     )
-            pbar.update(pbar.total - pbar.n)
-            pbar.set_postfix_str(self._get_latest_job()["status"])
+
+            latest_job_status = self._get_latest_job_status()
+            self._update_progress_bar(pbar, latest_job_status)
+
+    def _update_progress_bar(self, pbar: tqdm, latest_job_status: dict[str, Any]) -> None:
+        num_processed_rows = latest_job_status["processed_rows"]
+        average_trustworthiness_score = latest_job_status["average_trustworthiness_score"]
+        pbar.set_postfix_str(
+            f"Average Trustworthiness Score: {average_trustworthiness_score}, Status: {latest_job_status['status']}"
+        )
+        pbar.update(num_processed_rows - pbar.n)
 
     def download_results(
         self, job_id: Optional[str] = None, include_original_dataset: Optional[bool] = False
