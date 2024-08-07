@@ -33,6 +33,7 @@ REGEX_PARAMETER_ERROR_MESSAGE = (
     "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
 )
 CLEANLAB_ROW_ID_COLUMN_NAME = "cleanlab_row_ID"
+CHECK_READY_INTERVAL = 100
 
 
 class EnrichmentJobStatusEnum(Enum):
@@ -257,7 +258,7 @@ class EnrichmentProject:
                 pbar.set_postfix_str(latest_job_status["status"])
                 pbar.update(num_processed_rows - pbar.n)
 
-                for _ in range(50):
+                for _ in range(CHECK_READY_INTERVAL):
                     time.sleep(0.1)
                     pbar.set_description_str(f"Enrichment Progress: {next(spinner)}")
 
