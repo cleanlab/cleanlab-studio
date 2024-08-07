@@ -156,3 +156,7 @@ class InvalidFilepathError(HandledError):
 
 class InvalidCsvFilename(HandledError):
     pass
+
+
+class EnrichmentProjectError(InternalError):
+    pass
