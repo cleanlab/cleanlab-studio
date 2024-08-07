@@ -192,7 +192,7 @@ class EnrichmentProject:
         )
         return response
 
-    def _get_latest_job(self) -> dict:
+    def _get_latest_job(self) -> EnrichmentJob:
         """Retrieve the latest job and its details."""
         return self.list_all_jobs()[0]
 
