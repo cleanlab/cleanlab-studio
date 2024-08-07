@@ -33,7 +33,6 @@ REGEX_PARAMETER_ERROR_MESSAGE = (
     "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
 )
 CLEANLAB_ROW_ID_COLUMN_NAME = "cleanlab_row_ID"
-CHECK_READY_INTERVAL = 60 * 2  # 2 minutes
 
 
 class EnrichmentJobStatusEnum(Enum):
