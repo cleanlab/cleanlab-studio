@@ -6,15 +6,19 @@ Methods for interfacing with Enrichment Projects.
 
 from __future__ import annotations
 
+import itertools
 import re
 import time
 from datetime import datetime
+from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from tqdm import tqdm
 from typing_extensions import NotRequired
 
+from cleanlab_studio.errors import EnrichmentProjectError
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
@@ -29,7 +33,14 @@ REGEX_PARAMETER_ERROR_MESSAGE = (
     "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
 )
 CLEANLAB_ROW_ID_COLUMN_NAME = "cleanlab_row_ID"
-CHECK_READY_INTERVAL = 60 * 2  # 2 minutes
+CHECK_READY_INTERVAL = 100
+
+
+class EnrichmentJobStatusEnum(Enum):
+    CREATED = "CREATED"
+    RUNNING = "RUNNING"
+    FAILED = "FAILED"
+    SUCCEEDED = "SUCCEEDED"
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
@@ -62,7 +73,6 @@ class EnrichmentProject:
         self._id = id
         self._name = name
         self._created_at: Optional[datetime]
-        self._latest_populate_job: EnrichmentJob | None = None
         if isinstance(created_at, str):
             self._created_at = _response_timestamp_to_datetime(created_at)
         else:
@@ -130,7 +140,6 @@ class EnrichmentProject:
             user_input_regex
         )
 
-        self._latest_populate_job = None
         response = api.enrichment_preview(
             api_key=self._api_key,
             project_id=self._id,
@@ -184,38 +193,82 @@ class EnrichmentProject:
         )
         return response
 
+    def _get_latest_job(self) -> EnrichmentJob:
+        """Retrieve the latest job and its details."""
+        return self.list_all_jobs()[0]
+
+    def _get_latest_job_status(self) -> dict[str, Any]:
+        """
+        Returns:
+            dict: A dictionary containing the latest job status and other helpful details.
+                status (str): The status of the latest job.
+                num_rows (int): The total number of rows in the dataset.
+                processed_rows (int): The number of rows processed by the latest job.
+                average_trustworthiness_score (float): The average trustworthiness score of the latest job.
+        """
+        latest_job = self._get_latest_job()
+        return api.get_enrichment_job_status(self._api_key, job_id=latest_job["id"])
+
     @property
     def ready(self) -> bool:
         """Check if the latest populate job is ready."""
-        latest_job = self.list_all_jobs()[0]
+        latest_job = self._get_latest_job()
         if latest_job["job_type"] != "ENRICHMENT":
+            # TODO: consider fetching latest populate job directly instead of throwing an error
+            # This would prevent the user from getting stuck in an error state if preview job is the latest job
             raise ValueError(
                 "The latest job is a preview, to execute against entire dataset, please do `run()` first."
             )
-        self.latest_populate_job = latest_job
-        if latest_job["status"] == "FAILED":
+        status = latest_job["status"]
+        if status == EnrichmentJobStatusEnum.FAILED.value:
             raise ValueError("The latest populate job failed.")
-        elif latest_job["status"] == "RUNNING":
+        elif status in {
+            EnrichmentJobStatusEnum.RUNNING.value,
+            EnrichmentJobStatusEnum.CREATED.value,
+        }:
             return False
-        elif latest_job["status"] == "CREATED":
-            return False
-        elif latest_job["status"] == "SUCCEEDED":
+        elif status == EnrichmentJobStatusEnum.SUCCEEDED.value:
             return True
         else:
             raise ValueError("The latest populate job has an unknown status.")
 
     def wait_until_ready(self) -> None:
         """Wait until the latest populate job is ready."""
-        while not self.ready:
-            time.sleep(CHECK_READY_INTERVAL)
-            pass
+        latest_job_status = self._get_latest_job_status()
+        num_rows = latest_job_status["num_rows"]
+        spinner = itertools.cycle("|/-\\")
+        with tqdm(
+            total=num_rows,
+            desc="Enrichment Progress:",
+            bar_format="{desc} Rows Processed - {n_fmt}/{total_fmt}{postfix}",
+        ) as pbar:
+            while not self.ready:
+                latest_job_status = self._get_latest_job_status()
+                self._update_progress_bar(pbar, latest_job_status)
+                for _ in range(CHECK_READY_INTERVAL):
+                    time.sleep(0.1)
+                    pbar.set_description_str(f"Enrichment Progress: {next(spinner)}")
+
+                if latest_job_status.get("error"):
+                    raise EnrichmentProjectError(
+                        f"Project {self.id} failed to complete. Error: {latest_job_status['error']}"
+                    )
+            latest_job_status = self._get_latest_job_status()
+            self._update_progress_bar(pbar, latest_job_status)
+
+    def _update_progress_bar(self, pbar: tqdm, latest_job_status: dict[str, Any]) -> None:
+        num_processed_rows = latest_job_status["processed_rows"]
+        average_trustworthiness_score = latest_job_status["average_trustworthiness_score"]
+        pbar.set_postfix_str(
+            f"Average Trustworthiness Score: {average_trustworthiness_score}, Status: {latest_job_status['status']}"
+        )
+        pbar.update(num_processed_rows - pbar.n)
 
     def download_results(
         self, job_id: Optional[str] = None, include_original_dataset: Optional[bool] = False
     ) -> EnrichmentResults:
         """Get the results of a populate job."""
-        self._latest_populate_job = self.list_all_jobs()[0]
-        latest_job_id = job_id or self._latest_populate_job["id"]
+        latest_job_id = job_id or self._get_latest_job()["id"]
 
         page = 1
         results = []
@@ -272,13 +325,11 @@ class EnrichmentProject:
             )
             typed_jobs.append(enrichment_job)
 
-        self._latest_populate_job = typed_jobs[0]
         return typed_jobs
 
     def show_trustworthiness_score_history(self) -> None:
         """Show the trustworthiness score history of all jobs in the project."""
         data = self.list_all_jobs()
-        self._latest_populate_job = data[0]
         data_sorted = sorted(data, key=lambda x: x["created_at"])
         scores = []
         dates = []
@@ -303,8 +354,8 @@ class EnrichmentProject:
 
     def export_results_as_csv(self, job_id: Optional[str] = None) -> None:
         """Download the results of a job."""
-        self._latest_populate_job = self.list_all_jobs()[0]
-        latest_job_id = job_id or self._latest_populate_job["id"]
+        latest_job = self._get_latest_job()
+        latest_job_id = job_id or latest_job["id"]
 
         file_name = api.export_results(api_key=self._api_key, job_id=latest_job_id)
         print(f"Results exported successfully at ./{file_name}")
