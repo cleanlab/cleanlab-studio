@@ -21,6 +21,8 @@ from cleanlab_studio.internal.api.beta_api import (
 
 
 class JobStatus(enum.Enum):
+    """The status of a job in the Cleanlab Studio Beta API."""
+
     CREATED = 0
     RUNNING = 1
     READY = 2
@@ -33,6 +35,8 @@ class JobStatus(enum.Enum):
 
 @dataclass
 class BetaJob:
+    """Represents a job in the Cleanlab Studio Beta API."""
+
     id: str
     status: JobStatus
     dataset_id: str
@@ -62,7 +66,7 @@ class BetaJob:
 
     @classmethod
     def run(cls, api_key: str, dataset_id: str, job_definition_name: str) -> "BetaJob":
-        """Creates and runs a new job with the given dataset and job definition.
+        """Creates and runs a new job with the given dataset and job definition. Raises an error if the job definition name is invalid.
 
         Args:
             api_key: Your API key.
@@ -87,8 +91,8 @@ class BetaJob:
             timeout (Optional[float], optional): timeout for polling, in seconds. Defaults to None.
 
         Raises:
-            TimeoutError: if job is not ready by end of timeout
-            BetaJobError: if job fails
+            TimeoutError: if job is not ready by end of timeout.
+            BetaJobError: if job fails.
         """
         start_time = time.time()
         res = get_job_status(self._api_key, self.id)
@@ -124,6 +128,14 @@ class BetaJob:
                 raise BetaJobError(f"Experimental job {self.id} failed to complete")
 
     def download_results(self, output_filepath: str) -> None:
+        """Downloads the results of an experimental job to the given output filepath.
+
+        Args:
+            output_filepath: The path to save the downloaded results to.
+        Raises:
+            BetaJobError: if job is not yet ready or has failed.
+            DownloadResultsError: if output file extension does not match result file type.
+        """
         output_path = pathlib.Path(output_filepath)
 
         if self.status == JobStatus.FAILED:
@@ -144,6 +156,13 @@ class BetaJob:
 
     @classmethod
     def list(cls, api_key: str) -> List[BetaJob]:
+        """Lists all jobs you have run through the Beta API.
+
+        Args:
+            api_key: Your API key.
+        Returns:
+            A list of all the jobs you have run through the Cleanlab Studio Beta API.
+        """
         jobs = list_jobs(api_key)
         return [
             cls(

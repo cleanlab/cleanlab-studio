@@ -1,3 +1,7 @@
+"""
+Python API for Cleanlab Studio Private Beta functionality.
+"""
+
 from typing import List
 
 from cleanlab_studio.internal.studio_base import StudioBase
@@ -29,7 +33,7 @@ class StudioBeta(StudioBase):
         return BetaDataset.from_filepath(self._api_key, filepath)
 
     def run_job(self, dataset_id: str, job_definition_name: str) -> BetaJob:
-        """Runs a Cleanlab Studio Beta job with the given dataset and job definition.
+        """Runs a Cleanlab Studio Beta job with the given dataset and job definition. Raises an error if the job definition name is invalid.
         Args:
             dataset_id: The ID of the dataset to run the job on.
             job_definition_name: The name of the job definition to run.

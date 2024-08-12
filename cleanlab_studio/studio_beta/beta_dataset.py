@@ -16,6 +16,8 @@ from cleanlab_studio.internal.upload_helpers import upload_file_parts
 
 @dataclass
 class BetaDataset:
+    """Represents a dataset uploaded to the Cleanlab Studio Beta API."""
+
     id: str
     filename: str
     upload_complete: bool
@@ -23,6 +25,14 @@ class BetaDataset:
 
     @classmethod
     def from_id(cls, api_key: str, dataset_id: str) -> "BetaDataset":
+        """Loads a dataset from the Cleanlab Studio Beta API by its ID.
+
+        Args:
+            api_key: Your Cleanlab Studio API key.
+            dataset_id: The ID of the dataset to load.
+        Returns:
+            The dataset object if you've uploaded a dataset to the Cleanlab Studio Beta API with that ID.
+        """
         dataset = get_dataset(api_key, dataset_id)
         return cls(
             id=dataset_id,
@@ -33,6 +43,15 @@ class BetaDataset:
 
     @classmethod
     def from_filepath(cls, api_key: str, filepath: str) -> "BetaDataset":
+        """Uploads a dataset from the given filepath for use in the Cleanlab Studio Beta API.
+
+        Args:
+            api_key: Your Cleanlab Studio API key.
+            filepath: The path to the dataset file.
+        Returns:
+            The uploaded dataset object. You can use this object to obtain the ID of the uploaded dataset.
+            Use this ID to run jobs on the dataset.
+        """
         dataset_source = FilepathDatasetSource(filepath=pathlib.Path(filepath))
         initialize_response = initialize_upload(
             api_key,
@@ -56,6 +75,12 @@ class BetaDataset:
 
     @classmethod
     def list(cls, api_key: str) -> List[BetaDataset]:
+        """Lists all datasets you have uploaded through the Beta API.
+
+        Args:
+            api_key: Your Cleanlab Studio API key.
+        Returns:
+            A list of all the datasets you have uploaded through the Cleanlab Studio Beta API."""
         datasets = list_datasets(api_key)
         return [
             cls(
