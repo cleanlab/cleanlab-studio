@@ -101,7 +101,7 @@ class TLM:
 
         options_dict = options or {}
         validate_tlm_options(options_dict)
-        if "log" in options_dict.keys():
+        if "log" in options_dict.keys() and len(options_dict["log"]) > 0:
             self._return_log = True
 
         # explicitly specify the default model
@@ -709,7 +709,7 @@ class TLMOptions(TypedDict):
         and helping catch answers that are obviously incorrect/bad for a prompt asking for a well-defined answer that LLMs should be able to handle.
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
 
-        log (List[str], default = None): optionally specify additional logs or metadata to return.
+        log (List[str], default = []): optionally specify additional logs or metadata to return.
         For instance, include "explanation" here to get explanations of why a response is scored with low trustworthiness.
     """
 
