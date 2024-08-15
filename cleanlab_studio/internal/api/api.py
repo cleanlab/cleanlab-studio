@@ -646,7 +646,6 @@ async def tlm_prompt(
     rate_handler: TlmRateHandler,
     client_session: Optional[aiohttp.ClientSession] = None,
     batch_index: Optional[int] = None,
-    private_api_endpoint: Optional[str] = None,
 ) -> JSONDict:
     """
     Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
@@ -670,15 +669,16 @@ async def tlm_prompt(
 
     try:
         async with rate_handler:
-            if private_api_endpoint:
+            if options.get("custom_api_endpoint", None):
+                base_api_url = options["custom_api_endpoint"]
                 res = await client_session.post(
-                    f"{private_api_endpoint}/prompt",
+                    f"{base_api_url}/prompt",
                     json=dict(
                         prompt=prompt,
                         quality=quality_preset,
+                        options=options or {},
                         user_id=api_key,
                         client_id=api_key,
-                        options=options or {},
                     ),
                 )
             else:
