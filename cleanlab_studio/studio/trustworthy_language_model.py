@@ -22,9 +22,9 @@ from typing_extensions import (  # for Python <3.11 with (Not)Required
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.constants import (
+    _TLM_DEFAULT_MODEL,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
-    _TLM_DEFAULT_MODEL,
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 from cleanlab_studio.internal.tlm.validation import (
@@ -86,11 +86,13 @@ class TLM:
         options: Optional[TLMOptions] = None,
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
+        private_api_endpoint: Optional[str] = None,
     ) -> None:
         """Use `Studio.TLM()` instead of this method to initialize a TLM.
         lazydocs: ignore
         """
         self._api_key = api_key
+        self.private_api_endpoint = private_api_endpoint
 
         if quality_preset not in _VALID_TLM_QUALITY_PRESETS:
             raise ValidationError(
@@ -406,6 +408,7 @@ class TLM:
                     client_session,
                     batch_index=batch_index,
                     retries=_TLM_MAX_RETRIES,
+                    private_api_endpoint=self.private_api_endpoint,
                 ),
                 timeout=timeout,
             )
