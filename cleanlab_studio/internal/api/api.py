@@ -669,24 +669,18 @@ async def tlm_prompt(
 
     try:
         async with rate_handler:
-            if options.get("custom_api_endpoint", None):
-                base_api_url = options["custom_api_endpoint"]
-                res = await client_session.post(
-                    f"{base_api_url}/prompt",
-                    json=dict(
-                        prompt=prompt,
-                        quality=quality_preset,
-                        options=options or {},
-                        user_id=api_key,
-                        client_id=api_key,
-                    ),
-                )
-            else:
-                res = await client_session.post(
-                    f"{tlm_base_url}/prompt",
-                    json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
-                    headers=_construct_headers(api_key),
-                )
+            base_api_url = options.get("custom_api_endpoint", tlm_base_url)
+            res = await client_session.post(
+                f"{base_api_url}/prompt",
+                json=dict(
+                    prompt=prompt,
+                    quality=quality_preset,
+                    options=options or {},
+                    user_id=api_key,
+                    client_id=api_key,
+                ),
+                headers=_construct_headers(api_key) if base_api_url == tlm_base_url else None,
+            )
 
             res_json = await res.json()
 
