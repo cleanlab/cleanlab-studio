@@ -2,30 +2,29 @@
 Python API for Cleanlab Studio.
 """
 
-from typing import Any, List, Literal, Optional, Union
-from types import FunctionType
 import warnings
+from types import FunctionType
+from typing import Any, List, Literal, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from . import inference
-from . import trustworthy_language_model
-from cleanlab_studio.utils import tlm_hybrid
-from cleanlab_studio.errors import CleansetError
+from cleanlab_studio.errors import CleansetError, InvalidDatasetError
 from cleanlab_studio.internal import clean_helpers, deploy_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.studio_base import StudioBase
+from cleanlab_studio.internal.types import SchemaOverride, TLMQualityPreset
 from cleanlab_studio.internal.util import (
-    init_dataset_source,
-    telemetry,
+    apply_corrections_pd_df,
     apply_corrections_snowpark_df,
     apply_corrections_spark_df,
-    apply_corrections_pd_df,
+    init_dataset_source,
+    telemetry,
 )
-from cleanlab_studio.internal.settings import CleanlabSettings
-from cleanlab_studio.internal.types import SchemaOverride, TLMQualityPreset
-from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
+from cleanlab_studio.utils import tlm_hybrid
+
+from . import inference, trustworthy_language_model
 
 _snowflake_exists = api.snowflake_exists
 if _snowflake_exists:
@@ -36,36 +35,14 @@ if _pyspark_exists:
     import pyspark.sql
 
 
-class Studio:
-    _api_key: str
-
-    def __init__(self, api_key: Optional[str]):
+class Studio(StudioBase):
+    def __init__(self, api_key: str) -> None:
         """
         Creates a Cleanlab Studio client.
-
         Args:
             api_key: You can find your API key on your [account page](https://app.cleanlab.ai/account) in Cleanlab Studio. Instead of specifying the API key here, you can also log in with `cleanlab login` on the command-line.
-
         """
-        if not api.is_valid_client_version():
-            raise VersionError(
-                "CLI is out of date and must be updated. Run 'pip install --upgrade cleanlab-studio'."
-            )
-        if api_key is None:
-            try:
-                api_key = CleanlabSettings.load().api_key
-                if api_key is None:
-                    raise ValueError
-            except (FileNotFoundError, KeyError, ValueError):
-                raise MissingAPIKeyError(
-                    "No API key found; either specify API key or log in with 'cleanlab login' first"
-                )
-        if not api.validate_api_key(api_key):
-            raise ValueError(
-                f"Invalid API key, please check if it is properly specified: {api_key}"
-            )
-
-        self._api_key = api_key
+        super().__init__(api_key)
 
     def upload_dataset(
         self,
