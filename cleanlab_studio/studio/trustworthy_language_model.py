@@ -22,9 +22,9 @@ from typing_extensions import (  # for Python <3.11 with (Not)Required
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.constants import (
-    _TLM_DEFAULT_MODEL,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
+    _TLM_DEFAULT_MODEL,
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 from cleanlab_studio.internal.tlm.validation import (
@@ -719,7 +719,6 @@ class TLMOptions(TypedDict):
     num_consistency_samples: NotRequired[int]
     use_self_reflection: NotRequired[bool]
     log: NotRequired[List[str]]
-    custom_api_endpoint: NotRequired[str]
 
 
 def is_notebook() -> bool:
