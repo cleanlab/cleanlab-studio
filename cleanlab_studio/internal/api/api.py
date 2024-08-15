@@ -669,13 +669,14 @@ async def tlm_prompt(
 
     try:
         async with rate_handler:
+            options = options or {}
             base_api_url = options.get("custom_api_endpoint", tlm_base_url)
             res = await client_session.post(
                 f"{base_api_url}/prompt",
                 json=dict(
                     prompt=prompt,
                     quality=quality_preset,
-                    options=options or {},
+                    options=options,
                     user_id=api_key,
                     client_id=api_key,
                 ),
