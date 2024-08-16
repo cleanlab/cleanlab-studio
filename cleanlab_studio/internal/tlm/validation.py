@@ -255,17 +255,17 @@ def process_response_and_kwargs(
     ]
 
 
-def validate_tlm_hybrid_score_options(score_options: Any) -> None:
+def validate_tlm_lite_score_options(score_options: Any) -> None:
     INVALID_SCORE_OPTIONS = {"num_candidate_responses"}
 
     invalid_score_keys = set(score_options.keys()).intersection(INVALID_SCORE_OPTIONS)
     if invalid_score_keys:
         raise ValidationError(
-            f"Please remove these invalid keys from the `options` dictionary provided for TLMHybrid: {invalid_score_keys}.\n"
+            f"Please remove these invalid keys from the `options` dictionary provided for TLMLite: {invalid_score_keys}.\n"
         )
 
 
-def get_tlm_hybrid_response_options(score_options: Any, response_model: str) -> Dict[str, Any]:
+def get_tlm_lite_response_options(score_options: Any, response_model: str) -> Dict[str, Any]:
     VALID_RESPONSE_OPTIONS = {"max_tokens"}
 
     response_options = {"model": response_model, "log": ["perplexity"]}
