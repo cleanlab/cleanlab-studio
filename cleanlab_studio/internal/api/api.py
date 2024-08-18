@@ -830,6 +830,29 @@ def export_results(api_key: str, job_id: str, filename: Optional[str] = None) ->
     return filename
 
 
+def pause_enrichment_job(api_key: str, job_id: str) -> None:
+    """Pause enrichment job."""
+    check_uuid_well_formed(job_id, "job_id")
+
+    res = requests.post(
+        f"{enrichment_base_url}/enrich_all/{job_id}/pause",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+
+
+def resume_enrichment_job(api_key: str, job_id: str) -> None:
+    """Resume enrichment job."""
+    check_uuid_well_formed(job_id, "job_id")
+
+    res = requests.post(
+        f"{enrichment_base_url}/enrich_all/{job_id}/resume",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    return cast(JSONDict, res.json())
+
+
 def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
     """Implements TLM retry decorator, with special handling for rate limit retries."""
 

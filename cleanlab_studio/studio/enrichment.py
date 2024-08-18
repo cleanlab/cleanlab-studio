@@ -316,7 +316,9 @@ class EnrichmentProject:
                 id=job["id"],
                 status=job["status"],
                 created_at=_response_timestamp_to_datetime(job["created_at"]),
-                updated_at=_response_timestamp_to_datetime(job["updated_at"]),
+                updated_at=_response_timestamp_to_datetime(job["updated_at"])
+                if job["updated_at"]
+                else None,
                 enrichment_options=EnrichmentOptions(**enrichment_options_dict),  # type: ignore
                 average_trustworthiness_score=job["average_trustworthiness_score"],
                 job_type=job["type"],
@@ -359,6 +361,17 @@ class EnrichmentProject:
 
         file_name = api.export_results(api_key=self._api_key, job_id=latest_job_id)
         print(f"Results exported successfully at ./{file_name}")
+
+    def pause(self) -> None:
+        """Pause the latest batch job."""
+        latest_job = self._get_latest_job()
+        api.pause_enrichment_job(api_key=self._api_key, job_id=latest_job["id"])
+        print("Job paused successfully.")
+
+    def resume(self) -> None:
+        """Resume the latest batch job."""
+        latest_job = self._get_latest_job()
+        return api.resume_enrichment_job(api_key=self._api_key, job_id=latest_job["id"])
 
 
 class EnrichmentJob(TypedDict):
