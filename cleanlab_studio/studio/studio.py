@@ -113,7 +113,7 @@ class Studio:
             schema_overrides=schema_overrides,
         )
 
-    def upload_url_dataset(
+    def upload_from_url(
         self,
         url: str,
         *,
