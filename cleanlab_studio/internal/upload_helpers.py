@@ -38,11 +38,10 @@ def upload_url_dataset(
     api_key: str,
     url: str,
     *,
-    dataset_name: Optional[str] = None,
     schema_overrides: Optional[List[SchemaOverride]] = None,
 ) -> str:
     # start dataset upload
-    upload_id = api.start_url_upload(api_key, url, dataset_name, schema_overrides)
+    upload_id = api.start_url_upload(api_key, url, schema_overrides)
 
     # wait for dataset upload
     dataset_id = api.poll_ingestion_progress(api_key, upload_id, "Ingesting Dataset...")

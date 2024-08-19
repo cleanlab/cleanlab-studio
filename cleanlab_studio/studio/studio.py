@@ -117,7 +117,6 @@ class Studio:
         self,
         url: str,
         *,
-        dataset_name: Optional[str] = None,
         schema_overrides: Optional[List[SchemaOverride]] = None,
         **kwargs: Any,
     ) -> str:
@@ -140,7 +139,6 @@ class Studio:
         return upload_helpers.upload_url_dataset(
             self._api_key,
             url,
-            dataset_name=dataset_name,
             schema_overrides=schema_overrides,
         )
 
