@@ -679,7 +679,7 @@ async def tlm_prompt(
                     user_id=api_key,
                     client_id=api_key,
                 ),
-                headers=_construct_headers(api_key) if base_api_url == tlm_base_url else None,
+                headers=_construct_headers(api_key),
             )
 
             res_json = await res.json()
