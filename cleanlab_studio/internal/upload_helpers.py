@@ -34,6 +34,22 @@ def upload_dataset(
     return dataset_id
 
 
+def upload_url_dataset(
+    api_key: str,
+    url: str,
+    *,
+    schema_overrides: Optional[List[SchemaOverride]] = None,
+) -> str:
+    # start dataset upload
+    upload_id = api.start_url_upload(api_key, url, schema_overrides)
+
+    # wait for dataset upload
+    dataset_id = api.poll_ingestion_progress(api_key, upload_id, "Ingesting Dataset...")
+
+    # return dataset id
+    return dataset_id
+
+
 async def _upload_file_chunk_async(
     session: aiohttp.ClientSession,
     chunk: bytes,

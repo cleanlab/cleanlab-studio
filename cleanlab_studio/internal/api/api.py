@@ -189,6 +189,22 @@ def confirm_upload(
     handle_api_error(res)
 
 
+def start_url_upload(
+    api_key: str,
+    url: str,
+    schema_overrides: Optional[List[SchemaOverride]],
+) -> str:
+    res = requests.post(
+        f"{upload_base_url}/url/initialize",
+        json=dict(url=url, schema_overrides=schema_overrides),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+
+    upload_id = res.json()["upload_id"]
+    return cast(str, upload_id)
+
+
 def update_schema(
     api_key: str,
     dataset_id: str,
@@ -669,9 +685,16 @@ async def tlm_prompt(
 
     try:
         async with rate_handler:
+            base_api_url = os.environ.get("CLEANLAB_API_TLM_BASE_URL", tlm_base_url)
             res = await client_session.post(
-                f"{tlm_base_url}/prompt",
-                json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
+                f"{base_api_url}/prompt",
+                json=dict(
+                    prompt=prompt,
+                    quality=quality_preset,
+                    options=options or {},
+                    user_id=api_key,
+                    client_id=api_key,
+                ),
                 headers=_construct_headers(api_key),
             )
 
