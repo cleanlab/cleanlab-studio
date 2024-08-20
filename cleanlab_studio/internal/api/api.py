@@ -189,6 +189,22 @@ def confirm_upload(
     handle_api_error(res)
 
 
+def start_url_upload(
+    api_key: str,
+    url: str,
+    schema_overrides: Optional[List[SchemaOverride]],
+) -> str:
+    res = requests.post(
+        f"{upload_base_url}/url/initialize",
+        json=dict(url=url, schema_overrides=schema_overrides),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+
+    upload_id = res.json()["upload_id"]
+    return cast(str, upload_id)
+
+
 def update_schema(
     api_key: str,
     dataset_id: str,
