@@ -60,7 +60,7 @@ def upload_bigquery_dataset(
     schema_overrides: Optional[List[SchemaOverride]] = None,
 ) -> str:
     # start dataset upload
-    upload_id = api.start_bq_upload(
+    upload_id = api.start_bigquery_upload(
         api_key, bigquery_project, bigquery_dataset_id, bigquery_table_id, schema_overrides
     )
 

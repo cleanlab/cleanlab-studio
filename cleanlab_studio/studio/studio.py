@@ -105,7 +105,6 @@ class Studio:
             )
 
         if isinstance(schema_overrides, dict):
-            # TODO: link to documentation for schema override format
             schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
             warnings.warn(
                 "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
@@ -133,7 +132,6 @@ class Studio:
             schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
         """
         if isinstance(schema_overrides, dict):
-            # TODO: link to documentation for schema override format
             schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
             warnings.warn(
                 "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
@@ -165,7 +163,6 @@ class Studio:
             schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
         """
         if isinstance(schema_overrides, dict):
-            # TODO: link to documentation for schema override format
             schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
             warnings.warn(
                 "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
