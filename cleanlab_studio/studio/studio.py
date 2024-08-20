@@ -2,30 +2,34 @@
 Python API for Cleanlab Studio.
 """
 
-from typing import Any, List, Literal, Optional, Union
-from types import FunctionType
 import warnings
+from types import FunctionType
+from typing import Any, List, Literal, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from . import inference
-from . import trustworthy_language_model
-from cleanlab_studio.utils import tlm_hybrid
-from cleanlab_studio.errors import CleansetError
+from cleanlab_studio.errors import (
+    CleansetError,
+    InvalidDatasetError,
+    MissingAPIKeyError,
+    VersionError,
+)
 from cleanlab_studio.internal import clean_helpers, deploy_helpers, upload_helpers
 from cleanlab_studio.internal.api import api
-from cleanlab_studio.internal.util import (
-    init_dataset_source,
-    telemetry,
-    apply_corrections_snowpark_df,
-    apply_corrections_spark_df,
-    apply_corrections_pd_df,
-)
 from cleanlab_studio.internal.settings import CleanlabSettings
 from cleanlab_studio.internal.types import SchemaOverride, TLMQualityPreset
-from cleanlab_studio.errors import VersionError, MissingAPIKeyError, InvalidDatasetError
+from cleanlab_studio.internal.util import (
+    apply_corrections_pd_df,
+    apply_corrections_snowpark_df,
+    apply_corrections_spark_df,
+    init_dataset_source,
+    telemetry,
+)
+from cleanlab_studio.utils import tlm_hybrid
+
+from . import inference, trustworthy_language_model
 
 _snowflake_exists = api.snowflake_exists
 if _snowflake_exists:
@@ -139,6 +143,40 @@ class Studio:
         return upload_helpers.upload_url_dataset(
             self._api_key,
             url,
+            schema_overrides=schema_overrides,
+        )
+
+    def upload_from_bigquery(
+        self,
+        bigquery_project: str,
+        bigquery_dataset_id: str,
+        bigquery_table_id: str,
+        *,
+        schema_overrides: Optional[List[SchemaOverride]] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Uploads a dataset, from BigQuery, to Cleanlab Studio.
+
+        Args:
+            bigquery_project: BigQuery project ID.
+            bigquery_dataset_id: BigQuery dataset ID.
+            bigquery_table_id: BigQuery table ID.
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+        """
+        if isinstance(schema_overrides, dict):
+            # TODO: link to documentation for schema override format
+            schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
+            warnings.warn(
+                "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
+                FutureWarning,
+            )
+
+        return upload_helpers.upload_bigquery_dataset(
+            self._api_key,
+            bigquery_project,
+            bigquery_dataset_id,
+            bigquery_table_id,
             schema_overrides=schema_overrides,
         )
 
