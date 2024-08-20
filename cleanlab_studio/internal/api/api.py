@@ -199,7 +199,7 @@ def start_url_upload(
     handle_api_error(res)
 
     upload_id = res.json()["upload_id"]
-    return upload_id
+    return cast(str, upload_id)
 
 
 def update_schema(
