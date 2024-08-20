@@ -1,7 +1,7 @@
 """
-TLMHybrid is a hybrid version of the [Trustworthy Language Model (TLM)](../trustworthy_language_model) that enables the use of different LLMs for generating the response and for scoring its trustworthiness.
+TLM Lite is a version of the [Trustworthy Language Model (TLM)](../trustworthy_language_model) that enables the use of different LLMs for generating the response and for scoring its trustworthiness.
 
-**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLMHybrid()`](/reference/python/studio/#method-tlmhybrid) to instantiate a [TLMHybrid](#class-tlmhybrid) object, and then you can use the methods like [`prompt()`](#method-prompt) documented on this page.
+**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLMLite()`](/reference/python/studio/#method-tlmlite) to instantiate a [TLMLite](#class-tlmlite) object, and then you can use the methods like [`prompt()`](#method-prompt) documented on this page.
 """
 
 from typing import List, Dict, Optional, Union, cast, Sequence
@@ -9,24 +9,24 @@ import numpy as np
 
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.tlm.validation import (
-    validate_tlm_hybrid_score_options,
-    get_tlm_hybrid_response_options,
+    validate_tlm_lite_score_options,
+    get_tlm_lite_response_options,
 )
 from cleanlab_studio.internal.types import TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLM, TLMOptions, TLMResponse, TLMScore
 
 
-class TLMHybrid:
+class TLMLite:
     """
-    A hybrid version of the Trustworthy Language Model (TLM) that enables the use of different LLMs for generating the response and for scoring its trustworthiness.
+    A version of the Trustworthy Language Model (TLM) that enables the use of different LLMs for generating the response and for scoring its trustworthiness.
 
-    TLMHybrid should be used if you want to use a better model to generate responses but want to get cheaper and quicker trustworthiness score
+    TLMLite should be used if you want to use a better model to generate responses but want to get cheaper and quicker trustworthiness score
     evaluations by using smaller models.
 
-    ** The TLMHybrid object is not meant to be constructed directly.** Instead, use the [`Studio.TLMHybrid()`](../studio/#method-tlmhybrid)
-    method to configure and instantiate a TLMHybrid object.
-    After you've instantiated the TLMHybrid object using [`Studio.TLMHybrid()`](../studio/#method-tlmhybrid), you can use the instance methods documented on this page.
-    Possible arguments for `Studio.TLMHybrid()` are documented below.
+    ** The TLMLite object is not meant to be constructed directly.** Instead, use the [`Studio.TLMLite()`](../studio/#method-tlmlite)
+    method to configure and instantiate a TLMLite object.
+    After you've instantiated the TLMLite object using [`Studio.TLMLite()`](../studio/#method-tlmlite), you can use the instance methods documented on this page.
+    Possible arguments for `Studio.TLMLite()` are documented below.
 
     Most of the input arguments for this class are similar to those for TLM, major differences will be described below.
 
@@ -37,7 +37,7 @@ class TLMHybrid:
 
         quality_preset (TLMQualityPreset, default = "medium"): preset configuration to control the quality of TLM trustworthiness scores vs. runtimes/costs.
             This preset only applies to the model computing the trustworthiness score.
-            Supported options are only "medium" or "low", because TLMHybrid is not intended to improve response accuracy
+            Supported options are only "medium" or "low", because TLMLite is not intended to improve response accuracy
             (use the regular [TLM](../trustworthy_language_model) for that).
 
         options (TLMOptions, optional): a typed dict of advanced configuration options.
@@ -61,7 +61,7 @@ class TLMHybrid:
         verbose: Optional[bool] = None,
     ) -> None:
         """
-        Use `Studio.TLMHybrid()` instead of this method to initialize a TLMHybrid object.
+        Use `Studio.TLMLite()` instead of this method to initialize a TLMLite object.
         lazydocs: ignore
         """
         self._api_key = api_key
@@ -69,15 +69,15 @@ class TLMHybrid:
 
         if quality_preset not in {"low", "medium"}:
             raise ValidationError(
-                f"Invalid quality preset: {quality_preset}. TLMHybrid only supports 'low' and 'medium' presets."
+                f"Invalid quality preset: {quality_preset}. TLMLite only supports 'low' and 'medium' presets."
             )
         self._score_quality_preset = quality_preset
 
         if options is not None:
-            validate_tlm_hybrid_score_options(options)
+            validate_tlm_lite_score_options(options)
         self._score_options = options
         self._response_options = cast(
-            TLMOptions, get_tlm_hybrid_response_options(self._score_options, self._response_model)
+            TLMOptions, get_tlm_lite_response_options(self._score_options, self._response_model)
         )
 
         self._timeout = (
