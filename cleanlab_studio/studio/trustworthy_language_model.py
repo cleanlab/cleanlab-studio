@@ -192,7 +192,7 @@ class TLM:
             capture_exceptions (bool): if should return None in place of the response for any errors or timeout processing some inputs
 
         Returns:
-            Union[TLMBatchScoreResponse, TLMOptionalBatchScoreResponse]: TLM trustworthiness score for each prompt (in supplied order)
+            Union[TLMBatchScoreResponse, TLMOptionalBatchScoreResponse]: TLM trustworthiness score for each prompt (in supplied order).
         """
         if capture_exceptions:
             per_query_timeout, per_batch_timeout = self._timeout, None
@@ -437,8 +437,10 @@ class TLM:
             response (str | Sequence[str]): existing response (or list of responses) associated with the input prompts.
                 These can be from any LLM or human-written responses.
         Returns:
-            float | List[float]: float or list of floats (if multiple prompt-responses were provided) corresponding
-                to the TLM's trustworthiness score.
+            TLMScoreResponse | TLMBatchScoreResponse: **TLMScoreResponse** represents a single TLM response that can be either float, representing the trustworthiness score or a TLMScore object containing both the trustworthiness score and log dictionary keys.
+
+                **TLMBatchScoreResponse** (if multiple prompt-responses were provided) represents a TLM response that can be either a list of floats or a list of TLMScore objects. The list will have the be length as the input list of prompts, response pairs.
+
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
                 If running on many prompt-response pairs simultaneously:
                 this method will raise an exception if any TLM errors or timeouts occur.
@@ -493,7 +495,7 @@ class TLM:
             prompt (Sequence[str]): list of prompts for the TLM to evaluate
             response (Sequence[str]): list of existing responses corresponding to the input prompts (from any LLM or human-written)
         Returns:
-            List[float]: list of floats corresponding to the TLM's trustworthiness score.
+            TLMOptionalBatchScoreResponse: a TLM response that can be either a list of floats or None (if the call to the TLM failed) or a list of TLMScore objects or None (if the call to the TLM failed). The list will have the be length as the input list of prompts, response pairs. The floats correspond to the TLM's trustworthiness score.
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
                 The returned list will always have the same length as the input list.
                 In case of TLM error or timeout on any prompt-response pair,
@@ -537,8 +539,9 @@ class TLM:
             prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
             response (str | Sequence[str]): response (or list of responses) corresponding to the input prompts
         Returns:
-            float | List[float]: float or list of floats (if multiple prompt-responses were provided) corresponding
-                to the TLM's trustworthiness score.
+            TLMScoreResponse | float | List[float]: **TLMScoreResponse** represents a single TLM response that can be either float, representing the trustworthiness score or a TLMScore object
+                containing both the trustworthiness score and log dictionary keys,
+                or float or list of floats (if multiple prompt-responses were provided) corresponding to the TLM's trustworthiness score.
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
@@ -655,19 +658,8 @@ class TLMScore(TypedDict):
 
 
 TLMScoreResponse = Union[float, TLMScore]
-"""
-TLMScoreResponse represents a single TLM response that can be either float, representing the trustworthiness score or a TLMScore object containing both the trustworthiness score and log dictionary keys.
-"""
-
 TLMBatchScoreResponse = Union[List[float], List[TLMScore]]
-"""
-TLMBatchScoreResponse represents a TLM response that can be either a list of floats or a list of TLMScore objects. The list will have the be length as the input list of prompts, response pairs.
-"""
-
 TLMOptionalBatchScoreResponse = Union[List[Optional[float]], List[Optional[TLMScore]]]
-"""
-TLMOptionalBatchScoreResponse represents a TLM response that can be either a list of floats or None (if the call to the TLM failed) or a list of TLMScore objects or None (if the call to the TLM failed). The list will have the be length as the input list of prompts, response pairs.
-"""
 
 
 class TLMOptions(TypedDict):
