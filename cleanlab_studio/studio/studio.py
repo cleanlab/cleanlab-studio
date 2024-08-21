@@ -156,7 +156,7 @@ class Studio:
         """
         Uploads a dataset, from BigQuery, to Cleanlab Studio.
 
-        Ensure that you've enabled Cleanlab Studio to access your BigQuery table, as outlined in the [BigQuery tutorial](/tutorials/notebooks/cleanlab-studio-api/bigquery_dataset).
+        Ensure that you've enabled Cleanlab Studio to access your BigQuery table, as outlined in the [BigQuery tutorial](/tutorials/bigquery_dataset).
 
         Args:
             bigquery_project: BigQuery project ID.
