@@ -205,6 +205,29 @@ def start_url_upload(
     return cast(str, upload_id)
 
 
+def start_bigquery_upload(
+    api_key: str,
+    bigquery_project: str,
+    bigquery_dataset_id: str,
+    bigquery_table_id: str,
+    schema_overrides: Optional[List[SchemaOverride]],
+) -> str:
+    res = requests.post(
+        f"{upload_base_url}/bigquery/initialize",
+        json=dict(
+            bigquery_project=bigquery_project,
+            bigquery_dataset_id=bigquery_dataset_id,
+            bigquery_table_id=bigquery_table_id,
+            schema_overrides=schema_overrides,
+        ),
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+
+    upload_id = res.json()["upload_id"]
+    return cast(str, upload_id)
+
+
 def update_schema(
     api_key: str,
     dataset_id: str,

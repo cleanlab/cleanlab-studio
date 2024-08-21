@@ -2,17 +2,18 @@ import asyncio
 import functools
 import json
 from typing import Any, Dict, List, Optional
-from tqdm import tqdm
 
 import aiohttp
-from multidict import CIMultiDictProxy
 import requests
+from multidict import CIMultiDictProxy
 from requests.adapters import HTTPAdapter, Retry
+from tqdm import tqdm
+
+from cleanlab_studio.errors import InvalidSchemaTypeError
 
 from .api import api
 from .dataset_source import DatasetSource
 from .types import JSONDict, SchemaOverride
-from cleanlab_studio.errors import InvalidSchemaTypeError
 
 
 def upload_dataset(
@@ -42,6 +43,26 @@ def upload_url_dataset(
 ) -> str:
     # start dataset upload
     upload_id = api.start_url_upload(api_key, url, schema_overrides)
+
+    # wait for dataset upload
+    dataset_id = api.poll_ingestion_progress(api_key, upload_id, "Ingesting Dataset...")
+
+    # return dataset id
+    return dataset_id
+
+
+def upload_bigquery_dataset(
+    api_key: str,
+    bigquery_project: str,
+    bigquery_dataset_id: str,
+    bigquery_table_id: str,
+    *,
+    schema_overrides: Optional[List[SchemaOverride]] = None,
+) -> str:
+    # start dataset upload
+    upload_id = api.start_bigquery_upload(
+        api_key, bigquery_project, bigquery_dataset_id, bigquery_table_id, schema_overrides
+    )
 
     # wait for dataset upload
     dataset_id = api.poll_ingestion_progress(api_key, upload_id, "Ingesting Dataset...")
