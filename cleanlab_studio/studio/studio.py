@@ -27,7 +27,7 @@ from cleanlab_studio.internal.util import (
     init_dataset_source,
     telemetry,
 )
-from cleanlab_studio.utils import tlm_hybrid
+from cleanlab_studio.utils import tlm_lite
 
 from . import inference, trustworthy_language_model
 
@@ -502,7 +502,7 @@ class Studio:
             self._api_key, quality_preset, options=options, timeout=timeout, verbose=verbose
         )
 
-    def TLMHybrid(
+    def TLMLite(
         self,
         response_model: str = "gpt-4o",
         quality_preset: TLMQualityPreset = "medium",
@@ -510,13 +510,13 @@ class Studio:
         options: Optional[trustworthy_language_model.TLMOptions] = None,
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
-    ) -> tlm_hybrid.TLMHybrid:
+    ) -> tlm_lite.TLMLite:
         """
-        Instantiate a hybrid Trustworthy Language Model that uses one model for response and another for trustworthiness scoring (reduce costs/latency without reducing response quality).
+        Instantiate a version of the Trustworthy Language Model that uses one model for response and another for trustworthiness scoring (reduce costs/latency without reducing response quality).
         For more details, see the documentation of:
-        [cleanlab_studio.utils.tlm_hybrid.TLMHybrid](../utils.tlm_hybrid/#class-tlmhybrid)
+        [cleanlab_studio.utils.tlm_lite.TLMLite](../utils.tlm_lite/#class-tlmlite)
         """
-        return tlm_hybrid.TLMHybrid(
+        return tlm_lite.TLMLite(
             self._api_key,
             response_model,
             quality_preset,

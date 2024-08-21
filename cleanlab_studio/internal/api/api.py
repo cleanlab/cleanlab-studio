@@ -708,9 +708,16 @@ async def tlm_prompt(
 
     try:
         async with rate_handler:
+            base_api_url = os.environ.get("CLEANLAB_API_TLM_BASE_URL", tlm_base_url)
             res = await client_session.post(
-                f"{tlm_base_url}/prompt",
-                json=dict(prompt=prompt, quality=quality_preset, options=options or {}),
+                f"{base_api_url}/prompt",
+                json=dict(
+                    prompt=prompt,
+                    quality=quality_preset,
+                    options=options or {},
+                    user_id=api_key,
+                    client_id=api_key,
+                ),
                 headers=_construct_headers(api_key),
             )
 
