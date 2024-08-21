@@ -22,9 +22,9 @@ from typing_extensions import (  # for Python <3.11 with (Not)Required
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.constants import (
+    _TLM_DEFAULT_MODEL,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
-    _TLM_DEFAULT_MODEL,
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 from cleanlab_studio.internal.tlm.validation import (
@@ -655,8 +655,19 @@ class TLMScore(TypedDict):
 
 
 TLMScoreResponse = Union[float, TLMScore]
+"""
+TLMScoreResponse represents a single TLM response that can be either float, representing the trustworthiness score or a TLMScore object containing both the trustworthiness score and log dictionary keys.
+"""
+
 TLMBatchScoreResponse = Union[List[float], List[TLMScore]]
+"""
+TLMBatchScoreResponse represents a TLM response that can be either a list of floats or a list of TLMScore objects. The list will have the be length as the input list of prompts, response pairs.
+"""
+
 TLMOptionalBatchScoreResponse = Union[List[Optional[float]], List[Optional[TLMScore]]]
+"""
+TLMOptionalBatchScoreResponse represents a TLM response that can be either a list of floats or None (if the call to the TLM failed) or a list of TLMScore objects or None (if the call to the TLM failed). The list will have the be length as the input list of prompts, response pairs.
+"""
 
 
 class TLMOptions(TypedDict):
