@@ -117,7 +117,7 @@ def upload_bigframe_dataset(
     )
 
 
-def _add_bq_data_viewer_role(api_key, bqclient, table_id):
+def _add_bq_data_viewer_role(api_key, bqclient, table_id) -> None:
     bigquery_principal_account = api.get_bigquery_principal_account(api_key)
     policy = bqclient.get_iam_policy(table_id)
 

@@ -235,7 +235,7 @@ def get_bigquery_principal_account(api_key: str) -> str:
     )
     handle_api_error(res)
     principal_account = res.json()["principal_account"]
-    return principal_account
+    return str(principal_account)
 
 
 def update_schema(
