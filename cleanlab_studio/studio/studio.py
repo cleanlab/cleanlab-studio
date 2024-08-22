@@ -156,8 +156,6 @@ class Studio:
         """
         Uploads a dataset, from BigQuery, to Cleanlab Studio.
 
-        Ensure that you've enabled Cleanlab Studio to access your BigQuery table, as outlined in the [BigQuery tutorial](/tutorials/bigquery_dataset).
-
         Args:
             bigquery_project: BigQuery project ID.
             bigquery_dataset_id: BigQuery dataset ID.
@@ -176,6 +174,33 @@ class Studio:
             bigquery_project,
             bigquery_dataset_id,
             bigquery_table_id,
+            schema_overrides=schema_overrides,
+        )
+
+    def upload_from_bigframe(
+        self,
+        bigframe: Any,
+        *,
+        schema_overrides: Optional[List[SchemaOverride]] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Uploads a dataset, from a BigFrame, to Cleanlab Studio.
+
+        Args:
+            bigframe: BigFrame object representing the dataset to upload.
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+        """
+        if isinstance(schema_overrides, dict):
+            schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
+            warnings.warn(
+                "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
+                FutureWarning,
+            )
+
+        return upload_helpers.upload_bigframe_dataset(
+            self._api_key,
+            bigframe,
             schema_overrides=schema_overrides,
         )
 

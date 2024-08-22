@@ -228,6 +228,16 @@ def start_bigquery_upload(
     return cast(str, upload_id)
 
 
+def get_bigquery_principal_account(api_key: str) -> str:
+    res = requests.get(
+        f"{upload_base_url}/bigquery/principal_account",
+        headers=_construct_headers(api_key),
+    )
+    handle_api_error(res)
+    principal_account = res.json()["principal_account"]
+    return str(principal_account)
+
+
 def update_schema(
     api_key: str,
     dataset_id: str,
