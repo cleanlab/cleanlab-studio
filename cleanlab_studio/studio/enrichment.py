@@ -125,11 +125,17 @@ class EnrichmentProject:
     def preview(
         self,
         options: EnrichmentOptions,
-        *,
         new_column_name: str,
+        *,
         indices: Optional[List[int]] = None,
     ) -> EnrichmentPreviewResults:
-        """Enrich a subset of data for a preview."""
+        """Enrich a subset of data for a preview.
+
+        Args:
+            options (EnrichmentOptions): Options for enriching the dataset.
+            new_column_name (str): The name of the new column to store the prompt results.
+            indices (List[int], optional): The indices of the rows to enrich, up to 10. If None, three rows in the dataset will be randomly picked.
+        """
         _validate_enrichment_options(options)
 
         user_input_regex = options.get("regex")
@@ -161,10 +167,17 @@ class EnrichmentProject:
     def run(
         self,
         options: EnrichmentOptions,
-        *,
         new_column_name: str,
     ) -> dict[str, Any]:
-        """Enrich the entire dataset."""
+        """Enrich the entire dataset using the provided prompt.
+
+        This method triggers a remote job that applies TLM to each row of the dataset based on the given prompt.
+        The process will run on a remote server and will block execution until the job is fully completed.
+
+        Args:
+            options (EnrichmentOptions): Options for enriching the dataset.
+            new_column_name (str): The name of the new column to store the prompt results.
+        """
         _validate_enrichment_options(options)
 
         user_input_regex = options.get("regex")
@@ -172,7 +185,7 @@ class EnrichmentProject:
             user_input_regex
         )
 
-        response = api.enrichment_populate(
+        response = api.enrichment_run(
             api_key=self._api_key,
             project_id=self._id,
             new_column_name=new_column_name,
@@ -208,20 +221,23 @@ class EnrichmentProject:
 
     @property
     def ready(self) -> bool:
-        """Check if the latest populate job is ready."""
+        """Check if the latest enrichment job is ready or not.
+
+        If one ran a preview after the last run, this method will raise an error since the latest job is a preview.
+        """
         latest_job = self._get_latest_job()
         if latest_job["job_type"] != "ENRICHMENT":
-            # TODO: consider fetching latest populate job directly instead of throwing an error
+            # TODO: consider fetching latest enrichment job directly instead of throwing an error
             # This would prevent the user from getting stuck in an error state if preview job is the latest job
             raise ValueError(
                 "The latest job is a preview, to execute against entire dataset, please do `run()` first."
             )
         status = latest_job["status"]
         if status == EnrichmentJobStatusEnum.FAILED.value:
-            raise ValueError("The latest populate job failed.")
+            raise ValueError("The latest enrichment job failed.")
         elif status == EnrichmentJobStatusEnum.PAUSED.value:
             raise ValueError(
-                "The latest populate job is paused, likely due to quota limit. Please contact us to discuss your use case - support@cleanlab.ai."
+                "The latest enrichment job is paused, likely due to quota limit. Please contact us to discuss your use case - support@cleanlab.ai."
             )
         elif status in {
             EnrichmentJobStatusEnum.RUNNING.value,
@@ -231,10 +247,10 @@ class EnrichmentProject:
         elif status == EnrichmentJobStatusEnum.SUCCEEDED.value:
             return True
         else:
-            raise ValueError("The latest populate job has an unknown status.")
+            raise ValueError("The latest enrichment job has an unknown status.")
 
     def wait_until_ready(self) -> None:
-        """Wait until the latest populate job is ready."""
+        """Wait until the latest enrichment job is ready."""
         latest_job_status = self._get_latest_job_status()
         num_rows = latest_job_status["num_rows"]
         spinner = itertools.cycle("|/-\\")
@@ -266,9 +282,17 @@ class EnrichmentProject:
         pbar.update(num_processed_rows - pbar.n)
 
     def download_results(
-        self, job_id: Optional[str] = None, include_original_dataset: Optional[bool] = False
+        self, *, job_id: Optional[str] = None, include_original_dataset: Optional[bool] = False
     ) -> EnrichmentResults:
-        """Get the results of a populate job."""
+        """Retrieve the results of an enrichment job.
+
+        This method fetches the results of a specified enrichment job. If no `job_id` is provided,
+        it will default to retrieving the results of the latest job.
+
+        Args:
+            job_id (str, optional): The ID of the job to retrieve results from. If not provided, the latest job will be used.
+            include_original_dataset (bool, optional): If True, the original dataset will be included in the returned results. Defaults to False.
+        """
         latest_job_id = job_id or self._get_latest_job()["id"]
 
         page = 1

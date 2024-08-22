@@ -759,7 +759,7 @@ def enrichment_preview(
     return cast(JSONDict, res.json())
 
 
-def enrichment_populate(
+def enrichment_run(
     api_key: str,
     new_column_name: str,
     project_id: str,
