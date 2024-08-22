@@ -41,6 +41,7 @@ class EnrichmentJobStatusEnum(Enum):
     RUNNING = "RUNNING"
     FAILED = "FAILED"
     SUCCEEDED = "SUCCEEDED"
+    PAUSED = "PAUSED"
 
 
 def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
@@ -222,6 +223,10 @@ class EnrichmentProject:
         status = latest_job["status"]
         if status == EnrichmentJobStatusEnum.FAILED.value:
             raise ValueError("The latest populate job failed.")
+        elif status == EnrichmentJobStatusEnum.PAUSED.value:
+            raise ValueError(
+                "The latest populate job is paused, likely due to quota limit. Please contact us to discuss your use case - support@cleanlab.ai."
+            )
         elif status in {
             EnrichmentJobStatusEnum.RUNNING.value,
             EnrichmentJobStatusEnum.CREATED.value,
