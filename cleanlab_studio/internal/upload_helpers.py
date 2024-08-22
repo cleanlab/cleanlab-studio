@@ -9,7 +9,14 @@ from multidict import CIMultiDictProxy
 from requests.adapters import HTTPAdapter, Retry
 from tqdm import tqdm
 
-from cleanlab_studio.errors import InvalidSchemaTypeError
+try:
+    import bigframes.pandas as bpd
+
+    _bigframes_exists = True
+except ImportError:
+    _bigframes_exists = False
+
+from cleanlab_studio.errors import InvalidInputError, InvalidSchemaTypeError
 
 from .api import api
 from .dataset_source import DatasetSource
@@ -58,7 +65,18 @@ def upload_bigquery_dataset(
     bigquery_table_id: str,
     *,
     schema_overrides: Optional[List[SchemaOverride]] = None,
+    bq_client: Optional[Any] = None,
 ) -> str:
+    # add bigquery data viewer role for service account
+    if bq_client is None:
+        from google.cloud import bigquery
+
+        bq_client = bigquery.Client()
+
+    _add_bq_data_viewer_role(
+        api_key, bq_client, f"{bigquery_project}.{bigquery_dataset_id}.{bigquery_table_id}"
+    )
+
     # start dataset upload
     upload_id = api.start_bigquery_upload(
         api_key, bigquery_project, bigquery_dataset_id, bigquery_table_id, schema_overrides
@@ -69,6 +87,47 @@ def upload_bigquery_dataset(
 
     # return dataset id
     return dataset_id
+
+
+def upload_bigframe_dataset(
+    api_key: str,
+    bigframe: Any,
+    *,
+    schema_overrides: Optional[List[SchemaOverride]] = None,
+) -> str:
+    if not _bigframes_exists:
+        raise ImportError(
+            "BigFrames is not installed. Please install BigFrames to use this feature."
+        )
+
+    if not isinstance(bigframe, bpd.DataFrame):
+        raise InvalidInputError("Expected bigframe to be a BigFrames DataFrame.")
+
+    table_id = bigframe.to_gbq()
+    bqclient = bigframe.bqclient
+
+    bq_project_id, bq_dataset_id, bq_table_id = table_id.split(".")
+    return upload_bigquery_dataset(
+        api_key,
+        bq_project_id,
+        bq_dataset_id,
+        bq_table_id,
+        schema_overrides=schema_overrides,
+        bq_client=bqclient,
+    )
+
+
+def _add_bq_data_viewer_role(api_key, bqclient, table_id):
+    bigquery_principal_account = api.get_bigquery_principal_account(api_key)
+    policy = bqclient.get_iam_policy(table_id)
+
+    binding = {
+        "role": "roles/bigquery.dataViewer",
+        "members": {f"serviceAccount:{bigquery_principal_account}"},
+    }
+
+    policy.bindings.append(binding)
+    bqclient.set_iam_policy(table_id, policy)
 
 
 async def _upload_file_chunk_async(
