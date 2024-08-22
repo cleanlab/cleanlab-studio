@@ -65,16 +65,11 @@ def upload_bigquery_dataset(
     bigquery_table_id: str,
     *,
     schema_overrides: Optional[List[SchemaOverride]] = None,
-    bq_client: Optional[Any] = None,
+    bqclient: Optional[Any] = None,
 ) -> str:
     # add bigquery data viewer role for service account
-    if bq_client is None:
-        from google.cloud import bigquery
-
-        bq_client = bigquery.Client()
-
     _add_bq_data_viewer_role(
-        api_key, bq_client, f"{bigquery_project}.{bigquery_dataset_id}.{bigquery_table_id}"
+        api_key, f"{bigquery_project}.{bigquery_dataset_id}.{bigquery_table_id}", bqclient=bqclient
     )
 
     # start dataset upload
@@ -113,11 +108,16 @@ def upload_bigframe_dataset(
         bq_dataset_id,
         bq_table_id,
         schema_overrides=schema_overrides,
-        bq_client=bqclient,
+        bqclient=bqclient,
     )
 
 
-def _add_bq_data_viewer_role(api_key, bqclient, table_id) -> None:
+def _add_bq_data_viewer_role(api_key: str, table_id: str, bqclient: Optional[Any] = None) -> None:
+    if bqclient is None:
+        from google.cloud import bigquery
+
+        bqclient = bigquery.Client()
+
     bigquery_principal_account = api.get_bigquery_principal_account(api_key)
     policy = bqclient.get_iam_policy(table_id)
 
