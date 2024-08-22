@@ -890,7 +890,7 @@ def pause_enrichment_job(api_key: str, job_id: str) -> None:
     handle_api_error(res)
 
 
-def resume_enrichment_job(api_key: str, job_id: str) -> None:
+def resume_enrichment_job(api_key: str, job_id: str) -> JSONDict:
     """Resume enrichment job."""
     check_uuid_well_formed(job_id, "job_id")
 

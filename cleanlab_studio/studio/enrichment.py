@@ -369,7 +369,7 @@ class EnrichmentProject:
         api.pause_enrichment_job(api_key=self._api_key, job_id=latest_job["id"])
         print("Job paused successfully.")
 
-    def resume(self) -> None:
+    def resume(self) -> JSONDict:
         """Resume the latest batch job."""
         latest_job = self._get_latest_job()
         return api.resume_enrichment_job(api_key=self._api_key, job_id=latest_job["id"])
@@ -384,7 +384,7 @@ class EnrichmentJob(TypedDict):
     id: str
     status: str
     created_at: datetime
-    updated_at: datetime
+    updated_at: datetime | None
     enrichment_options: EnrichmentOptions
     average_trustworthiness_score: float
     job_type: str
