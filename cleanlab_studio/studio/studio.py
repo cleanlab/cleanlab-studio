@@ -184,6 +184,13 @@ class Studio:
         schema_overrides: Optional[List[SchemaOverride]] = None,
         **kwargs: Any,
     ) -> str:
+        """
+        Uploads a dataset, from a BigFrame, to Cleanlab Studio.
+
+        Args:
+            bigframe: BigFrame object representing the dataset to upload.
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+        """
         if isinstance(schema_overrides, dict):
             schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
             warnings.warn(
