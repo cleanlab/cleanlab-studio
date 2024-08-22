@@ -25,10 +25,6 @@ from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
 
 Replacement = Tuple[str, str]
 ROW_ID_COLUMN_NAME = "row_id"
-FINAL_RESULT_COLUMN_NAME = "final_result"
-TRUSTWORTHINESS_SCORE_COLUMN_NAME = "trustworthiness_score"
-LOG_COLUMN_NAME = "log"
-RAW_RESULT_COLUMN_NAME = "raw_result"
 REGEX_PARAMETER_ERROR_MESSAGE = (
     "The 'regex' parameter must be a string, a tuple(str, str), or a list of tuple(str, str)."
 )

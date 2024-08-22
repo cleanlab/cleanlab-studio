@@ -1,6 +1,7 @@
 """
 Python API for Cleanlab Studio.
 """
+
 from __future__ import annotations
 
 import warnings
@@ -555,7 +556,7 @@ class Studio:
         project_id: str,
     ) -> enrichment.EnrichmentProject:
         """
-        Get an EnrichmentProject objection for a given Cleanlab Studio Enrichment Project's ID.
+        Get an EnrichmentProject object for a given Cleanlab Studio Enrichment Project's ID.
 
         Args:
             project_id (str): ID of the enrichment project.
