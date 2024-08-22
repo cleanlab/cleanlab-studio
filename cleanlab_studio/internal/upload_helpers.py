@@ -2,17 +2,25 @@ import asyncio
 import functools
 import json
 from typing import Any, Dict, List, Optional
-from tqdm import tqdm
 
 import aiohttp
-from multidict import CIMultiDictProxy
 import requests
+from multidict import CIMultiDictProxy
 from requests.adapters import HTTPAdapter, Retry
+from tqdm import tqdm
+
+try:
+    import bigframes.pandas as bpd
+
+    _bigframes_exists = True
+except ImportError:
+    _bigframes_exists = False
+
+from cleanlab_studio.errors import InvalidInputError, InvalidSchemaTypeError
 
 from .api import api
 from .dataset_source import DatasetSource
 from .types import JSONDict, SchemaOverride
-from cleanlab_studio.errors import InvalidSchemaTypeError
 
 
 def upload_dataset(
@@ -32,6 +40,94 @@ def upload_dataset(
 
     # return dataset id
     return dataset_id
+
+
+def upload_url_dataset(
+    api_key: str,
+    url: str,
+    *,
+    schema_overrides: Optional[List[SchemaOverride]] = None,
+) -> str:
+    # start dataset upload
+    upload_id = api.start_url_upload(api_key, url, schema_overrides)
+
+    # wait for dataset upload
+    dataset_id = api.poll_ingestion_progress(api_key, upload_id, "Ingesting Dataset...")
+
+    # return dataset id
+    return dataset_id
+
+
+def upload_bigquery_dataset(
+    api_key: str,
+    bigquery_project: str,
+    bigquery_dataset_id: str,
+    bigquery_table_id: str,
+    *,
+    schema_overrides: Optional[List[SchemaOverride]] = None,
+    bqclient: Optional[Any] = None,
+) -> str:
+    # add bigquery data viewer role for service account
+    _add_bq_data_viewer_role(
+        api_key, f"{bigquery_project}.{bigquery_dataset_id}.{bigquery_table_id}", bqclient=bqclient
+    )
+
+    # start dataset upload
+    upload_id = api.start_bigquery_upload(
+        api_key, bigquery_project, bigquery_dataset_id, bigquery_table_id, schema_overrides
+    )
+
+    # wait for dataset upload
+    dataset_id = api.poll_ingestion_progress(api_key, upload_id, "Ingesting Dataset...")
+
+    # return dataset id
+    return dataset_id
+
+
+def upload_bigframe_dataset(
+    api_key: str,
+    bigframe: Any,
+    *,
+    schema_overrides: Optional[List[SchemaOverride]] = None,
+) -> str:
+    if not _bigframes_exists:
+        raise ImportError(
+            "BigFrames is not installed. Please install BigFrames to use this feature."
+        )
+
+    if not isinstance(bigframe, bpd.DataFrame):
+        raise InvalidInputError("Expected bigframe to be a BigFrames DataFrame.")
+
+    table_id = bigframe.to_gbq()
+    bqclient = bigframe.bqclient
+
+    bq_project_id, bq_dataset_id, bq_table_id = table_id.split(".")
+    return upload_bigquery_dataset(
+        api_key,
+        bq_project_id,
+        bq_dataset_id,
+        bq_table_id,
+        schema_overrides=schema_overrides,
+        bqclient=bqclient,
+    )
+
+
+def _add_bq_data_viewer_role(api_key: str, table_id: str, bqclient: Optional[Any] = None) -> None:
+    if bqclient is None:
+        from google.cloud import bigquery
+
+        bqclient = bigquery.Client()
+
+    bigquery_principal_account = api.get_bigquery_principal_account(api_key)
+    policy = bqclient.get_iam_policy(table_id)
+
+    binding = {
+        "role": "roles/bigquery.dataViewer",
+        "members": {f"serviceAccount:{bigquery_principal_account}"},
+    }
+
+    policy.bindings.append(binding)
+    bqclient.set_iam_policy(table_id, policy)
 
 
 async def _upload_file_chunk_async(

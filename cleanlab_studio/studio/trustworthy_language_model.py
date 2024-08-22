@@ -24,6 +24,7 @@ from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.constants import (
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
+    _TLM_DEFAULT_MODEL,
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 from cleanlab_studio.internal.tlm.validation import (
@@ -97,10 +98,16 @@ class TLM:
             )
 
         self._return_log = False
-        if options is not None:
-            validate_tlm_options(options)
-            if "log" in options.keys():
-                self._return_log = True
+
+        options_dict = options or {}
+        validate_tlm_options(options_dict)
+        if "log" in options_dict.keys() and len(options_dict["log"]) > 0:
+            self._return_log = True
+
+        # explicitly specify the default model
+        self._options = {**{"model": _TLM_DEFAULT_MODEL}, **options_dict}
+
+        self._quality_preset = quality_preset
 
         if timeout is not None and not (isinstance(timeout, int) or isinstance(timeout, float)):
             raise ValidationError("timeout must be a integer or float value")
@@ -110,8 +117,6 @@ class TLM:
 
         is_notebook_flag = is_notebook()
 
-        self._quality_preset = quality_preset
-        self._options = options
         self._timeout = timeout if timeout is not None and timeout > 0 else None
         self._verbose = verbose if verbose is not None else is_notebook_flag
 
@@ -616,6 +621,10 @@ class TLM:
                 return None
             raise e
 
+    def get_model_name(self) -> str:
+        """Returns the underlying LLM used to generate responses and score their trustworthiness."""
+        return cast(str, self._options["model"])
+
 
 class TLMResponse(TypedDict):
     """A typed dict containing the response, trustworthiness score and additional logs from the Trustworthy Language Model.
@@ -700,7 +709,7 @@ class TLMOptions(TypedDict):
         and helping catch answers that are obviously incorrect/bad for a prompt asking for a well-defined answer that LLMs should be able to handle.
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
 
-        log (List[str], default = None): optionally specify additional logs or metadata to return.
+        log (List[str], default = []): optionally specify additional logs or metadata to return.
         For instance, include "explanation" here to get explanations of why a response is scored with low trustworthiness.
     """
 

@@ -28,7 +28,7 @@ from cleanlab_studio.internal.util import (
     init_dataset_source,
     telemetry,
 )
-from cleanlab_studio.utils import tlm_hybrid
+from cleanlab_studio.utils import tlm_lite
 
 from . import enrichment, inference, trustworthy_language_model
 
@@ -106,7 +106,6 @@ class Studio:
             )
 
         if isinstance(schema_overrides, dict):
-            # TODO: link to documentation for schema override format
             schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
             warnings.warn(
                 "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
@@ -116,6 +115,93 @@ class Studio:
         return upload_helpers.upload_dataset(
             self._api_key,
             ds,
+            schema_overrides=schema_overrides,
+        )
+
+    def upload_from_url(
+        self,
+        url: str,
+        *,
+        schema_overrides: Optional[List[SchemaOverride]] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Uploads a dataset, from URL, to Cleanlab Studio.
+
+        Args:
+            url: URL to the dataset to upload.
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+        """
+        if isinstance(schema_overrides, dict):
+            schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
+            warnings.warn(
+                "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
+                FutureWarning,
+            )
+
+        return upload_helpers.upload_url_dataset(
+            self._api_key,
+            url,
+            schema_overrides=schema_overrides,
+        )
+
+    def upload_from_bigquery(
+        self,
+        bigquery_project: str,
+        bigquery_dataset_id: str,
+        bigquery_table_id: str,
+        *,
+        schema_overrides: Optional[List[SchemaOverride]] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Uploads a dataset, from BigQuery, to Cleanlab Studio.
+
+        Args:
+            bigquery_project: BigQuery project ID.
+            bigquery_dataset_id: BigQuery dataset ID.
+            bigquery_table_id: BigQuery table ID.
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+        """
+        if isinstance(schema_overrides, dict):
+            schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
+            warnings.warn(
+                "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
+                FutureWarning,
+            )
+
+        return upload_helpers.upload_bigquery_dataset(
+            self._api_key,
+            bigquery_project,
+            bigquery_dataset_id,
+            bigquery_table_id,
+            schema_overrides=schema_overrides,
+        )
+
+    def upload_from_bigframe(
+        self,
+        bigframe: Any,
+        *,
+        schema_overrides: Optional[List[SchemaOverride]] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Uploads a dataset, from a BigFrame, to Cleanlab Studio.
+
+        Args:
+            bigframe: BigFrame object representing the dataset to upload.
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+        """
+        if isinstance(schema_overrides, dict):
+            schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
+            warnings.warn(
+                "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
+                FutureWarning,
+            )
+
+        return upload_helpers.upload_bigframe_dataset(
+            self._api_key,
+            bigframe,
             schema_overrides=schema_overrides,
         )
 
@@ -542,7 +628,7 @@ class Studio:
             self._api_key, quality_preset, options=options, timeout=timeout, verbose=verbose
         )
 
-    def TLMHybrid(
+    def TLMLite(
         self,
         response_model: str = "gpt-4o",
         quality_preset: TLMQualityPreset = "medium",
@@ -550,13 +636,13 @@ class Studio:
         options: Optional[trustworthy_language_model.TLMOptions] = None,
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
-    ) -> tlm_hybrid.TLMHybrid:
+    ) -> tlm_lite.TLMLite:
         """
-        Instantiate a hybrid Trustworthy Language Model that uses one model for response and another for trustworthiness scoring (reduce costs/latency without reducing response quality).
+        Instantiate a version of the Trustworthy Language Model that uses one model for response and another for trustworthiness scoring (reduce costs/latency without reducing response quality).
         For more details, see the documentation of:
-        [cleanlab_studio.utils.tlm_hybrid.TLMHybrid](../utils.tlm_hybrid/#class-tlmhybrid)
+        [cleanlab_studio.utils.tlm_lite.TLMLite](../utils.tlm_lite/#class-tlmlite)
         """
-        return tlm_hybrid.TLMHybrid(
+        return tlm_lite.TLMLite(
             self._api_key,
             response_model,
             quality_preset,

@@ -160,3 +160,7 @@ class InvalidCsvFilename(HandledError):
 
 class EnrichmentProjectError(InternalError):
     pass
+
+
+class InvalidInputError(HandledError):
+    pass
