@@ -20,6 +20,7 @@ from typing_extensions import NotRequired
 
 from cleanlab_studio.errors import EnrichmentProjectError
 from cleanlab_studio.internal.api import api
+from cleanlab_studio.internal.tlm.validation import validate_tlm_options
 from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
 
@@ -482,6 +483,9 @@ def _validate_enrichment_options(options: EnrichmentOptions) -> None:
                     _validate_tuple_is_replacement(replacement)
             else:
                 raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
+
+    if "tlm_options" in options:
+        validate_tlm_options(options["tlm_options"])
 
 
 class EnrichmentResults:
