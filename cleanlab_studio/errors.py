@@ -154,5 +154,13 @@ class InvalidFilepathError(HandledError):
         super().__init__(f"File could not be found at {filepath}. Please check the file path.")
 
 
+class InvalidCsvFilename(HandledError):
+    pass
+
+
+class EnrichmentProjectError(InternalError):
+    pass
+
+
 class InvalidInputError(HandledError):
     pass
