@@ -546,7 +546,7 @@ class TLM:
         processed_response = process_response_and_kwargs(response, kwargs)
 
         async with aiohttp.ClientSession() as session:
-            if isinstance(prompt, str) and isinstance(processed_response, str):
+            if isinstance(prompt, str) and isinstance(processed_response, dict):
                 trustworthiness_score = await self._get_trustworthiness_score_async(
                     prompt,
                     processed_response,
