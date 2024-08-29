@@ -62,8 +62,8 @@ class TLM:
             Higher presets have increased runtime and cost (and may internally consume more tokens).
             Reduce your preset if you see token-limit errors.
             Details about each present are in the documentation for [TLMOptions](#class-tlmoptions).
-            Avoid using "best" or "high" presets if you primarily want to get trustworthiness scores, and are less concerned with improving LLM responses.
-            These presets have higher runtime/cost and are optimized to return more accurate LLM outputs, but not necessarily more reliable trustworthiness scores.
+            Avoid using "best" or "high" presets if you primarily want trustworthiness scores (i.e. are using `tlm.get_trustworthiness_score()` rather than `tlm.prompt()`), and are less concerned with improving LLM responses.
+            These "best" and "high" presets have higher runtime/cost, and are optimized to return more accurate LLM outputs, but not more reliable trustworthiness scores than the "medium" and "low" presets.
 
         options (TLMOptions, optional): a typed dict of advanced configuration options.
         Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
