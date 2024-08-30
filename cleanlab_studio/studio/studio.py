@@ -2,6 +2,8 @@
 Python API for Cleanlab Studio.
 """
 
+from __future__ import annotations
+
 import warnings
 from types import FunctionType
 from typing import Any, List, Literal, Optional, Union
@@ -29,7 +31,7 @@ from cleanlab_studio.internal.util import (
 )
 from cleanlab_studio.utils import tlm_lite
 
-from . import inference, trustworthy_language_model
+from . import enrichment, inference, trustworthy_language_model
 
 _snowflake_exists = api.snowflake_exists
 if _snowflake_exists:
@@ -156,8 +158,6 @@ class Studio:
         """
         Uploads a dataset, from BigQuery, to Cleanlab Studio.
 
-        Ensure that you've enabled Cleanlab Studio to access your BigQuery table, as outlined in the [BigQuery tutorial](/tutorials/bigquery_dataset).
-
         Args:
             bigquery_project: BigQuery project ID.
             bigquery_dataset_id: BigQuery dataset ID.
@@ -176,6 +176,33 @@ class Studio:
             bigquery_project,
             bigquery_dataset_id,
             bigquery_table_id,
+            schema_overrides=schema_overrides,
+        )
+
+    def upload_from_bigframe(
+        self,
+        bigframe: Any,
+        *,
+        schema_overrides: Optional[List[SchemaOverride]] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Uploads a dataset, from a BigFrame, to Cleanlab Studio.
+
+        Args:
+            bigframe: BigFrame object representing the dataset to upload.
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+        """
+        if isinstance(schema_overrides, dict):
+            schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
+            warnings.warn(
+                "Using deprecated `schema_overrides` format. Please use list of SchemaOverride objects instead.",
+                FutureWarning,
+            )
+
+        return upload_helpers.upload_bigframe_dataset(
+            self._api_key,
+            bigframe,
             schema_overrides=schema_overrides,
         )
 
@@ -484,6 +511,106 @@ class Studio:
             3. If there are rows flagged as `is_not_analyzed`, the rows of the feature embeddings will correspond to the rows of the original dataset after filtering out the rows that are not analyzed.
         """
         return np.asarray(api.download_array(self._api_key, cleanset_id, "embeddings"))
+
+    def create_enrichment_project(
+        self,
+        name: str,
+        dataset_id: str,
+    ) -> enrichment.EnrichmentProject:
+        """
+        Creates a Cleanlab Studio Enrichment Project.
+
+        Args:
+            name (str): Name of the enrichment project to create.
+            dataset_id (str): ID of dataset to be enriched.
+
+        Returns:
+            EnrichmentProject: The [EnrichmentProject](../enrichment#class-enrichmentproject) object
+            for the new enrichment project.
+        """
+        enrichment_project_dict = api.create_enrichment_project(
+            api_key=self._api_key,
+            name=name,
+            dataset_id=dataset_id,
+        )
+
+        return enrichment.EnrichmentProject(
+            api_key=self._api_key,
+            id=enrichment_project_dict["id"],
+            name=enrichment_project_dict["name"],
+            created_at=enrichment_project_dict["created_at"],
+        )
+
+    def delete_enrichment_project(self, project_id: str) -> None:
+        """
+        Deletes an Enrichment Project from Cleanlab Studio.
+
+        Args:
+            project_id: ID of enrichment project to delete.
+        """
+        api.delete_enrichment_project(self._api_key, project_id=project_id)
+        print(f"Successfully deleted enrichment project: {project_id}")
+
+    def get_enrichment_project(
+        self,
+        project_id: str,
+    ) -> enrichment.EnrichmentProject:
+        """
+        Get an EnrichmentProject object for a given Cleanlab Studio Enrichment Project's ID.
+
+        Args:
+            project_id (str): ID of the enrichment project.
+
+        Returns:
+            EnrichmentProject: The [EnrichmentProject](../enrichment#class-enrichmentproject) object
+            for the enrichment project.
+        """
+        enrichment_project_dict = api.get_enrichment_project(
+            api_key=self._api_key,
+            project_id=project_id,
+        )
+
+        return enrichment.EnrichmentProject(
+            self._api_key,
+            id=project_id,
+            name=enrichment_project_dict["name"],
+            created_at=enrichment_project_dict["created_at"],
+        )
+
+    def get_enrichment_projects(
+        self,
+    ) -> List[enrichment.EnrichmentProject]:
+        """
+        Get a list of all EnrichmentProjects.
+
+        Returns:
+            List[EnrichmentProject]: A list of [EnrichmentProject](../enrichment#class-enrichmentproject) objects.
+        """
+        enrichment_project_dicts = api.list_all_enrichment_projects(
+            api_key=self._api_key,
+        )
+
+        return [
+            enrichment.EnrichmentProject(
+                self._api_key,
+                id=enrichment_project_dict["id"],
+                name=enrichment_project_dict["name"],
+                created_at=enrichment_project_dict["created_at"],
+            )
+            for enrichment_project_dict in enrichment_project_dicts
+        ]
+
+    def get_enrichment_job_status(self, job_id: str) -> dict[str, Any]:
+        """
+        Get the status of an enrichment job.
+
+        Args:
+            job_id (str): ID of the enrichment job.
+
+        Returns:
+            dict[str, Any]: A dictionary containing the status of the enrichment job.
+        """
+        return api.get_enrichment_job_status(self._api_key, job_id=job_id)
 
     def TLM(
         self,
