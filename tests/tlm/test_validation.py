@@ -1,16 +1,16 @@
 import numpy as np
 import pytest
 
+from cleanlab_studio.errors import TlmBadRequest, ValidationError
 from cleanlab_studio.studio.studio import Studio
 from cleanlab_studio.studio.trustworthy_language_model import TLM
-from cleanlab_studio.errors import TlmBadRequest, ValidationError
 
 np.random.seed(0)
 
 
-MAX_PROMPT_LENGTH_TOKENS: int = 15_000
-MAX_RESPONSE_LENGTH_TOKENS: int = 15_000
-MAX_COMBINED_LENGTH_TOKENS: int = 15_000
+MAX_PROMPT_LENGTH_TOKENS: int = 70_000
+MAX_RESPONSE_LENGTH_TOKENS: int = 70_000
+MAX_COMBINED_LENGTH_TOKENS: int = 70_000
 
 CHARACTERS_PER_TOKEN: int = 5
 
