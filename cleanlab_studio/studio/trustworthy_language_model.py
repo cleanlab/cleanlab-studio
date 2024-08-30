@@ -4,6 +4,14 @@ Cleanlab's Trustworthy Language Model (TLM) is a large language model that gives
 **This module is not meant to be imported and used directly.** Instead, use [`Studio.TLM()`](/reference/python/studio/#method-tlm) to instantiate a [TLM](#class-tlm) object, and then you can use the methods like [`prompt()`](#method-prompt) and [`get_trustworthiness_score()`](#method-get_trustworthiness_score) documented on this page.
 
 The [Trustworthy Language Model tutorial](/tutorials/tlm/) further explains TLM and its use cases.
+
+### Type Aliases
+
+Type aliases returned by the TLM module.
+
+- `TLMScoreResponse = Union[float, TLMScore]`: a single TLM response that can be either float, representing the trustworthiness score or a [TLMScore](#class-tlmscore) object containing both the trustworthiness score and log dictionary keys.
+- `TLMBatchScoreResponse = Union[List[float], List[TLMScore]]`: a TLM response that can be either a list of floats or a list of [TLMScore](#class-tlmscore) objects containing both the trustworthiness score and log dictionary keys. The list will have the be length as the input list of prompts, response pairs.
+- `TLMOptionalBatchScoreResponse = Union[List[Optional[float]], List[Optional[TLMScore]]]`:  a TLM response that can be either a list of floats or None (if the call to the TLM failed) or a list of [TLMScore](#class-tlmscore) objects containing both the trustworthiness score and log dictionary keys or None (if the call to the TLM failed). The list will have the be length as the input list of prompts, response pairs.
 """
 
 from __future__ import annotations
@@ -437,9 +445,9 @@ class TLM:
             response (str | Sequence[str]): existing response (or list of responses) associated with the input prompts.
                 These can be from any LLM or human-written responses.
         Returns:
-            TLMScoreResponse | TLMBatchScoreResponse: **TLMScoreResponse** represents a single TLM response that can be either float, representing the trustworthiness score or a TLMScore object containing both the trustworthiness score and log dictionary keys.
+            TLMScoreResponse | TLMBatchScoreResponse: If a single prompt/response pair was passed in, method returns either a float (representing the output trustworthiness score) or a TLMScore object containing both the trustworthiness score and log dictionary keys. See the documentation for [TLMScoreResponse](#type-aliases) for more details.
 
-                **TLMBatchScoreResponse** (if multiple prompt-responses were provided) represents a TLM response that can be either a list of floats or a list of TLMScore objects. The list will have the be length as the input list of prompts, response pairs.
+                If a list of prompt/responses was passed in, method returns a list of floats representing the trustworthiness score or a list of TLMScore objects each containing both the trustworthiness score and log dictionary keys for each prompt-response pair passed in. See the documentation for [TLMBatchScoreResponse](#type-aliases) for more details.
 
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
                 If running on many prompt-response pairs simultaneously:
@@ -495,7 +503,10 @@ class TLM:
             prompt (Sequence[str]): list of prompts for the TLM to evaluate
             response (Sequence[str]): list of existing responses corresponding to the input prompts (from any LLM or human-written)
         Returns:
-            TLMOptionalBatchScoreResponse: a TLM response that can be either a list of floats or None (if the call to the TLM failed) or a list of TLMScore objects or None (if the call to the TLM failed). The list will have the be length as the input list of prompts, response pairs. The floats correspond to the TLM's trustworthiness score.
+            TLMOptionalBatchScoreResponse: If a single prompt/response pair was passed in, method returns either a float (representing the output trustworthiness score), a None (if the call to the TLM failed), or a TLMScore object containing both the trustworthiness score and log dictionary keys.
+
+                If a list of prompt/responses was passed in, method returns a list of floats representing the trustworthiness score or a list of TLMScore objects each containing both the trustworthiness score and log dictionary keys for each prompt-response pair passed in. For all TLM calls that failed, the returned list will contain None instead. See the documentation for [TLMOptionalBatchScoreResponse](#type-aliases) for more details.
+
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
                 The returned list will always have the same length as the input list.
                 In case of TLM error or timeout on any prompt-response pair,
@@ -526,7 +537,7 @@ class TLM:
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
         **kwargs: Any,
-    ) -> Union[TLMScoreResponse, List[float], List[TLMScore]]:
+    ) -> Union[TLMBatchScoreResponse, TLMScoreResponse]:
         """Asynchronously gets trustworthiness score for prompt-response pairs.
         This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously,
         allowing for non-blocking concurrent operations.
@@ -539,9 +550,9 @@ class TLM:
             prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
             response (str | Sequence[str]): response (or list of responses) corresponding to the input prompts
         Returns:
-            TLMScoreResponse | float | List[float]: **TLMScoreResponse** represents a single TLM response that can be either float, representing the trustworthiness score or a TLMScore object
-                containing both the trustworthiness score and log dictionary keys,
-                or float or list of floats (if multiple prompt-responses were provided) corresponding to the TLM's trustworthiness score.
+            TLMScoreResponse | TLMBatchScoreResponse: If a single prompt/response pair was passed in, method returns either a float (representing the output trustworthiness score) or a TLMScore object containing both the trustworthiness score and log dictionary keys. See the documentation for [TLMScoreResponse](#type-aliases) for more details.
+
+                If a list of prompt/responses was passed in, method returns a list of floats representing the trustworthiness score or a list of TLMScore objects each containing both the trustworthiness score and log dictionary keys for each prompt-response pair passed in. See the documentation for [TLMBatchScoreResponse](#type-aliases) for more details.
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
@@ -650,7 +661,12 @@ class TLMResponse(TypedDict):
 class TLMScore(TypedDict):
     """A typed dict containing the trustworthiness score and additional logs from the Trustworthy Language Model.
 
-    This dictionary is similar to TLMResponse, except it does not contain the response key.
+    Attributes:
+        trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
+        A higher score indicates a higher confidence that the response is correct/trustworthy. The trustworthiness score
+        is omitted if TLM is run with quality preset "base".
+
+        log (dict, optional): additional logs and metadata returned from the LLM call only if the `log` key was specified in TLMOptions.
     """
 
     trustworthiness_score: Optional[float]
