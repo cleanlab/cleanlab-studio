@@ -10,8 +10,8 @@ The [Trustworthy Language Model tutorial](/tutorials/tlm/) further explains TLM 
 Type aliases returned by the TLM module.
 
 - `TLMScoreResponse = Union[float, TLMScore]`: a single TLM response that can be either float, representing the trustworthiness score or a [TLMScore](#class-tlmscore) object containing both the trustworthiness score and log dictionary keys.
-- `TLMBatchScoreResponse = Union[List[float], List[TLMScore]]`: a TLM response that can be either a list of floats or a list of [TLMScore](#class-tlmscore) objects containing both the trustworthiness score and log dictionary keys. The list will have the be length as the input list of prompts, response pairs.
-- `TLMOptionalBatchScoreResponse = Union[List[Optional[float]], List[Optional[TLMScore]]]`:  a TLM response that can be either a list of floats or None (if the call to the TLM failed) or a list of [TLMScore](#class-tlmscore) objects containing both the trustworthiness score and log dictionary keys or None (if the call to the TLM failed). The list will have the be length as the input list of prompts, response pairs.
+- `TLMBatchScoreResponse = Union[List[float], List[TLMScore]]`: a TLM response that can be either a list of floats or a list of [TLMScore](#class-tlmscore) objects containing both the trustworthiness score and log dictionary keys. The list will have the same length as the input list of prompts, response pairs.
+- `TLMOptionalBatchScoreResponse = Union[List[Optional[float]], List[Optional[TLMScore]]]`:  a TLM response that can be either a list of floats or None (if the call to the TLM failed) or a list of [TLMScore](#class-tlmscore) objects containing both the trustworthiness score and log dictionary keys or None (if the call to the TLM failed). The list will have the same length as the input list of prompts, response pairs.
 """
 
 from __future__ import annotations
