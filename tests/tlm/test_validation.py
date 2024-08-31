@@ -12,7 +12,7 @@ MAX_PROMPT_LENGTH_TOKENS: int = 70_000
 MAX_RESPONSE_LENGTH_TOKENS: int = 15_000
 MAX_COMBINED_LENGTH_TOKENS: int = 70_000
 
-CHARACTERS_PER_TOKEN: int = 5
+CHARACTERS_PER_TOKEN: int = 4
 
 
 def test_prompt_too_long_exception_single_prompt(tlm: TLM):
