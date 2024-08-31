@@ -1,18 +1,18 @@
 import numpy as np
 import pytest
 
+from cleanlab_studio.errors import TlmBadRequest, ValidationError
 from cleanlab_studio.studio.studio import Studio
 from cleanlab_studio.studio.trustworthy_language_model import TLM
-from cleanlab_studio.errors import TlmBadRequest, ValidationError
 
 np.random.seed(0)
 
 
-MAX_PROMPT_LENGTH_TOKENS: int = 15_000
+MAX_PROMPT_LENGTH_TOKENS: int = 70_000
 MAX_RESPONSE_LENGTH_TOKENS: int = 15_000
-MAX_COMBINED_LENGTH_TOKENS: int = 15_000
+MAX_COMBINED_LENGTH_TOKENS: int = 70_000
 
-CHARACTERS_PER_TOKEN: int = 5
+CHARACTERS_PER_TOKEN: int = 4
 
 
 def test_prompt_too_long_exception_single_prompt(tlm: TLM):
@@ -163,10 +163,12 @@ def test_prompt_too_long_exception_try_score(tlm: TLM, num_prompts: int):
 
 def test_combined_too_long_exception_single_score(tlm: TLM):
     """Tests that bad request error is raised when prompt + response combined length is too long when calling tlm.get_trustworthiness_score with a single prompt."""
+    max_prompt_length = MAX_COMBINED_LENGTH_TOKENS - MAX_RESPONSE_LENGTH_TOKENS + 1
+
     with pytest.raises(TlmBadRequest, match="^Prompt and response combined length exceeds.*"):
         tlm.get_trustworthiness_score(
-            "a" * (MAX_PROMPT_LENGTH_TOKENS // 2 + 1) * CHARACTERS_PER_TOKEN,
-            "a" * (MAX_PROMPT_LENGTH_TOKENS // 2 + 1) * CHARACTERS_PER_TOKEN,
+            "a" * max_prompt_length * CHARACTERS_PER_TOKEN,
+            "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN,
         )
 
 
@@ -180,12 +182,10 @@ def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
     prompts = ["What is the capital of France?"] * num_prompts
     responses = ["Paris"] * num_prompts
     combined_too_long_index = np.random.randint(0, num_prompts)
-    prompts[combined_too_long_index] = (
-        "a" * (MAX_PROMPT_LENGTH_TOKENS // 2 + 1) * CHARACTERS_PER_TOKEN
-    )
-    responses[combined_too_long_index] = (
-        "a" * (MAX_PROMPT_LENGTH_TOKENS // 2 + 1) * CHARACTERS_PER_TOKEN
-    )
+
+    max_prompt_length = MAX_COMBINED_LENGTH_TOKENS - MAX_RESPONSE_LENGTH_TOKENS + 1
+    prompts[combined_too_long_index] = "a" * max_prompt_length * CHARACTERS_PER_TOKEN
+    responses[combined_too_long_index] = "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN
 
     with pytest.raises(
         TlmBadRequest,
