@@ -184,7 +184,7 @@ def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
         "a" * (MAX_PROMPT_LENGTH_TOKENS // 2 + 1) * CHARACTERS_PER_TOKEN
     )
     responses[combined_too_long_index] = (
-        "a" * (MAX_PROMPT_LENGTH_TOKENS // 2 + 1) * CHARACTERS_PER_TOKEN
+        "a" * (MAX_RESPONSE_LENGTH_TOKENS // 2 + 1) * CHARACTERS_PER_TOKEN
     )
 
     with pytest.raises(
