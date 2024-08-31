@@ -184,12 +184,8 @@ def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
     combined_too_long_index = np.random.randint(0, num_prompts)
 
     max_prompt_length = MAX_COMBINED_LENGTH_TOKENS - MAX_RESPONSE_LENGTH_TOKENS + 1
-    prompts[combined_too_long_index] = (
-        "a" * max_prompt_length * CHARACTERS_PER_TOKEN
-    )
-    responses[combined_too_long_index] = (
-        "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN
-    )
+    prompts[combined_too_long_index] = "a" * max_prompt_length * CHARACTERS_PER_TOKEN
+    responses[combined_too_long_index] = "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN
 
     with pytest.raises(
         TlmBadRequest,
