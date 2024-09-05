@@ -40,7 +40,8 @@ def tlm_dict(studio: Studio) -> Dict[str, Any]:
     tlm_dict = {}
     for quality_preset in _VALID_TLM_QUALITY_PRESETS:
         tlm_dict[quality_preset] = {}
-        for model in _VALID_TLM_MODELS + [None]:
+        for model in _VALID_TLM_MODELS:
+            tlm_dict[quality_preset][model] = {}
             options = _get_options_dictionary(model)
             tlm_dict[quality_preset][model]["tlm"] = studio.TLM(
                 quality_preset=quality_preset, options=options
@@ -69,13 +70,13 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
     add_log_perplexity_score = np.random.choice([True, False])
 
     if add_max_tokens:
-        options["max_tokens"] = np.random.randint(64, 512)
+        options["max_tokens"] = int(np.random.randint(64, 512))
     if add_use_self_reflection:
-        options["use_self_reflection"] = np.random.choice([True, False])
+        options["use_self_reflection"] = True
     if add_num_candidate_responses:
-        options["num_candidate_responses"] = np.random.randint(1, 5)
+        options["num_candidate_responses"] = int(np.random.randint(1, 5))
     if add_num_consistency_samples:
-        options["num_consistency_samples"] = np.random.randint(0, 10)
+        options["num_consistency_samples"] = int(np.random.randint(0, 10))
 
     if add_log_explanation or add_log_perplexity_score:
         options["log"] = [
