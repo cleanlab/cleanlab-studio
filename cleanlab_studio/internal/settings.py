@@ -1,11 +1,16 @@
 import json
 import os
 from typing import Optional
+
 import semver
 
-from cleanlab_studio.version import SETTINGS_VERSION, MIN_SETTINGS_VERSION, MAX_SETTINGS_VERSION
-from cleanlab_studio.internal.types import CleanlabSettingsDict
 from cleanlab_studio.errors import SettingsError
+from cleanlab_studio.internal.types import CleanlabSettingsDict
+from cleanlab_studio.version import (
+    MAX_SETTINGS_VERSION,
+    MIN_SETTINGS_VERSION,
+    SETTINGS_VERSION,
+)
 
 
 class CleanlabSettings:
@@ -73,10 +78,13 @@ class CleanlabSettings:
         self.save()
 
     def validate_version(self) -> None:
-        if semver.compare(MIN_SETTINGS_VERSION, self.version) == 1:
+        min_version = semver.VersionInfo.parse(MIN_SETTINGS_VERSION)
+        max_version = semver.VersionInfo.parse(MAX_SETTINGS_VERSION)
+        current_version = semver.VersionInfo.parse(self.version)
+        if current_version < min_version:
             # TODO add proper settings migrations
             raise SettingsError("Settings file must be migrated or re-generated.")
-        elif semver.compare(MAX_SETTINGS_VERSION, self.version) == -1:
+        elif current_version > max_version:
             raise SettingsError(
                 "CLI is not up to date with your settings version. Run 'pip install --upgrade cleanlab-studio'."
             )
