@@ -690,6 +690,7 @@ class TLMOptions(TypedDict):
     - **medium:** `num_candidate_responses` = 1, `num_consistency_samples` = 8, `use_self_reflection` = True.
     - **low:** `num_candidate_responses` = 1, `num_consistency_samples` = 4, `use_self_reflection` = True.
     - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False. This preset is equivalent to a regular LLM call.
+        When using the get_trustworthiness_score() on base preset, one self-reflection prompt will be used to generate the trustworthiness score.
 
     By default, the TLM is set to the "medium" quality preset. The default `model` used is "gpt-4o-mini", and `max_tokens` is 512 for all quality presets.
     You can set custom values for these arguments regardless of the quality preset specified.
