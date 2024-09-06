@@ -61,7 +61,7 @@ jobs:
         run: cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
-          pytest -n auto tests/tlm/test_properties.py --verbose
+          pytest tests/tlm/test_properties.py --verbose
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
