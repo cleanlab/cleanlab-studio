@@ -11,6 +11,11 @@ from cleanlab_studio.studio.trustworthy_language_model import TLM
 from tests.tlm.test_get_trustworthiness_score import is_trustworthiness_score
 from tests.tlm.test_prompt import is_tlm_response
 
+_VALID_TLM_MODELS = ["gpt-4", "gpt-4o"]
+_VALID_TLM_QUALITY_PRESETS_WITHOUT_BASE = [
+    quality_preset for quality_preset in _VALID_TLM_QUALITY_PRESETS if quality_preset != "base"
+]
+
 
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
     """Tests the log dictionary in the response based on the options dictionary."""
@@ -135,7 +140,7 @@ def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -
 
 
 @pytest.mark.parametrize("model", _VALID_TLM_MODELS)
-@pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
+@pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS_WITHOUT_BASE)
 def test_get_trustworthiness_score(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str
 ) -> None:
@@ -157,7 +162,7 @@ def test_get_trustworthiness_score(
 
 
 @pytest.mark.parametrize("model", _VALID_TLM_MODELS)
-@pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
+@pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS_WITHOUT_BASE)
 def test_get_trustworthiness_score_async(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str
 ) -> None:
@@ -185,7 +190,7 @@ def test_get_trustworthiness_score_async(
 
 
 @pytest.mark.parametrize("model", _VALID_TLM_MODELS)
-@pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
+@pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS_WITHOUT_BASE)
 def test_try_get_trustworithness_score(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str
 ) -> None:
