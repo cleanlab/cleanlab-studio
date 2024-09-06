@@ -35,7 +35,7 @@ jobs:
         run: |
           pytest --ignore=tests/tlm/test_properties.py --verbose
   propertytest:
-    name: "Test: Property test TLM on mac using Python 3.11"
+    name: "Property Test TLM: Python 3.11 on macos-latest"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -60,7 +60,7 @@ jobs:
         run: cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
-          pytest tests/tlm/test_properties.py --verbose
+          pytest -n auto tests/tlm/test_properties.py --verbose
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
