@@ -11,7 +11,7 @@ Type aliases returned by the TLM module.
 
 - `TLMScoreResponse = Union[float, TLMScore]`: a single TLM response that can be either float, representing the trustworthiness score or a [TLMScore](#class-tlmscore) object containing both the trustworthiness score and log dictionary keys.
 - `TLMBatchScoreResponse = Union[List[float], List[TLMScore]]`: a TLM response that can be either a list of floats or a list of [TLMScore](#class-tlmscore) objects containing both the trustworthiness score and log dictionary keys. The list will have the same length as the input list of prompts, response pairs.
-- `TLMOptionalBatchScoreResponse = Union[List[Optional[float]], List[Optional[TLMScore]]]`:  a TLM response that can be either a list of floats or None (if the call to the TLM failed) or a list of [TLMScore](#class-tlmscore) objects containing both the trustworthiness score and log dictionary keys or None (if the call to the TLM failed). The list will have the same length as the input list of prompts, response pairs.
+- `TLMOptionalBatchScoreResponse = List[Optional[TLMScore]]`:  a TLM response that is a list of [TLMScore](#class-tlmscore) objects containing the trustworthiness score and optional log dictionary keys such as "explanation" and "error" (if the call to the TLM failed). The list will have the same length as the input list of prompts, response pairs.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from typing_extensions import (  # for Python <3.11 with (Not)Required
     TypedDict,
 )
 
-from cleanlab_studio.errors import ValidationError
+from cleanlab_studio.errors import RateLimitError, ValidationError, TlmBadRequest, TlmServerError, TlmPartialSuccess
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.constants import (
     _TLM_DEFAULT_MODEL,
@@ -44,6 +44,8 @@ from cleanlab_studio.internal.tlm.validation import (
     validate_try_tlm_prompt_response,
 )
 from cleanlab_studio.internal.types import TLMQualityPreset
+
+import warnings
 
 
 class TLM:
@@ -149,7 +151,7 @@ class TLM:
 
         Args:
             prompts (List[str]): list of prompts to run
-            capture_exceptions (bool): if ``True``, the returned list will contain ``None`` in place of the response for any errors or timeout when processing a particular prompt from the batch.
+            capture_exceptions (bool): if ``True``, the returned list will contain [TLMResponse](#class-tlmresponse) objects with error messages and retryability information in place of the response for any errors or timeout when processing a particular prompt from the batch.
                 If ``False``, this entire method will raise an exception if TLM fails to produce a result for any prompt in the batch.
 
         Returns:
@@ -319,13 +321,13 @@ class TLM:
     ) -> List[Optional[TLMResponse]]:
         """
         Gets response and trustworthiness score for any batch of prompts,
-        handling any failures (errors of timeouts) by returning None in place of the failures.
+        handling any failures (errors or timeouts) by returning error messages and retryability information in place of the failures.
 
-        The list returned will have the same length as the input list, if there are any
-        failures (errors or timeout) processing some inputs, the list will contain None in place of the response.
+        The list returned will have the same length as the input list. If there are any
+        failures (errors or timeouts) processing some inputs, the list will contain [TLMResponse](#class-tlmresponse) objects with error messages and retryability information instead of the usual response.
 
-        This is the recommended way to get TLM responses and trustworthiness scores for big datasets of many prompts,
-        where some individual TLM responses within the dataset may fail. It ensures partial results are not lost.
+        This is the recommended approach for obtaining TLM responses and trustworthiness scores for large datasets with many prompts,
+        where some individual TLM responses within the dataset might fail. It ensures partial results are preserved.
 
         Args:
             prompt (Sequence[str]): list of multiple prompts for the TLM
@@ -333,10 +335,9 @@ class TLM:
             List[Optional[TLMResponse]]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
                 The returned list will always have the same length as the input list.
                 In case of TLM failure on any prompt (due to timeouts or other errors),
-                the return list will contain None in place of the TLM response for that failed prompt.
-                Use this to obtain TLM results for as many prompts as possible,
-                but you might miss out on certain error messages.
-                If you prefer to be notified immediately about any errors or timeouts when running many prompts,
+                the return list will include a [TLMResponse](#class-tlmresponse) with an error message and retryability information instead of the usual TLM response for that failed prompt.
+                Use this method to obtain TLM results for as many prompts as possible, while handling errors/timeouts manually.
+                If you prefer immediate notification about any errors or timeouts when processing multiple prompts,
                 use the [`prompt()`](#method-prompt) method instead.
         """
         validate_tlm_try_prompt(prompt)
@@ -398,7 +399,7 @@ class TLM:
             prompt (str): prompt for the TLM
             client_session (aiohttp.ClientSession, optional): async HTTP session to use for TLM query. Defaults to None (creates a new session).
             timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
-            capture_exceptions: if should return None in place of the response for any errors
+            capture_exceptions: if should return [TLMResponse](#class-tlmresponse) objects with error messages and retryability information in place of the response for any errors
             batch_index: index of the prompt in the batch, used for error messages
         Returns:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
@@ -418,9 +419,70 @@ class TLM:
                 ),
                 timeout=timeout,
             )
+        except RateLimitError as e:
+            if capture_exceptions:
+                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warnings.warn(warning_message)
+
+                return TLMResponse(
+                    response=None,
+                    trustworthiness_score=None,
+                    log={
+                        "error": {
+                            "message": str(e.message),
+                            "retryable": True
+                        }
+                    }
+                )
+            raise e
+        except TlmBadRequest as e:
+            if capture_exceptions:
+                retry_message = "Worth retrying." if e.retryable else "Retrying will not help. Please address the issue described in the error message before attempting again."
+                warning_message = f"prompt[{batch_index}] failed. {retry_message} Error: {str(e.message)}"
+                warnings.warn(warning_message)
+                
+                return TLMResponse(
+                    response=None,
+                    trustworthiness_score=None,
+                    log={
+                        "error": {
+                            "message": str(e.message),
+                            "retryable": e.retryable
+                        }
+                    }
+                )
+            raise e
+        except TlmServerError as e:
+            if capture_exceptions:
+                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warnings.warn(warning_message)
+
+                return TLMResponse(
+                    response=None,
+                    trustworthiness_score=None,
+                    log={
+                        "error": {
+                            "message": str(e.message),
+                            "retryable": True
+                        }
+                    }
+                )
+            raise e
         except Exception as e:
             if capture_exceptions:
-                return None
+                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warnings.warn(warning_message)
+
+                return TLMResponse(
+                    response=None,
+                    trustworthiness_score=None,
+                    log={
+                        "error": {
+                            "message": str(e),
+                            "retryable": True
+                        }
+                    }
+                )
             raise e
 
         tlm_response = {
@@ -494,7 +556,7 @@ class TLM:
         """Gets trustworthiness score for batches of many prompt-response pairs.
 
         The list returned will have the same length as the input list, if TLM hits any
-        errors or timeout processing certain inputs, the list will contain None
+        errors or timeout processing certain inputs, the list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information
         in place of the TLM score for this failed input.
 
         This is the recommended way to get TLM trustworthiness scores for big datasets,
@@ -504,14 +566,12 @@ class TLM:
             prompt (Sequence[str]): list of prompts for the TLM to evaluate
             response (Sequence[str]): list of existing responses corresponding to the input prompts (from any LLM or human-written)
         Returns:
-            TLMOptionalBatchScoreResponse: If a single prompt/response pair was passed in, method returns either a float (representing the output trustworthiness score), a None (if the call to the TLM failed), or a TLMScore object containing both the trustworthiness score and log dictionary keys.
-
-                If a list of prompt/responses was passed in, method returns a list of floats representing the trustworthiness score or a list of TLMScore objects each containing both the trustworthiness score and log dictionary keys for each prompt-response pair passed in. For all TLM calls that failed, the returned list will contain None instead. See the documentation for [TLMOptionalBatchScoreResponse](#type-aliases) for more details.
+            TLMOptionalBatchScoreResponse: If a list of prompt/responses was passed in, method returns a list of TLMScore objects each containing the trustworthiness score and the optional log dictionary keys for each prompt-response pair passed in. For all TLM calls that failed, the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information instead. See the documentation for [TLMOptionalBatchScoreResponse](#type-aliases) for more details.
 
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
                 The returned list will always have the same length as the input list.
                 In case of TLM error or timeout on any prompt-response pair,
-                the returned list will contain None in place of the trustworthiness score.
+                the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information in place of the trustworthiness score.
                 Use this method if you prioritize obtaining results for as many inputs as possible,
                 however you might miss out on certain error messages.
                 If you prefer to be notified immediately about any errors or timeouts,
@@ -625,11 +685,70 @@ class TLM:
                     "log": response_json["log"],
                 }
 
-            return cast(float, response_json["confidence_score"])
+            return {
+                "trustworthiness_score": response_json["confidence_score"]
+            }
 
+        except RateLimitError as e:
+            if capture_exceptions:
+                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warnings.warn(warning_message)
+                
+                return TLMScore(
+                    trustworthiness_score=None,
+                    log={
+                        "error": {
+                            "message": str(e.message),
+                            "retryable": True
+                        }
+                    }
+                )
+            raise e
+        except TlmBadRequest as e:
+            if capture_exceptions:
+                retry_message = "Worth retrying." if e.retryable else "Retrying will not help. Please address the issue described in the error message before attempting again."
+                warning_message = f"prompt[{batch_index}] failed. {retry_message} Error: {str(e.message)}"
+                warnings.warn(warning_message)
+                
+                return TLMScore(
+                    trustworthiness_score=None,
+                    log={
+                        "error": {
+                            "message": str(e.message),
+                            "retryable": e.retryable
+                        }
+                    }
+                )
+            raise e
+        except TlmServerError as e:
+            if capture_exceptions:
+                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warnings.warn(warning_message)
+
+                return TLMScore(
+                    trustworthiness_score=None,
+                    log={
+                        "error": {
+                            "message": str(e.message),
+                            "retryable": True
+                        }
+                    }
+                )
+            raise e
         except Exception as e:
             if capture_exceptions:
-                return None
+                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warnings.warn(warning_message)
+
+                return TLMScore(
+                    trustworthiness_score=None,
+                    log={
+                        "error": {
+                            "message": str(e),
+                            "retryable": True
+                        }
+                    }
+                )
             raise e
 
     def get_model_name(self) -> str:
@@ -670,7 +789,7 @@ class TLMScore(TypedDict):
 
 TLMScoreResponse = Union[float, TLMScore]
 TLMBatchScoreResponse = Union[List[float], List[TLMScore]]
-TLMOptionalBatchScoreResponse = Union[List[Optional[float]], List[Optional[TLMScore]]]
+TLMOptionalBatchScoreResponse = List[Optional[TLMScore]]
 
 
 class TLMOptions(TypedDict):

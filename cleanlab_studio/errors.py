@@ -79,7 +79,9 @@ class RateLimitError(HandledError):
 
 
 class TlmBadRequest(HandledError):
-    pass
+    def __init__(self, message: str, retryable: bool):
+        self.message = message
+        self.retryable = retryable
 
 
 class TlmServerError(APIError):
