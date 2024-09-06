@@ -36,11 +36,13 @@ def _test_log_batch(responses: Dict[str, Any], options: Dict[str, Any]) -> None:
             _test_log(response, options)
 
 
+@pytest.mark.asyncio(scope="function")  # or 'class', 'module', etc.
 async def _run_prompt_async(tlm: TLM, prompt: Union[List[str], str]) -> Any:
     """Runs tlm.prompt() asynchronously."""
     return await tlm.prompt_async(prompt)
 
 
+@pytest.mark.asyncio(scope="function")  # or 'class', 'module', etc.
 async def _run_get_trustworthiness_score_async(
     tlm: TLM, prompt: Union[List[str], str], response: Union[List[str], str]
 ) -> Any:
