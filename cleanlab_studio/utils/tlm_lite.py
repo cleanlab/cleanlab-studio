@@ -4,16 +4,22 @@ TLM Lite is a version of the [Trustworthy Language Model (TLM)](../trustworthy_l
 **This module is not meant to be imported and used directly.** Instead, use [`Studio.TLMLite()`](/reference/python/studio/#method-tlmlite) to instantiate a [TLMLite](#class-tlmlite) object, and then you can use the methods like [`prompt()`](#method-prompt) documented on this page.
 """
 
-from typing import List, Dict, Optional, Union, cast, Sequence
+from typing import Dict, List, Optional, Sequence, Union, cast
+
 import numpy as np
 
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.tlm.validation import (
-    validate_tlm_lite_score_options,
     get_tlm_lite_response_options,
+    validate_tlm_lite_score_options,
 )
 from cleanlab_studio.internal.types import TLMQualityPreset
-from cleanlab_studio.studio.trustworthy_language_model import TLM, TLMOptions, TLMResponse, TLMScore
+from cleanlab_studio.studio.trustworthy_language_model import (
+    TLM,
+    TLMOptions,
+    TLMResponse,
+    TLMScore,
+)
 
 
 class TLMLite:
@@ -111,11 +117,22 @@ class TLMLite:
         prompt_response = self._tlm_response.prompt(prompt)
 
         if isinstance(prompt, Sequence) and isinstance(prompt_response, list):
-            response = [r["response"] for r in prompt_response]
-            perplexity = [r["log"]["perplexity"] for r in prompt_response]
+            response = []
+            perplexity = []
+            for r in prompt_response:
+                if (
+                    r["response"] is None
+                ):  # This condition should theoretically never be true, as the .prompt() method is designed to always return a response unless an exception is raised
+                    raise ValueError("Response cannot be None")
+                response.append(r["response"])
+                perplexity.append(r["log"]["perplexity"])
             return self._batch_score(prompt, response, perplexity)
 
         elif isinstance(prompt, str) and isinstance(prompt_response, dict):
+            if (
+                prompt_response["response"] is None
+            ):  # This condition should theoretically never be true, as the .prompt() method is designed to always return a response unless an exception is raised
+                raise ValueError("Response cannot be None")
             return self._score(
                 prompt,
                 prompt_response["response"],
@@ -243,12 +260,6 @@ class TLMLite:
             score_response = cast(List[Optional[TLMScore]], score_response)
             return [
                 {"response": res, **score} if score else None
-                for res, score in zip(response, score_response)
-            ]
-        elif all(score is None or isinstance(score, (float, int)) for score in score_response):
-            score_response = cast(List[Optional[float]], score_response)
-            return [
-                {"response": res, "trustworthiness_score": score} if score else None
                 for res, score in zip(response, score_response)
             ]
         else:
