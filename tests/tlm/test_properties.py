@@ -54,11 +54,9 @@ def _test_get_trustworthiness_score_response(response, options):
     assert response is not None
     if "log" in options:
         assert isinstance(response, dict)
-        assert "trustworthiness_score" in response
-        assert is_trustworthiness_score(response["trustworthiness_score"])
     else:
         assert isinstance(response, float)
-        assert 0.0 <= response <= 1.0
+    assert is_trustworthiness_score(response)
     _test_log(response, options)
 
 

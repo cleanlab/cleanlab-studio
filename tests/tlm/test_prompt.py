@@ -12,6 +12,7 @@ def is_tlm_response(response: Any) -> bool:
         isinstance(response, dict)
         and "response" in response
         and "trustworthiness_score" in response
+        and isinstance(response["trustworthiness_score"], float)
     ):
         return 0.0 <= response["trustworthiness_score"] <= 1.0
 
