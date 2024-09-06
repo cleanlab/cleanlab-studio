@@ -7,7 +7,7 @@ from cleanlab_studio.errors import TlmBadRequest, ValidationError
 from cleanlab_studio.studio.studio import Studio
 from cleanlab_studio.studio.trustworthy_language_model import TLM
 
-from .test_get_trustworthiness_score import is_valid_tlm_score_response_with_error
+from .test_get_trustworthiness_score import is_tlm_score_response_with_error
 from .test_prompt import is_tlm_response_with_error
 
 np.random.seed(0)
@@ -33,7 +33,7 @@ def assert_prompt_too_long_error(response: Any, index: int):
 
 
 def assert_prompt_too_long_error_score(response: Any, index: int):
-    assert is_valid_tlm_score_response_with_error(response)
+    assert is_tlm_score_response_with_error(response)
     assert response["log"]["error"]["message"].startswith(
         f"Error executing query at index {index}:"
     )
@@ -45,7 +45,7 @@ def assert_prompt_too_long_error_score(response: Any, index: int):
 
 
 def assert_response_too_long_error_score(response: Any, index: int):
-    assert is_valid_tlm_score_response_with_error(response)
+    assert is_tlm_score_response_with_error(response)
     assert response["log"]["error"]["message"].startswith(
         f"Error executing query at index {index}:"
     )
@@ -57,7 +57,7 @@ def assert_response_too_long_error_score(response: Any, index: int):
 
 
 def assert_prompt_and_response_combined_too_long_error_score(response: Any, index: int):
-    assert is_valid_tlm_score_response_with_error(response)
+    assert is_tlm_score_response_with_error(response)
     assert response["log"]["error"]["message"].startswith(
         f"Error executing query at index {index}:"
     )

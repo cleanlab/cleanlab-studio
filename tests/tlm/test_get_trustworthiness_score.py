@@ -25,8 +25,8 @@ def is_trustworthiness_score_json_format(response: Any) -> bool:
     return isinstance(response, dict) and "trustworthiness_score" in response
 
 
-def is_valid_tlm_score_response_with_error(response: Any) -> bool:
-    """Validates if the response matches the expected TLMScore with error format."""
+def is_tlm_score_response_with_error(response: Any) -> bool:
+    """Returns True if the response matches the expected TLMScore with error format."""
     return (
         isinstance(response, dict)
         and "trustworthiness_score" in response
@@ -133,7 +133,7 @@ def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
     """Tests running a batch try get_trustworthiness_score in the TLM, forcing timeouts.
 
     Sets timeout to 0.0001 seconds, which should force a timeout for all get_trustworthiness_scores.
-    This should result in None responses for all get_trustworthiness_scores.
+    This should result in TLMResponse with error messages and retryability information for all get_trustworthiness_scores.
 
     Expected:
     - TLM should return a list of responses
@@ -155,4 +155,4 @@ def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
-    assert all(is_valid_tlm_score_response_with_error(r) for r in response)
+    assert all(is_tlm_score_response_with_error(r) for r in response)
