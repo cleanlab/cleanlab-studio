@@ -33,7 +33,34 @@ jobs:
         run: cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
-          pytest --verbose
+          pytest --ignore=tests/test_properties.py --verbose
+  propertytest:
+    name: "Test: Property test TLM on mac using Python 3.11"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+        python:
+          - "3.11"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install .
+          pip install -r tests/requirements_test.txt
+      - name: Install Cleanlab Studio client
+        run: pip install -e .
+      - name: Cleanlab login
+        run: cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
+      - name: Run tests
+        run: |
+          pytest test_properties.py --verbose
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
