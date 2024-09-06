@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+import warnings
 from typing import Any, Coroutine, Dict, List, Optional, Sequence, Union, cast
 
 import aiohttp
@@ -27,7 +28,13 @@ from typing_extensions import (  # for Python <3.11 with (Not)Required
     TypedDict,
 )
 
-from cleanlab_studio.errors import RateLimitError, ValidationError, TlmBadRequest, TlmServerError, TlmPartialSuccess
+from cleanlab_studio.errors import (
+    RateLimitError,
+    TlmBadRequest,
+    TlmPartialSuccess,
+    TlmServerError,
+    ValidationError,
+)
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.constants import (
     _TLM_DEFAULT_MODEL,
@@ -44,8 +51,6 @@ from cleanlab_studio.internal.tlm.validation import (
     validate_try_tlm_prompt_response,
 )
 from cleanlab_studio.internal.types import TLMQualityPreset
-
-import warnings
 
 
 class TLM:
@@ -421,67 +426,57 @@ class TLM:
             )
         except RateLimitError as e:
             if capture_exceptions:
-                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warning_message = (
+                    f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                )
                 warnings.warn(warning_message)
 
                 return TLMResponse(
                     response=None,
                     trustworthiness_score=None,
-                    log={
-                        "error": {
-                            "message": str(e.message),
-                            "retryable": True
-                        }
-                    }
+                    log={"error": {"message": str(e.message), "retryable": True}},
                 )
             raise e
         except TlmBadRequest as e:
             if capture_exceptions:
-                retry_message = "Worth retrying." if e.retryable else "Retrying will not help. Please address the issue described in the error message before attempting again."
-                warning_message = f"prompt[{batch_index}] failed. {retry_message} Error: {str(e.message)}"
+                retry_message = (
+                    "Worth retrying."
+                    if e.retryable
+                    else "Retrying will not help. Please address the issue described in the error message before attempting again."
+                )
+                warning_message = (
+                    f"prompt[{batch_index}] failed. {retry_message} Error: {str(e.message)}"
+                )
                 warnings.warn(warning_message)
-                
+
                 return TLMResponse(
                     response=None,
                     trustworthiness_score=None,
-                    log={
-                        "error": {
-                            "message": str(e.message),
-                            "retryable": e.retryable
-                        }
-                    }
+                    log={"error": {"message": str(e.message), "retryable": e.retryable}},
                 )
             raise e
         except TlmServerError as e:
             if capture_exceptions:
-                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warning_message = (
+                    f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                )
                 warnings.warn(warning_message)
 
                 return TLMResponse(
                     response=None,
                     trustworthiness_score=None,
-                    log={
-                        "error": {
-                            "message": str(e.message),
-                            "retryable": True
-                        }
-                    }
+                    log={"error": {"message": str(e.message), "retryable": True}},
                 )
             raise e
         except Exception as e:
             if capture_exceptions:
-                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e)}"
                 warnings.warn(warning_message)
 
                 return TLMResponse(
                     response=None,
                     trustworthiness_score=None,
-                    log={
-                        "error": {
-                            "message": str(e),
-                            "retryable": True
-                        }
-                    }
+                    log={"error": {"message": str(e), "retryable": True}},
                 )
             raise e
 
@@ -685,69 +680,60 @@ class TLM:
                     "log": response_json["log"],
                 }
 
-            return {
-                "trustworthiness_score": response_json["confidence_score"]
-            }
+            if capture_exceptions:
+                return {"trustworthiness_score": response_json["confidence_score"]}
+            else:
+                return cast(float, response_json["confidence_score"])
 
         except RateLimitError as e:
             if capture_exceptions:
-                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warning_message = (
+                    f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                )
                 warnings.warn(warning_message)
-                
+
                 return TLMScore(
                     trustworthiness_score=None,
-                    log={
-                        "error": {
-                            "message": str(e.message),
-                            "retryable": True
-                        }
-                    }
+                    log={"error": {"message": str(e.message), "retryable": True}},
                 )
             raise e
         except TlmBadRequest as e:
             if capture_exceptions:
-                retry_message = "Worth retrying." if e.retryable else "Retrying will not help. Please address the issue described in the error message before attempting again."
-                warning_message = f"prompt[{batch_index}] failed. {retry_message} Error: {str(e.message)}"
+                retry_message = (
+                    "Worth retrying."
+                    if e.retryable
+                    else "Retrying will not help. Please address the issue described in the error message before attempting again."
+                )
+                warning_message = (
+                    f"prompt[{batch_index}] failed. {retry_message} Error: {str(e.message)}"
+                )
                 warnings.warn(warning_message)
-                
+
                 return TLMScore(
                     trustworthiness_score=None,
-                    log={
-                        "error": {
-                            "message": str(e.message),
-                            "retryable": e.retryable
-                        }
-                    }
+                    log={"error": {"message": str(e.message), "retryable": e.retryable}},
                 )
             raise e
         except TlmServerError as e:
             if capture_exceptions:
-                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warning_message = (
+                    f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                )
                 warnings.warn(warning_message)
 
                 return TLMScore(
                     trustworthiness_score=None,
-                    log={
-                        "error": {
-                            "message": str(e.message),
-                            "retryable": True
-                        }
-                    }
+                    log={"error": {"message": str(e.message), "retryable": True}},
                 )
             raise e
         except Exception as e:
             if capture_exceptions:
-                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e.message)}"
+                warning_message = f"prompt[{batch_index}] failed. Worth retrying. Error: {str(e)}"
                 warnings.warn(warning_message)
 
                 return TLMScore(
                     trustworthiness_score=None,
-                    log={
-                        "error": {
-                            "message": str(e),
-                            "retryable": True
-                        }
-                    }
+                    log={"error": {"message": str(e), "retryable": True}},
                 )
             raise e
 

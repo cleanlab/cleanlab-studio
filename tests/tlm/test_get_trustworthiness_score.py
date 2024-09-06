@@ -20,6 +20,32 @@ def is_trustworthiness_score(response: Any) -> bool:
         return False
 
 
+def is_trustworthiness_score_json_format(response: Any) -> bool:
+    """Returns True if the response is a trustworthiness score in JSON format."""
+    return (
+        isinstance(response, dict)
+        and "trustworthiness_score" in response
+        and isinstance(response["trustworthiness_score"], float)
+    )
+
+
+def is_valid_tlm_score_response_with_error(response: Any) -> bool:
+    """Validates if the response matches the expected TLMScore with error format."""
+    return (
+        isinstance(response, dict)
+        and "trustworthiness_score" in response
+        and response["trustworthiness_score"] is None
+        and (
+            isinstance(response["log"], dict)
+            and "error" in response["log"]
+            and isinstance(response["log"]["error"], dict)
+            and "message" in response["log"]["error"]
+            and "retryable" in response["log"]["error"]
+            and isinstance(response["log"]["error"]["retryable"], bool)
+        )
+    )
+
+
 def test_single_get_trustworthiness_score(tlm: TLM) -> None:
     """Tests running a single get_trustworthiness_score in the TLM.
 
@@ -89,7 +115,7 @@ def test_batch_try_get_trustworthiness_score(tlm: TLM) -> None:
 
     Expected:
     - TLM should return a list of responses
-    - Responses can be None or of type TLMResponse
+    - Responses will be of type TLMResponse
     - No exceptions are raised
     """
     # act -- run a batch get_trustworthiness_score
@@ -104,7 +130,7 @@ def test_batch_try_get_trustworthiness_score(tlm: TLM) -> None:
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
-    assert all(r is None or is_trustworthiness_score(r) for r in response)
+    assert all(is_trustworthiness_score_json_format(r) for r in response)
 
 
 def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
@@ -115,7 +141,7 @@ def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
 
     Expected:
     - TLM should return a list of responses
-    - Responses can be None or of type TLMResponse
+    - Responses will be of type TLMResponse
     - No exceptions are raised
     """
     # arrange -- override timeout
@@ -133,4 +159,4 @@ def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
-    assert all(r is None for r in response)
+    assert all(is_valid_tlm_score_response_with_error(r) for r in response)
