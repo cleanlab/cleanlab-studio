@@ -22,11 +22,7 @@ def is_trustworthiness_score(response: Any) -> bool:
 
 def is_trustworthiness_score_json_format(response: Any) -> bool:
     """Returns True if the response is a trustworthiness score in JSON format."""
-    return (
-        isinstance(response, dict)
-        and "trustworthiness_score" in response
-        and isinstance(response["trustworthiness_score"], float)
-    )
+    return isinstance(response, dict) and "trustworthiness_score" in response
 
 
 def is_valid_tlm_score_response_with_error(response: Any) -> bool:
