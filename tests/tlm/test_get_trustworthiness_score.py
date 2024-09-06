@@ -7,10 +7,13 @@ from cleanlab_studio.studio.trustworthy_language_model import TLM
 
 
 def is_trustworthiness_score(response: Any) -> bool:
-    """Returns True if the response is a trustworthiness score."""
-    return isinstance(response, float) or (
-        isinstance(response, dict) and "trustworthiness_score" in response
-    )
+    """Returns True if the response is a trustworthiness score with valid range."""
+    if isinstance(response, float):
+        return 0.0 <= response <= 1.0
+    elif isinstance(response, dict) and "trustworthiness_score" in response:
+        return 0.0 <= response["trustworthiness_score"] <= 1.0
+    else:
+        return False
 
 
 def test_single_get_trustworthiness_score(tlm: TLM) -> None:

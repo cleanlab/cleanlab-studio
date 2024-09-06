@@ -11,7 +11,6 @@ from cleanlab_studio.studio.trustworthy_language_model import TLM
 from tests.tlm.test_get_trustworthiness_score import is_trustworthiness_score
 from tests.tlm.test_prompt import is_tlm_response
 
-# for testing
 _VALID_TLM_MODELS = ["gpt-4o"]
 _VALID_TLM_QUALITY_PRESETS = ["low"]
 
@@ -34,6 +33,40 @@ def _test_log_batch(responses: Dict[str, Any], options: Dict[str, Any]) -> None:
     for response in responses:
         if response is not None:
             _test_log(response, options)
+
+
+def _test_prompt_response(response, options):
+    """Property tests the responses of a prompt based on the options dictionary and returned responses."""
+    assert response is not None
+    assert is_tlm_response(response)
+    _test_log(response, options)
+
+
+def _test_batch_prompt_response(responses, options):
+    """Property tests the responses of a batch prompt based on the options dictionary and returned responses."""
+    assert responses is not None
+    assert isinstance(responses, list)
+    _test_log_batch(responses, options)
+
+
+def _test_get_trustworthiness_score_response(response, options):
+    """Property tests the responses of a get_trustworthiness_score based on the options dictionary and returned responses."""
+    assert response is not None
+    if "log" in options:
+        assert isinstance(response, dict)
+        assert "trustworthiness_score" in response
+        assert is_trustworthiness_score(response["trustworthiness_score"])
+    else:
+        assert isinstance(response, float)
+        assert 0.0 <= response <= 1.0
+    _test_log(response, options)
+
+
+def _test_batch_get_trustworthiness_score_response(responses, options):
+    """Property tests the responses of a batch get_trustworthiness_score based on the options dictionary and returned responses."""
+    assert responses is not None
+    assert isinstance(responses, list)
+    _test_log_batch(responses, options)
 
 
 @pytest.mark.asyncio(scope="function")
@@ -60,17 +93,12 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
 
     # test prompt with single prompt
     response = tlm.prompt("What is the capital of France?")
-    assert response is not None
-    assert is_tlm_response(response)
-    _test_log(response, options)
+    _test_prompt_response(response, options)
 
     # test prompt with batch prompt
     responses = tlm.prompt(["What is the capital of France?", "What is the capital of Ukraine?"])
-    print(responses)
-    assert responses is not None
-    assert isinstance(responses, list)
-    assert all(is_tlm_response(r) for r in responses)
-    _test_log_batch(responses, options)
+    assert all(is_tlm_response(response) for response in responses)
+    _test_batch_prompt_response(responses, options)
 
 
 @pytest.mark.parametrize("model", _VALID_TLM_MODELS)
@@ -83,9 +111,7 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
 
     # test prompt with single prompt
     response = asyncio.run(_run_prompt_async(tlm, "What is the capital of France?"))
-    assert response is not None
-    assert is_tlm_response(response)
-    _test_log(response, options)
+    _test_prompt_response(response, options)
 
     # test prompt with batch prompt
     responses = asyncio.run(
@@ -93,11 +119,8 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
             tlm, ["What is the capital of France?", "What is the capital of Ukraine?"]
         )
     )
-    print(responses)
-    assert responses is not None
-    assert isinstance(responses, list)
     assert all(is_tlm_response(r) for r in responses)
-    _test_log_batch(responses, options)
+    _test_batch_prompt_response(responses, options)
 
 
 @pytest.mark.parametrize("model", _VALID_TLM_MODELS)
@@ -112,11 +135,8 @@ def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -
     responses = tlm.try_prompt(
         ["What is the capital of France?", "What is the capital of Ukraine?"]
     )
-    assert responses is not None
-    assert isinstance(responses, list)
-    for response in responses:
-        assert response is None or is_tlm_response(response)
-    _test_log_batch(responses, options)
+    assert all(response is None or is_tlm_response(response) for response in responses)
+    _test_batch_prompt_response(responses, options)
 
 
 @pytest.mark.parametrize("model", _VALID_TLM_MODELS)
@@ -131,21 +151,14 @@ def test_get_trustworthiness_score(
 
     # test prompt with single prompt
     response = tlm.get_trustworthiness_score("What is the capital of France?", "Paris")
-    assert response is not None
-    if "log" in options:
-        assert isinstance(response, dict)
-    else:
-        assert isinstance(response, float)
-    _test_log(response, options)
+    _test_get_trustworthiness_score_response(response, options)
 
     # test prompt with batch prompt
     responses = tlm.get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
-    assert responses is not None
-    assert isinstance(responses, list)
-    assert all(is_trustworthiness_score(r) for r in responses)
-    _test_log_batch(responses, options)
+    assert all(is_trustworthiness_score(response) for response in responses)
+    _test_batch_get_trustworthiness_score_response(responses, options)
 
 
 @pytest.mark.parametrize("model", _VALID_TLM_MODELS)
@@ -162,12 +175,7 @@ def test_get_trustworthiness_score_async(
     response = asyncio.run(
         _run_get_trustworthiness_score_async(tlm, "What is the capital of France?", "Paris")
     )
-    assert response is not None
-    if "log" in options:
-        assert isinstance(response, dict)
-    else:
-        assert isinstance(response, float)
-    _test_log(response, options)
+    _test_get_trustworthiness_score_response(response, options)
 
     # test prompt with batch prompt
     responses = asyncio.run(
@@ -177,10 +185,8 @@ def test_get_trustworthiness_score_async(
             ["USA", "Kyiv"],
         )
     )
-    assert responses is not None
-    assert isinstance(responses, list)
-    assert all(is_trustworthiness_score(r) for r in responses)
-    _test_log_batch(responses, options)
+    assert all(is_trustworthiness_score(response) for response in responses)
+    _test_batch_get_trustworthiness_score_response(responses, options)
 
 
 @pytest.mark.parametrize("model", _VALID_TLM_MODELS)
@@ -197,7 +203,5 @@ def test_try_get_trustworithness_score(
     responses = tlm.try_get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
-    assert responses is not None
-    assert isinstance(responses, list)
-    assert all(is_trustworthiness_score(r) for r in responses)
-    _test_log_batch(responses, options)
+    assert all(response is None or is_trustworthiness_score(response) for response in responses)
+    _test_batch_get_trustworthiness_score_response(responses, options)
