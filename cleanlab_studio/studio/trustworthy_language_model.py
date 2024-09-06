@@ -65,7 +65,7 @@ class TLM:
             with "best" also returning more reliable trustworthiness scores than "high".
             The "medium" and "low" presets return standard LLM responses along with associated trustworthiness scores,
             with "medium" producing more reliable trustworthiness scores than low.
-            The "base" preset will provide a standard LLM response and a trustworthiness score in the lowest possible latency.
+            The "base" preset will provide a standard LLM response and a trustworthiness score in the lowest possible latency/cost.
 
 
             Higher presets have increased runtime and cost (and may internally consume more tokens).
@@ -690,8 +690,8 @@ class TLMOptions(TypedDict):
     - **medium:** `num_candidate_responses` = 1, `num_consistency_samples` = 8, `use_self_reflection` = True.
     - **low:** `num_candidate_responses` = 1, `num_consistency_samples` = 4, `use_self_reflection` = True.
     - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False. This preset is equivalent to a regular LLM call.
-        When using the get_trustworthiness_score() on base preset, one self-reflection prompt will be used to generate the trustworthiness score.
-        If you explicitly set `use_self_reflection` = False for get_trustworthiness_score(), the trustworthiness score will be `None` as no evaluation is performed.
+        When using `get_trustworthiness_score()` on "base" preset, a cheaper self-reflection will be used to approximate the trustworthiness score.
+        If you explicitly set `use_self_reflection = False`, `get_trustworthiness_score()` will return `None` instead of a score.
 
     By default, the TLM is set to the "medium" quality preset. The default `model` used is "gpt-4o-mini", and `max_tokens` is 512 for all quality presets.
     You can set custom values for these arguments regardless of the quality preset specified.
