@@ -8,7 +8,9 @@ from cleanlab_studio.studio.trustworthy_language_model import TLM
 
 def is_trustworthiness_score(response: Any) -> bool:
     """Returns True if the response is a trustworthiness score."""
-    return isinstance(response, float)
+    return isinstance(response, float) or (
+        isinstance(response, dict) and "trustworthiness_score" in response
+    )
 
 
 def test_single_get_trustworthiness_score(tlm: TLM) -> None:
