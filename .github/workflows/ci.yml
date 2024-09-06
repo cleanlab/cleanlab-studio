@@ -35,7 +35,7 @@ jobs:
         run: |
           pytest --ignore=tests/tlm/test_properties.py --verbose
   propertytest:
-    name: "Property Test TLM: Python 3.11 on macos-latest"
+    name: "Property Test TLM: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     if: github.event_name == 'pull_request'  # Only run on pull request (to limit TLM calls)
     strategy:
@@ -43,7 +43,7 @@ jobs:
         os:
           - macos-latest
         python:
-          - "3.11"
+          - "3.10"
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python }}
@@ -61,7 +61,7 @@ jobs:
         run: cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
-          pytest tests/tlm/test_properties.py --verbose
+          pytest -n auto tests/tlm/test_properties.py --verbose
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
