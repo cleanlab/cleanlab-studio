@@ -754,7 +754,7 @@ class TLMResponse(TypedDict):
         log (dict, optional): additional logs and metadata returned from the LLM call only if the `log` key was specified in TLMOptions.
     """
 
-    response: str
+    response: Optional[str]
     trustworthiness_score: Optional[float]
     log: NotRequired[Dict[str, Any]]
 
