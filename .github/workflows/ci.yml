@@ -37,6 +37,7 @@ jobs:
   propertytest:
     name: "Property Test TLM: Python 3.11 on macos-latest"
     runs-on: ${{ matrix.os }}
+    if: github.event_name == 'pull_request'  # Only run on pull request (to limit TLM calls)
     strategy:
       matrix:
         os:
