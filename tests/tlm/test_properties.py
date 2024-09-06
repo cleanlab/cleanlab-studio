@@ -11,9 +11,6 @@ from cleanlab_studio.studio.trustworthy_language_model import TLM
 from tests.tlm.test_get_trustworthiness_score import is_trustworthiness_score
 from tests.tlm.test_prompt import is_tlm_response
 
-_VALID_TLM_MODELS = ["gpt-4o"]
-_VALID_TLM_QUALITY_PRESETS = ["low"]
-
 
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
     """Tests the log dictionary in the response based on the options dictionary."""
