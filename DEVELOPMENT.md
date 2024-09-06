@@ -27,7 +27,7 @@ are in `.github/workflows/format.yml`.
 To set up pre-commit:
 
 ```
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements_dev.txt
 pre-commit install
 ```
 
