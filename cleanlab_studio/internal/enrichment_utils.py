@@ -1,7 +1,7 @@
-from difflib import SequenceMatcher
 import re
-from typing import Any, List, Optional, Tuple, Union
 import warnings
+from difflib import SequenceMatcher
+from typing import Any, List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -127,7 +127,7 @@ def get_constrain_outputs_match(
     # Parse category if LLM response is properly formatted
     exact_matches = re.findall(constrain_outputs_pattern, response_str, re.IGNORECASE)
     if len(exact_matches) > 0:
-        return str(exact_matches[0])
+        return str(exact_matches[-1])
 
     # If there are no exact matches to a specific category, return the closest category based on string similarity.
     best_match = max(
