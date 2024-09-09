@@ -304,11 +304,8 @@ class TLM:
                 ),
             )
 
-        return cast(
-            List[TLMResponse],
-            self._event_loop.run_until_complete(
-                self._batch_prompt(prompt, capture_exceptions=False),
-            ),
+        return self._event_loop.run_until_complete(
+            self._batch_prompt(prompt, capture_exceptions=False),
         )
 
     def try_prompt(
@@ -339,11 +336,8 @@ class TLM:
         """
         validate_tlm_try_prompt(prompt)
 
-        return cast(
-            List[TLMResponse],
-            self._event_loop.run_until_complete(
-                self._batch_prompt(prompt, capture_exceptions=True),
-            ),
+        return self._event_loop.run_until_complete(
+            self._batch_prompt(prompt, capture_exceptions=True),
         )
 
     async def prompt_async(
@@ -376,10 +370,7 @@ class TLM:
                 )
                 return cast(TLMResponse, tlm_response)
 
-            return cast(
-                List[TLMResponse],
-                await self._batch_prompt(prompt, capture_exceptions=False),
-            )
+            return await self._batch_prompt(prompt, capture_exceptions=False)
 
     async def _prompt_async(
         self,
@@ -525,13 +516,10 @@ class TLM:
 
         assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
 
-        return cast(
-            List[TLMScore],
-            self._event_loop.run_until_complete(
-                self._batch_get_trustworthiness_score(
-                    prompt, processed_response, capture_exceptions=False
-                )
-            ),
+        return self._event_loop.run_until_complete(
+            self._batch_get_trustworthiness_score(
+                prompt, processed_response, capture_exceptions=False
+            )
         )
 
     def try_get_trustworthiness_score(
@@ -569,15 +557,12 @@ class TLM:
 
         assert isinstance(processed_response, list)
 
-        return cast(
-            List[TLMScore],
-            self._event_loop.run_until_complete(
-                self._batch_get_trustworthiness_score(
-                    prompt,
-                    processed_response,
-                    capture_exceptions=True,
-                )
-            ),
+        return self._event_loop.run_until_complete(
+            self._batch_get_trustworthiness_score(
+                prompt,
+                processed_response,
+                capture_exceptions=True,
+            )
         )
 
     async def get_trustworthiness_score_async(
@@ -620,11 +605,8 @@ class TLM:
 
             assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
 
-            return cast(
-                List[TLMScore],
-                await self._batch_get_trustworthiness_score(
-                    prompt, processed_response, capture_exceptions=False
-                ),
+            return await self._batch_get_trustworthiness_score(
+                prompt, processed_response, capture_exceptions=False
             )
 
     async def _get_trustworthiness_score_async(

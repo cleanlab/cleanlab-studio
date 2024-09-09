@@ -132,7 +132,7 @@ class TLMLite:
         ):
             return self._score(
                 prompt,
-                cast(str, prompt_response["response"]),
+                prompt_response["response"],
                 perplexity=prompt_response["log"]["perplexity"],
             )
 
@@ -246,7 +246,6 @@ class TLMLite:
         assert len(prompt) == len(score_response)
 
         if all(isinstance(score, dict) for score in score_response):
-            score_response = cast(List[TLMScore], score_response)
             return [
                 {"response": res, **score} if score else None
                 for res, score in zip(response, score_response)
