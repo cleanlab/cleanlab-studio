@@ -1,7 +1,7 @@
-from difflib import SequenceMatcher
 import re
-from typing import Any, List, Optional, Tuple, Union
 import warnings
+from difflib import SequenceMatcher
+from typing import Any, List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -105,8 +105,8 @@ def get_constrain_outputs_match(
     constrain_outputs_pattern: Optional[str] = None,
     disable_warnings: bool = True,
 ) -> str:
-    """Extracts the provided output values from the response using regex patterns. Return first extracted value if multiple exist.
-    If no value out of the possible `constrain_outputs` is directly mentioned in the response, the return value with greatest string similarity to the response is returned (along with a warning).
+    """Extracts the provided output values from the response using regex patterns. Returns last extracted value if multiple exist.
+    If no value out of the possible `constrain_outputs` is directly mentioned in the response, the value with greatest string similarity to the response is returned (along with a warning).
     If there are no close matches between the LLM response and any of the possible `constrain_outputs`, then the last entry of the `constrain_outputs` list is returned.
 
     Params
@@ -127,7 +127,7 @@ def get_constrain_outputs_match(
     # Parse category if LLM response is properly formatted
     exact_matches = re.findall(constrain_outputs_pattern, response_str, re.IGNORECASE)
     if len(exact_matches) > 0:
-        return str(exact_matches[0])
+        return str(exact_matches[-1])
 
     # If there are no exact matches to a specific category, return the closest category based on string similarity.
     best_match = max(
