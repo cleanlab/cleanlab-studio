@@ -105,8 +105,8 @@ def get_constrain_outputs_match(
     constrain_outputs_pattern: Optional[str] = None,
     disable_warnings: bool = True,
 ) -> str:
-    """Extracts the provided output values from the response using regex patterns. Return first extracted value if multiple exist.
-    If no value out of the possible `constrain_outputs` is directly mentioned in the response, the return value with greatest string similarity to the response is returned (along with a warning).
+    """Extracts the provided output values from the response using regex patterns. Returns first extracted value if multiple exist.
+    If no value out of the possible `constrain_outputs` is directly mentioned in the response, the value with greatest string similarity to the response is returned (along with a warning).
     If there are no close matches between the LLM response and any of the possible `constrain_outputs`, then the last entry of the `constrain_outputs` list is returned.
 
     Params
