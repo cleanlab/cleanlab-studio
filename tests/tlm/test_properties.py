@@ -8,7 +8,7 @@ from cleanlab_studio.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_studio.studio.trustworthy_language_model import TLM
-from tests.tlm.test_get_trustworthiness_score import is_trustworthiness_score
+from tests.tlm.test_get_trustworthiness_score import is_trustworthiness_score_json_format
 from tests.tlm.test_prompt import is_tlm_response
 
 excluded_tlm_models = ["claude-3-sonnet", "claude-3.5-sonnet"]
@@ -79,7 +79,7 @@ def _test_get_trustworthiness_score_response(response, options):
         assert isinstance(response, dict)
     else:
         assert isinstance(response, float)
-    assert is_trustworthiness_score(response)
+    assert is_trustworthiness_score_json_format(response)
     _test_log(response, options)
 
 
@@ -203,7 +203,7 @@ def test_get_trustworthiness_score(
     responses = tlm.get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
-    assert all(is_trustworthiness_score(response) for response in responses)
+    assert all(is_trustworthiness_score_json_format(response) for response in responses)
     _test_batch_get_trustworthiness_score_response(responses, options)
 
 
@@ -231,7 +231,7 @@ def test_get_trustworthiness_score_async(
             ["USA", "Kyiv"],
         )
     )
-    assert all(is_trustworthiness_score(response) for response in responses)
+    assert all(is_trustworthiness_score_json_format(response) for response in responses)
     _test_batch_get_trustworthiness_score_response(responses, options)
 
 
@@ -249,5 +249,5 @@ def test_try_get_trustworithness_score(
     responses = tlm.try_get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
-    assert all(response is None or is_trustworthiness_score(response) for response in responses)
+    assert all(response is None or is_trustworthiness_score_json_format(response) for response in responses)
     _test_batch_get_trustworthiness_score_response(responses, options)

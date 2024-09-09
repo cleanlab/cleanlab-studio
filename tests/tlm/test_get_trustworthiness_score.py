@@ -6,23 +6,14 @@ import pytest
 from cleanlab_studio.studio.trustworthy_language_model import TLM
 
 
-def is_trustworthiness_score(response: Any) -> bool:
-    """Returns True if the response is a trustworthiness score with valid range."""
-    if isinstance(response, float):
-        return 0.0 <= response <= 1.0
-    elif (
+def is_trustworthiness_score_json_format(response: Any) -> bool:
+    """Returns True if the response is a trustworthiness score in JSON format with valid range."""
+    return (
         isinstance(response, dict)
         and "trustworthiness_score" in response
         and isinstance(response["trustworthiness_score"], float)
-    ):
-        return 0.0 <= response["trustworthiness_score"] <= 1.0
-    else:
-        return False
-
-
-def is_trustworthiness_score_json_format(response: Any) -> bool:
-    """Returns True if the response is a trustworthiness score in JSON format."""
-    return isinstance(response, dict) and "trustworthiness_score" in response
+        and 0.0 <= response["trustworthiness_score"] <= 1.0
+    )
 
 
 def is_tlm_score_response_with_error(response: Any) -> bool:
@@ -58,7 +49,7 @@ def test_single_get_trustworthiness_score(tlm: TLM) -> None:
     # - a single response of type TLMResponse is returned
     # - no exceptions are raised (implicit)
     assert response is not None
-    assert is_trustworthiness_score(response)
+    assert is_trustworthiness_score_json_format(response)
 
 
 def test_batch_get_trustworthiness_score(tlm: TLM) -> None:
@@ -82,7 +73,7 @@ def test_batch_get_trustworthiness_score(tlm: TLM) -> None:
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
-    assert all(is_trustworthiness_score(r) for r in response)
+    assert all(is_trustworthiness_score_json_format(r) for r in response)
 
 
 def test_batch_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
