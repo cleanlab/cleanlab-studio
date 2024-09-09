@@ -38,7 +38,7 @@ jobs:
         run: |
           pytest tests/tlm/ --ignore=tests/tlm/test_properties.py --verbose
   propertytest:
-    name: "Property Test TLM: Python 3.11 on macos-latest"
+    name: "Property Test TLM: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     if: github.event.comment.body == '/test-tlm'  # only run the test if /test-tlm is commented on the PR
     strategy:
