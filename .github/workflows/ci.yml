@@ -29,10 +29,14 @@ jobs:
           pip install -r tests/requirements_test.txt
       - name: Install Cleanlab Studio client
         run: pip install -e .
+      - name: Set env variables (Linux/macOS)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: echo "CLEANLAB_API_BASE_URL=${{ secrets.CLEANLAB_API_BASE_URL }}" >> $GITHUB_ENV
+      - name: Set env variables (Windows)
+        if: runner.os == 'Windows'
+        run: echo "CLEANLAB_API_BASE_URL=${{ secrets.CLEANLAB_API_BASE_URL }}" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Cleanlab login
-        run: |
-          echo "CLEANLAB_API_BASE_URL=${{ secrets.CLEANLAB_API_BASE_URL }}" >> %GITHUB_ENV%
-          cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
+        run: cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
           pytest --verbose
