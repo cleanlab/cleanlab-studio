@@ -30,7 +30,9 @@ jobs:
       - name: Install Cleanlab Studio client
         run: pip install -e .
       - name: Cleanlab login
-        run: cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
+        run: |
+          echo "CLEANLAB_API_BASE_URL=${{ secrets.CLEANLAB_API_BASE_URL }}" >> $GITHUB_ENV
+          cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
           pytest --verbose
