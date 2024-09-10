@@ -32,16 +32,9 @@ jobs:
       - name: Set env variables (Linux/macOS/Windows)
         run: |
           echo "CLEANLAB_API_BASE_URL=${{ secrets.CLEANLAB_API_BASE_URL }}" >> $GITHUB_ENV
-          echo "CLEANLAB_STUDIO_CI_API_KEY=${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}" >> $GITHUB_ENV
         shell: bash
       - name: Cleanlab login
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            cleanlab login --key "$env:CLEANLAB_STUDIO_CI_API_KEY"
-          else
-            cleanlab login --key "$CLEANLAB_STUDIO_CI_API_KEY"
-          fi
-        shell: bash
+        run:  cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
           pytest --verbose
