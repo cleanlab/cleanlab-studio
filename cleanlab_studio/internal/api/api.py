@@ -921,7 +921,7 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
                 return await func(*args, **kwargs)
             except ssl.SSLCertVerificationError as e:
                 warnings.warn(
-                    "Please ensure that your SSL certificates are up to date. If you installed python via python pkg installer, please make sure to execute the Install Certificates.command in the python installation directory."
+                    "Please ensure that your SSL certificates are up to date. If you installed python via python pkg installer, please make sure to execute 'Install Certificates.command' in the python installation directory."
                 )
                 raise
             except aiohttp.client_exceptions.ClientConnectorError as e:
