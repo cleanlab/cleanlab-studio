@@ -64,15 +64,13 @@ jobs:
       - name: Post start comment
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          COMMENT_BODY="Starting TLM tests..."
+          COMMENT_BODY="Starting TLM tests. If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.\n"
           COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
-          RESPONSE=$(curl -s -X POST \
+          curl -s -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{\"body\": \"$COMMENT_BODY\"}" \
-            "${{ github.event.pull_request.comments_url }}")
-          COMMENT_ID=$(echo "$RESPONSE" | jq -r '.id')
-          echo "COMMENT_ID=$COMMENT_ID" >> $GITHUB_ENV
+            "${{ github.event.pull_request.comments_url }}"
   post-done-comment:
     name: Post done comment
     runs-on: ubuntu-latest
@@ -83,10 +81,27 @@ jobs:
       - name: Post done comment
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          COMMENT_BODY="TLM Tests completed. Results: ${{ needs.test.result }}.\nTLM Property tests completed. Results: ${{ needs.typecheck.result }}\n"
+          COMMENT_BODY="TLM Tests completed. Results: ${{ needs.test.result }}.\nTLM Property tests completed. Results: ${{ needs.typecheck.result }}\n Comment '/test-tlm' on this PR if you want to run the tests again."
           COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
           curl -s -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{\"body\": \"$COMMENT_BODY\"}" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ env.COMMENT_ID }}"
+            "${{ github.event.pull_request.comments_url }}"
+  comment-on-pr:
+    name: Launch TLM tests on PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const commentBody = "/test-tlm";  // The comment you want to post
+            const issueNumber = context.issue.number;  // Get the PR number
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: commentBody
+            });
