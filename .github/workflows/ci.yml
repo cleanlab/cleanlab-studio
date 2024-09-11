@@ -117,7 +117,7 @@ jobs:
         uses: peter-evans/find-comment@v1
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          body-includes: /tlm-test
+          body-includes: /test-tlm
 
       - name: Write Comment
         id: write-comment
@@ -128,6 +128,7 @@ jobs:
           echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
 
       - name: Update comment
+        if: steps.fc.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v1
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
@@ -157,6 +158,7 @@ jobs:
           echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
 
       - name: Update comment
+        if: steps.fc.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v1
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
