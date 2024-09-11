@@ -74,12 +74,7 @@ jobs:
         run:  cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
-          TEST_RESULT=$(pytest -n auto tests/tlm/test_properties.py --verbose --maxfail=1 --disable-warnings || echo "FAILED")
-          if [[ "$TEST_RESULT" == "FAILED" ]]; then
-            echo "property_test_result=FAIL" >> $GITHUB_ENV
-          else
-            echo "property_test_result=PASS" >> $GITHUB_ENV
-          fi
+          pytest -n auto tests/tlm/test_properties.py --verbose
       - name: Post comment with dynamic results
         run: |
           curl -s -X POST \
