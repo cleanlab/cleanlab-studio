@@ -3,6 +3,9 @@ name: CI TLM
 on:
   issue_comment:
     types: [created, edited]
+  push:
+    branches:
+      - main  # triggers on pushes (including merges) to main branch
 
 jobs:
   test:
@@ -121,6 +124,23 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-includes: Starting TLM tests
           direction: last
+      - name: Build Comment Body
+        run: |
+          # Set up emojis based on test results
+          if [[ "${{ needs.test.result }}" == "success" ]]; then
+            TLM_TEST_RESULT="✅"
+          else
+            TLM_TEST_RESULT="❌"
+          fi
+
+          if [[ "${{ needs.propertytest.result }}" == "success" ]]; then
+            PROPERTY_TEST_RESULT="✅"
+          else
+            PROPERTY_TEST_RESULT="❌"
+          fi
+
+          echo "PROPERTY_TEST_RESULT=$PROPERTY_TEST_RESULT" >> $GITHUB_ENV
+          echo "TLM_TEST_RESULT=$TLM_TEST_RESULT" >> $GITHUB_ENV
       - name: Update comment
         if: steps.fc.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v4
@@ -128,6 +148,6 @@ jobs:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           body: |
             :sparkles: **Tests completed!** :sparkles:
-            TLM Tests Results: ${{ needs.test.result }}.
-            TLM Property Tests Results: ${{ needs.propertytest.result }}.
+            TLM Tests Results: ${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }} ${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }}
+            TLM Property Tests Results: ${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}
             Click the Github Actions run log for more information.
