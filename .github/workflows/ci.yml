@@ -57,3 +57,30 @@ jobs:
           pip install mypy
           mypy --install-types --non-interactive cleanlab_studio
       - run: mypy --strict cleanlab_studio
+  post-start-comment:
+    steps:
+      - name: Post start comment
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          COMMENT_BODY="Starting TLM tests..."
+          COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": \"$COMMENT_BODY\"}" \
+            "${{ github.event.pull_request.comments_url }}"
+  post-done-comment:
+    needs:
+      - test
+      - typecheck
+    steps:
+      - name: Post done comment
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          COMMENT_BODY="TLM Tests completed. Results: ${{ needs.test.result }}.\nTLM Property tests completed. Results: ${{ needs.typecheck.result }}\n"
+          COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": \"$COMMENT_BODY\"}" \
+            "${{ github.event.pull_request.comments_url }}"

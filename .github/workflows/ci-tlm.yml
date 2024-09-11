@@ -1,9 +1,8 @@
 name: CI TLM
 
 on:
-  push:  # only run on push to main
-    branches: [main]
-  pull_request:  # open between any two branches
+  issue_comment:
+    types: [created, edited]
 
 jobs:
   test:
