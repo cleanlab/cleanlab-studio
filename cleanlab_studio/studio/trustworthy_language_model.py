@@ -65,7 +65,8 @@ class TLM:
             with "best" also returning more reliable trustworthiness scores than "high".
             The "medium" and "low" presets return standard LLM responses along with associated trustworthiness scores,
             with "medium" producing more reliable trustworthiness scores than low.
-            The "base" preset will not return any trustworthiness score, just a standard LLM response, and is similar to directly using your favorite LLM API.
+            The "base" preset will provide a standard LLM response and a trustworthiness score in the lowest possible latency/cost.
+
 
             Higher presets have increased runtime and cost (and may internally consume more tokens).
             Reduce your preset if you see token-limit errors.
@@ -601,10 +602,6 @@ class TLM:
             float corresponding to the TLM's trustworthiness score
 
         """
-        if self._quality_preset == "base":
-            raise ValidationError(
-                "Cannot get trustworthiness score with `base` quality_preset -- choose a higher preset."
-            )
 
         try:
             response_json = await asyncio.wait_for(
@@ -647,8 +644,7 @@ class TLMResponse(TypedDict):
         response (str): text response from the Trustworthy Language Model.
 
         trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
-        A higher score indicates a higher confidence that the response is correct/trustworthy. The trustworthiness score
-        is omitted if TLM is run with quality preset "base".
+        A higher score indicates a higher confidence that the response is correct/trustworthy.
 
         log (dict, optional): additional logs and metadata returned from the LLM call only if the `log` key was specified in TLMOptions.
     """
@@ -663,8 +659,7 @@ class TLMScore(TypedDict):
 
     Attributes:
         trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
-        A higher score indicates a higher confidence that the response is correct/trustworthy. The trustworthiness score
-        is omitted if TLM is run with quality preset "base".
+        A higher score indicates a higher confidence that the response is correct/trustworthy.
 
         log (dict, optional): additional logs and metadata returned from the LLM call only if the `log` key was specified in TLMOptions.
     """
@@ -695,6 +690,8 @@ class TLMOptions(TypedDict):
     - **medium:** `num_candidate_responses` = 1, `num_consistency_samples` = 8, `use_self_reflection` = True.
     - **low:** `num_candidate_responses` = 1, `num_consistency_samples` = 4, `use_self_reflection` = True.
     - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False. This preset is equivalent to a regular LLM call.
+        When using `get_trustworthiness_score()` on "base" preset, a cheaper self-reflection will be used to approximate the trustworthiness score.
+        If you explicitly set `use_self_reflection = False`, `get_trustworthiness_score()` will return `None` instead of a score.
 
     By default, the TLM is set to the "medium" quality preset. The default `model` used is "gpt-4o-mini", and `max_tokens` is 512 for all quality presets.
     You can set custom values for these arguments regardless of the quality preset specified.

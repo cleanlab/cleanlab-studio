@@ -3,7 +3,9 @@ from __future__ import annotations
 import asyncio
 import io
 import os
+import ssl
 import time
+import warnings
 from io import StringIO
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
@@ -917,6 +919,11 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
             await asyncio.sleep(sleep_time)
             try:
                 return await func(*args, **kwargs)
+            except ssl.SSLCertVerificationError as e:
+                warnings.warn(
+                    "Please ensure that your SSL certificates are up to date. If you installed python via python pkg installer, please make sure to execute 'Install Certificates.command' in the python installation directory."
+                )
+                raise
             except aiohttp.client_exceptions.ClientConnectorError as e:
                 # note: we don't increment num_try here, because we don't want connection errors to count against the total number of retries
                 sleep_time = 2**num_try
