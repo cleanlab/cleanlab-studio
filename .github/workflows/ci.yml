@@ -139,7 +139,7 @@ jobs:
         uses: peter-evans/create-or-update-comment@v4
         if: steps.fc.outputs.comment-id != ''
         with:
-          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
           body: ${{ env.COMMENT_BODY }}
           reactions: rocket
 
