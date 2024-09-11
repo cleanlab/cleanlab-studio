@@ -125,9 +125,10 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            Starting TLM tests...
+
+            :sparkles: Starting TLM tests... :sparkles:
             If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
-            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+            - [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           reactions: rocket
 
       - name: Update comment
@@ -136,10 +137,9 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           body: |
-
-            Starting TLM and TLM Property tests...
+            :sparkles: Starting TLM tests... :sparkles:
             If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
-            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+            - [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           reactions: rocket
 
   finish-tlm-test-notif:
@@ -155,7 +155,7 @@ jobs:
         uses: peter-evans/find-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          body-includes: Starting TLM tests.
+          body-includes: Starting TLM tests
 
       - name: Update comment
         if: steps.fc.outputs.comment-id != ''
@@ -163,9 +163,9 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           body: |
-
-            TLM Tests completed. Results: ${{ needs.test.result }}.
-            TLM Property tests completed. Results: ${{ needs.typecheck.result }}.
+            :sparkles: Tests completed! :sparkles:
+            TLM Tests Results: ${{ needs.test.result }}.
+            TLM Property Tests Results: ${{ needs.typecheck.result }}.
             Comment '/test-tlm' on this PR if you want to run the tests again.
-            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+            - [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           reactions: hooray
