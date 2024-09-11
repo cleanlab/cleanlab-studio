@@ -84,17 +84,20 @@ jobs:
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           COMMENT_BODY="Starting TLM tests..."
           COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
-          curl -s -X POST \
+          RESPONSE=$(curl -s -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{\"body\": \"$COMMENT_BODY\"}" \
-            "${{ github.event.pull_request.comments_url }}"
+            "${{ github.event.pull_request.comments_url }}")
+          COMMENT_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "COMMENT_ID=$COMMENT_ID" >> $GITHUB_ENV
   post-done-comment:
     name: Post done comment
     runs-on: ubuntu-latest
     needs:
       - test
       - propertytest
+    if: ${{ env.COMMENT_ID }}
     steps:
       - name: Post done comment
         run: |
@@ -105,4 +108,4 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{\"body\": \"$COMMENT_BODY\"}" \
-            "${{ github.event.pull_request.comments_url }}"
+            "https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ env.COMMENT_ID }}"
