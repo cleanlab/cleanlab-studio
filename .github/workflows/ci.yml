@@ -110,23 +110,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Find Comment
+        id: find-comment
         uses: peter-evans/find-comment@v1
-        id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-includes: /tlm-test
 
       - name: Write Comment
+        id: write-comment
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           COMMENT_BODY="Starting TLM tests. If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.\n"
           COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
-          echo "COMMENT_BODY<<EOF" >> $GITHUB_ENV
-          echo "$COMMENT_BODY" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
 
-      - name: Create comment
-        if: steps.fc.outputs.comment-id == ''
+      - name: Create/Update comment
         uses: peter-evans/create-or-update-comment@v1
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -138,24 +136,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Find Comment
+        id: find-comment
         uses: peter-evans/find-comment@v1
-        id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
           body-includes: Starting TLM tests.
 
       - name: Write Comment
+        id: write-comment
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           COMMENT_BODY="TLM Tests completed. Results: ${{ needs.test.result }}.\nTLM Property tests completed. Results: ${{ needs.typecheck.result }}\n Comment '/test-tlm' on this PR if you want to run the tests again."
           COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
-          echo "COMMENT_BODY<<EOF" >> $GITHUB_ENV
-          echo "$COMMENT_BODY" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
 
-      - name: Create comment
-        if: steps.fc.outputs.comment-id == ''
+      - name: Create/Update comment
+        if: steps.find-comment.outputs.comment-id == ''
         uses: peter-evans/create-or-update-comment@v1
         with:
           issue-number: ${{ github.event.pull_request.number }}
