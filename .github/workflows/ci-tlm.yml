@@ -85,6 +85,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-regex: '^/test-tlm$'
+          direction: last
       - name: Create comment
         uses: peter-evans/create-or-update-comment@v4
         if: steps.fc.outputs.comment-id == ''
@@ -119,6 +120,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-includes: Starting TLM tests
+          direction: last
       - name: Update comment
         if: steps.fc.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v4
