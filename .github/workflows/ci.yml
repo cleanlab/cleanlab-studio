@@ -96,8 +96,8 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const commentBody = "/test-tlm";  // The comment you want to post
-            const issueNumber = context.issue.number;  // Get the PR number
+            const commentBody = "/test-tlm"
+            const issueNumber = context.issue.number
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -121,7 +121,7 @@ jobs:
           echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
 
       - name: Create comment
-        uses: peter-evans/create-or-update-comment@@v3
+        uses: peter-evans/create-or-update-comment@@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: ${{ env.COMMENT_BODY }}
@@ -150,7 +150,7 @@ jobs:
 
       - name: Update comment
         if: steps.fc.outputs.comment-id != ''
-        uses: peter-evans/create-or-update-comment@v3
+        uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           body: ${{ env.COMMENT_BODY }}
