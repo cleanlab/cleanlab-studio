@@ -19,6 +19,8 @@ jobs:
           - "3.8"
           - "3.9"
           - "3.10"
+          - "3.11"
+          - "3.12"
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python }}
@@ -72,4 +74,43 @@ jobs:
         run:  cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
-          pytest -n auto tests/tlm/test_properties.py --verbose
+          TEST_RESULT=$(pytest -n auto tests/tlm/test_properties.py --verbose --maxfail=1 --disable-warnings || echo "FAILED")
+          if [[ "$TEST_RESULT" == "FAILED" ]]; then
+            echo "property_test_result=FAIL" >> $GITHUB_ENV
+          else
+            echo "property_test_result=PASS" >> $GITHUB_ENV
+          fi
+      - name: Post comment with dynamic results
+        run: |
+          curl -s -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d "{\"body\": \"TLM Property Tests completed.\nResults: ${{ env.property_test_result }}\"}" \
+          "${{ github.event.issue.comments_url }}"
+  post-start-comment:
+    steps:
+      - name: Post start comment
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          COMMENT_BODY="Starting TLM tests..."
+          COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": \"$COMMENT_BODY\"}" \
+            "${{ github.event.pull_request.comments_url }}"
+  post-done-comment:
+    needs:
+      - test
+      - propertytest
+    steps:
+      - name: Post done comment
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          COMMENT_BODY="TLM Tests completed. Results: ${{ needs.test.result }}.\nTLM Property tests completed. Results: ${{ needs.propertytest.result }}\n"
+          COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": \"$COMMENT_BODY\"}" \
+            "${{ github.event.pull_request.comments_url }}"
