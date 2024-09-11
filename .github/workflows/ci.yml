@@ -79,7 +79,6 @@ jobs:
     needs:
       - test
       - typecheck
-    if: ${{ env.COMMENT_ID }}
     steps:
       - name: Post done comment
         run: |
