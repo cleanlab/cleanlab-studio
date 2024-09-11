@@ -112,26 +112,18 @@ jobs:
     needs:
       - comment-on-pr
     steps:
-      - name: Find Comment
-        id: find-comment
-        uses: peter-evans/find-comment@v1
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body-includes: /test-tlm
-
       - name: Write Comment
         id: write-comment
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           COMMENT_BODY="Starting TLM tests. If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.\n"
-          COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
+          COMMENT_BODY+=".[View full GitHub Actions run log]($RUN_URL)."
           echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
 
-      - name: Update comment
-        if: steps.fc.outputs.comment-id != ''
+      - name: Create comment
         uses: peter-evans/create-or-update-comment@v1
         with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
           body: ${{ env.COMMENT_BODY }}
           reactions: rocket
 
@@ -153,8 +145,8 @@ jobs:
         id: write-comment
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          COMMENT_BODY="TLM Tests completed. Results: ${{ needs.test.result }}.\nTLM Property tests completed. Results: ${{ needs.typecheck.result }}\n Comment '/test-tlm' on this PR if you want to run the tests again."
-          COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
+          COMMENT_BODY="TLM Tests completed. Results: ${{ needs.test.result }}. TLM Property tests completed. Results: ${{ needs.typecheck.result }}. Comment '/test-tlm' on this PR if you want to run the tests again."
+          COMMENT_BODY+=". [View full GitHub Actions run log]($RUN_URL)."
           echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
 
       - name: Update comment
