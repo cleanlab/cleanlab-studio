@@ -58,6 +58,8 @@ jobs:
           mypy --install-types --non-interactive cleanlab_studio
       - run: mypy --strict cleanlab_studio
   post-start-comment:
+    name: Post start comment
+    runs-on: ubuntu-latest
     steps:
       - name: Post start comment
         run: |
@@ -70,6 +72,8 @@ jobs:
             -d "{\"body\": \"$COMMENT_BODY\"}" \
             "${{ github.event.pull_request.comments_url }}"
   post-done-comment:
+    name: Post done comment
+    runs-on: ubuntu-latest
     needs:
       - test
       - typecheck

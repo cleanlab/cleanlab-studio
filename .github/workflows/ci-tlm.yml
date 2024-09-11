@@ -75,14 +75,9 @@ jobs:
       - name: Run tests
         run: |
           pytest -n auto tests/tlm/test_properties.py --verbose
-      - name: Post comment with dynamic results
-        run: |
-          curl -s -X POST \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d "{\"body\": \"TLM Property Tests completed.\nResults: ${{ env.property_test_result }}\"}" \
-          "${{ github.event.issue.comments_url }}"
   post-start-comment:
+    name: Post start comment
+    runs-on: ubuntu-latest
     steps:
       - name: Post start comment
         run: |
@@ -95,6 +90,8 @@ jobs:
             -d "{\"body\": \"$COMMENT_BODY\"}" \
             "${{ github.event.pull_request.comments_url }}"
   post-done-comment:
+    name: Post done comment
+    runs-on: ubuntu-latest
     needs:
       - test
       - propertytest
