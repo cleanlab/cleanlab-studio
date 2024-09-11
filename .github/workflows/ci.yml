@@ -127,16 +127,18 @@ jobs:
           COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
           echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
 
-      - name: Create/Update comment
+      - name: Update comment
         uses: peter-evans/create-or-update-comment@v1
         with:
-          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
           body: ${{ env.COMMENT_BODY }}
           reactions: rocket
 
   finish-tlm-test-notif:
     name: Finish TLM test
     runs-on: ubuntu-latest
+    needs:
+      - launch-tlm-test-notif
     steps:
       - name: Find Comment
         id: find-comment
@@ -154,9 +156,9 @@ jobs:
           COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
           echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
 
-      - name: Create/Update comment
+      - name: Update comment
         uses: peter-evans/create-or-update-comment@v1
         with:
-          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
           body: ${{ env.COMMENT_BODY }}
           reactions: hooray
