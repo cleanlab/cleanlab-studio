@@ -89,16 +89,6 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-regex: '^/test-tlm$'
           direction: last
-      - name: Create comment
-        uses: peter-evans/create-or-update-comment@v4
-        if: steps.fc.outputs.comment-id == ''
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            :sparkles: **Starting TLM tests...** :sparkles:
-            If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
-            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          reactions: rocket
       - name: Update comment
         uses: peter-evans/create-or-update-comment@v4
         if: steps.fc.outputs.comment-id != ''
