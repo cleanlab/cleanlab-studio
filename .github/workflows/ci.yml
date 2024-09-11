@@ -57,37 +57,7 @@ jobs:
           pip install mypy
           mypy --install-types --non-interactive cleanlab_studio
       - run: mypy --strict cleanlab_studio
-  # post-start-comment:
-  #   name: Post start comment
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Post start comment
-  #       run: |
-  #         RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-  #         COMMENT_BODY="Starting TLM tests. If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.\n"
-  #         COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
-  #         curl -s -X POST \
-  #           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-  #           -H "Content-Type: application/json" \
-  #           -d "{\"body\": \"$COMMENT_BODY\"}" \
-  #           "${{ github.event.pull_request.comments_url }}"
-  # post-done-comment:
-  #   name: Post done comment
-  #   runs-on: ubuntu-latest
-  #   needs:
-  #     - test
-  #     - typecheck
-  #   steps:
-  #     - name: Post done comment
-  #       run: |
-  #         RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-  #         COMMENT_BODY="TLM Tests completed. Results: ${{ needs.test.result }}.\nTLM Property tests completed. Results: ${{ needs.typecheck.result }}\n Comment '/test-tlm' on this PR if you want to run the tests again."
-  #         COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
-  #         curl -s -X POST \
-  #           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-  #           -H "Content-Type: application/json" \
-  #           -d "{\"body\": \"$COMMENT_BODY\"}" \
-  #           "${{ github.event.pull_request.comments_url }}"
+
   comment-on-pr:
     name: Launch TLM tests on PR
     runs-on: ubuntu-latest
@@ -138,8 +108,8 @@ jobs:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           body: |
             :sparkles: Starting TLM tests... :sparkles:
-            If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
             - [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
           reactions: rocket
 
   finish-tlm-test-notif:
@@ -166,6 +136,5 @@ jobs:
             :sparkles: Tests completed! :sparkles:
             TLM Tests Results: ${{ needs.test.result }}.
             TLM Property Tests Results: ${{ needs.typecheck.result }}.
-            Comment '/test-tlm' on this PR if you want to run the tests again.
-            - [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            Click the Github Actions run log for more information.
           reactions: hooray
