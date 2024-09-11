@@ -112,6 +112,13 @@ jobs:
     needs:
       - comment-on-pr
     steps:
+      - name: Find Comment
+        id: fc
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-regex: '^/test-tlm$'
+
       - name: Write Comment
         id: write-comment
         run: |
@@ -122,6 +129,15 @@ jobs:
 
       - name: Create comment
         uses: peter-evans/create-or-update-comment@v4
+        if: steps.fc.outputs.comment-id == ''
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ env.COMMENT_BODY }}
+          reactions: rocket
+
+      - name: Update comment
+        uses: peter-evans/create-or-update-comment@v4
+        if: steps.fc.outputs.comment-id != ''
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: ${{ env.COMMENT_BODY }}
@@ -132,6 +148,8 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - launch-tlm-test-notif
+      - test
+      - typecheck
     steps:
       - name: Find Comment
         id: fc
