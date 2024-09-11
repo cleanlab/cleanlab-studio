@@ -95,10 +95,11 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-
-            :sparkles: Starting TLM tests... :sparkles:
-            If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
+            :sparkles: **Starting TLM tests...** :sparkles:
             - [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
+
           reactions: rocket
 
       - name: Update comment
@@ -107,11 +108,9 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           body: |
-            :sparkles: Starting TLM tests... :sparkles:
-            - [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
+            :sparkles: **Starting TLM tests...** :sparkles:
             If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
-          reactions: rocket
+            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   finish-tlm-test-notif:
     name: Finish TLM test
@@ -134,8 +133,7 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           body: |
-            :sparkles: Tests completed! :sparkles:
+            :sparkles: **Tests completed!** :sparkles:
             TLM Tests Results: ${{ needs.test.result }}.
             TLM Property Tests Results: ${{ needs.typecheck.result }}.
             Click the Github Actions run log for more information.
-          reactions: hooray
