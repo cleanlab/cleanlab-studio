@@ -75,37 +75,57 @@ jobs:
       - name: Run tests
         run: |
           pytest -n auto tests/tlm/test_properties.py --verbose
-  post-start-comment:
-    name: Post start comment
+  launch-tlm-test-notif:
+    name: Comment TLM test start on PR
     runs-on: ubuntu-latest
     steps:
-      - name: Post start comment
-        run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          COMMENT_BODY="Starting TLM tests..."
-          COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
-          RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"body\": \"$COMMENT_BODY\"}" \
-            "${{ github.event.pull_request.comments_url }}")
-          COMMENT_ID=$(echo "$RESPONSE" | jq -r '.id')
-          echo "COMMENT_ID=$COMMENT_ID" >> $GITHUB_ENV
-  post-done-comment:
-    name: Post done comment
+      - name: Find Comment
+        id: fc
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-regex: '^/test-tlm$'
+      - name: Create comment
+        uses: peter-evans/create-or-update-comment@v4
+        if: steps.fc.outputs.comment-id == ''
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            :sparkles: **Starting TLM tests...** :sparkles:
+            If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
+            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          reactions: rocket
+      - name: Update comment
+        uses: peter-evans/create-or-update-comment@v4
+        if: steps.fc.outputs.comment-id != ''
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          body: |
+            :sparkles: **Starting TLM tests...** :sparkles:
+            If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
+            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          reactions: rocket
+  finish-tlm-test-notif:
+    name: Comment TLM test completion on PR
     runs-on: ubuntu-latest
     needs:
+      - launch-tlm-test-notif
       - test
       - propertytest
-    if: ${{ env.COMMENT_ID }}
     steps:
-      - name: Post done comment
-        run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          COMMENT_BODY="TLM Tests completed. Results: ${{ needs.test.result }}.\nTLM Property tests completed. Results: ${{ needs.propertytest.result }}\n"
-          COMMENT_BODY+="- [View full GitHub Actions run log]($RUN_URL)\n"
-          curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"body\": \"$COMMENT_BODY\"}" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ env.COMMENT_ID }}"
+      - name: Find Comment
+        id: fc
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: Starting TLM tests
+      - name: Update comment
+        if: steps.fc.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          body: |
+            :sparkles: **Tests completed!** :sparkles:
+            TLM Tests Results: ${{ needs.test.result }}.
+            TLM Property Tests Results: ${{ needs.propertytest.result }}.
+            Click the Github Actions run log for more information.
