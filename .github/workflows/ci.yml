@@ -119,20 +119,15 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-regex: '^/test-tlm$'
 
-      - name: Write Comment
-        id: write-comment
-        run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          COMMENT_BODY="Starting TLM tests. If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.\n"
-          COMMENT_BODY+=".[View full GitHub Actions run log]($RUN_URL)."
-          echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
-
       - name: Create comment
         uses: peter-evans/create-or-update-comment@v4
         if: steps.fc.outputs.comment-id == ''
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          body: ${{ env.COMMENT_BODY }}
+          body: |
+            Starting TLM tests...
+            If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
+            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
           reactions: rocket
 
       - name: Update comment
@@ -140,7 +135,11 @@ jobs:
         if: steps.fc.outputs.comment-id != ''
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
-          body: ${{ env.COMMENT_BODY }}
+          body: |
+
+            Starting TLM and TLM Property tests...
+            If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
+            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
           reactions: rocket
 
   finish-tlm-test-notif:
@@ -158,18 +157,15 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-includes: Starting TLM tests.
 
-      - name: Write Comment
-        id: write-comment
-        run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          COMMENT_BODY="TLM Tests completed. Results: ${{ needs.test.result }}. TLM Property tests completed. Results: ${{ needs.typecheck.result }}. Comment '/test-tlm' on this PR if you want to run the tests again."
-          COMMENT_BODY+=". [View full GitHub Actions run log]($RUN_URL)."
-          echo "COMMENT_BODY=$COMMENT_BODY" >> $GITHUB_ENV
-
       - name: Update comment
         if: steps.fc.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
-          body: ${{ env.COMMENT_BODY }}
+          body: |
+
+            TLM Tests completed. Results: ${{ needs.test.result }}.
+            TLM Property tests completed. Results: ${{ needs.typecheck.result }}.
+            Comment '/test-tlm' on this PR if you want to run the tests again.
+            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
           reactions: hooray
