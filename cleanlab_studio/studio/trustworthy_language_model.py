@@ -416,7 +416,7 @@ class TLM:
             List[TLMResponse]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
                 The returned list will always have the same length as the input list.
                 In case of TLM failure on any prompt (due to timeouts or other errors),
-                the return list will include a [TLMResponse](#class-tlmresponse) with an error message and retryability information instead of the usual TLM response for that failed prompt.
+                the return list will include a [TLMResponse](#class-tlmresponse) with an error message and retryability information instead of the usual TLMResponse for that failed prompt.
                 Use this method to obtain TLM results for as many prompts as possible, while handling errors/timeouts manually.
                 If you prefer immediate notification about any errors or timeouts when processing multiple prompts,
                 use the [`prompt()`](#method-prompt) method instead.
