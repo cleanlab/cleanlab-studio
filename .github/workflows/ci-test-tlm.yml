@@ -106,6 +106,7 @@ jobs:
       - test
       - propertytest
     continue-on-error: true
+    if: always()
     steps:
       - name: Find Comment
         id: fc
