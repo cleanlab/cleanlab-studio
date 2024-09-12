@@ -1,11 +1,8 @@
-name: CI TLM
+name: /test-tlm CI
 
 on:
   issue_comment:
     types: [created, edited]
-  push:
-    branches:
-      - main  # triggers on pushes (including merges) to main branch
 
 jobs:
   test:
