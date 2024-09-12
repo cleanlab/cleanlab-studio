@@ -88,7 +88,7 @@ jobs:
         id: fc
         uses: peter-evans/find-comment@v3
         with:
-          issue-number: ${{ github.event.pull_request.number }}
+          issue-number: ${{ github.event.issue.number }}
           body-regex: '^/test-tlm$'
           direction: last
       - name: Update comment
@@ -113,7 +113,7 @@ jobs:
         id: fc
         uses: peter-evans/find-comment@v3
         with:
-          issue-number: ${{ github.event.pull_request.number }}
+          issue-number: ${{ github.event.issue.number }}
           body-includes: Starting TLM tests
           direction: last
       - name: Build Comment Body
