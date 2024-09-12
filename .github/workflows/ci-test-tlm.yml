@@ -9,14 +9,14 @@ jobs:
     name: Fetch Latest Comment
     id: check_comment
     steps:
-      name: Fetch Latest Comment
-      run: |
-        COMMENT_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments --jq '.[-1].body')
-        echo "Latest comment is: $COMMENT_BODY"
-        if [[ "$COMMENT_BODY" == "/test-tlm" ]]; then
-          echo "IS_TEST_TLM_COMMENT=true" >> $GITHUB_ENV
-        else
-          echo "IS_TEST_TLM_COMMENT=false" >> $GITHUB_ENV
+      - name: Check latest comment
+        run: |
+          COMMENT_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments --jq '.[-1].body')
+          echo "Latest comment is: $COMMENT_BODY"
+          if [[ "$COMMENT_BODY" == "/test-tlm" ]]; then
+            echo "IS_TEST_TLM_COMMENT=true" >> $GITHUB_ENV
+          else
+            echo "IS_TEST_TLM_COMMENT=false" >> $GITHUB_ENV
   test:
     name: "TLM Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
