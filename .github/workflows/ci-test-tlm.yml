@@ -6,21 +6,20 @@ on:
 
 jobs:
   check-comment:
-    name: Check that /test-tlm comment is the last comment on pr
-    runs-on: ubuntu-latest
-    steps:
-      - name: Find Comment
-        id: fc
-        uses: peter-evans/find-comment@v3
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          body-regex: '^/test-tlm$'
-          direction: last
+    name: Fetch Latest Comment
+    id: check_comment
+    run: |
+      COMMENT_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments --jq '.[-1].body')
+      echo "Latest comment is: $COMMENT_BODY"
+      if [[ "$COMMENT_BODY" == "/test-tlm" ]]; then
+        echo "IS_TEST_TLM_COMMENT=true" >> $GITHUB_ENV
+      else
+        echo "IS_TEST_TLM_COMMENT=false" >> $GITHUB_ENV
   test:
     name: "TLM Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
-    needs:
-      - check-comment
+    needs: check-comment
+    if: ${{ env.IS_TEST_TLM_COMMENT }} == 'true'  # Run only if the latest comment is /test-tlm
     strategy:
       matrix:
         os:
@@ -60,6 +59,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs:
       - check-comment
+    if: ${{ env.IS_TEST_TLM_COMMENT }} == 'true'  # Run only if the latest comment is /test-tlm
     strategy:
       matrix:
         os:

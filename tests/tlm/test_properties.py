@@ -3,15 +3,12 @@ from typing import Any, Dict, List, Union
 
 import pytest
 
-from cleanlab_studio.internal.constants import (
-    _VALID_TLM_MODELS,
-    _VALID_TLM_QUALITY_PRESETS,
-)
+from cleanlab_studio.internal.constants import _VALID_TLM_QUALITY_PRESETS
 from cleanlab_studio.studio.trustworthy_language_model import TLM
 from tests.tlm.test_get_trustworthiness_score import is_trustworthiness_score
 from tests.tlm.test_prompt import is_tlm_response
 
-valid_tlm_models = [model for model in _VALID_TLM_MODELS if "sonnet" not in model]
+valid_tlm_models = ["gpt-4o-mini", "gpt-3.5-turbo-16k", "gpt-4", "gpt-4o", "claude-3-haiku"]
 
 
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
