@@ -8,11 +8,14 @@ from cleanlab_studio.studio.trustworthy_language_model import TLM
 
 def is_tlm_response(response: Any) -> bool:
     """Returns True if the response is a TLMResponse."""
-    return (
+    if (
         isinstance(response, dict)
         and "response" in response
         and "trustworthiness_score" in response
-    )
+        and isinstance(response["trustworthiness_score"], float)
+    ):
+        return 0.0 <= response["trustworthiness_score"] <= 1.0
+    return False
 
 
 def test_single_prompt(tlm: TLM) -> None:
