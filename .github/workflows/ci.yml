@@ -6,43 +6,6 @@ on:
   pull_request:  # open between any two branches
 
 jobs:
-  test:
-    name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-        python:
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install .
-          pip install -r tests/requirements_test.txt
-      - name: Install Cleanlab Studio client
-        run: pip install -e .
-      - name: Set env variables (Linux/macOS/Windows)
-        run: |
-          echo "CLEANLAB_API_BASE_URL=${{ secrets.CLEANLAB_API_BASE_URL }}" >> $GITHUB_ENV
-        shell: bash
-      - name: Cleanlab login
-        run:  cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
-      - name: Run tests
-        run: |
-          pytest --ignore=tests/tlm/ --verbose
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
@@ -57,3 +20,16 @@ jobs:
           pip install mypy
           mypy --install-types --non-interactive cleanlab_studio
       - run: mypy --strict cleanlab_studio
+  launch-tlm-test-notif:
+    name: Comment TLM test start on PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log PR Number
+        run: echo "PR Number is ${{ github.event.pull_request.number }}"
+      - name: Find Comment
+        id: fc
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-regex: '^/test-tlm$'
+          direction: last

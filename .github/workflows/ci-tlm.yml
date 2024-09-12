@@ -82,6 +82,8 @@ jobs:
     name: Comment TLM test start on PR
     runs-on: ubuntu-latest
     steps:
+      - name: Log PR Number
+        run: echo "PR Number is ${{ github.event.pull_request.number }}"
       - name: Find Comment
         id: fc
         uses: peter-evans/find-comment@v3
