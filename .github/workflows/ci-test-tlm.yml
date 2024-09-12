@@ -1,15 +1,12 @@
-name: CI TLM
+name: /test-tlm CI
 
 on:
   issue_comment:
     types: [created, edited]
-  push:
-    branches:
-      - main  # triggers on pushes (including merges) to main branch
 
 jobs:
   test:
-    name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
+    name: "TLM Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     if: github.event.comment.body == '/test-tlm'  # only run the test if /test-tlm is commented on the PR
     strategy:
@@ -47,7 +44,7 @@ jobs:
         run: |
           pytest tests/tlm/ --ignore=tests/tlm/test_properties.py --verbose
   propertytest:
-    name: "Property Test TLM: Python ${{ matrix.python }} on ${{ matrix.os }}"
+    name: "TLM Property Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     if: github.event.comment.body == '/test-tlm'  # only run the test if /test-tlm is commented on the PR
     strategy:
@@ -77,11 +74,13 @@ jobs:
         run:  cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
-          pytest -n auto tests/tlm/test_properties.py --verbose
+          pytest tests/tlm/test_properties.py --verbose
   launch-tlm-test-notif:
     name: Comment TLM test start on PR
     runs-on: ubuntu-latest
     steps:
+      - name: Log PR Number
+        run: echo "PR Number is ${{ github.event.pull_request.number }}"
       - name: Find Comment
         id: fc
         uses: peter-evans/find-comment@v3
@@ -106,6 +105,7 @@ jobs:
       - launch-tlm-test-notif
       - test
       - propertytest
+    continue-on-error: true
     steps:
       - name: Find Comment
         id: fc
