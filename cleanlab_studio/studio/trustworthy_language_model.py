@@ -405,7 +405,7 @@ class TLM:
         Gets response and trustworthiness score for any batch of prompts handling any failures (errors or timeouts).
 
         The list returned will have the same length as the input list. If there are any
-        failures (errors or timeouts) processing some inputs, the list will contain [TLMResponse](#class-tlmresponse) objects with error messages and retryability information instead of the usual response.
+        failures (errors or timeouts) processing some inputs, the [TLMResponse](#class-tlmresponse) objects in the returned list will contain error messages and retryability information instead of the usual response.
 
         This is the recommended approach for obtaining TLM responses and trustworthiness scores for large datasets with many prompts,
         where some individual TLM responses within the dataset might fail. It ensures partial results are preserved.
