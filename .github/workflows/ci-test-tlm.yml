@@ -42,9 +42,9 @@ jobs:
         run:  cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
-          pytest tests/tlm/ --ignore=tests/tlm/test_properties.py --verbose
+          pytest --ignore=tests/tlm/test_properties.py --verbose
   propertytest:
-    name: "TLM Property Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
+    name: "TLM Property Test TLM: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     if: github.event.comment.body == '/test-tlm'  # only run the test if /test-tlm is commented on the PR
     strategy:
@@ -106,6 +106,7 @@ jobs:
       - test
       - propertytest
     continue-on-error: true
+    if: always()
     steps:
       - name: Find Comment
         id: fc
