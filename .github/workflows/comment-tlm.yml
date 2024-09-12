@@ -1,0 +1,24 @@
+name: Run TLM Tests Comment
+
+on:
+  pull_request:  # open between any two branches
+    paths:
+      - tests/tlm/**
+      - cleanlab_studio/studio/trustworthy_language_model.py
+      - cleanlab_studio/internal/tlm/**
+      - cleanlab_studio/utils/tlm_lite.py
+      - cleanlab_studio/internal/api.py
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Ensure **final** changes made to the TLM code are tested before merging. To run the TLM tests, comment `/test-tlm` on this PR.'
+            })

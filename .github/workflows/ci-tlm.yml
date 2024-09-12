@@ -3,6 +3,9 @@ name: CI TLM
 on:
   issue_comment:
     types: [created, edited]
+  push:
+    branches:
+      - main  # triggers on pushes (including merges) to main branch
 
 jobs:
   test:
@@ -19,6 +22,8 @@ jobs:
           - "3.8"
           - "3.9"
           - "3.10"
+          - "3.11"
+          - "3.12"
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python }}
@@ -73,3 +78,66 @@ jobs:
       - name: Run tests
         run: |
           pytest -n auto tests/tlm/test_properties.py --verbose
+  launch-tlm-test-notif:
+    name: Comment TLM test start on PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find Comment
+        id: fc
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-regex: '^/test-tlm$'
+          direction: last
+      - name: Update comment
+        uses: peter-evans/create-or-update-comment@v4
+        if: steps.fc.outputs.comment-id != ''
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          body: |
+            :sparkles: **Starting TLM tests...** :sparkles:
+            If you want to run the TLM tests again (in case they failed or you have further updates to the TLM code), comment '/test-tlm' on this PR.
+            [View full GitHub Actions run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          reactions: rocket
+  finish-tlm-test-notif:
+    name: Comment TLM test completion on PR
+    runs-on: ubuntu-latest
+    needs:
+      - launch-tlm-test-notif
+      - test
+      - propertytest
+    steps:
+      - name: Find Comment
+        id: fc
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: Starting TLM tests
+          direction: last
+      - name: Build Comment Body
+        run: |
+          # Set up emojis based on test results
+          if [[ "${{ needs.test.result }}" == "success" ]]; then
+            TLM_TEST_RESULT="✅"
+          else
+            TLM_TEST_RESULT="❌"
+          fi
+
+          if [[ "${{ needs.propertytest.result }}" == "success" ]]; then
+            PROPERTY_TEST_RESULT="✅"
+          else
+            PROPERTY_TEST_RESULT="❌"
+          fi
+
+          echo "PROPERTY_TEST_RESULT=$PROPERTY_TEST_RESULT" >> $GITHUB_ENV
+          echo "TLM_TEST_RESULT=$TLM_TEST_RESULT" >> $GITHUB_ENV
+      - name: Update comment
+        if: steps.fc.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          body: |
+            :sparkles: **Tests completed!** :sparkles:
+            TLM Tests Results: ${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }} ${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }}
+            TLM Property Tests Results: ${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}
+            Click the Github Actions run log for more information.
