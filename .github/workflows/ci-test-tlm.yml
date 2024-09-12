@@ -5,10 +5,22 @@ on:
     types: [created, edited]
 
 jobs:
+  check-comment:
+    name: Check that /test-tlm comment is the last comment on pr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find Comment
+        id: fc
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body-regex: '^/test-tlm$'
+          direction: last
   test:
     name: "TLM Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
-    if: github.event.comment.body == '/test-tlm'  # only run the test if /test-tlm is commented on the PR
+    needs:
+      - check-comment
     strategy:
       matrix:
         os:
@@ -46,7 +58,8 @@ jobs:
   propertytest:
     name: "TLM Property Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
-    if: github.event.comment.body == '/test-tlm'  # only run the test if /test-tlm is commented on the PR
+    needs:
+      - check-comment
     strategy:
       matrix:
         os:
