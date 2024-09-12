@@ -1,4 +1,5 @@
 import os
+import random
 from typing import Any, Dict, Optional
 
 import numpy as np
@@ -72,7 +73,7 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
     if add_max_tokens:
         options["max_tokens"] = int(np.random.randint(64, 512))
     if add_use_self_reflection:
-        options["use_self_reflection"] = True
+        options["use_self_reflection"] = random.choice([True, False])
     if add_num_candidate_responses:
         options["num_candidate_responses"] = int(np.random.randint(1, 5))
     if add_num_consistency_samples:

@@ -11,7 +11,7 @@ from cleanlab_studio.studio.trustworthy_language_model import TLM
 from tests.tlm.test_get_trustworthiness_score import is_trustworthiness_score
 from tests.tlm.test_prompt import is_tlm_response
 
-_VALID_TLM_MODELS = ["gpt-4o-mini", "gpt-3.5-turbo-16k", "gpt-4", "gpt-4o", "claude-3-haiku"]
+valid_tlm_models = [model for model in _VALID_TLM_MODELS if "sonnet" not in model]
 
 
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
@@ -80,7 +80,7 @@ async def _run_get_trustworthiness_score_async(
     return await tlm.get_trustworthiness_score_async(prompt, response)
 
 
-@pytest.mark.parametrize("model", _VALID_TLM_MODELS)
+@pytest.mark.parametrize("model", valid_tlm_models)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running a prompt in the TLM for all quality_presets, model types and single/batch prompt."""
@@ -98,7 +98,7 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
     _test_batch_prompt_response(responses, options)
 
 
-@pytest.mark.parametrize("model", _VALID_TLM_MODELS)
+@pytest.mark.parametrize("model", valid_tlm_models)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running a prompt_async in the TLM for all quality_presets, model types and single/batch prompt."""
@@ -120,7 +120,7 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
     _test_batch_prompt_response(responses, options)
 
 
-@pytest.mark.parametrize("model", _VALID_TLM_MODELS)
+@pytest.mark.parametrize("model", valid_tlm_models)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running try_prompt in the TLM for all quality_presets, model types batch prompt."""
@@ -136,7 +136,7 @@ def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -
     _test_batch_prompt_response(responses, options)
 
 
-@pytest.mark.parametrize("model", _VALID_TLM_MODELS)
+@pytest.mark.parametrize("model", valid_tlm_models)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_get_trustworthiness_score(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str
@@ -158,7 +158,7 @@ def test_get_trustworthiness_score(
     _test_batch_get_trustworthiness_score_response(responses, options)
 
 
-@pytest.mark.parametrize("model", _VALID_TLM_MODELS)
+@pytest.mark.parametrize("model", valid_tlm_models)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_get_trustworthiness_score_async(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str
@@ -186,7 +186,7 @@ def test_get_trustworthiness_score_async(
     _test_batch_get_trustworthiness_score_response(responses, options)
 
 
-@pytest.mark.parametrize("model", _VALID_TLM_MODELS)
+@pytest.mark.parametrize("model", valid_tlm_models)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_try_get_trustworithness_score(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str

@@ -15,6 +15,7 @@ def is_tlm_response(response: Any) -> bool:
         and isinstance(response["trustworthiness_score"], float)
     ):
         return 0.0 <= response["trustworthiness_score"] <= 1.0
+    return False
 
 
 def test_single_prompt(tlm: TLM) -> None:
