@@ -9,6 +9,8 @@ jobs:
   check-comment:
     name: Fetch Latest Comment
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check latest comment
         run: |
