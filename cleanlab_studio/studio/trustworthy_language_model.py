@@ -285,7 +285,7 @@ class TLM:
         Args:
             prompts (Sequence[str]): list of prompts to run get trustworthiness score for
             responses (Sequence[str]): list of responses to run get trustworthiness score for
-            capture_exceptions (bool): if should return None in place of the response for any errors or timeout processing some inputs
+            capture_exceptions (bool): if True, the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information in place of the score for any errors or timeout when processing a particular prompt from the batch.
 
         Returns:
             List[TLMScore]: TLM trustworthiness score for each prompt (in supplied order).
@@ -402,8 +402,7 @@ class TLM:
         /,
     ) -> List[TLMResponse]:
         """
-        Gets response and trustworthiness score for any batch of prompts,
-        handling any failures (errors or timeouts) by returning error messages and retryability information in place of the failures.
+        Gets response and trustworthiness score for any batch of prompts handling any failures (errors or timeouts).
 
         The list returned will have the same length as the input list. If there are any
         failures (errors or timeouts) processing some inputs, the list will contain [TLMResponse](#class-tlmresponse) objects with error messages and retryability information instead of the usual response.
