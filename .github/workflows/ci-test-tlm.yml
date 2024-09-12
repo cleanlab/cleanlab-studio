@@ -7,7 +7,7 @@ on:
 jobs:
   check-comment:
     name: Fetch Latest Comment
-    id: check_comment
+    runs-on: ubuntu-latest
     steps:
       - name: Check latest comment
         run: |
