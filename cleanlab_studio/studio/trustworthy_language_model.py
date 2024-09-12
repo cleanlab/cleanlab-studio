@@ -486,7 +486,7 @@ class TLM:
             response (str | Sequence[str]): existing response (or list of responses) associated with the input prompts.
                 These can be from any LLM or human-written responses.
         Returns:
-            TLMScore | List[TLMScore]: If a single prompt/response pair was passed in, method returns a TLMScore object containing the trustworthiness score and optional log dictionary keys.
+            TLMScore | List[TLMScore]: If a single prompt/response pair was passed in, method returns a [TLMScore](#class-tlmscore) object containing the trustworthiness score and optional log dictionary keys.
 
                 If a list of prompt/responses was passed in, method returns a list of TLMScore objects each containing the trustworthiness score and optional log dictionary keys for each prompt-response pair passed in.
 
