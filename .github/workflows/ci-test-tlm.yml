@@ -87,7 +87,7 @@ jobs:
     if: github.event.comment.body == '/test-tlm'  # Only run if the comment is "/test-tlm"
     steps:
       - name: Log PR Number
-        run: echo "PR Number is ${{ github.event.issue.number }}"
+        run: echo "PR Number is ${{ github.event.issue.number }}. PR ref is ${{ github.event.issue.pull_request.head.ref }}."
       - name: Find Comment
         id: fc
         uses: peter-evans/find-comment@v3
