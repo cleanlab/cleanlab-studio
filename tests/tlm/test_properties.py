@@ -122,7 +122,7 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
     response = tlm_no_options.prompt("What is the capital of France?")
     _test_prompt_response(
         response,
-        options,
+        None,
         allow_null_trustworthiness_score=allow_null_trustworthiness_score,
     )
 
@@ -152,7 +152,7 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
     # test prompt with single prompt
     response = asyncio.run(_run_prompt_async(tlm_no_options, "What is the capital of France?"))
     _test_prompt_response(
-        response, options, allow_null_trustworthiness_score=allow_null_trustworthiness_score
+        response, None, allow_null_trustworthiness_score=allow_null_trustworthiness_score
     )
 
     # test prompt with batch prompt
@@ -187,7 +187,7 @@ def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -
     )
     _test_batch_prompt_response(
         responses,
-        options,
+        None,
         allow_none_response=True,
         allow_null_trustworthiness_score=allow_null_trustworthiness_score,
     )
@@ -215,7 +215,7 @@ def test_get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
     assert all(is_trustworthiness_score(response) for response in responses)
-    _test_batch_get_trustworthiness_score_response(responses, options)
+    _test_batch_get_trustworthiness_score_response(responses, None)
 
 
 @pytest.mark.parametrize("model", valid_tlm_models)
@@ -237,7 +237,7 @@ def test_get_trustworthiness_score_async(
             tlm_no_options, "What is the capital of France?", "Paris"
         )
     )
-    _test_get_trustworthiness_score_response(response, options)
+    _test_get_trustworthiness_score_response(response, None)
 
     # test prompt with batch prompt
     responses = asyncio.run(
