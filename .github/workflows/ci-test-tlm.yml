@@ -78,6 +78,7 @@ jobs:
   launch-tlm-test-notif:
     name: Comment TLM test start on PR
     runs-on: ubuntu-latest
+    if: github.event.comment.body == '/test-tlm'  # Only run if the comment is "/test-tlm"
     steps:
       - name: Log PR Number
         run: echo "PR Number is ${{ github.event.pull_request.number }}"
@@ -105,8 +106,8 @@ jobs:
       - launch-tlm-test-notif
       - test
       - propertytest
+    if: always() && github.event.comment.body == '/test-tlm'  # Only run if the comment is "/test-tlm" but still run if needs failed
     continue-on-error: true
-    if: always()
     steps:
       - name: Find Comment
         id: fc
