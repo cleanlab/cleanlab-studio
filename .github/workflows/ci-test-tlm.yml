@@ -23,7 +23,6 @@ jobs:
           - "3.12"
     steps:
       - name: Check out latest commit
-        if: ${{ github.event.issue.pull_request }}
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
@@ -59,7 +58,6 @@ jobs:
           - "3.11"
     steps:
       - name: Check out latest commit
-        if: ${{ github.event.issue.pull_request }}
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
