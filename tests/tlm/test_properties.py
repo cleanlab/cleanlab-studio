@@ -85,12 +85,15 @@ async def _run_get_trustworthiness_score_async(
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running a prompt in the TLM for all quality_presets, model types and single/batch prompt."""
-    # get TLM and options dictionary based on parameters
+    # get TLMs and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
+    tlm_no_options = tlm_dict[quality_preset][model]["tlm_no_options"]
     options = tlm_dict[quality_preset][model]["options"]
+    print("TLM with no options called on single query run.")
+    print("TLM Options for run:", options)
 
     # test prompt with single prompt
-    response = tlm.prompt("What is the capital of France?")
+    response = tlm_no_options.prompt("What is the capital of France?")
     _test_prompt_response(response, options)
 
     # test prompt with batch prompt
@@ -103,12 +106,15 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running a prompt_async in the TLM for all quality_presets, model types and single/batch prompt."""
-    # get TLM and options dictionary based on parameters
+    # get TLMs and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
+    tlm_no_options = tlm_dict[quality_preset][model]["tlm_no_options"]
     options = tlm_dict[quality_preset][model]["options"]
+    print("TLM with no options called on single query run.")
+    print("TLM Options for run:", options)
 
     # test prompt with single prompt
-    response = asyncio.run(_run_prompt_async(tlm, "What is the capital of France?"))
+    response = asyncio.run(_run_prompt_async(tlm_no_options, "What is the capital of France?"))
     _test_prompt_response(response, options)
 
     # test prompt with batch prompt
@@ -126,11 +132,13 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
 def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running try_prompt in the TLM for all quality_presets, model types batch prompt."""
     # get TLM and options dictionary based on parameters
-    tlm = tlm_dict[quality_preset][model]["tlm"]
+    tlm_no_options = tlm_dict[quality_preset][model]["tlm_no_options"]
     options = tlm_dict[quality_preset][model]["options"]
+    print("TLM with no options called on batch query run.")
+    print("TLM Options for run: None.")
 
     # test prompt with batch prompt
-    responses = tlm.try_prompt(
+    responses = tlm_no_options.try_prompt(
         ["What is the capital of France?", "What is the capital of Ukraine?"]
     )
     assert all(response is None or is_tlm_response(response) for response in responses)
@@ -143,16 +151,19 @@ def test_get_trustworthiness_score(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str
 ) -> None:
     """Tests running get_trustworthiness_score in the TLM for all quality_presets, model types and single/batch prompt."""
-    # get TLM and options dictionary based on parameters
+    # get TLMs and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
+    tlm_no_options = tlm_dict[quality_preset][model]["tlm_no_options"]
     options = tlm_dict[quality_preset][model]["options"]
+    print("TLM with no options called on batch query run.")
+    print("TLM Options for run:", options)
 
     # test prompt with single prompt
     response = tlm.get_trustworthiness_score("What is the capital of France?", "Paris")
     _test_get_trustworthiness_score_response(response, options)
 
     # test prompt with batch prompt
-    responses = tlm.get_trustworthiness_score(
+    responses = tlm_no_options.get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
     assert all(is_trustworthiness_score(response) for response in responses)
@@ -165,13 +176,18 @@ def test_get_trustworthiness_score_async(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str
 ) -> None:
     """Tests running get_trustworthiness_score_async in the TLM for all quality_presets, model types and single/batch prompt."""
-    # get TLM and options dictionary based on parameters
+    # get TLMs and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
+    tlm_no_options = tlm_dict[quality_preset][model]["tlm_no_options"]
     options = tlm_dict[quality_preset][model]["options"]
+    print("TLM with no options called on single query run.")
+    print("TLM Options for run:", options)
 
     # test prompt with single prompt
     response = asyncio.run(
-        _run_get_trustworthiness_score_async(tlm, "What is the capital of France?", "Paris")
+        _run_get_trustworthiness_score_async(
+            tlm_no_options, "What is the capital of France?", "Paris"
+        )
     )
     _test_get_trustworthiness_score_response(response, options)
 
@@ -193,9 +209,11 @@ def test_try_get_trustworithness_score(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str
 ) -> None:
     """Tests running try_get_trustworthiness_score in the TLM for all quality_presets, model types and batch prompt."""
-    # get TLM and options dictionary based on parameters
+    # get TLMs and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
     options = tlm_dict[quality_preset][model]["options"]
+    print("TLM without options is not called.")
+    print("TLM Options for run:", options)
 
     # test prompt with batch prompt
     responses = tlm.try_get_trustworthiness_score(
