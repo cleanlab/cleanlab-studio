@@ -6,15 +6,35 @@ import pytest
 from cleanlab_studio.studio.trustworthy_language_model import TLM
 
 
-def is_tlm_response(response: Any) -> bool:
-    """Returns True if the response is a TLMResponse."""
+def is_tlm_response(
+    response: Any,
+    allow_none_response: bool = False,
+    allow_null_trustworthiness_score: bool = False,
+) -> bool:
+    """Returns True if the response is a TLMResponse.
+
+    Args:
+        allow_none_response: If True, allows the response to be None (only allowed for try_prompt)
+        allow_null_trustworthiness_score: If True, allows the trustworthiness_score to be None
+            (only allowed for base preset for models with no perplexity score)
+    """
+    # check if response is allowed to be none
+    if response is None:
+        return allow_none_response
+
     if (
         isinstance(response, dict)
         and "response" in response
         and "trustworthiness_score" in response
-        and isinstance(response["trustworthiness_score"], float)
     ):
-        return 0.0 <= response["trustworthiness_score"] <= 1.0
+        trustworthiness_score = response["trustworthiness_score"]
+
+        # check if trustworthiness score is allowed to be none
+        if trustworthiness_score is None:
+            return allow_null_trustworthiness_score
+
+        return isinstance(trustworthiness_score, float) and 0.0 <= trustworthiness_score <= 1.0
+
     return False
 
 
@@ -26,6 +46,7 @@ def test_single_prompt(tlm: TLM) -> None:
     - Response should be non-None
     - No exceptions are raised
     """
+
     # act -- run a single prompt
     response = tlm.prompt("What is the capital of France?")
 
@@ -93,7 +114,7 @@ def test_batch_try_prompt(tlm: TLM) -> None:
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
-    assert all(r is None or is_tlm_response(r) for r in response)
+    assert all(is_tlm_response(r, allow_none_response=True) for r in response)
 
 
 def test_batch_try_prompt_force_timeouts(tlm: TLM) -> None:

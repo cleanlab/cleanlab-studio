@@ -13,6 +13,7 @@ from tests.tlm.test_prompt import is_tlm_response
 
 excluded_tlm_models = ["claude-3-sonnet", "claude-3.5-sonnet"]
 valid_tlm_models = [model for model in _VALID_TLM_MODELS if model not in excluded_tlm_models]
+models_with_no_perplexity_score = ["claude-3-haiku", "claude-3-sonnet", "claude-3.5-sonnet"]
 
 
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
@@ -35,17 +36,39 @@ def _test_log_batch(responses: Dict[str, Any], options: Dict[str, Any]) -> None:
             _test_log(response, options)
 
 
-def _test_prompt_response(response, options):
+def _test_prompt_response(
+    response,
+    options,
+    allow_none_response=False,
+    allow_null_trustworthiness_score=False,
+):
     """Property tests the responses of a prompt based on the options dictionary and returned responses."""
     assert response is not None
-    assert is_tlm_response(response)
+    assert is_tlm_response(
+        response,
+        allow_none_response=allow_none_response,
+        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+    )
     _test_log(response, options)
 
 
-def _test_batch_prompt_response(responses, options):
+def _test_batch_prompt_response(
+    responses,
+    options,
+    allow_none_response=False,
+    allow_null_trustworthiness_score=False,
+):
     """Property tests the responses of a batch prompt based on the options dictionary and returned responses."""
     assert responses is not None
     assert isinstance(responses, list)
+    assert all(
+        is_tlm_response(
+            response,
+            allow_none_response=allow_none_response,
+            allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+        )
+        for response in responses
+    )
     _test_log_batch(responses, options)
 
 
@@ -88,15 +111,25 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
     # get TLM and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
     options = tlm_dict[quality_preset][model]["options"]
+    allow_null_trustworthiness_score = (
+        quality_preset == "base" and model in models_with_no_perplexity_score
+    )
 
     # test prompt with single prompt
     response = tlm.prompt("What is the capital of France?")
-    _test_prompt_response(response, options)
+    _test_prompt_response(
+        response,
+        options,
+        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+    )
 
     # test prompt with batch prompt
     responses = tlm.prompt(["What is the capital of France?", "What is the capital of Ukraine?"])
-    assert all(is_tlm_response(response) for response in responses)
-    _test_batch_prompt_response(responses, options)
+    _test_batch_prompt_response(
+        responses,
+        options,
+        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+    )
 
 
 @pytest.mark.parametrize("model", valid_tlm_models)
@@ -106,10 +139,15 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
     # get TLM and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
     options = tlm_dict[quality_preset][model]["options"]
+    allow_null_trustworthiness_score = (
+        quality_preset == "base" and model in models_with_no_perplexity_score
+    )
 
     # test prompt with single prompt
     response = asyncio.run(_run_prompt_async(tlm, "What is the capital of France?"))
-    _test_prompt_response(response, options)
+    _test_prompt_response(
+        response, options, allow_null_trustworthiness_score=allow_null_trustworthiness_score
+    )
 
     # test prompt with batch prompt
     responses = asyncio.run(
@@ -117,8 +155,11 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
             tlm, ["What is the capital of France?", "What is the capital of Ukraine?"]
         )
     )
-    assert all(is_tlm_response(r) for r in responses)
-    _test_batch_prompt_response(responses, options)
+    _test_batch_prompt_response(
+        responses,
+        options,
+        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+    )
 
 
 @pytest.mark.parametrize("model", valid_tlm_models)
@@ -128,13 +169,20 @@ def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -
     # get TLM and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
     options = tlm_dict[quality_preset][model]["options"]
+    allow_null_trustworthiness_score = (
+        quality_preset == "base" and model in models_with_no_perplexity_score
+    )
 
     # test prompt with batch prompt
     responses = tlm.try_prompt(
         ["What is the capital of France?", "What is the capital of Ukraine?"]
     )
-    assert all(response is None or is_tlm_response(response) for response in responses)
-    _test_batch_prompt_response(responses, options)
+    _test_batch_prompt_response(
+        responses,
+        options,
+        allow_none_response=True,
+        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+    )
 
 
 @pytest.mark.parametrize("model", valid_tlm_models)
