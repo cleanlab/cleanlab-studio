@@ -10,6 +10,11 @@ jobs:
     name: Type check
     runs-on: ubuntu-latest
     steps:
+      - name: Check out latest commit
+        if: ${{ github.event.issue.pull_request }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
