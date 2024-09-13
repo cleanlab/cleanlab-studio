@@ -11,6 +11,18 @@ https://cleanlab.github.io/cleanlab-studio/dev/bench/
 3. Run `export CLEANLAB_API_BASE_URL="http://localhost:8500/api"` so that API requests are made on your local
    machine
 
+### Testing
+
+To run all test locally:
+```bash
+export CLEANLAB_API_BASE_URL=CLEANLAB_API_BASE_URL
+cleanlab login --key <CLEANLAB-API-KEY>
+pytest --verbose
+```
+#### Testing the TLM
+
+When making changes to any code that touches the TLM, sucessfully passing the TLM tests is **required** before the PR can be merged. To launch the TLM test, comment `/test-tlm` in the PR.
+
 ## Formatting
 
 Cleanlab CLI uses [Black](https://black.readthedocs.io/en/stable/) to standardize code formatting. Black is configured
