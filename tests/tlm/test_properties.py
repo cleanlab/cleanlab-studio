@@ -111,7 +111,9 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
     # get TLM and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
     options = tlm_dict[quality_preset][model]["options"]
-    allow_null_trustworthiness_score = model in models_with_no_perplexity_score
+    allow_null_trustworthiness_score = (
+        quality_preset == "base" and model in models_with_no_perplexity_score
+    )
 
     # test prompt with single prompt
     response = tlm.prompt("What is the capital of France?")
@@ -137,7 +139,9 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
     # get TLM and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
     options = tlm_dict[quality_preset][model]["options"]
-    allow_null_trustworthiness_score = model in models_with_no_perplexity_score
+    allow_null_trustworthiness_score = (
+        quality_preset == "base" and model in models_with_no_perplexity_score
+    )
 
     # test prompt with single prompt
     response = asyncio.run(_run_prompt_async(tlm, "What is the capital of France?"))
@@ -165,7 +169,9 @@ def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -
     # get TLM and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
     options = tlm_dict[quality_preset][model]["options"]
-    allow_null_trustworthiness_score = model in models_with_no_perplexity_score
+    allow_null_trustworthiness_score = (
+        quality_preset == "base" and model in models_with_no_perplexity_score
+    )
 
     # test prompt with batch prompt
     responses = tlm.try_prompt(
