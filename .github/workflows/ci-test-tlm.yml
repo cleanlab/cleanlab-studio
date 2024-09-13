@@ -2,13 +2,26 @@ name: /test-tlm CI
 
 on:
   issue_comment:
-    types: [created]
+    types: [created, edited]
 
 jobs:
+  check-comment:
+    name: Fetch Latest Comment
+    id: check_comment
+    steps:
+      - name: Check latest comment
+        run: |
+          COMMENT_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments --jq '.[-1].body')
+          echo "Latest comment is: $COMMENT_BODY"
+          if [[ "$COMMENT_BODY" == "/test-tlm" ]]; then
+            echo "IS_TEST_TLM_COMMENT=true" >> $GITHUB_ENV
+          else
+            echo "IS_TEST_TLM_COMMENT=false" >> $GITHUB_ENV
   test:
     name: "TLM Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
-    if: github.event.comment.body == '/test-tlm'  # Only run if the comment is "/test-tlm"
+    needs: check-comment
+    if: ${{ env.IS_TEST_TLM_COMMENT }} == 'true'  # Run only if the latest comment is /test-tlm
     strategy:
       matrix:
         os:
@@ -48,7 +61,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs:
       - check-comment
-    if: github.event.comment.body == '/test-tlm'  # Only run if the comment is "/test-tlm"
+    if: ${{ env.IS_TEST_TLM_COMMENT }} == 'true'  # Run only if the latest comment is /test-tlm
     strategy:
       matrix:
         os:
