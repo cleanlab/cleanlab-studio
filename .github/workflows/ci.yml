@@ -10,7 +10,10 @@ jobs:
     name: Type check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout latest commit of pull request
+        uses: actions/checkout@v3
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
       - uses: actions/setup-python@v2
         with:
           python-version: '3.10'
@@ -20,11 +23,3 @@ jobs:
           pip install mypy
           mypy --install-types --non-interactive cleanlab_studio
       - run: mypy --strict cleanlab_studio
-      - name: Check out latest commit
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.issue.pull_request.head.ref }}
-      - name: Checkout latest commit of pull request
-          uses: actions/checkout@v3
-          with:
-            ref: refs/pull/${{ github.event.pull_request.number }}/head
