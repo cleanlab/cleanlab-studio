@@ -10,10 +10,7 @@ jobs:
     name: Type check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout latest commit of pull request
-        uses: actions/checkout@v3
-        with:
-          ref: refs/pull/${{ github.event.pull_request.number }}/head
+      - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
           python-version: '3.10'
