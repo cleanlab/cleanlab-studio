@@ -24,3 +24,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.issue.pull_request.head.ref }}
+      - name: Check out latest commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.issue.pull_request.head.ref }}
+      - name: Log PR Ref
+        run: echo "PR ref is ${{ github.event.issue.pull_request.head.ref }}"
