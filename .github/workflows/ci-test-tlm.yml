@@ -46,8 +46,6 @@ jobs:
   propertytest:
     name: "TLM Property Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
-    needs:
-      - check-comment
     if: github.event.comment.body == '/test-tlm'  # Only run if the comment is "/test-tlm"
     strategy:
       matrix:
