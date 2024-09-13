@@ -11,8 +11,13 @@ def is_trustworthiness_score_json_format(response: Any) -> bool:
     return (
         isinstance(response, dict)
         and "trustworthiness_score" in response
-        and isinstance(response["trustworthiness_score"], float)
-        and 0.0 <= response["trustworthiness_score"] <= 1.0
+        and (
+            response["trustworthiness_score"] is None
+            or (
+                isinstance(response["trustworthiness_score"], float)
+                and 0.0 <= response["trustworthiness_score"] <= 1.0
+            )
+        )
     )
 
 

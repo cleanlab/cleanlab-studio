@@ -77,10 +77,7 @@ def _test_batch_prompt_response(
 def _test_get_trustworthiness_score_response(response, options):
     """Property tests the responses of a get_trustworthiness_score based on the options dictionary and returned responses."""
     assert response is not None
-    if "log" in options:
-        assert isinstance(response, dict)
-    else:
-        assert isinstance(response, float)
+    assert isinstance(response, dict)
     assert is_trustworthiness_score_json_format(response)
     _test_log(response, options)
 
