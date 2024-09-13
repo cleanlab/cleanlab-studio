@@ -22,7 +22,10 @@ jobs:
           - "3.11"
           - "3.12"
     steps:
-      - uses: actions/checkout@v2
+      - name: Check out latest commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v2
         with:
@@ -54,7 +57,10 @@ jobs:
         python:
           - "3.11"
     steps:
-      - uses: actions/checkout@v2
+      - name: Check out latest commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v2
         with:
