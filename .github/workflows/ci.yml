@@ -20,3 +20,7 @@ jobs:
           pip install mypy
           mypy --install-types --non-interactive cleanlab_studio
       - run: mypy --strict cleanlab_studio
+      - name: Check out latest commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.issue.pull_request.head.ref }}
