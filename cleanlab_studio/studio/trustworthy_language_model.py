@@ -12,18 +12,7 @@ import asyncio
 import sys
 import warnings
 from functools import wraps
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Coroutine,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Union, cast
 
 import aiohttp
 from tqdm.asyncio import tqdm_asyncio
@@ -63,6 +52,11 @@ def handle_tlm_exceptions(
     [Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]]],
     Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]],
 ]:
+    """Decorator to handle exceptions for TLM API calls.
+
+    lazydocs: ignore
+    """
+
     def decorator(
         func: Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]]
     ) -> Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]]:
