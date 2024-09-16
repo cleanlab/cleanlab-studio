@@ -120,6 +120,7 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
 
     # test prompt with single prompt
     response = tlm_no_options.prompt("What is the capital of France?")
+    print("TLM Single Response:", response)
     _test_prompt_response(
         response,
         {},
@@ -151,6 +152,7 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
 
     # test prompt with single prompt
     response = asyncio.run(_run_prompt_async(tlm_no_options, "What is the capital of France?"))
+    print("TLM Single Response:", response)
     _test_prompt_response(
         response, {}, allow_null_trustworthiness_score=allow_null_trustworthiness_score
     )
@@ -161,6 +163,7 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
             tlm, ["What is the capital of France?", "What is the capital of Ukraine?"]
         )
     )
+    print("TLM Batch Responses:", responses)
     _test_batch_prompt_response(
         responses,
         options,
@@ -185,6 +188,7 @@ def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -
     responses = tlm_no_options.try_prompt(
         ["What is the capital of France?", "What is the capital of Ukraine?"]
     )
+    print("TLM Batch Responses:", responses)
     _test_batch_prompt_response(
         responses,
         {},
@@ -208,12 +212,14 @@ def test_get_trustworthiness_score(
 
     # test prompt with single prompt
     response = tlm.get_trustworthiness_score("What is the capital of France?", "Paris")
+    print("TLM Single Response:", response)
     _test_get_trustworthiness_score_response(response, options)
 
     # test prompt with batch prompt
     responses = tlm_no_options.get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
+    print("TLM Batch Responses:", responses)
     assert all(is_trustworthiness_score(response) for response in responses)
     _test_batch_get_trustworthiness_score_response(responses, {})
 
@@ -237,6 +243,7 @@ def test_get_trustworthiness_score_async(
             tlm_no_options, "What is the capital of France?", "Paris"
         )
     )
+    print("TLM Single Response:", response)
     _test_get_trustworthiness_score_response(response, {})
 
     # test prompt with batch prompt
@@ -247,6 +254,7 @@ def test_get_trustworthiness_score_async(
             ["USA", "Kyiv"],
         )
     )
+    print("TLM Batch Responses:", responses)
     assert all(is_trustworthiness_score(response) for response in responses)
     _test_batch_get_trustworthiness_score_response(responses, options)
 
@@ -267,5 +275,6 @@ def test_try_get_trustworithness_score(
     responses = tlm.try_get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
+    print("TLM Batch Responses:", responses)
     assert all(response is None or is_trustworthiness_score(response) for response in responses)
     _test_batch_get_trustworthiness_score_response(responses, options)
