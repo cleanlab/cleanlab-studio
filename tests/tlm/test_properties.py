@@ -21,7 +21,7 @@ valid_tlm_models = ["gpt-4o"]
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
     """Tests the log dictionary in the response based on the options dictionary."""
     if "log" in options.keys():
-        print("Testing log:", options["log"], end="")
+        print("Testing log:", options["log"], "response log:", response["log"], end="")
         assert isinstance(response["log"], dict)
         if "perplexity" in options["log"]:
             assert (
@@ -48,16 +48,14 @@ def _is_valid_prompt_response(
 ) -> bool:
     """Returns true if prompt response is valid based on properties for prompt() functionality."""
     _test_log(response, options)
-    if "use_self_reflection" in options.keys() and not options["use_self_reflection"]:
-        if {"quality_preset", "num_consistency_samples"}.issubset(options) and (
-            options["quality_preset"] == "base" and options["num_consistency_samples"] == 0
-        ):
-            print("pass 1")
-            return is_tlm_response(
-                response,
-                allow_none_response=True,
-                allow_null_trustworthiness_score=True,
-            )
+    if {"use_self_reflection", "quality_preset", "num_consistency_samples"}.issubset(options) and (
+        options["num_consistency_samples"] == 0 and not options["use_self_reflection"]
+    ):
+        return is_tlm_response(
+            response,
+            allow_none_response=allow_none_response,
+            allow_null_trustworthiness_score=True,
+        )
     else:
         return is_tlm_response(
             response,
