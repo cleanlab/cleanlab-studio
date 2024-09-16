@@ -6,8 +6,15 @@ import pytest
 from cleanlab_studio.studio.trustworthy_language_model import TLM
 
 
-def is_trustworthiness_score(response: Any) -> bool:
+def is_trustworthiness_score(
+    response: Any,
+    allow_none_response: bool = False,
+    allow_null_trustworthiness_score: bool = False,
+) -> bool:
     """Returns True if the response is a trustworthiness score with valid range."""
+    if response is None:
+        return allow_none_response
+
     if isinstance(response, float):
         return 0.0 <= response <= 1.0
     elif (
@@ -15,7 +22,13 @@ def is_trustworthiness_score(response: Any) -> bool:
         and "trustworthiness_score" in response
         and isinstance(response["trustworthiness_score"], float)
     ):
-        return 0.0 <= response["trustworthiness_score"] <= 1.0
+        trustworthiness_score = response["trustworthiness_score"]
+
+        # check if trustworthiness score is allowed to be none
+        if trustworthiness_score is None:
+            return allow_null_trustworthiness_score
+
+        return 0.0 <= trustworthiness_score <= 1.0
     else:
         return False
 

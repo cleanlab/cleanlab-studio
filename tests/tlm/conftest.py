@@ -50,6 +50,7 @@ def tlm_dict(studio: Studio) -> Dict[str, Any]:
             tlm_dict[quality_preset][model]["tlm_no_options"] = studio.TLM(
                 quality_preset=quality_preset,
             )
+            options["quality_preset"] = quality_preset
             tlm_dict[quality_preset][model]["options"] = options
     return tlm_dict
 
