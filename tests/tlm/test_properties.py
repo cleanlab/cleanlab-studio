@@ -45,7 +45,7 @@ def _test_prompt_response(
     allow_null_trustworthiness_score=False,
 ):
     """Property tests the responses of a prompt based on the options dictionary and returned responses."""
-    if not options["use_self_reflection"]:
+    if "use_self_reflection" in options.keys() and not options["use_self_reflection"]:
         if options["quality_preset"] == "base" or options["num_consistency_samples"] == 0:
             assert is_tlm_response(
                 response,
@@ -95,7 +95,12 @@ def _test_get_trustworthiness_score_response(
     else:
         assert isinstance(response, float)
 
-    if not options["use_self_reflection"] and options["quality_preset"] == "base":
+    if (
+        "use_self_reflection" in options.keys()
+        and "quality_preset" in options.keys()
+        and not options["use_self_reflection"]
+        and options["quality_preset"] == "base"
+    ):
         assert is_trustworthiness_score(
             response, allow_none_response=allow_none_response, allow_null_trustworthiness_score=True
         )
@@ -112,11 +117,13 @@ def _test_batch_get_trustworthiness_score_response(
     responses, options, allow_none_response=False, allow_null_trustworthiness_score=False
 ):
     """Property tests the responses of a batch get_trustworthiness_score based on the options dictionary and returned responses."""
-    assert responses is not None
     assert isinstance(responses, list)
     assert all(
         _test_get_trustworthiness_score_response(
-            response, options, allow_null_trustworthiness_score=allow_null_trustworthiness_score
+            response,
+            options,
+            allow_none_response=allow_none_response,
+            allow_null_trustworthiness_score=allow_null_trustworthiness_score,
         )
         for response in responses
     )
