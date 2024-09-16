@@ -54,6 +54,7 @@ def _is_valid_prompt_response(
     if {"use_self_reflection", "quality_preset", "num_consistency_samples"}.issubset(options) and (
         options["num_consistency_samples"] == 0 and not options["use_self_reflection"]
     ):
+        print("Options dictinary called with strange parameters. Allowing none in response.")
         return is_tlm_response(
             response,
             allow_none_response=allow_none_response,
@@ -85,14 +86,16 @@ def _is_valid_get_trustworthiness_score_response(
         and not options["use_self_reflection"]
         and options["quality_preset"] == "base"
     ):
+        print("Options dictinary called with strange parameters. Allowing none in response.")
         return is_trustworthiness_score(
-            response, allow_none_response=True, allow_null_trustworthiness_score=True
+            response, allow_none_response=allow_none_response, allow_null_trustworthiness_score=True
         )
     elif (
         ({"num_consistency_samples", "use_self_reflection"}.issubset(options))
         and not options["use_self_reflection"]
         and options["num_consistency_samples"] == 0
     ):
+        print("Options dictinary called with strange parameters. Allowing none in response.")
         return is_trustworthiness_score(
             response, allow_none_response=allow_none_response, allow_null_trustworthiness_score=True
         )
