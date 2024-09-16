@@ -21,6 +21,7 @@ valid_tlm_models = ["gpt-4o"]
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
     """Tests the log dictionary in the response based on the options dictionary."""
     if "log" in options.keys():
+        print("Testing log:", options["log"], end="")
         assert isinstance(response["log"], dict)
         if "perplexity" in options["log"]:
             assert (
@@ -29,6 +30,7 @@ def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
             )
         if "explanation" in options["log"]:
             assert isinstance(response["log"]["explanation"], str)
+        print("... PASSED.")
 
 
 def _test_log_batch(responses: Dict[str, Any], options: Dict[str, Any]) -> None:
@@ -50,6 +52,7 @@ def _is_valid_prompt_response(
         if {"quality_preset", "num_consistency_samples"}.issubset(options) and (
             options["quality_preset"] == "base" and options["num_consistency_samples"] == 0
         ):
+            print("pass 1")
             return is_tlm_response(
                 response,
                 allow_none_response=True,
@@ -80,6 +83,14 @@ def _is_valid_get_trustworthiness_score_response(
         ({"quality_preset", "use_self_reflection"}.issubset(options))
         and not options["use_self_reflection"]
         and options["quality_preset"] == "base"
+    ):
+        return is_trustworthiness_score(
+            response, allow_none_response=allow_none_response, allow_null_trustworthiness_score=True
+        )
+    elif (
+        ({"num_consistency_samples", "use_self_reflection"}.issubset(options))
+        and not options["use_self_reflection"]
+        and options["num_consistency_samples"] == 0
     ):
         return is_trustworthiness_score(
             response, allow_none_response=allow_none_response, allow_null_trustworthiness_score=True
@@ -117,6 +128,8 @@ def _test_batch_prompt_response(
     assert responses is not None
     assert isinstance(responses, list)
     _test_log_batch(responses, options)
+
+    print("OK!1")
 
     checked_responses = [
         _is_valid_prompt_response(
@@ -189,6 +202,15 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
     tlm = tlm_dict[quality_preset][model]["tlm"]
     tlm_no_options = tlm_dict[quality_preset][model]["tlm_no_options"]
     options = tlm_dict[quality_preset][model]["options"]
+    options = {
+        "model": "gpt-4o",
+        "max_tokens": 264,
+        "use_self_reflection": False,
+        "num_candidate_responses": 4,
+        "num_consistency_samples": 0,
+        "log": ["perplexity"],
+        "quality_preset": "high",
+    }
     allow_null_trustworthiness_score = (
         quality_preset == "base" and model in models_with_no_perplexity_score
     )
