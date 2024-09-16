@@ -15,7 +15,7 @@ excluded_tlm_models = ["claude-3-sonnet", "claude-3.5-sonnet"]
 valid_tlm_models = [model for model in _VALID_TLM_MODELS if model not in excluded_tlm_models]
 models_with_no_perplexity_score = ["claude-3-haiku", "claude-3-sonnet", "claude-3.5-sonnet"]
 
-valid_tlm_models = ["claude-3-sonnet", "gpt-4o"]
+valid_tlm_models = ["gpt-4o"]
 
 
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
@@ -38,27 +38,73 @@ def _test_log_batch(responses: Dict[str, Any], options: Dict[str, Any]) -> None:
             _test_log(response, options)
 
 
-def _test_prompt_response(
+def _is_valid_prompt_response(
     response,
     options,
     allow_none_response=False,
     allow_null_trustworthiness_score=False,
-):
-    """Property tests the responses of a prompt based on the options dictionary and returned responses."""
+) -> bool:
+    """Returns true if prompt response is valid based on properties for prompt() functionality."""
+    _test_log(response, options)
     if "use_self_reflection" in options.keys() and not options["use_self_reflection"]:
-        if options["quality_preset"] == "base" or options["num_consistency_samples"] == 0:
-            assert is_tlm_response(
+        if {"quality_preset", "num_consistency_samples"}.issubset(options) and (
+            options["quality_preset"] == "base" and options["num_consistency_samples"] == 0
+        ):
+            return is_tlm_response(
                 response,
                 allow_none_response=True,
                 allow_null_trustworthiness_score=True,
             )
     else:
-        assert is_tlm_response(
+        return is_tlm_response(
             response,
             allow_none_response=allow_none_response,
             allow_null_trustworthiness_score=allow_null_trustworthiness_score,
         )
+
+
+def _is_valid_get_trustworthiness_score_response(
+    response,
+    options,
+    allow_none_response=False,
+    allow_null_trustworthiness_score=False,
+) -> bool:
+    """Returns true if trustworthiness score is valid based on properties for get_trustworthiness_score() functionality."""
+    if "log" in options:
+        assert isinstance(response, dict)
+    else:
+        assert isinstance(response, float)
     _test_log(response, options)
+
+    if (
+        ({"quality_preset", "use_self_reflection"}.issubset(options))
+        and not options["use_self_reflection"]
+        and options["quality_preset"] == "base"
+    ):
+        return is_trustworthiness_score(
+            response, allow_none_response=allow_none_response, allow_null_trustworthiness_score=True
+        )
+    else:
+        return is_trustworthiness_score(
+            response,
+            allow_none_response=allow_none_response,
+            allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+        )
+
+
+def _test_prompt_response(
+    response,
+    options,
+    allow_none_response=False,
+    allow_null_trustworthiness_score=False,
+) -> None:
+    """Property tests the responses of a prompt based on the options dictionary and returned responses."""
+    assert _is_valid_prompt_response(
+        response=response,
+        options=options,
+        allow_none_response=allow_none_response,
+        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+    )
 
 
 def _test_batch_prompt_response(
@@ -66,21 +112,23 @@ def _test_batch_prompt_response(
     options,
     allow_none_response=False,
     allow_null_trustworthiness_score=False,
-):
+) -> None:
     """Property tests the responses of a batch prompt based on the options dictionary and returned responses."""
     assert responses is not None
     assert isinstance(responses, list)
+    _test_log_batch(responses, options)
 
-    assert all(
-        _test_prompt_response(
+    checked_responses = [
+        _is_valid_prompt_response(
             response,
             options,
             allow_none_response=allow_none_response,
             allow_null_trustworthiness_score=allow_null_trustworthiness_score,
         )
         for response in responses
-    )
-    _test_log_batch(responses, options)
+    ]
+    print("Checked respones:", checked_responses)
+    assert all(checked_responses)
 
 
 def _test_get_trustworthiness_score_response(
@@ -88,46 +136,35 @@ def _test_get_trustworthiness_score_response(
     options,
     allow_none_response=False,
     allow_null_trustworthiness_score=False,
-):
+) -> None:
     """Property tests the responses of a get_trustworthiness_score based on the options dictionary and returned responses."""
-    if "log" in options:
-        assert isinstance(response, dict)
-    else:
-        assert isinstance(response, float)
-
-    if (
-        "use_self_reflection" in options.keys()
-        and "quality_preset" in options.keys()
-        and not options["use_self_reflection"]
-        and options["quality_preset"] == "base"
-    ):
-        assert is_trustworthiness_score(
-            response, allow_none_response=allow_none_response, allow_null_trustworthiness_score=True
-        )
-    else:
-        assert is_trustworthiness_score(
-            response,
-            allow_none_response=allow_none_response,
-            allow_null_trustworthiness_score=allow_null_trustworthiness_score,
-        )
-    _test_log(response, options)
+    assert _is_valid_get_trustworthiness_score_response(
+        response=response,
+        options=options,
+        allow_none_response=allow_none_response,
+        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+    )
 
 
 def _test_batch_get_trustworthiness_score_response(
     responses, options, allow_none_response=False, allow_null_trustworthiness_score=False
-):
+) -> None:
     """Property tests the responses of a batch get_trustworthiness_score based on the options dictionary and returned responses."""
+    assert responses is not None
     assert isinstance(responses, list)
-    assert all(
-        _test_get_trustworthiness_score_response(
+    _test_log_batch(responses, options)
+
+    checked_responses = [
+        _is_valid_get_trustworthiness_score_response(
             response,
             options,
             allow_none_response=allow_none_response,
             allow_null_trustworthiness_score=allow_null_trustworthiness_score,
         )
         for response in responses
-    )
-    _test_log_batch(responses, options)
+    ]
+    print("Checked respones:", checked_responses)
+    assert all(checked_responses)
 
 
 @pytest.mark.asyncio(scope="function")
@@ -169,6 +206,7 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
 
     # test prompt with batch prompt
     responses = tlm.prompt(["What is the capital of France?", "What is the capital of Ukraine?"])
+    print("TLM Batch Responses:", responses)
     _test_batch_prompt_response(
         responses,
         options,

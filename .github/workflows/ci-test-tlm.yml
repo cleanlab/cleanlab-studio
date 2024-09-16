@@ -80,7 +80,7 @@ jobs:
         run:  cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
-          pytest tests/tlm/test_properties.py --verbose
+          pytest -n auto tests/tlm/test_properties.py --verbose
   launch-tlm-test-notif:
     name: Comment TLM test start on PR
     runs-on: ubuntu-latest
