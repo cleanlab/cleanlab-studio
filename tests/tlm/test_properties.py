@@ -15,8 +15,6 @@ excluded_tlm_models = ["claude-3-sonnet", "claude-3.5-sonnet"]
 valid_tlm_models = [model for model in _VALID_TLM_MODELS if model not in excluded_tlm_models]
 models_with_no_perplexity_score = ["claude-3-haiku", "claude-3-sonnet", "claude-3.5-sonnet"]
 
-valid_tlm_models = ["gpt-4o"]
-
 
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
     """Tests the log dictionary in the response based on the options dictionary."""
