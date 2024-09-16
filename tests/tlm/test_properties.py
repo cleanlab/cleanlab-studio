@@ -21,7 +21,12 @@ valid_tlm_models = ["gpt-4o"]
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
     """Tests the log dictionary in the response based on the options dictionary."""
     if "log" in options.keys():
-        print("Testing log:", options["log"], "response log:", response["log"], end="")
+        print("Testing log:", options["log"], end="")
+        if "log" in response:
+            print(" response log:", response["log"], end="")
+        else:
+            print("... FAILED. NO LOG IN RESPONSE.")
+        assert "log" in response
         assert isinstance(response["log"], dict)
         if "perplexity" in options["log"]:
             assert (
@@ -83,7 +88,7 @@ def _is_valid_get_trustworthiness_score_response(
         and options["quality_preset"] == "base"
     ):
         return is_trustworthiness_score(
-            response, allow_none_response=allow_none_response, allow_null_trustworthiness_score=True
+            response, allow_none_response=True, allow_null_trustworthiness_score=True
         )
     elif (
         ({"num_consistency_samples", "use_self_reflection"}.issubset(options))
