@@ -18,24 +18,19 @@ def is_tlm_response(
         allow_null_trustworthiness_score: If True, allows the trustworthiness_score to be None
             (only allowed for base preset for models with no perplexity score)
     """
-    print("response", response)
     # check if response is allowed to be none
     if response is None:
         return allow_none_response
-    print("pass 1")
     if (
         isinstance(response, dict)
         and "response" in response
         and "trustworthiness_score" in response
     ):
         trustworthiness_score = response["trustworthiness_score"]
-        print("pass 2")
         # check if trustworthiness score is allowed to be none
         if trustworthiness_score is None:
             return allow_null_trustworthiness_score
-        print("pass 3", trustworthiness_score)
         return isinstance(trustworthiness_score, float) and 0.0 <= trustworthiness_score <= 1.0
-    print("fail")
     return False
 
 

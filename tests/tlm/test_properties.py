@@ -132,8 +132,6 @@ def _test_batch_prompt_response(
     assert isinstance(responses, list)
     _test_log_batch(responses, options)
 
-    print("OK!1")
-
     checked_responses = [
         _is_valid_prompt_response(
             response,
