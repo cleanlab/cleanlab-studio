@@ -15,8 +15,6 @@ excluded_tlm_models = ["claude-3-sonnet", "claude-3.5-sonnet"]
 valid_tlm_models = [model for model in _VALID_TLM_MODELS if model not in excluded_tlm_models]
 models_with_no_perplexity_score = ["claude-3-haiku", "claude-3-sonnet", "claude-3.5-sonnet"]
 
-valid_tlm_models = ["gpt-4o"]
-
 
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
     """Tests the log dictionary in the response based on the options dictionary."""
@@ -203,15 +201,6 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
     tlm = tlm_dict[quality_preset][model]["tlm"]
     tlm_no_options = tlm_dict[quality_preset][model]["tlm_no_options"]
     options = tlm_dict[quality_preset][model]["options"]
-    options = {
-        "model": "gpt-4o",
-        "max_tokens": 264,
-        "use_self_reflection": False,
-        "num_candidate_responses": 4,
-        "num_consistency_samples": 0,
-        "log": ["perplexity"],
-        "quality_preset": "high",
-    }
     allow_null_trustworthiness_score = (
         quality_preset == "base" and model in models_with_no_perplexity_score
     )
