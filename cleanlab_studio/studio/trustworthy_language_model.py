@@ -462,6 +462,18 @@ class TLM:
         capture_exceptions: bool = False,
         batch_index: Optional[int] = None,
     ) -> TLMResponse:
+        """
+        Private asynchronous method to get response and trustworthiness score from TLM.
+
+        Args:
+            prompt (str): prompt for the TLM
+            client_session (aiohttp.ClientSession, optional): async HTTP session to use for TLM query. Defaults to None (creates a new session).
+            timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
+            capture_exceptions (bool): if True, the returned [TLMResponse](#class-tlmresponse) object will include error details and retry information if any errors or timeouts occur during processing.
+            batch_index: index of the prompt in the batch, used for error messages
+        Returns:
+            TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
+        """
         response_json = await asyncio.wait_for(
             api.tlm_prompt(
                 self._api_key,
@@ -632,6 +644,18 @@ class TLM:
         capture_exceptions: bool = False,
         batch_index: Optional[int] = None,
     ) -> TLMScore:
+        """Private asynchronous method to get trustworthiness score for prompt-response pairs.
+
+        Args:
+            prompt: prompt for the TLM to evaluate
+            response: response corresponding to the input prompt
+            client_session: async HTTP session to use for TLM query. Defaults to None.
+            timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
+            capture_exceptions (bool): if True, the returned [TLMScore](#class-tlmscore) object will include error details and retry information if any errors or timeouts occur during processing.
+            batch_index: index of the prompt in the batch, used for error messages
+        Returns:
+            [TLMScore](#class-tlmscore) objects with error messages and retryability information in place of the trustworthiness score
+        """
         response_json = await asyncio.wait_for(
             api.tlm_get_confidence_score(
                 self._api_key,
