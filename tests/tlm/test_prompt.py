@@ -4,6 +4,16 @@ from typing import Any
 import pytest
 
 from cleanlab_studio.studio.trustworthy_language_model import TLM
+from tests.tlm.conftest import make_text_unique
+from tests.tlm.constants import (
+    TEST_PROMPT,
+    TEST_PROMPT_BATCH,
+    TEST_RESPONSE,
+    TEST_RESPONSE_BATCH,
+)
+
+test_prompt = make_text_unique(TEST_PROMPT)
+test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 
 def is_tlm_response(

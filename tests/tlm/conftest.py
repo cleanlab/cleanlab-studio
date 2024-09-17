@@ -1,3 +1,4 @@
+import datetime
 import os
 import random
 from typing import Any, Dict, Optional
@@ -89,3 +90,8 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
             if options_flag
         ]
     return options
+
+
+def make_text_unique(text: str) -> str:
+    """Makes a text unique by prepending the curent datatime to it."""
+    return f"{datetime.now().strftime('%Y%m%d%H%M%S')} {text}"

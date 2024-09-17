@@ -70,6 +70,12 @@ jobs:
           pip install --upgrade pip
           pip install .
           pip install -r tests/requirements_test.txt
+      - name: Restore pytest cache
+        uses: actions/cache@v2
+        with:
+          path: .pytest_cache
+          key: pytest-cache-${{ github.run_id }}
+          restore-keys: pytest-cache-
       - name: Install Cleanlab Studio client
         run: pip install -e .
       - name: Set env variables (Linux/macOS/Windows)
@@ -81,6 +87,11 @@ jobs:
       - name: Run tests
         run: |
           pytest tests/tlm/test_properties.py --verbose
+      - name: Cache pytest results
+        uses: actions/cache@v2
+        with:
+          path: .pytest_cache
+          key: pytest-cache-${{ github.run_id }}
   launch-tlm-test-notif:
     name: Comment TLM test start on PR
     runs-on: ubuntu-latest
