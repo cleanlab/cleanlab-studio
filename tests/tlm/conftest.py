@@ -17,6 +17,7 @@ from cleanlab_studio.studio.trustworthy_language_model import TLM
 @pytest.fixture(scope="module")
 def studio() -> Studio:
     """Creates a Studio with default settings."""
+
     try:
         # uses environment API key
         return Studio(None)
@@ -36,7 +37,15 @@ def tlm(studio: Studio) -> TLM:
 @pytest.fixture(scope="module")
 def tlm_dict(studio: Studio) -> Dict[str, Any]:
     """Creates a dictionary of initialized tlm objects for each quality preset and model to be reused throughout the test.
-    Save randomly created options dictionary for each tlm object as well."""
+    Save randomly created options dictionary for each tlm object as well.
+
+    Initializes two TLM objects for each quality preset and model:
+    - One with randomly generated options
+    - One with base presets (no options)
+
+    Each function call is tested on both of these TLM objects to ensure that the function works with options and for the base preset
+    and to give signal if the function is not working for a specific set of options or overall.
+    """
 
     tlm_dict = {}
     for quality_preset in _VALID_TLM_QUALITY_PRESETS:
@@ -62,6 +71,8 @@ def tlm_rate_handler() -> TlmRateHandler:
 
 
 def _get_options_dictionary(model: Optional[str]) -> dict:
+    """Returns a dictionary of randomly generated options for the TLM."""
+
     if model is None:
         options = {}
     else:

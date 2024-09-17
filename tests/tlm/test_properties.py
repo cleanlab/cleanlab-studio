@@ -51,7 +51,7 @@ def _is_valid_prompt_response(
 ) -> bool:
     """Returns true if prompt response is valid based on properties for prompt() functionality."""
     _test_log(response, options)
-    if {"use_self_reflection", "quality_preset", "num_consistency_samples"}.issubset(options) and (
+    if {"use_self_reflection", "num_consistency_samples"}.issubset(options) and (
         options["num_consistency_samples"] == 0 and not options["use_self_reflection"]
     ):
         print("Options dictinary called with strange parameters. Allowing none in response.")
@@ -77,9 +77,9 @@ def _is_valid_get_trustworthiness_score_response(
     """Returns true if trustworthiness score is valid based on properties for get_trustworthiness_score() functionality."""
     if "log" in options:
         assert isinstance(response, dict)
+        _test_log(response, options)
     else:
         assert isinstance(response, float)
-    _test_log(response, options)
 
     if (
         ({"quality_preset", "use_self_reflection"}.issubset(options))
