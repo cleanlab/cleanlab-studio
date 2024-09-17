@@ -41,9 +41,9 @@ def tlm_dict(studio: Studio) -> Dict[str, Any]:
 
     Initializes two TLM objects for each quality preset and model:
     - One with randomly generated options
-    - One with base presets (no options)
+    - One with default presets (no options)
 
-    Each function call is tested on both of these TLM objects to ensure that the function works with options and for the base preset
+    Each function call is tested on both of these TLM objects to ensure that the function works with options and for the default preset
     and to give signal if the function is not working for a specific set of options or overall.
     """
 
