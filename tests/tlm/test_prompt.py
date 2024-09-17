@@ -5,7 +5,7 @@ import pytest
 
 from cleanlab_studio.studio.trustworthy_language_model import TLM
 from tests.tlm.conftest import make_text_unique
-from tests.tlm.constants import TEST_PROMPT, TEST_PROMPT_BATCH, TEST_RESPONSE_BATCH
+from tests.tlm.constants import TEST_PROMPT, TEST_PROMPT_BATCH
 
 test_prompt = make_text_unique(TEST_PROMPT)
 test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
@@ -99,7 +99,7 @@ def test_batch_prompt_force_timeouts(tlm: TLM) -> None:
     # assert -- timeout is thrown
     with pytest.raises(asyncio.TimeoutError):
         # act -- run a batch prompt
-        tlm.prompt(["What is the capital of France?"] * 3)
+        tlm.prompt(test_prompt_batch)
 
 
 def test_batch_try_prompt(tlm: TLM) -> None:
@@ -111,7 +111,7 @@ def test_batch_try_prompt(tlm: TLM) -> None:
     - No exceptions are raised
     """
     # act -- run a batch prompt
-    response = tlm.try_prompt(["What is the capital of France?"] * 3)
+    response = tlm.try_prompt(test_prompt_batch)
 
     # assert
     # - response is not None
@@ -137,7 +137,7 @@ def test_batch_try_prompt_force_timeouts(tlm: TLM) -> None:
     tlm._timeout = 0.0001
 
     # act -- run a batch prompt
-    response = tlm.try_prompt(["What is the capital of France?"] * 3)
+    response = tlm.try_prompt(test_prompt_batch)
 
     # assert
     # - response is not None
