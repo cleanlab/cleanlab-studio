@@ -22,9 +22,9 @@ from typing_extensions import (  # for Python <3.11 with (Not)Required
 )
 
 from cleanlab_studio.errors import (
+    APITimeoutError,
     RateLimitError,
     TlmBadRequest,
-    TlmPartialSuccess,
     TlmServerError,
     ValidationError,
 )
@@ -66,6 +66,16 @@ def handle_tlm_exceptions(
             batch_index = kwargs.get("batch_index")
             try:
                 return await func(*args, **kwargs)
+            except asyncio.TimeoutError as e:
+                return _handle_exception(
+                    APITimeoutError(
+                        f"Timeout while waiting for prediction. Please retry or consider increasing the timeout."
+                    ),
+                    capture_exceptions,
+                    batch_index,
+                    retryable=True,
+                    response_type=response_type,
+                )
             except RateLimitError as e:
                 return _handle_exception(
                     e, capture_exceptions, batch_index, retryable=True, response_type=response_type
