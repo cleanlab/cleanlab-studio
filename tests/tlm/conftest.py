@@ -94,4 +94,4 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
 
 def make_text_unique(text: str) -> str:
     """Makes a text unique by prepending the curent datatime to it."""
-    return f"{datetime.now().strftime('%Y%m%d%H%M%S')} {text}"
+    return str(datetime.now().strftime("%Y%m%d%H%M%S")) + " " + text

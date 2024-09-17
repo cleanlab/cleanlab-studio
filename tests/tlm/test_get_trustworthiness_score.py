@@ -59,7 +59,7 @@ def test_batch_get_trustworthiness_score(tlm: TLM) -> None:
     - Each response should be of type TLMResponse
     """
     # act -- run a batch get_trustworthiness_score
-    response = tlm.get_trustworthiness_score(test_prompt, TEST_RESPONSE)
+    response = tlm.get_trustworthiness_score(test_prompt_batch, TEST_RESPONSE)
 
     # assert
     # - response is not None
