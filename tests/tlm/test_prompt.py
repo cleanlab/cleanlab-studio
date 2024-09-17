@@ -5,12 +5,7 @@ import pytest
 
 from cleanlab_studio.studio.trustworthy_language_model import TLM
 from tests.tlm.conftest import make_text_unique
-from tests.tlm.constants import (
-    TEST_PROMPT,
-    TEST_PROMPT_BATCH,
-    TEST_RESPONSE,
-    TEST_RESPONSE_BATCH,
-)
+from tests.tlm.constants import TEST_PROMPT, TEST_PROMPT_BATCH, TEST_RESPONSE_BATCH
 
 test_prompt = make_text_unique(TEST_PROMPT)
 test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
@@ -58,7 +53,7 @@ def test_single_prompt(tlm: TLM) -> None:
     """
 
     # act -- run a single prompt
-    response = tlm.prompt("What is the capital of France?")
+    response = tlm.prompt(test_prompt)
 
     # assert
     # - response is not None
@@ -78,7 +73,7 @@ def test_batch_prompt(tlm: TLM) -> None:
     - Each response should be of type TLMResponse
     """
     # act -- run a batch prompt
-    response = tlm.prompt(["What is the capital of France?"] * 3)
+    response = tlm.prompt(test_prompt_batch)
 
     # assert
     # - response is not None
