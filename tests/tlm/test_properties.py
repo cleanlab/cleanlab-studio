@@ -73,15 +73,10 @@ def _is_valid_prompt_response(
 def _is_valid_get_trustworthiness_score_response(
     response,
     options,
-    allow_none_response=False,
     allow_null_trustworthiness_score=False,
 ) -> bool:
     """Returns true if trustworthiness score is valid based on properties for get_trustworthiness_score() functionality."""
-    if "log" in options:
-        assert isinstance(response, dict)
-        _test_log(response, options)
-    else:
-        assert isinstance(response, float)
+    assert isinstance(response, dict)
 
     if (
         ({"quality_preset", "use_self_reflection"}.issubset(options))
@@ -89,22 +84,17 @@ def _is_valid_get_trustworthiness_score_response(
         and options["quality_preset"] == "base"
     ):
         print("Options dictinary called with strange parameters. Allowing none in response.")
-        return is_trustworthiness_score(
-            response, allow_none_response=allow_none_response, allow_null_trustworthiness_score=True
-        )
+        return is_trustworthiness_score_json_format(response, allow_null_trustworthiness_score=True)
     elif (
         ({"num_consistency_samples", "use_self_reflection"}.issubset(options))
         and not options["use_self_reflection"]
         and options["num_consistency_samples"] == 0
     ):
         print("Options dictinary called with strange parameters. Allowing none in response.")
-        return is_trustworthiness_score(
-            response, allow_none_response=allow_none_response, allow_null_trustworthiness_score=True
-        )
+        return is_trustworthiness_score_json_format(response, allow_null_trustworthiness_score=True)
     else:
-        return is_trustworthiness_score(
+        return is_trustworthiness_score_json_format(
             response,
-            allow_none_response=allow_none_response,
             allow_null_trustworthiness_score=allow_null_trustworthiness_score,
         )
 
@@ -151,20 +141,18 @@ def _test_batch_prompt_response(
 def _test_get_trustworthiness_score_response(
     response,
     options,
-    allow_none_response=False,
     allow_null_trustworthiness_score=False,
 ) -> None:
     """Property tests the responses of a get_trustworthiness_score based on the options dictionary and returned responses."""
     assert _is_valid_get_trustworthiness_score_response(
         response=response,
         options=options,
-        allow_none_response=allow_none_response,
         allow_null_trustworthiness_score=allow_null_trustworthiness_score,
     )
 
 
 def _test_batch_get_trustworthiness_score_response(
-    responses, options, allow_none_response=False, allow_null_trustworthiness_score=False
+    responses, options, allow_null_trustworthiness_score=False
 ) -> None:
     """Property tests the responses of a batch get_trustworthiness_score based on the options dictionary and returned responses."""
     assert responses is not None
@@ -175,7 +163,6 @@ def _test_batch_get_trustworthiness_score_response(
         _is_valid_get_trustworthiness_score_response(
             response,
             options,
-            allow_none_response=allow_none_response,
             allow_null_trustworthiness_score=allow_null_trustworthiness_score,
         )
         for response in responses
@@ -315,7 +302,6 @@ def test_get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
     print("TLM Batch Responses:", responses)
-    assert all(is_trustworthiness_score_json_format(response) for response in responses)
     _test_batch_get_trustworthiness_score_response(responses, options)
 
 
@@ -350,7 +336,6 @@ def test_get_trustworthiness_score_async(
         )
     )
     print("TLM Batch Responses:", responses)
-    assert all(is_trustworthiness_score_json_format(response) for response in responses)
     _test_batch_get_trustworthiness_score_response(responses, options)
 
 
@@ -371,7 +356,4 @@ def test_try_get_trustworithness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
     print("TLM Batch Responses:", responses)
-    assert all(
-        response is None or is_trustworthiness_score_json_format(response) for response in responses
-    )
     _test_batch_get_trustworthiness_score_response(responses, options)

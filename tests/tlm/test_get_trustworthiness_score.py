@@ -6,13 +6,15 @@ import pytest
 from cleanlab_studio.studio.trustworthy_language_model import TLM
 
 
-def is_trustworthiness_score_json_format(response: Any) -> bool:
+def is_trustworthiness_score_json_format(
+    response: Any, allow_null_trustworthiness_score: bool = False
+) -> bool:
     """Returns True if the response is a trustworthiness score in JSON format with valid range."""
     return (
         isinstance(response, dict)
         and "trustworthiness_score" in response
         and (
-            response["trustworthiness_score"] is None
+            (allow_null_trustworthiness_score and response["trustworthiness_score"] is None)
             or (
                 isinstance(response["trustworthiness_score"], float)
                 and 0.0 <= response["trustworthiness_score"] <= 1.0
