@@ -154,3 +154,10 @@ def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
     assert response is not None
     assert isinstance(response, list)
     assert all(is_tlm_score_response_with_error(r) for r in response)
+
+
+@pytest.fixture(autouse=True)
+def reset_tlm(tlm):
+    original_timeout = tlm._timeout
+    yield
+    tlm._timeout = original_timeout
