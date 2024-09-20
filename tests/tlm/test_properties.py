@@ -19,7 +19,7 @@ from tests.tlm.test_get_trustworthiness_score import (
 )
 from tests.tlm.test_prompt import is_tlm_response
 
-test_prompt = make_text_unique(TEST_PROMPT)
+test_prompt = make_text_unique(str(TEST_PROMPT))
 test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 
