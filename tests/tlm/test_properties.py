@@ -8,7 +8,9 @@ from cleanlab_studio.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_studio.studio.trustworthy_language_model import TLM
-from tests.tlm.test_get_trustworthiness_score import is_trustworthiness_score
+from tests.tlm.test_get_trustworthiness_score import (
+    is_trustworthiness_score_json_format,
+)
 from tests.tlm.test_prompt import is_tlm_response
 
 excluded_tlm_models = ["claude-3-sonnet", "claude-3.5-sonnet"]
@@ -313,7 +315,8 @@ def test_get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
     print("TLM Batch Responses:", responses)
-    _test_batch_get_trustworthiness_score_response(responses, {})
+    assert all(is_trustworthiness_score_json_format(response) for response in responses)
+    _test_batch_get_trustworthiness_score_response(responses, options)
 
 
 @pytest.mark.parametrize("model", valid_tlm_models)
@@ -347,6 +350,7 @@ def test_get_trustworthiness_score_async(
         )
     )
     print("TLM Batch Responses:", responses)
+    assert all(is_trustworthiness_score_json_format(response) for response in responses)
     _test_batch_get_trustworthiness_score_response(responses, options)
 
 
@@ -367,4 +371,7 @@ def test_try_get_trustworithness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
     print("TLM Batch Responses:", responses)
-    _test_batch_get_trustworthiness_score_response(responses, options, allow_none_response=False)
+    assert all(
+        response is None or is_trustworthiness_score_json_format(response) for response in responses
+    )
+    _test_batch_get_trustworthiness_score_response(responses, options)
