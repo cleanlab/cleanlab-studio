@@ -43,6 +43,21 @@ def is_tlm_response(
     return False
 
 
+def is_tlm_response_with_error(response: Any) -> bool:
+    """Returns True if the response is a TLMResponse with an error."""
+    return (
+        isinstance(response, dict)
+        and "response" in response
+        and response["response"] is None
+        and "trustworthiness_score" in response
+        and response["trustworthiness_score"] is None
+        and "log" in response
+        and "error" in response["log"]
+        and "message" in response["log"]["error"]
+        and "retryable" in response["log"]["error"]
+    )
+
+
 def test_single_prompt(tlm: TLM) -> None:
     """Tests running a single prompt in the TLM.
 
@@ -145,4 +160,11 @@ def test_batch_try_prompt_force_timeouts(tlm: TLM) -> None:
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
-    assert all(r is None for r in response)
+    assert all(is_tlm_response_with_error(r) for r in response)
+
+
+@pytest.fixture(autouse=True)
+def reset_tlm(tlm):
+    original_timeout = tlm._timeout
+    yield
+    tlm._timeout = original_timeout

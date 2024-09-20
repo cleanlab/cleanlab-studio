@@ -115,13 +115,14 @@ async def handle_tlm_client_error_from_resp(
         try:
             res_json = await resp.json()
             error_message = res_json["error"]
+            retryable = False
         except Exception:
             error_message = "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
-
+            retryable = True
         if batch_index is not None:
             error_message = f"Error executing query at index {batch_index}:\n{error_message}"
 
-        raise TlmBadRequest(error_message)
+        raise TlmBadRequest(error_message, retryable)
 
 
 async def handle_tlm_api_error_from_resp(

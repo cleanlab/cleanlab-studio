@@ -86,7 +86,7 @@ jobs:
         run:  cleanlab login --key "${{ secrets.CLEANLAB_STUDIO_CI_API_KEY }}"
       - name: Run tests
         run: |
-          pytest tests/tlm/test_properties.py --verbose
+          pytest -n auto tests/tlm/test_properties.py --verbose
       - name: Cache pytest results
         uses: actions/cache@v2
         with:
@@ -158,6 +158,6 @@ jobs:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           body: |
             :sparkles: **Tests completed!** :sparkles:
-            TLM Tests Results: ${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }} ${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }}
+            TLM Tests Results: ${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }}${{ env.TLM_TEST_RESULT }}
             TLM Property Tests Results: ${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}${{ env.PROPERTY_TEST_RESULT }}
             Click the Github Actions run log for more information.
