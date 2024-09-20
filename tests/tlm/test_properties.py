@@ -287,7 +287,6 @@ def test_get_trustworthiness_score(
     """Tests running get_trustworthiness_score in the TLM for all quality_presets, model types and single/batch prompt."""
     # get TLMs and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
-    tlm_no_options = tlm_dict[quality_preset][model]["tlm_no_options"]
     options = tlm_dict[quality_preset][model]["options"]
     print("TLM with no options called on batch query run.")
     print("TLM Options for run:", options)
@@ -298,7 +297,7 @@ def test_get_trustworthiness_score(
     _test_get_trustworthiness_score_response(response, options)
 
     # test prompt with batch prompt
-    responses = tlm_no_options.get_trustworthiness_score(
+    responses = tlm.get_trustworthiness_score(
         ["What is the capital of France?", "What is the capital of Ukraine?"], ["USA", "Kyiv"]
     )
     print("TLM Batch Responses:", responses)
