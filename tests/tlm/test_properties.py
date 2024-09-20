@@ -19,7 +19,7 @@ from tests.tlm.test_get_trustworthiness_score import (
 )
 from tests.tlm.test_prompt import is_tlm_response
 
-test_prompt = [make_text_unique(prompt) for prompt in [TEST_PROMPT]][0]
+test_prompt_single = make_text_unique(TEST_PROMPT)
 test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 
@@ -194,7 +194,7 @@ async def _run_get_trustworthiness_score_async(
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running a prompt in the TLM for all quality_presets, model types and single/batch prompt."""
-    print("Testing with prompt:", test_prompt)
+    print("Testing with prompt:", test_prompt_single)
     print("Testing with batch prompt:", test_prompt_batch)
     # get TLMs and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
@@ -207,7 +207,7 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
     print("TLM Options for run:", options)
 
     # test prompt with single prompt
-    response = tlm_no_options.prompt(test_prompt)
+    response = tlm_no_options.prompt(test_prompt_single)
     print("TLM Single Response:", response)
     _test_prompt_response(
         response,
@@ -229,7 +229,7 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running a prompt_async in the TLM for all quality_presets, model types and single/batch prompt."""
-    print("Testing with prompt:", test_prompt)
+    print("Testing with prompt:", test_prompt_single)
     print("Testing with batch prompt:", test_prompt_batch)
     # get TLMs and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
@@ -242,7 +242,7 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
     print("TLM Options for run:", options)
 
     # test prompt with single prompt
-    response = asyncio.run(_run_prompt_async(tlm_no_options, test_prompt))
+    response = asyncio.run(_run_prompt_async(tlm_no_options, test_prompt_single))
     print("TLM Single Response:", response)
     _test_prompt_response(
         response, {}, allow_null_trustworthiness_score=allow_null_trustworthiness_score
@@ -289,7 +289,7 @@ def test_get_trustworthiness_score(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str
 ) -> None:
     """Tests running get_trustworthiness_score in the TLM for all quality_presets, model types and single/batch prompt."""
-    print("Testing with prompt/response:", test_prompt, TEST_RESPONSE)
+    print("Testing with prompt/response:", test_prompt_single, TEST_RESPONSE)
     print("Testing with batch prompt/response:", test_prompt_batch, TEST_RESPONSE_BATCH)
     # get TLMs and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
@@ -299,7 +299,7 @@ def test_get_trustworthiness_score(
     print("TLM Options for run:", options)
 
     # test prompt with single prompt
-    response = tlm.get_trustworthiness_score(test_prompt, TEST_RESPONSE)
+    response = tlm.get_trustworthiness_score(test_prompt_single, TEST_RESPONSE)
     print("TLM Single Response:", response)
     _test_get_trustworthiness_score_response(response, options)
 
@@ -315,7 +315,7 @@ def test_get_trustworthiness_score_async(
     tlm_dict: Dict[str, Any], model: str, quality_preset: str
 ) -> None:
     """Tests running get_trustworthiness_score_async in the TLM for all quality_presets, model types and single/batch prompt."""
-    print("Testing with prompt/response:", test_prompt, TEST_RESPONSE)
+    print("Testing with prompt/response:", test_prompt_single, TEST_RESPONSE)
     print("Testing with batch prompt/response:", test_prompt_batch, TEST_RESPONSE_BATCH)
     # get TLMs and options dictionary based on parameters
     tlm = tlm_dict[quality_preset][model]["tlm"]
@@ -326,7 +326,7 @@ def test_get_trustworthiness_score_async(
 
     # test prompt with single prompt
     response = asyncio.run(
-        _run_get_trustworthiness_score_async(tlm_no_options, test_prompt, TEST_RESPONSE)
+        _run_get_trustworthiness_score_async(tlm_no_options, test_prompt_single, TEST_RESPONSE)
     )
     print("TLM Single Response:", response)
     _test_get_trustworthiness_score_response(response, {})
