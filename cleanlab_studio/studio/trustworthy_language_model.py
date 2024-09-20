@@ -204,6 +204,9 @@ class TLM:
         if "log" in options_dict.keys() and len(options_dict["log"]) > 0:
             self._return_log = True
 
+        if "custom_eval_criteria" in options_dict.keys():
+            self._return_log = True
+
         # explicitly specify the default model
         self._options = {**{"model": _TLM_DEFAULT_MODEL}, **options_dict}
 
@@ -787,6 +790,7 @@ class TLMOptions(TypedDict):
     num_consistency_samples: NotRequired[int]
     use_self_reflection: NotRequired[bool]
     log: NotRequired[List[str]]
+    custom_eval_criteria: NotRequired[List[Dict[str, Any]]]
 
 
 def is_notebook() -> bool:
