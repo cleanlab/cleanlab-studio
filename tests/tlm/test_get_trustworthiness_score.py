@@ -6,13 +6,15 @@ import pytest
 from cleanlab_studio.studio.trustworthy_language_model import TLM
 
 
-def is_trustworthiness_score_json_format(response: Any) -> bool:
+def is_trustworthiness_score_json_format(
+    response: Any, allow_null_trustworthiness_score: bool = False
+) -> bool:
     """Returns True if the response is a trustworthiness score in JSON format with valid range."""
     return (
         isinstance(response, dict)
         and "trustworthiness_score" in response
         and (
-            response["trustworthiness_score"] is None
+            (allow_null_trustworthiness_score and response["trustworthiness_score"] is None)
             or (
                 isinstance(response["trustworthiness_score"], float)
                 and 0.0 <= response["trustworthiness_score"] <= 1.0
@@ -152,3 +154,10 @@ def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
     assert response is not None
     assert isinstance(response, list)
     assert all(is_tlm_score_response_with_error(r) for r in response)
+
+
+@pytest.fixture(autouse=True)
+def reset_tlm(tlm):
+    original_timeout = tlm._timeout
+    yield
+    tlm._timeout = original_timeout
