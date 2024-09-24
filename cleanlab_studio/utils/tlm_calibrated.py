@@ -90,8 +90,10 @@ class TLMCalibrated:
             )
 
         # using pandas so that NaN values are handled correctly
-        ratings = pd.Series(ratings)
-        ratings_normalized = (ratings - ratings.min()) / (ratings.max() - ratings.min())
+        ratings_series = pd.Series(ratings)
+        ratings_normalized = (ratings_series - ratings_series.min()) / (
+            ratings_series.max() - ratings_series.min()
+        )
 
         self._rf_model.fit(extracted_scores, ratings_normalized.values)
 
@@ -109,6 +111,7 @@ class TLMCalibrated:
 
         is_single_query = isinstance(tlm_scores, dict)
         if is_single_query:
+            assert not isinstance(tlm_scores, list)
             tlm_scores = [tlm_scores]
         tlm_scores_df = pd.DataFrame(tlm_scores)
 
