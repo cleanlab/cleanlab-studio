@@ -6,18 +6,24 @@ import pytest
 from cleanlab_studio.errors import TlmBadRequest, ValidationError
 from cleanlab_studio.studio.studio import Studio
 from cleanlab_studio.studio.trustworthy_language_model import TLM
+from tests.tlm.conftest import make_text_unique
+from tests.tlm.constants import (
+    CHARACTERS_PER_TOKEN,
+    MAX_COMBINED_LENGTH_TOKENS,
+    MAX_PROMPT_LENGTH_TOKENS,
+    MAX_RESPONSE_LENGTH_TOKENS,
+    TEST_PROMPT,
+    TEST_PROMPT_BATCH,
+    TEST_RESPONSE,
+    TEST_RESPONSE_BATCH,
+)
 
 from .test_get_trustworthiness_score import is_tlm_score_response_with_error
 from .test_prompt import is_tlm_response_with_error
 
 np.random.seed(0)
-
-
-MAX_PROMPT_LENGTH_TOKENS: int = 70_000
-MAX_RESPONSE_LENGTH_TOKENS: int = 15_000
-MAX_COMBINED_LENGTH_TOKENS: int = 70_000
-
-CHARACTERS_PER_TOKEN: int = 4
+test_prompt = make_text_unique(TEST_PROMPT)
+test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 
 def assert_prompt_too_long_error(response: Any, index: int):
@@ -86,7 +92,7 @@ def test_prompt_too_long_exception_batch_prompt(tlm: TLM, num_prompts: int):
     Error message should indicate which the batch index for which the prompt is too long.
     """
     # create batch of prompts with one prompt that is too long
-    prompts = ["What is the capital of France?"] * num_prompts
+    prompts = [test_prompt] * num_prompts
     prompt_too_long_index = np.random.randint(0, num_prompts)
     prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
@@ -104,7 +110,7 @@ def test_prompt_too_long_exception_batch_prompt(tlm: TLM, num_prompts: int):
 def test_prompt_too_long_exception_try_prompt(tlm: TLM, num_prompts: int):
     """Tests that None is returned when prompt is too long when calling tlm.try_prompt with a batch of prompts."""
     # create batch of prompts with one prompt that is too long
-    prompts = ["What is the capital of France?"] * num_prompts
+    prompts = [test_prompt] * num_prompts
     prompt_too_long_index = np.random.randint(0, num_prompts)
     prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
@@ -134,8 +140,8 @@ def test_response_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
     Error message should indicate which the batch index for which the prompt is too long.
     """
     # create batch of prompts with one prompt that is too long
-    prompts = ["What is the capital of France?"] * num_prompts
-    responses = ["Paris"] * num_prompts
+    prompts = [test_prompt] * num_prompts
+    responses = [TEST_RESPONSE] * num_prompts
     response_too_long_index = np.random.randint(0, num_prompts)
     responses[response_too_long_index] = (
         "a" * (MAX_RESPONSE_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
@@ -158,8 +164,8 @@ def test_response_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
 def test_response_too_long_exception_try_score(tlm: TLM, num_prompts: int):
     """Tests that None is returned when prompt is too long when calling tlm.try_get_trustworthiness_score with a batch of prompts."""
     # create batch of prompts with one prompt that is too long
-    prompts = ["What is the capital of France?"] * num_prompts
-    responses = ["Paris"] * num_prompts
+    prompts = [test_prompt] * num_prompts
+    responses = [TEST_RESPONSE] * num_prompts
     response_too_long_index = np.random.randint(0, num_prompts)
     responses[response_too_long_index] = (
         "a" * (MAX_RESPONSE_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
@@ -194,8 +200,8 @@ def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
     Error message should indicate which the batch index for which the prompt is too long.
     """
     # create batch of prompts with one prompt that is too long
-    prompts = ["What is the capital of France?"] * num_prompts
-    responses = ["Paris"] * num_prompts
+    prompts = [test_prompt] * num_prompts
+    responses = [TEST_RESPONSE] * num_prompts
     prompt_too_long_index = np.random.randint(0, num_prompts)
     prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
@@ -216,8 +222,8 @@ def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
 def test_prompt_too_long_exception_try_score(tlm: TLM, num_prompts: int):
     """Tests that None is returned when prompt is too long when calling tlm.try_get_trustworthiness_score with a batch of prompts."""
     # create batch of prompts with one prompt that is too long
-    prompts = ["What is the capital of France?"] * num_prompts
-    responses = ["Paris"] * num_prompts
+    prompts = [test_prompt] * num_prompts
+    responses = [TEST_RESPONSE] * num_prompts
     prompt_too_long_index = np.random.randint(0, num_prompts)
     prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
@@ -250,8 +256,8 @@ def test_prompt_and_response_combined_too_long_exception_batch_score(tlm: TLM, n
     Error message should indicate which the batch index for which the prompt is too long.
     """
     # create batch of prompts with one prompt that is too long
-    prompts = ["What is the capital of France?"] * num_prompts
-    responses = ["Paris"] * num_prompts
+    prompts = [test_prompt] * num_prompts
+    responses = [TEST_RESPONSE] * num_prompts
     combined_too_long_index = np.random.randint(0, num_prompts)
 
     max_prompt_length = MAX_COMBINED_LENGTH_TOKENS - MAX_RESPONSE_LENGTH_TOKENS + 1
@@ -272,8 +278,8 @@ def test_prompt_and_response_combined_too_long_exception_batch_score(tlm: TLM, n
 def test_prompt_and_response_combined_too_long_exception_try_score(tlm: TLM, num_prompts: int):
     """Tests that appropriate error is returned when prompt + response is too long when calling tlm.try_get_trustworthiness_score with a batch of prompts."""
     # create batch of prompts with one prompt that is too long
-    prompts = ["What is the capital of France?"] * num_prompts
-    responses = ["Paris"] * num_prompts
+    prompts = [test_prompt] * num_prompts
+    responses = [TEST_RESPONSE] * num_prompts
     combined_too_long_index = np.random.randint(0, num_prompts)
     max_prompt_length = MAX_COMBINED_LENGTH_TOKENS - MAX_RESPONSE_LENGTH_TOKENS + 1
     prompts[combined_too_long_index] = "a" * max_prompt_length * CHARACTERS_PER_TOKEN
