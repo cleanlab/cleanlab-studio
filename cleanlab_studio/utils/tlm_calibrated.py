@@ -15,6 +15,7 @@ import numpy.typing as npt
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.exceptions import NotFittedError
+from sklearn.utils.validation import check_is_fitted
 
 from cleanlab_studio.errors import ValidationError, TlmNotCalibratedError
 from cleanlab_studio.internal.types import TLMQualityPreset
@@ -107,6 +108,13 @@ class TLMCalibrated:
         Similar to [`TLM.get_trustworthiness_score()`](../trustworthy_language_model/#method-get_trustworthiness_score),
         view documentation there for expected input arguments and outputs.
         """
+        try:
+            check_is_fitted(self._rf_model)
+        except NotFittedError:
+            raise TlmNotCalibratedError(
+                "TLMCalibrated has to be calibrated before scoring new data, use the .fit() method to calibrate the model."
+            )
+
         tlm_scores = self._tlm.get_trustworthiness_score(prompt, response)
 
         is_single_query = isinstance(tlm_scores, dict)
@@ -117,12 +125,7 @@ class TLMCalibrated:
 
         extracted_scores = self._extract_tlm_scores(tlm_scores_df)
 
-        try:
-            tlm_scores_df["calibrated_score"] = self._rf_model.predict(extracted_scores)
-        except NotFittedError:
-            raise TlmNotCalibratedError(
-                "TLMCalibrated has to be calibrated before scoring new data, use the .fit() method to calibrate the model."
-            )
+        tlm_scores_df["calibrated_score"] = self._rf_model.predict(extracted_scores)
 
         if is_single_query:
             return tlm_scores_df.to_dict(orient="records")[0]
