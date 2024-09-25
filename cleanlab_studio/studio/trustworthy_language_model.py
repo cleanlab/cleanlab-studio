@@ -782,6 +782,11 @@ class TLMOptions(TypedDict):
 
         log (List[str], default = []): optionally specify additional logs or metadata to return.
         For instance, include "explanation" here to get explanations of why a response is scored with low trustworthiness.
+
+        custom_eval_criteria (List[Dict[str, Any]], default = []): optionally specify custom evalution criteria.
+        The expected input format is a list of dictionaries, where each dictionary has the following keys:
+        - name: name of the evaluation criteria
+        - criteria: the instruction for the evaluation criteria
     """
 
     model: NotRequired[str]

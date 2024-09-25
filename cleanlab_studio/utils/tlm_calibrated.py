@@ -13,9 +13,6 @@ from typing import Optional, Sequence, Union, List
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.exceptions import NotFittedError
-from sklearn.utils.validation import check_is_fitted
 
 from cleanlab_studio.errors import ValidationError, TlmNotCalibratedError
 from cleanlab_studio.internal.types import TLMQualityPreset
@@ -36,6 +33,14 @@ class TLMCalibrated:
         Use `Studio.TLMCalibrated()` instead of this method to initialize a TLMCalibrated object.
         lazydocs: ignore
         """
+        try:
+            from sklearn.ensemble import RandomForestRegressor
+        except ImportError:
+            raise ImportError(
+                "Cannot import scikit-learn which is required to use TLMCalibrated. "
+                "Please install it using `pip install scikit-learn` and try again."
+            )
+
         self._api_key = api_key
 
         if quality_preset not in {"base", "low", "medium"}:
@@ -108,6 +113,15 @@ class TLMCalibrated:
         Similar to [`TLM.get_trustworthiness_score()`](../trustworthy_language_model/#method-get_trustworthiness_score),
         view documentation there for expected input arguments and outputs.
         """
+        try:
+            from sklearn.exceptions import NotFittedError
+            from sklearn.utils.validation import check_is_fitted
+        except ImportError:
+            raise ImportError(
+                "Cannot import scikit-learn which is required to use TLMCalibrated. "
+                "Please install it using `pip install scikit-learn` and try again."
+            )
+
         try:
             check_is_fitted(self._rf_model)
         except NotFittedError:

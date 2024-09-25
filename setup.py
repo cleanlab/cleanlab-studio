@@ -63,7 +63,6 @@ setup(
         "openpyxl>=3.0.0,!=3.1.0",
         "validators>=0.20.0",
         "matplotlib>=3.4.0",
-        "scikit-learn",
     ],
     entry_points="""
         [console_scripts]
