@@ -1,20 +1,21 @@
 """
-TLM Calibrated is a variant of the Trustworthy Language Model (TLM) that facilitates the calibration of trustworthiness scores 
+TLM Calibrated is a variant of the Trustworthy Language Model (TLM) that facilitates the calibration of trustworthiness scores
 using existing ratings for prompt-response pairs, which allows for better alignment of the TLM scores in specialized-use cases.
 
-**This module is not meant to be imported and used directly.** 
-Instead, use [`Studio.TLMCalibrated()`](/reference/python/studio/#method-tlmcalibrated) to instantiate a [TLMCalibrated](#class-tlmcalibrated) object, 
+**This module is not meant to be imported and used directly.**
+Instead, use [`Studio.TLMCalibrated()`](/reference/python/studio/#method-tlmcalibrated) to instantiate a [TLMCalibrated](#class-tlmcalibrated) object,
 and then you can use the methods like [`get_trustworthiness_score()`](#method-get_trustworthiness_score) documented on this page.
 """
 
 from __future__ import annotations
-from typing import Optional, Sequence, Union, List
+
+from typing import List, Optional, Sequence, Union, cast
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cleanlab_studio.errors import ValidationError, TlmNotCalibratedError
+from cleanlab_studio.errors import TlmNotCalibratedError, ValidationError
 from cleanlab_studio.internal.types import TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLM, TLMOptions, TLMScore
 
@@ -34,7 +35,7 @@ class TLMCalibrated:
         lazydocs: ignore
         """
         try:
-            from sklearn.ensemble import RandomForestRegressor
+            from sklearn.ensemble import RandomForestRegressor  # type: ignore
         except ImportError:
             raise ImportError(
                 "Cannot import scikit-learn which is required to use TLMCalibrated. "
@@ -114,8 +115,8 @@ class TLMCalibrated:
         view documentation there for expected input arguments and outputs.
         """
         try:
-            from sklearn.exceptions import NotFittedError
-            from sklearn.utils.validation import check_is_fitted
+            from sklearn.exceptions import NotFittedError  # type: ignore
+            from sklearn.utils.validation import check_is_fitted  # type: ignore
         except ImportError:
             raise ImportError(
                 "Cannot import scikit-learn which is required to use TLMCalibrated. "
@@ -142,9 +143,9 @@ class TLMCalibrated:
         tlm_scores_df["calibrated_score"] = self._rf_model.predict(extracted_scores)
 
         if is_single_query:
-            return tlm_scores_df.to_dict(orient="records")[0]
+            return cast(TLMScoreWithCalibration, tlm_scores_df.to_dict(orient="records")[0])
 
-        return tlm_scores_df.to_dict(orient="records")
+        return cast(List[TLMScoreWithCalibration], tlm_scores_df.to_dict(orient="records"))
 
     def _extract_tlm_scores(self, tlm_scores_df: pd.DataFrame) -> npt.NDArray[np.float64]:
         """
