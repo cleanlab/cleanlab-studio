@@ -96,6 +96,10 @@ class TlmPartialSuccess(APIError):
     pass
 
 
+class TlmNotCalibratedError(HandledError):
+    pass
+
+
 class UnsupportedVersionError(HandledError):
     def __init__(self) -> None:
         super().__init__(
