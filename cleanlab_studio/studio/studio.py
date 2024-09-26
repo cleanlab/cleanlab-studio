@@ -29,7 +29,7 @@ from cleanlab_studio.internal.util import (
     init_dataset_source,
     telemetry,
 )
-from cleanlab_studio.utils import tlm_lite
+from cleanlab_studio.utils import tlm_lite, tlm_calibrated
 
 from . import enrichment, inference, trustworthy_language_model
 
@@ -646,6 +646,27 @@ class Studio:
         return tlm_lite.TLMLite(
             self._api_key,
             response_model,
+            quality_preset,
+            options=options,
+            timeout=timeout,
+            verbose=verbose,
+        )
+
+    def TLMCalibrated(
+        self,
+        quality_preset: TLMQualityPreset = "medium",
+        *,
+        options: Optional[trustworthy_language_model.TLMOptions] = None,
+        timeout: Optional[float] = None,
+        verbose: Optional[bool] = None,
+    ) -> tlm_calibrated.TLMCalibrated:
+        """
+        Instantiate a version of the Trustworthy Language Model that you can calibrate using existing ratings for example prompt-response pairs.
+        For more details, see the documentation of:
+        [cleanlab_studio.utils.tlm_calibrated.TLMCalibrated](../utils.tlm_calibrated/#class-tlmcalibrated)
+        """
+        return tlm_calibrated.TLMCalibrated(
+            self._api_key,
             quality_preset,
             options=options,
             timeout=timeout,

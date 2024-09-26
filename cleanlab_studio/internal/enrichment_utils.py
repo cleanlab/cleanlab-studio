@@ -14,7 +14,7 @@ Replacement = Tuple[str, str]
 
 def get_prompt_outputs(
     studio: Studio, prompt: str, data: pd.DataFrame, **kwargs: Any
-) -> List[Optional[TLMResponse]]:
+) -> List[TLMResponse]:
     """Returns the outputs of the prompt for each row in the dataframe."""
     default_tlm_options = {"model": "claude-3-haiku"}
     tlm_options = kwargs.get("options", {})

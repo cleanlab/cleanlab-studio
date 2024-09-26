@@ -1,7 +1,7 @@
 # Note to developers:
 # Consider if backend's MIN_CLI_VERSION needs updating when pushing any changes to this file.
 
-__version__ = "2.4.4"
+__version__ = "2.5.1"
 
 SCHEMA_VERSION = "0.2.0"
 MIN_SCHEMA_VERSION = "0.1.0"

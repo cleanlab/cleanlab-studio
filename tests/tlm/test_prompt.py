@@ -4,6 +4,11 @@ from typing import Any
 import pytest
 
 from cleanlab_studio.studio.trustworthy_language_model import TLM
+from tests.tlm.conftest import make_text_unique
+from tests.tlm.constants import TEST_PROMPT, TEST_PROMPT_BATCH
+
+test_prompt = make_text_unique(TEST_PROMPT)
+test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 
 def is_tlm_response(
@@ -38,6 +43,21 @@ def is_tlm_response(
     return False
 
 
+def is_tlm_response_with_error(response: Any) -> bool:
+    """Returns True if the response is a TLMResponse with an error."""
+    return (
+        isinstance(response, dict)
+        and "response" in response
+        and response["response"] is None
+        and "trustworthiness_score" in response
+        and response["trustworthiness_score"] is None
+        and "log" in response
+        and "error" in response["log"]
+        and "message" in response["log"]["error"]
+        and "retryable" in response["log"]["error"]
+    )
+
+
 def test_single_prompt(tlm: TLM) -> None:
     """Tests running a single prompt in the TLM.
 
@@ -48,7 +68,7 @@ def test_single_prompt(tlm: TLM) -> None:
     """
 
     # act -- run a single prompt
-    response = tlm.prompt("What is the capital of France?")
+    response = tlm.prompt(test_prompt)
 
     # assert
     # - response is not None
@@ -68,7 +88,7 @@ def test_batch_prompt(tlm: TLM) -> None:
     - Each response should be of type TLMResponse
     """
     # act -- run a batch prompt
-    response = tlm.prompt(["What is the capital of France?"] * 3)
+    response = tlm.prompt(test_prompt_batch)
 
     # assert
     # - response is not None
@@ -94,7 +114,7 @@ def test_batch_prompt_force_timeouts(tlm: TLM) -> None:
     # assert -- timeout is thrown
     with pytest.raises(asyncio.TimeoutError):
         # act -- run a batch prompt
-        tlm.prompt(["What is the capital of France?"] * 3)
+        tlm.prompt(test_prompt_batch)
 
 
 def test_batch_try_prompt(tlm: TLM) -> None:
@@ -106,7 +126,7 @@ def test_batch_try_prompt(tlm: TLM) -> None:
     - No exceptions are raised
     """
     # act -- run a batch prompt
-    response = tlm.try_prompt(["What is the capital of France?"] * 3)
+    response = tlm.try_prompt(test_prompt_batch)
 
     # assert
     # - response is not None
@@ -132,7 +152,7 @@ def test_batch_try_prompt_force_timeouts(tlm: TLM) -> None:
     tlm._timeout = 0.0001
 
     # act -- run a batch prompt
-    response = tlm.try_prompt(["What is the capital of France?"] * 3)
+    response = tlm.try_prompt(test_prompt_batch)
 
     # assert
     # - response is not None
@@ -140,4 +160,11 @@ def test_batch_try_prompt_force_timeouts(tlm: TLM) -> None:
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
-    assert all(r is None for r in response)
+    assert all(is_tlm_response_with_error(r) for r in response)
+
+
+@pytest.fixture(autouse=True)
+def reset_tlm(tlm):
+    original_timeout = tlm._timeout
+    yield
+    tlm._timeout = original_timeout

@@ -20,5 +20,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Ensure **final** changes made to the TLM code are tested before merging. To run the TLM tests, comment `/test-tlm` on this PR.'
+              body: 'Ensure **final** changes made to the TLM code are tested before merging. To run the TLM tests, comment `/test-tlm` on this PR. To re-run failed property tests, comment `/rerun-failed-test-tlm` instead.'
             })

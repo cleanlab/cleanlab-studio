@@ -4,16 +4,22 @@ TLM Lite is a version of the [Trustworthy Language Model (TLM)](../trustworthy_l
 **This module is not meant to be imported and used directly.** Instead, use [`Studio.TLMLite()`](/reference/python/studio/#method-tlmlite) to instantiate a [TLMLite](#class-tlmlite) object, and then you can use the methods like [`prompt()`](#method-prompt) documented on this page.
 """
 
-from typing import List, Dict, Optional, Union, cast, Sequence
+from typing import Dict, List, Optional, Sequence, Union, cast
+
 import numpy as np
 
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.tlm.validation import (
-    validate_tlm_lite_score_options,
     get_tlm_lite_response_options,
+    validate_tlm_lite_score_options,
 )
 from cleanlab_studio.internal.types import TLMQualityPreset
-from cleanlab_studio.studio.trustworthy_language_model import TLM, TLMOptions, TLMResponse, TLMScore
+from cleanlab_studio.studio.trustworthy_language_model import (
+    TLM,
+    TLMOptions,
+    TLMResponse,
+    TLMScore,
+)
 
 
 class TLMLite:
@@ -110,12 +116,20 @@ class TLMLite:
         """
         prompt_response = self._tlm_response.prompt(prompt)
 
-        if isinstance(prompt, Sequence) and isinstance(prompt_response, list):
-            response = [r["response"] for r in prompt_response]
+        if (
+            isinstance(prompt, Sequence)
+            and isinstance(prompt_response, list)
+            and all(r["response"] is not None for r in prompt_response)
+        ):
+            response = cast(List[str], [r["response"] for r in prompt_response])
             perplexity = [r["log"]["perplexity"] for r in prompt_response]
             return self._batch_score(prompt, response, perplexity)
 
-        elif isinstance(prompt, str) and isinstance(prompt_response, dict):
+        elif (
+            isinstance(prompt, str)
+            and isinstance(prompt_response, dict)
+            and prompt_response["response"] is not None
+        ):
             return self._score(
                 prompt,
                 prompt_response["response"],
@@ -128,15 +142,15 @@ class TLMLite:
     def try_prompt(
         self,
         prompt: Sequence[str],
-    ) -> List[Optional[TLMResponse]]:
+    ) -> List[TLMResponse]:
         """
         Similar to [`TLM.try_prompt()`](../trustworthy_language_model/#method-try_prompt), view documentation there for expected input arguments and outputs.
         """
         prompt_response = self._tlm_response.try_prompt(prompt)
-        prompt_succeeded_mask = [res is not None for res in prompt_response]
+        prompt_succeeded_mask = np.array([res["response"] is not None for res in prompt_response])
 
-        if not any(prompt_succeeded_mask):  # all prompts failed
-            return [None] * len(prompt)
+        if not np.any(prompt_succeeded_mask):  # all prompts failed
+            return prompt_response
 
         # handle masking with numpy for easier indexing
         prompt_succeeded = np.array(prompt)[prompt_succeeded_mask].tolist()
@@ -148,10 +162,10 @@ class TLMLite:
             prompt_succeeded, response_succeeded, perplexity_succeeded
         )
 
-        tlm_response = np.full(len(prompt), None)
+        tlm_response = np.array(prompt_response)
         tlm_response[prompt_succeeded_mask] = score_response_succeeded
 
-        return cast(List[Optional[TLMResponse]], tlm_response.tolist())
+        return cast(List[TLMResponse], tlm_response.tolist())
 
     def _score(
         self,
@@ -175,8 +189,6 @@ class TLMLite:
 
         if isinstance(score_response, dict):
             return {"response": response, **score_response}
-        elif isinstance(score_response, (float, int)):
-            return {"response": response, "trustworthiness_score": score_response}
         else:
             raise ValueError(f"score_response has invalid type {type(score_response)}")
 
@@ -206,12 +218,6 @@ class TLMLite:
         if all(isinstance(score, dict) for score in score_response):
             score_response = cast(List[TLMScore], score_response)
             return [{"response": res, **score} for res, score in zip(response, score_response)]
-        elif all(isinstance(score, (float, int)) for score in score_response):
-            score_response = cast(List[float], score_response)
-            return [
-                {"response": res, "trustworthiness_score": score}
-                for res, score in zip(response, score_response)
-            ]
         else:
             raise ValueError(f"score_response has invalid type")
 
@@ -220,7 +226,7 @@ class TLMLite:
         prompt: Sequence[str],
         response: Sequence[str],
         perplexity: Sequence[Optional[float]],
-    ) -> List[Optional[TLMResponse]]:
+    ) -> List[TLMResponse]:
         """
         Private method to get trustworthiness score for a batch of examples and process the outputs into TLMResponse dictionaries,
         handling any failures (errors of timeouts) by returning None in place of the failures.
@@ -239,16 +245,9 @@ class TLMLite:
 
         assert len(prompt) == len(score_response)
 
-        if all(score is None or isinstance(score, dict) for score in score_response):
-            score_response = cast(List[Optional[TLMScore]], score_response)
+        if all(isinstance(score, dict) for score in score_response):
             return [
                 {"response": res, **score} if score else None
-                for res, score in zip(response, score_response)
-            ]
-        elif all(score is None or isinstance(score, (float, int)) for score in score_response):
-            score_response = cast(List[Optional[float]], score_response)
-            return [
-                {"response": res, "trustworthiness_score": score} if score else None
                 for res, score in zip(response, score_response)
             ]
         else:
