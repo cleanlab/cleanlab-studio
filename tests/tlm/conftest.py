@@ -89,7 +89,7 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
     add_log_perplexity_score = np.random.choice([True, False])
 
     if add_max_tokens:
-        max_tokens = _TLM_MAX_TOKEN_RANGE[options.get("model", _TLM_DEFAULT_MODEL)]
+        max_tokens = _TLM_MAX_TOKEN_RANGE[options.get("model", _TLM_DEFAULT_MODEL)][1]
         options["max_tokens"] = int(np.random.randint(64, max_tokens))
     if add_use_self_reflection:
         options["use_self_reflection"] = random.choice([True, False])
