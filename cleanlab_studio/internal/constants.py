@@ -1,4 +1,4 @@
-from typing import List, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
 # TLM constants
 # prepend constants with _ so that they don't show up in help.cleanlab.ai docs
@@ -14,7 +14,15 @@ _VALID_TLM_MODELS: List[str] = [
 ]
 _TLM_DEFAULT_MODEL: str = "gpt-4o-mini"
 _TLM_MAX_RETRIES: int = 3  # TODO: finalize this number
-TLM_MAX_TOKEN_RANGE: Tuple[int, int] = (64, 4096)  # (min, max)
+_TLM_MAX_TOKEN_RANGE: Dict[str, Tuple[int, int]] = {  # model: (min, max)
+    "gpt-3.5-turbo-16k": (64, 4096),
+    "gpt-4": (64, 4096),
+    "gpt-4o": (64, 4096),
+    "gpt-4o-mini": (64, 4096),
+    "claude-3-haiku": (64, 512),
+    "claude-3-sonnet": (64, 512),
+    "claude-3.5-sonnet": (64, 512),
+}
 TLM_NUM_CANDIDATE_RESPONSES_RANGE: Tuple[int, int] = (1, 20)  # (min, max)
 TLM_NUM_CONSISTENCY_SAMPLES_RANGE: Tuple[int, int] = (0, 20)  # (min, max)
 TLM_VALID_LOG_OPTIONS: Set[str] = {"perplexity", "explanation"}

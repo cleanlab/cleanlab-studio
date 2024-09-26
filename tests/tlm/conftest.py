@@ -8,6 +8,8 @@ import pytest
 
 from cleanlab_studio import Studio
 from cleanlab_studio.internal.constants import (
+    _TLM_DEFAULT_MODEL,
+    _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
     _VALID_TLM_QUALITY_PRESETS,
 )
@@ -87,7 +89,8 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
     add_log_perplexity_score = np.random.choice([True, False])
 
     if add_max_tokens:
-        options["max_tokens"] = int(np.random.randint(64, 512))
+        max_tokens = _TLM_MAX_TOKEN_RANGE[options.get("model", _TLM_DEFAULT_MODEL)]
+        options["max_tokens"] = int(np.random.randint(64, max_tokens))
     if add_use_self_reflection:
         options["use_self_reflection"] = random.choice([True, False])
     if add_num_candidate_responses:
