@@ -47,6 +47,7 @@ jobs:
         run: |
           pytest tests/tlm/test_properties.py --last-failed --verbose
       - name: Cache pytest results
+        if: always() && github.event.comment.body == '/rerun-failed-test-tlm' # Ensure this runs even if tests above fail
         uses: actions/cache@v2
         with:
           path: .pytest_cache
