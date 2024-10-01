@@ -3,7 +3,7 @@ Methods for interfacing with deployed ML models (to produce predictions).
 
 **This module is not meant to be imported and used directly.** Instead, use [`Studio.get_model()`](../studio/#method-get_model) to instantiate a [Model](#class-model) object.
 
-The [Model Deployment tutorial](/tutorials/inference_api/) explains the end-to-end workflow for using Cleanlab Studio's model deployment functionality.
+The [Model Deployment tutorial](/studio/tutorials/cleanlab-studio-api/inference_api/) explains the end-to-end workflow for using Cleanlab Studio's model deployment functionality.
 """
 
 import abc
@@ -38,7 +38,8 @@ class Model(abc.ABC):
     def __init__(self, api_key: str, model_id: str):
         """Initializes a model.
 
-        **Objects of this class are not meant to be constructed directly.** Instead, use [`Studio.get_model()`](../studio/#method-get_model)."""
+        **Objects of this class are not meant to be constructed directly.** Instead, use [`Studio.get_model()`](../studio/#method-get_model).
+        """
         self._api_key = api_key
         self._model_id = model_id
 

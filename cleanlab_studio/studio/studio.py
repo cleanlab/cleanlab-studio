@@ -87,7 +87,7 @@ class Studio:
         Args:
             dataset: Object representing the dataset to upload. Currently supported formats include a `str` path to your dataset, a pandas, snowflake, or pyspark DataFrame.
             dataset_name: Name for your dataset in Cleanlab Studio (optional if uploading from filepath).
-            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/studio/concepts/datasets/#schema-updates).
             modality: [DEPRECATED] Optional parameter to override the modality of your dataset. If not provided, modality will be inferred.
             id_column: [DEPRECATED] Optional parameter to override the ID column of your dataset. If not provided, a monotonically increasing ID column will be generated.
 
@@ -131,7 +131,7 @@ class Studio:
 
         Args:
             url: URL to the dataset to upload.
-            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/studio/concepts/datasets/#schema-updates).
         """
         if isinstance(schema_overrides, dict):
             schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
@@ -162,7 +162,7 @@ class Studio:
             bigquery_project: BigQuery project ID.
             bigquery_dataset_id: BigQuery dataset ID.
             bigquery_table_id: BigQuery table ID.
-            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/studio/concepts/datasets/#schema-updates).
         """
         if isinstance(schema_overrides, dict):
             schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
@@ -191,7 +191,7 @@ class Studio:
 
         Args:
             bigframe: BigFrame object representing the dataset to upload.
-            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/guide/concepts/datasets/#schema-updates).
+            schema_overrides: Optional list of overrides you would like to make to the schema of your dataset. If not provided, all columns will be untyped. Format defined [here](/studio/concepts/datasets/#schema-updates).
         """
         if isinstance(schema_overrides, dict):
             schema_overrides = upload_helpers.convert_schema_overrides(schema_overrides)
@@ -227,7 +227,7 @@ class Studio:
         to_spark: bool = False,
     ) -> Any:
         """
-        Downloads [Cleanlab columns](/guide/concepts/cleanlab_columns/) for a cleanset.
+        Downloads [Cleanlab columns](/studio/concepts/cleanlab_columns/) for a cleanset.
 
         Args:
             cleanset_id: ID of cleanset to download columns from. To obtain cleanset ID from project ID use, [get_latest_cleanset_id](#method-get_latest_cleanset_id).
@@ -248,7 +248,7 @@ class Studio:
 
     def apply_corrections(self, cleanset_id: str, dataset: Any, keep_excluded: bool = False) -> Any:
         """
-        Applies corrections from a Cleanlab Studio cleanset to your dataset. This function takes in your local copy of the original dataset, as well as the `cleanset_id` for the cleanset generated from this dataset in the Project web interface. The function returns a copy of your original dataset, where the label column has been substituted with corrected labels that you selected (either manually or via auto-fix) in the Cleanlab Studio web interface Project, and the rows you marked as excluded will be excluded from the returned copy of your original dataset. Corrections should have been made by viewing your Project in the Cleanlab Studio web interface (see [Cleanlab Studio web quickstart](/guide/quickstart/web#review-issues-detected-in-your-dataset-and-correct-them)).
+        Applies corrections from a Cleanlab Studio cleanset to your dataset. This function takes in your local copy of the original dataset, as well as the `cleanset_id` for the cleanset generated from this dataset in the Project web interface. The function returns a copy of your original dataset, where the label column has been substituted with corrected labels that you selected (either manually or via auto-fix) in the Cleanlab Studio web interface Project, and the rows you marked as excluded will be excluded from the returned copy of your original dataset. Corrections should have been made by viewing your Project in the Cleanlab Studio web interface (see [Cleanlab Studio web quickstart](/studio/quickstart/web#review-issues-detected-in-your-dataset-and-correct-them)).
 
         The intended workflow is: create a Project, correct your Dataset automatically/manually in the web interface to generate a Cleanset (cleaned dataset), then call this function to make your original dataset locally look like the current Cleanset.
 
@@ -308,9 +308,9 @@ class Studio:
             modality: Modality of project (i.e. text, tabular, image).
             task_type: Type of ML task to perform. Select a supervised task type (i.e. "multi-class", "multi-label", "regression") if your dataset
                 has a label column you would like to predict values for or detect erroneous values in. Select "unsupervised" if your dataset has
-                no specific label column. See the [Projects Guide](/guide/concepts/projects/#machine-learning-task--dataset-type) for more
+                no specific label column. See the [Projects Guide](/studio/concepts/projects/#machine-learning-task--dataset-type) for more
                 information on task types.
-            model_type: Type of model to train (i.e. "fast", "regular"). See the [Projects Guide](/guide/concepts/projects/#model-type) for more information on model types.
+            model_type: Type of model to train (i.e. "fast", "regular"). See the [Projects Guide](/studio/concepts/projects/#model-type) for more information on model types.
             label_column: Name of column in dataset containing labels (if not supplied, we'll make our best guess). For "unsupervised" tasks, this should be `None`.
             feature_columns: List of columns to use as features for a tabular project. By default all columns are used as feature columns. This parameter is particularly useful if your dataset has a column containing unique IDs and you want to exclude that column from the feature columns.
             text_column: Name of column containing the text to train text modality project on (if not supplied and modality is "text" we'll make our best guess).
@@ -467,7 +467,7 @@ class Studio:
             the original dataset or downloaded Cleanlab columns.
 
         For image projects, a few images in the original dataset might fail to be processed due to poorly formatted data or invalid image file paths. Predicted probabilities will not be calculated for those rows.
-        The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/guide/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
+        The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/studio/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
 
         If you want to work with predicted probabilities for an image project, the recommended workflow is to download probabilities with the option `keep_id=True`, and then do a join with the original dataset on the ID column.
         Alternatively, you can follow the steps [here](/reference/python/studio#method-download_embeddings), and filter out the rows that were not analyzed. The filtered dataset will then have rows that align with the predicted probabilities DataFrame.
@@ -501,7 +501,7 @@ class Studio:
             `np.NDArray[float64]`: a 2D numpy array of feature embeddings of shape `N` by `N_EMBED`, where `N` is the number of rows in the original dataset, and `N_EMBED` is the dimension of the feature embeddings. The embedding-dimension depends on which neural network is used to represent your data (Cleanlab automatically identifies the best type of neural network for your data).
 
         For image projects, a few images in the original dataset might fail to be processed due to poorly formatted data or invalid image file paths.
-        Feature embeddings are not computed for those rows. The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/guide/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
+        Feature embeddings are not computed for those rows. The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/studio/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
         If you want to work with feature embeddings for an image project, the recommended workflow is as follows:
 
             1. When the image project completes, download the cleaset via `studio.download_cleanlab_columns`, and check whether the `is_not_analyzed` boolean column has any `True` values.
