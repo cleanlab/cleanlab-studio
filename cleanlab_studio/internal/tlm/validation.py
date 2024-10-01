@@ -3,8 +3,9 @@ from typing import Any, Dict, List, Sequence, Union
 
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.constants import (
+    _TLM_DEFAULT_MODEL,
+    _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
-    TLM_MAX_TOKEN_RANGE,
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
@@ -137,9 +138,10 @@ def validate_tlm_options(options: Any) -> None:
             if not isinstance(val, int):
                 raise ValidationError(f"Invalid type {type(val)}, max_tokens must be an integer")
 
-            if val < TLM_MAX_TOKEN_RANGE[0] or val > TLM_MAX_TOKEN_RANGE[1]:
+            model = options.get("model", _TLM_DEFAULT_MODEL)
+            if val < _TLM_MAX_TOKEN_RANGE[model][0] or val > _TLM_MAX_TOKEN_RANGE[model][1]:
                 raise ValidationError(
-                    f"Invalid value {val}, max_tokens must be in the range {TLM_MAX_TOKEN_RANGE}"
+                    f"Invalid value {val}, max_tokens for {model} must be in the range {_TLM_MAX_TOKEN_RANGE[model]}"
                 )
 
         elif option == "model":
