@@ -158,8 +158,8 @@ class TLMCalibrated:
         view documentation there for expected input arguments and outputs.
         """
         try:
-            from sklearn.exceptions import NotFittedError  # type: ignore
-            from sklearn.utils.validation import check_is_fitted  # type: ignore
+            from sklearn.exceptions import NotFittedError
+            from sklearn.utils.validation import check_is_fitted
         except ImportError:
             raise ImportError(
                 "Cannot import scikit-learn which is required to use TLMCalibrated. "
