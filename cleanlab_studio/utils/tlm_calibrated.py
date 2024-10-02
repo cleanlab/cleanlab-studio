@@ -127,7 +127,7 @@ class TLMCalibrated:
             check_is_fitted(self._rf_model)
         except NotFittedError:
             raise TlmNotCalibratedError(
-                "TLMCalibrated has to be calibrated before scoring new data, use the .fit() method to calibrate the model."
+                "TLMCalibrated has to be calibrated before prompting new data, use the .fit() method to calibrate the model."
             )
 
         tlm_response = self._tlm.prompt(prompt)
