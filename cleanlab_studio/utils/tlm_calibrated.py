@@ -17,7 +17,7 @@ import pandas as pd
 
 from cleanlab_studio.errors import TlmNotCalibratedError, ValidationError
 from cleanlab_studio.internal.types import TLMQualityPreset
-from cleanlab_studio.studio.trustworthy_language_model import TLM, TLMOptions, TLMScore
+from cleanlab_studio.studio.trustworthy_language_model import TLM, TLMOptions, TLMResponse, TLMScore
 
 
 class TLMCalibrated:
@@ -104,6 +104,49 @@ class TLMCalibrated:
 
         self._rf_model.fit(extracted_scores, ratings_normalized.values)
 
+    def prompt(
+        self, prompt: Union[str, Sequence[str]]
+    ) -> Union[TLMResponseWithCalibration, List[TLMResponseWithCalibration]]:
+        """
+        Gets response and a calibrated trustworthiness score for the given prompts,
+        make sure that the model has been calibrated by calling the `.fit()` method before using this method.
+
+        Similar to [`TLM.prompt()`](../trustworthy_language_model/#method-prompt),
+        view documentation there for expected input arguments and outputs.
+        """
+        try:
+            from sklearn.exceptions import NotFittedError  # type: ignore
+            from sklearn.utils.validation import check_is_fitted  # type: ignore
+        except ImportError:
+            raise ImportError(
+                "Cannot import scikit-learn which is required to use TLMCalibrated. "
+                "Please install it using `pip install scikit-learn` and try again."
+            )
+
+        try:
+            check_is_fitted(self._rf_model)
+        except NotFittedError:
+            raise TlmNotCalibratedError(
+                "TLMCalibrated has to be calibrated before scoring new data, use the .fit() method to calibrate the model."
+            )
+
+        tlm_response = self._tlm.prompt(prompt)
+
+        is_single_query = isinstance(tlm_response, dict)
+        if is_single_query:
+            assert not isinstance(tlm_response, list)
+            tlm_response = [tlm_response]
+        tlm_response_df = pd.DataFrame(tlm_response)
+
+        extracted_scores = self._extract_tlm_scores(tlm_response_df)
+
+        tlm_response_df["calibrated_score"] = self._rf_model.predict(extracted_scores)
+
+        if is_single_query:
+            return cast(TLMResponseWithCalibration, tlm_response_df.to_dict(orient="records")[0])
+
+        return cast(List[TLMResponseWithCalibration], tlm_response_df.to_dict(orient="records"))
+
     def get_trustworthiness_score(
         self, prompt: Union[str, Sequence[str]], response: Union[str, Sequence[str]]
     ) -> Union[TLMScoreWithCalibration, List[TLMScoreWithCalibration]]:
@@ -178,6 +221,19 @@ class TLMCalibrated:
         return all_scores
 
 
+class TLMResponseWithCalibration(TLMResponse):
+    """
+    A typed dict similar to [TLMResponse](../trustworthy_language_model/#class-tlmresponse) but containing an extra key `calibrated_score`.
+    View [TLMResponse](../trustworthy_language_model/#class-tlmresponse) for the description of the other keys in this dict.
+
+    Attributes:
+        calibrated_score (float, optional): score between 0 and 1 that has been calibrated to the provided ratings.
+        A higher score indicates a higher confidence that the response is correct/trustworthy.
+    """
+
+    calibrated_score: Optional[float]
+
+
 class TLMScoreWithCalibration(TLMScore):
     """
     A typed dict similar to [TLMScore](../trustworthy_language_model/#class-tlmscore) but containing an extra key `calibrated_score`.
@@ -185,7 +241,7 @@ class TLMScoreWithCalibration(TLMScore):
 
     Attributes:
         calibrated_score (float, optional): score between 0 and 1 that has been calibrated to the provided ratings.
-        A higher score indicates a higher confidence that the response is correct/trustworthy,
+        A higher score indicates a higher confidence that the response is correct/trustworthy.
     """
 
     calibrated_score: Optional[float]
