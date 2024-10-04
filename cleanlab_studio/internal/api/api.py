@@ -910,13 +910,19 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
 
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         # total number of tries = number of retries + original try
-        retries = kwargs.pop("retries", 0)
+        max_general_retries = kwargs.pop("retries", 0)
+        max_connection_error_retries = 20
 
         sleep_time = 0
         error_message = ""
 
-        num_try = 0
-        while num_try <= retries:
+        num_general_retry = 0
+        num_connection_error_retry = 0
+
+        while (
+            num_general_retry <= max_general_retries
+            and num_connection_error_retry <= max_connection_error_retries
+        ):
             await asyncio.sleep(sleep_time)
             try:
                 return await func(*args, **kwargs)
@@ -926,20 +932,34 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
                 )
                 raise
             except aiohttp.client_exceptions.ClientConnectorError as e:
-                # note: we don't increment num_try here, because we don't want connection errors to count against the total number of retries
-                sleep_time = 2**num_try
+                if num_connection_error_retry == (max_connection_error_retries // 2):
+                    warnings.warn(
+                        f"Connection error after {max_connection_error_retries // 2} retries. Retrying..."
+                    )
+                sleep_time = min(2**num_connection_error_retry, 60)
+                # note: we have a different counter for connection errors, because we want to retry connection errors more times
+                num_connection_error_retry += 1
+                error_message = str(e)
             except RateLimitError as e:
-                # note: we don't increment num_try here, because we don't want rate limit retries to count against the total number of retries
+                # note: we don't increment num_general_retry here, because we don't want rate limit retries to count against the total number of retries
                 sleep_time = e.retry_after
             except TlmBadRequest as e:
                 # dont retry for client-side errors
                 raise e
             except Exception as e:
-                sleep_time = 2**num_try
-                num_try += 1
+                sleep_time = 2**num_general_retry
+                num_general_retry += 1
                 error_message = str(e)
+
+        if num_connection_error_retry > max_connection_error_retries:
+            raise APIError(
+                f"Connection error after {max_connection_error_retries + 1} retries. {error_message}",
+                -1,
+            )
         else:
-            raise APIError(f"TLM failed after {retries + 1} attempts. {error_message}", -1)
+            raise APIError(
+                f"TLM failed after {max_general_retries + 1} attempts. {error_message}", -1
+            )
 
     return wrapper
 
