@@ -16,7 +16,7 @@ MAX_COMBINED_LENGTH_TOKENS: int = 70_000
 CHARACTERS_PER_TOKEN: int = 4
 
 # Property tests for TLM
-excluded_tlm_models: List[str] = ["claude-3-sonnet", "claude-3.5-sonnet"]
+excluded_tlm_models: List[str] = ["claude-3-sonnet", "claude-3.5-sonnet", "o1-preview"]
 VALID_TLM_MODELS: List[str] = [
     model for model in _VALID_TLM_MODELS if model not in excluded_tlm_models
 ]
@@ -24,4 +24,5 @@ MODELS_WITH_NO_PERPLEXITY_SCORE: List[str] = [
     "claude-3-haiku",
     "claude-3-sonnet",
     "claude-3.5-sonnet",
+    "o1-preview",
 ]
