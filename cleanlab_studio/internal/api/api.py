@@ -957,9 +957,7 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
                 -1,
             )
         else:
-            raise APIError(
-                f"TLM failed after {num_general_retry} attempts. {error_message}", -1
-            )
+            raise APIError(f"TLM failed after {num_general_retry} attempts. {error_message}", -1)
 
     return wrapper
 
