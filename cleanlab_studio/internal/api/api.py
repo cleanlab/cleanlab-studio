@@ -934,7 +934,7 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
             except aiohttp.client_exceptions.ClientConnectorError as e:
                 if num_connection_error_retry == (max_connection_error_retries // 2):
                     warnings.warn(
-                        f"Connection error after {max_connection_error_retries // 2} retries. Retrying..."
+                        f"Connection error after {num_connection_error_retry} retries. Retrying..."
                     )
                 sleep_time = min(2**num_connection_error_retry, 60)
                 # note: we have a different counter for connection errors, because we want to retry connection errors more times
@@ -953,12 +953,12 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
 
         if num_connection_error_retry > max_connection_error_retries:
             raise APIError(
-                f"Connection error after {max_connection_error_retries + 1} retries. {error_message}",
+                f"Connection error after {num_connection_error_retry} retries. {error_message}",
                 -1,
             )
         else:
             raise APIError(
-                f"TLM failed after {max_general_retries + 1} attempts. {error_message}", -1
+                f"TLM failed after {num_general_retry} attempts. {error_message}", -1
             )
 
     return wrapper
