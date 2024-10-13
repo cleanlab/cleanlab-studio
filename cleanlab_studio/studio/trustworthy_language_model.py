@@ -3,7 +3,7 @@ Cleanlab's Trustworthy Language Model (TLM) is a large language model that gives
 
 **This module is not meant to be imported and used directly.** Instead, use [`Studio.TLM()`](/reference/python/studio/#method-tlm) to instantiate a [TLM](#class-tlm) object, and then you can use the methods like [`prompt()`](#method-prompt) and [`get_trustworthiness_score()`](#method-get_trustworthiness_score) documented on this page.
 
-The [Trustworthy Language Model tutorial](/tutorials/tlm/) further explains TLM and its use cases.
+The [Trustworthy Language Model tutorial](/tlm/tutorials/tlm) further explains TLM and its use cases.
 """
 
 from __future__ import annotations
@@ -143,7 +143,7 @@ class TLM:
 
     The TLM object can be used as a drop-in replacement for an LLM, or, for estimating trustworthiness scores for arbitrary text prompt/response pairs.
 
-    For advanced use, TLM offers configuration options. The documentation below summarizes these options, and more details are explained in the [TLM tutorial](/tutorials/tlm).
+    For advanced use, TLM offers configuration options. The documentation below summarizes these options, and more details are explained in the [TLM tutorial](/tlm/tutorials/tlm).
 
     ** The TLM object is not meant to be constructed directly.** Instead, use the [`Studio.TLM()`](../studio/#method-tlm)
     method to configure and instantiate a TLM object.
