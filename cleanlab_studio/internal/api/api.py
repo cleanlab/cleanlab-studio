@@ -60,6 +60,7 @@ project_base_url = f"{base_url}/projects"
 cleanset_base_url = f"{base_url}/cleansets"
 model_base_url = f"{base_url}/v1/deployment"
 tlm_base_url = f"{base_url}/v0/trustworthy_llm"
+tlm_openai_base_url = f"{base_url}/v0/trustworthy_llm_openai"
 
 
 def _construct_headers(
@@ -1073,6 +1074,57 @@ async def tlm_get_confidence_score(
             handle_rate_limit_error_from_resp(res)
             await handle_tlm_client_error_from_resp(res, batch_index)
             await handle_tlm_api_error_from_resp(res, batch_index)
+
+    finally:
+        if local_scoped_client:
+            await client_session.close()
+
+    return cast(JSONDict, res_json)
+
+
+@tlm_retry
+async def tlm_openai_prompt(
+    api_key: str,
+    prompt: str,
+    quality_preset: str,
+    options: Optional[JSONDict],
+    openai_args: Optional[JSONDict],
+    rate_handler: TlmRateHandler,
+    client_session: Optional[aiohttp.ClientSession] = None,
+    batch_index: Optional[int] = None,
+) -> JSONDict:
+    """
+    TODO
+    """
+    local_scoped_client = False
+    if not client_session:
+        client_session = aiohttp.ClientSession()
+        local_scoped_client = True
+
+    try:
+        async with rate_handler:
+            base_api_url = os.environ.get("CLEANLAB_API_TLM_BASE_URL", tlm_openai_base_url)
+            res = await client_session.post(
+                f"{base_api_url}/prompt",
+                json=dict(
+                    prompt=prompt,
+                    quality=quality_preset,
+                    options=options or {},
+                    openai_args=openai_args or {},
+                    user_id=api_key,
+                    client_id=api_key,
+                ),
+                headers=_construct_headers(api_key),
+            )
+
+            res_json = await res.json()
+
+            handle_rate_limit_error_from_resp(res)
+            await handle_tlm_client_error_from_resp(res, batch_index)
+            await handle_tlm_api_error_from_resp(res, batch_index)
+
+            if not res_json.get("deberta_success", True):
+                raise TlmPartialSuccess("Partial failure on deberta call -- slowdown request rate.")
 
     finally:
         if local_scoped_client:
