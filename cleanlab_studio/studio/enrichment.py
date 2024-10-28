@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
 from typing_extensions import NotRequired
+from functools import lru_cache
 
 from cleanlab_studio.errors import EnrichmentProjectError
 from cleanlab_studio.internal.api import api
@@ -47,6 +48,12 @@ def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
     """
     response_timestamp_format_str = "%a, %d %b %Y %H:%M:%S %Z"
     return datetime.strptime(timestamp_string, response_timestamp_format_str)
+
+
+@lru_cache(maxsize=None)
+def _get_online_inference():
+    from cleanlab_studio.utils.data_enrichment.enrich import online_inference
+    return online_inference
 
 
 class EnrichmentProject:
@@ -399,6 +406,27 @@ class EnrichmentProject:
         latest_job = self._get_latest_job()
         return api.resume_enrichment_job(api_key=self._api_key, job_id=latest_job["id"])
 
+    def online_inference(
+        self,
+        data: Union[pd.DataFrame, List[dict]],
+        options: EnrichmentOptions,
+        new_column_name: str,
+    ) -> Dict[str, Any]:
+        """
+        Enrich data in real-time using the same logic as the run() method, but client-side.
+
+        Args:
+            data (Union[pd.DataFrame, List[dict]]): The dataset to enrich.
+            options (EnrichmentOptions): Options for enriching the dataset.
+            new_column_name (str): The name of the new column to store the results.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing information about the enrichment job and the enriched dataset.
+        """
+        online_inference = _get_online_inference()
+        job_info = online_inference(data, options, new_column_name, None)
+        return job_info
+
 
 class EnrichmentJob(TypedDict):
     """Represents an Enrichment Job instance.
@@ -611,3 +639,7 @@ def _handle_replacements_and_extraction_pattern(
         else:
             raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
     return extraction_pattern, replacements
+
+
+
+
