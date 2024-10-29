@@ -51,9 +51,10 @@ def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
 
 
 @lru_cache(maxsize=None)
-def _get_online_inference():
-    from cleanlab_studio.utils.data_enrichment.enrich import online_inference
-    return online_inference
+def _get_run_online():
+    from cleanlab_studio.utils.data_enrichment.enrich import run_online
+
+    return run_online
 
 
 class EnrichmentProject:
@@ -349,9 +350,11 @@ class EnrichmentProject:
                 id=job["id"],
                 status=job["status"],
                 created_at=_response_timestamp_to_datetime(job["created_at"]),
-                updated_at=_response_timestamp_to_datetime(job["updated_at"])
-                if job["updated_at"]
-                else None,
+                updated_at=(
+                    _response_timestamp_to_datetime(job["updated_at"])
+                    if job["updated_at"]
+                    else None
+                ),
                 enrichment_options=EnrichmentOptions(**enrichment_options_dict),  # type: ignore
                 average_trustworthiness_score=job["average_trustworthiness_score"],
                 job_type=job["type"],
@@ -406,7 +409,7 @@ class EnrichmentProject:
         latest_job = self._get_latest_job()
         return api.resume_enrichment_job(api_key=self._api_key, job_id=latest_job["id"])
 
-    def online_inference(
+    def run_online(
         self,
         data: Union[pd.DataFrame, List[dict]],
         options: EnrichmentOptions,
@@ -423,8 +426,8 @@ class EnrichmentProject:
         Returns:
             Dict[str, Any]: A dictionary containing information about the enrichment job and the enriched dataset.
         """
-        online_inference = _get_online_inference()
-        job_info = online_inference(data, options, new_column_name, None)
+        run_online = _get_run_online()
+        job_info = run_online(data, options, new_column_name, self._api_key)
         return job_info
 
 
@@ -639,7 +642,3 @@ def _handle_replacements_and_extraction_pattern(
         else:
             raise ValueError(REGEX_PARAMETER_ERROR_MESSAGE)
     return extraction_pattern, replacements
-
-
-
-
