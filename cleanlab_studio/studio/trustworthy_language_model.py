@@ -787,6 +787,7 @@ class TLMOptions(TypedDict):
         The expected input format is a list of dictionaries, where each dictionary has the following keys:
         - name: name of the evaluation criteria
         - criteria: the instruction for the evaluation criteria
+        Currently, only one custom evaluation criteria at a time is supported.
     """
 
     model: NotRequired[str]
