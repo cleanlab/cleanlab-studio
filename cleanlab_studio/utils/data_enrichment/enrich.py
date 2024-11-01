@@ -154,8 +154,6 @@ def process_regex(
     Returns:
         Extracted matches to the provided regular expression from each element of the data column (specifically, the first match is returned).
     """
-    pd = _get_pandas()
-
     if isinstance(column_data, list):
         return [get_regex_match_or_replacement(x, regex) for x in column_data]
     elif isinstance(column_data, pd.Series):
