@@ -24,6 +24,7 @@ from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.tlm.validation import validate_tlm_options
 from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
+from cleanlab_studio.utils.data_enrichment.enrich import run_online
 
 Replacement = Tuple[str, str]
 ROW_ID_COLUMN_NAME = "row_id"
@@ -420,14 +421,13 @@ class EnrichmentProject:
 
         Args:
             data (Union[pd.DataFrame, List[dict]]): The dataset to enrich.
-            options (EnrichmentOptions): Options for enriching the dataset.
+            options (EnrichmentOptions): See :class:`EnrichmentOptions` for details.
             new_column_name (str): The name of the new column to store the results.
 
         Returns:
             Dict[str, Any]: A dictionary containing information about the enrichment job and the enriched dataset.
         """
-        run_online = _get_run_online()
-        job_info = run_online(data, options, new_column_name, self._api_key)
+        job_info = run_online(data, options, new_column_name, self)
         return job_info
 
 

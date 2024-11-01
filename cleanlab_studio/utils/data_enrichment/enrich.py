@@ -1,5 +1,6 @@
 from typing import Any, List, Tuple, Union, Dict
-from functools import lru_cache
+import pandas as pd
+from tqdm import tqdm
 from cleanlab_studio.internal.enrichment_utils import (
     get_prompt_outputs,
     get_regex_match_or_replacement,
@@ -9,22 +10,8 @@ from cleanlab_studio.internal.enrichment_utils import (
 from cleanlab_studio.studio.enrichment import EnrichmentOptions
 
 
-@lru_cache(maxsize=None)
-def _get_pandas():
-    import pandas as pd
-
-    return pd
-
-
-@lru_cache(maxsize=None)
-def _get_tqdm():
-    from tqdm import tqdm
-
-    return tqdm
-
-
 def run_online(
-    data: Union["pd.DataFrame", List[dict]],
+    data: Union[pd.DataFrame, List[dict]],
     options: EnrichmentOptions,
     new_column_name: str,
     studio: Any,
@@ -34,17 +21,14 @@ def run_online(
 
     Args:
         data (Union[pd.DataFrame, List[dict]]): The dataset to enrich.
-        options (EnrichmentOptions): Options for enriching the dataset.
+        options (EnrichmentOptions): Options for enriching the dataset. See :class:`EnrichmentOptions` for details.
         new_column_name (str): The name of the new column to store the results.
-        studio (Any): A required parameter for the Studio object.
+        studio (Any): A Studio instance to use for enrichment.
 
     Returns:
         Dict[str, Any]: A dictionary containing information about the enrichment job and the enriched dataset.
     """
-    pd = _get_pandas()
-    tqdm = _get_tqdm()
-
-    # Validate options
+    # Validate options using the same validation as run()
     _validate_enrichment_options(options)
 
     # Ensure data is a DataFrame
@@ -143,9 +127,9 @@ def _validate_enrichment_options(options: EnrichmentOptions) -> None:
 
 
 def process_regex(
-    column_data: Union["pd.Series", List[str]],
-    regex: Union[str, Tuple[str, str], List[Tuple[str, str]]],
-) -> Union["pd.Series", List[str]]:
+    column_data: Union[pd.Series, List[str]],
+    regex: Union[str, Replacement, List[Replacement]],
+) -> Union[pd.Series, List[str]]:
     """
     Performs regex matches or replacements to the given string according to the given matching patterns and replacement strings.
 
