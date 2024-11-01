@@ -416,7 +416,7 @@ class EnrichmentProject:
         new_column_name: str,
     ) -> Dict[str, Any]:
         """
-        Enrich data in real-time using the same logic as the run() method, but client-side.
+        Enrich data in real-time using the same logic as the ``run()`` method. This runs client-side on your local machine, processing one record at a time. 
 
         Args:
             data (Union[pd.DataFrame, List[dict]]): The dataset to enrich.
