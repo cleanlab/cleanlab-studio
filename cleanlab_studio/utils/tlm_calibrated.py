@@ -140,6 +140,9 @@ class TLMCalibrated:
 
         extracted_scores = self._extract_tlm_scores(tlm_response_df)
 
+        if np.isnan(extracted_scores).any():
+            extracted_scores = self._impute_missing_values(extracted_scores)
+
         tlm_response_df["calibrated_score"] = self._rf_model.predict(extracted_scores)
 
         if is_single_query:
@@ -183,6 +186,9 @@ class TLMCalibrated:
 
         extracted_scores = self._extract_tlm_scores(tlm_scores_df)
 
+        if np.isnan(extracted_scores).any():
+            extracted_scores = self._impute_missing_values(extracted_scores)
+
         tlm_scores_df["calibrated_score"] = self._rf_model.predict(extracted_scores)
 
         if is_single_query:
@@ -219,6 +225,19 @@ class TLMCalibrated:
             all_scores = tlm_scores_df["trustworthiness_score"].values.reshape(-1, 1)
 
         return all_scores
+
+    def _impute_missing_values(self, scores: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        try:
+            from sklearn.impute import SimpleImputer
+        except ImportError:
+            raise ImportError(
+                "Cannot import scikit-learn which is required to use TLMCalibrated. "
+                "Please install it using `pip install scikit-learn` and try again."
+            )
+
+        imputer = SimpleImputer(missing_values=np.nan, strategy="mean")
+        imputed_scores = imputer.fit_transform(scores)
+        return imputed_scores
 
 
 class TLMResponseWithCalibration(TLMResponse):
