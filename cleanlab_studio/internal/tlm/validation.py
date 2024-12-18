@@ -9,6 +9,7 @@ from cleanlab_studio.internal.constants import (
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
+    TLM_VALID_KWARGS,
     TLM_VALID_LOG_OPTIONS,
 )
 
@@ -22,7 +23,7 @@ def validate_tlm_prompt_kwargs_constrain_outputs(
     **kwargs: Any,
 ) -> Union[Optional[List[str]], Optional[List[Optional[List[str]]]]]:
     # validate kwargs - only allow constrain_outputs
-    supported_kwargs = {"constrain_outputs"}
+    supported_kwargs = TLM_VALID_KWARGS
     unsupported_kwargs = set(kwargs.keys()) - supported_kwargs
     if unsupported_kwargs:
         raise ValidationError(
@@ -34,11 +35,14 @@ def validate_tlm_prompt_kwargs_constrain_outputs(
     constrain_outputs = kwargs.get("constrain_outputs")
     if constrain_outputs is not None:
         if isinstance(prompt, str):
-            if not isinstance(constrain_outputs, list):
+            if not isinstance(constrain_outputs, list) or not all(
+                isinstance(s, str) for s in constrain_outputs
+            ):
                 raise ValidationError("constrain_outputs must be a list of strings")
         elif isinstance(prompt, Sequence):
             if not isinstance(constrain_outputs, list) or not all(
-                isinstance(co, list) for co in constrain_outputs
+                isinstance(co, list) and all(isinstance(s, str) for s in co)
+                for co in constrain_outputs
             ):
                 raise ValidationError("constrain_outputs must be a list of lists of strings")
             if len(constrain_outputs) != len(prompt):
