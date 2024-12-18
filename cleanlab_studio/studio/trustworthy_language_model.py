@@ -384,6 +384,11 @@ class TLM:
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the language model.
                 Providing a batch of many prompts here will be faster than calling this method on each prompt separately.
+            **kwargs: Optional keyword arguments to pass to the underlying TLM object. Currently, only `constrain_outputs` is supported.
+                `constrain_outputs` is a list of strings or a list of lists of strings.
+                If a list of strings is provided, each prompt will be constrained to one of the strings in the list.
+                If a list of lists of strings is provided, each prompt will be constrained to one of the strings in the corresponding list.
+                If `constrain_outputs` is not provided, the TLM will not constrain the output.
         Returns:
             TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
@@ -435,6 +440,11 @@ class TLM:
 
         Args:
             prompt (Sequence[str]): list of multiple prompts for the TLM
+            **kwargs: Optional keyword arguments to pass to the underlying TLM object. Currently, only `constrain_outputs` is supported.
+                `constrain_outputs` is a list of strings or a list of lists of strings.
+                If a list of strings is provided, each prompt will be constrained to one of the strings in the list.
+                If a list of lists of strings is provided, each prompt will be constrained to one of the strings in the corresponding list.
+                If `constrain_outputs` is not provided, the TLM will not constrain the output.
         Returns:
             List[TLMResponse]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
                 The returned list will always have the same length as the input list.
@@ -472,6 +482,11 @@ class TLM:
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
+            **kwargs: Optional keyword arguments to pass to the underlying TLM object. Currently, only `constrain_outputs` is supported.
+                `constrain_outputs` is a list of strings or a list of lists of strings.
+                If a list of strings is provided, each prompt will be constrained to one of the strings in the list.
+                If a list of lists of strings is provided, each prompt will be constrained to one of the strings in the corresponding list.
+                If `constrain_outputs` is not provided, the TLM will not constrain the output.
         Returns:
             TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
