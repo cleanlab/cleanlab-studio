@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from cleanlab_studio.errors import ValidationError
 from cleanlab_studio.internal.constants import (
@@ -9,12 +9,46 @@ from cleanlab_studio.internal.constants import (
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
+    TLM_VALID_KWARGS,
     TLM_VALID_LOG_OPTIONS,
 )
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = (
     os.environ.get("CLEANLAB_STUDIO_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
 )
+
+
+def validate_tlm_prompt_kwargs_constrain_outputs(
+    prompt: Union[str, Sequence[str]],
+    **kwargs: Any,
+) -> Union[Optional[List[str]], Optional[List[Optional[List[str]]]]]:
+    # validate kwargs - only allow constrain_outputs
+    supported_kwargs = TLM_VALID_KWARGS
+    unsupported_kwargs = set(kwargs.keys()) - supported_kwargs
+    if unsupported_kwargs:
+        raise ValidationError(
+            f"Unsupported keyword arguments: {unsupported_kwargs}. "
+            f"Supported keyword arguments are: {supported_kwargs}"
+        )
+
+    # validate constrain_outputs and it needs to match with what prompt is whether prompt is a sequence or string
+    constrain_outputs = kwargs.get("constrain_outputs")
+    if constrain_outputs is not None:
+        if isinstance(prompt, str):
+            if not isinstance(constrain_outputs, list) or not all(
+                isinstance(s, str) for s in constrain_outputs
+            ):
+                raise ValidationError("constrain_outputs must be a list of strings")
+        elif isinstance(prompt, Sequence):
+            if not isinstance(constrain_outputs, list) or not all(
+                isinstance(co, list) and all(isinstance(s, str) for s in co)
+                for co in constrain_outputs
+            ):
+                raise ValidationError("constrain_outputs must be a list of lists of strings")
+            if len(constrain_outputs) != len(prompt):
+                raise ValidationError("constrain_outputs must have same length as prompt")
+
+    return constrain_outputs
 
 
 def validate_tlm_prompt(prompt: Union[str, Sequence[str]]) -> None:

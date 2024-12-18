@@ -74,6 +74,50 @@ def assert_prompt_and_response_combined_too_long_error_score(response: Any, inde
     assert response["log"]["error"]["retryable"] is False
 
 
+def test_prompt_unsupported_kwargs(tlm: TLM):
+    """Tests that validation error is raised when unsupported keyword arguments are passed to prompt."""
+    with pytest.raises(ValidationError) as exc_info:
+        tlm.prompt(
+            "test prompt",
+            constrain_outputss=[["test constrain outputs"]],
+        )
+
+    assert str(exc_info.value).startswith("Unsupported keyword arguments: {'constrain_outputss'}")
+
+
+def test_prompt_constrain_outputs_wrong_type_single_prompt(tlm: TLM):
+    """Tests that validation error is raised when constrain_outputs is not a list of strings when prompt is a string."""
+    with pytest.raises(ValidationError) as exc_info:
+        tlm.prompt(
+            "test prompt",
+            constrain_outputs="test constrain outputs",
+        )
+
+    assert str(exc_info.value).startswith("constrain_outputs must be a list of strings")
+
+
+def test_prompt_constrain_outputs_wrong_type_batch_prompt(tlm: TLM):
+    """Tests that validation error is raised when constrain_outputs is not a list of lists of strings when prompt is a list of strings."""
+    with pytest.raises(ValidationError) as exc_info:
+        tlm.prompt(
+            ["test prompt"],
+            constrain_outputs=["test constrain outputs"],
+        )
+
+    assert str(exc_info.value).startswith("constrain_outputs must be a list of lists of strings")
+
+
+def test_prompt_constrain_outputs_wrong_length(tlm: TLM):
+    """Tests that validation error is raised when constrain_outputs length does not match prompt length."""
+    with pytest.raises(ValidationError) as exc_info:
+        tlm.prompt(
+            ["test prompt"],
+            constrain_outputs=[["test constrain outputs"], ["test constrain outputs"]],
+        )
+
+    assert str(exc_info.value).startswith("constrain_outputs must have same length as prompt")
+
+
 def test_prompt_too_long_exception_single_prompt(tlm: TLM):
     """Tests that bad request error is raised when prompt is too long when calling tlm.prompt with a single prompt."""
     with pytest.raises(TlmBadRequest) as exc_info:

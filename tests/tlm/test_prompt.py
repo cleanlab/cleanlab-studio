@@ -78,6 +78,27 @@ def test_single_prompt(tlm: TLM) -> None:
     assert is_tlm_response(response)
 
 
+def test_single_prompt_constrain_outputs(tlm: TLM) -> None:
+    """Tests running a single prompt in the TLM with constrain_outputs.
+
+    Expected:
+    - TLM should return a single response
+    - Response should be non-None
+    - No exceptions are raised
+    """
+
+    # act -- run a single prompt
+    response = tlm.prompt(test_prompt, constrain_outputs=["test"])
+
+    # assert
+    # - response is not None
+    # - a single response of type TLMResponse is returned
+    # - no exceptions are raised (implicit)
+    assert response is not None
+    assert is_tlm_response(response)
+    assert response["response"] == "test"
+
+
 def test_batch_prompt(tlm: TLM) -> None:
     """Tests running a batch prompt in the TLM.
 
@@ -97,6 +118,28 @@ def test_batch_prompt(tlm: TLM) -> None:
     assert response is not None
     assert isinstance(response, list)
     assert all(is_tlm_response(r) for r in response)
+
+
+def test_batch_prompt_constrain_outputs(tlm: TLM) -> None:
+    """Tests running a batch prompt in the TLM with constrain_outputs.
+
+    Expected:
+    - TLM should return a list of responses
+    - Responses should be non-None
+    - No exceptions are raised
+    - Each response should be of type TLMResponse
+    """
+    # act -- run a batch prompt
+    response = tlm.prompt(test_prompt_batch, constrain_outputs=[["test"], ["test"]])
+
+    # assert
+    # - response is not None
+    # - a list of responses of type TLMResponse is returned
+    # - no exceptions are raised (implicit)
+    assert response is not None
+    assert isinstance(response, list)
+    assert all(is_tlm_response(r) for r in response)
+    assert all(r["response"] == "test" for r in response)
 
 
 def test_batch_prompt_force_timeouts(tlm: TLM) -> None:
@@ -135,6 +178,27 @@ def test_batch_try_prompt(tlm: TLM) -> None:
     assert response is not None
     assert isinstance(response, list)
     assert all(is_tlm_response(r, allow_none_response=True) for r in response)
+
+
+def test_batch_try_prompt_constrain_outputs(tlm: TLM) -> None:
+    """Tests running a batch try prompt in the TLM with constrain_outputs.
+
+    Expected:
+    - TLM should return a list of responses
+    - Responses can be None or of type TLMResponse
+    - No exceptions are raised
+    """
+    # act -- run a batch prompt
+    response = tlm.try_prompt(test_prompt_batch, constrain_outputs=[["test"], ["test"]])
+
+    # assert
+    # - response is not None
+    # - a list of responses of type TLMResponse or None is returned
+    # - no exceptions are raised (implicit)
+    assert response is not None
+    assert isinstance(response, list)
+    assert all(is_tlm_response(r, allow_none_response=True) for r in response)
+    assert all(r["response"] == "test" for r in response)
 
 
 def test_batch_try_prompt_force_timeouts(tlm: TLM) -> None:

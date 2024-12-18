@@ -971,6 +971,7 @@ async def tlm_prompt(
     rate_handler: TlmRateHandler,
     client_session: Optional[aiohttp.ClientSession] = None,
     batch_index: Optional[int] = None,
+    constrain_outputs: Optional[List[str]] = None,
 ) -> JSONDict:
     """
     Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
@@ -983,7 +984,7 @@ async def tlm_prompt(
         rate_handler (TlmRateHandler): concurrency handler used to manage TLM request rate
         client_session (aiohttp.ClientSession): client session used to issue TLM request
         batch_index (Optional[int], optional): index of prompt in batch, used for error messages. Defaults to None if not in batch.
-
+        constrain_outputs (Optional[List[str]], optional): list of strings to constrain the output of the TLM to. Defaults to None.
     Returns:
         JSONDict: dictionary with TLM response and confidence score
     """
@@ -1003,6 +1004,7 @@ async def tlm_prompt(
                     options=options or {},
                     user_id=api_key,
                     client_id=api_key,
+                    constrain_outputs=constrain_outputs,
                 ),
                 headers=_construct_headers(api_key),
             )

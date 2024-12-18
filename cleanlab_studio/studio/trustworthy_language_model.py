@@ -39,6 +39,7 @@ from cleanlab_studio.internal.tlm.validation import (
     process_response_and_kwargs,
     validate_tlm_options,
     validate_tlm_prompt,
+    validate_tlm_prompt_kwargs_constrain_outputs,
     validate_tlm_prompt_response,
     validate_tlm_try_prompt,
     validate_try_tlm_prompt_response,
@@ -238,6 +239,7 @@ class TLM:
         self,
         prompts: Sequence[str],
         capture_exceptions: bool = False,
+        constrain_outputs: Optional[Sequence[Optional[List[str]]]] = None,
     ) -> List[TLMResponse]:
         """Run a batch of prompts through TLM and get responses/scores for each prompt in the batch. The list returned will have the same length as the input list.
 
@@ -262,8 +264,11 @@ class TLM:
                     timeout=per_query_timeout,
                     capture_exceptions=capture_exceptions,
                     batch_index=batch_index,
+                    constrain_outputs=constrain_output,
                 )
-                for batch_index, prompt in enumerate(prompts)
+                for batch_index, (prompt, constrain_output) in enumerate(
+                    zip(prompts, constrain_outputs if constrain_outputs else [None] * len(prompts))
+                )
             ],
             per_batch_timeout,
         )
@@ -368,6 +373,7 @@ class TLM:
         self,
         prompt: Union[str, Sequence[str]],
         /,
+        **kwargs: Any,
     ) -> Union[TLMResponse, List[TLMResponse]]:
         """
         Gets response and trustworthiness score for any text input.
@@ -390,23 +396,33 @@ class TLM:
                 (and save intermediate results between batches), or use the [`try_prompt()`](#method-try_prompt) method instead.
         """
         validate_tlm_prompt(prompt)
-
+        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs)
         if isinstance(prompt, str):
             return cast(
                 TLMResponse,
                 self._event_loop.run_until_complete(
-                    self._prompt_async(prompt, timeout=self._timeout, capture_exceptions=False),
+                    self._prompt_async(
+                        prompt,
+                        timeout=self._timeout,
+                        capture_exceptions=False,
+                        constrain_outputs=constrain_outputs,
+                    ),
                 ),
             )
 
         return self._event_loop.run_until_complete(
-            self._batch_prompt(prompt, capture_exceptions=False),
+            self._batch_prompt(
+                prompt,
+                capture_exceptions=False,
+                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
+            ),
         )
 
     def try_prompt(
         self,
         prompt: Sequence[str],
         /,
+        **kwargs: Any,
     ) -> List[TLMResponse]:
         """
         Gets response and trustworthiness score for any batch of prompts handling any failures (errors or timeouts).
@@ -429,15 +445,21 @@ class TLM:
                 use the [`prompt()`](#method-prompt) method instead.
         """
         validate_tlm_try_prompt(prompt)
+        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs)
 
         return self._event_loop.run_until_complete(
-            self._batch_prompt(prompt, capture_exceptions=True),
+            self._batch_prompt(
+                prompt,
+                capture_exceptions=True,
+                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
+            ),
         )
 
     async def prompt_async(
         self,
         prompt: Union[str, Sequence[str]],
         /,
+        **kwargs: Any,
     ) -> Union[TLMResponse, List[TLMResponse]]:
         """
         Asynchronously get response and trustworthiness score for any text input from TLM.
@@ -456,15 +478,24 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt(prompt)
+        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs)
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str):
                 tlm_response = await self._prompt_async(
-                    prompt, session, timeout=self._timeout, capture_exceptions=False
+                    prompt,
+                    session,
+                    timeout=self._timeout,
+                    capture_exceptions=False,
+                    constrain_outputs=constrain_outputs,
                 )
                 return cast(TLMResponse, tlm_response)
 
-            return await self._batch_prompt(prompt, capture_exceptions=False)
+            return await self._batch_prompt(
+                prompt,
+                capture_exceptions=False,
+                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
+            )
 
     @handle_tlm_exceptions("TLMResponse")
     async def _prompt_async(
@@ -474,6 +505,7 @@ class TLM:
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,
         batch_index: Optional[int] = None,
+        constrain_outputs: Optional[List[str]] = None,
     ) -> TLMResponse:
         """
         Private asynchronous method to get response and trustworthiness score from TLM.
@@ -484,6 +516,7 @@ class TLM:
             timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
             capture_exceptions (bool): if True, the returned [TLMResponse](#class-tlmresponse) object will include error details and retry information if any errors or timeouts occur during processing.
             batch_index: index of the prompt in the batch, used for error messages
+            constrain_outputs: list of strings to constrain the output of the TLM to
         Returns:
             TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
         """
@@ -497,6 +530,7 @@ class TLM:
                 client_session,
                 batch_index=batch_index,
                 retries=_TLM_MAX_RETRIES,
+                constrain_outputs=constrain_outputs,
             ),
             timeout=timeout,
         )

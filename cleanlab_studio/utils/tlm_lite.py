@@ -163,7 +163,7 @@ class TLMLite:
         )
 
         tlm_response = np.array(prompt_response)
-        tlm_response[prompt_succeeded_mask] = score_response_succeeded
+        tlm_response[prompt_succeeded_mask] = np.array(score_response_succeeded)
 
         return cast(List[TLMResponse], tlm_response.tolist())
 
