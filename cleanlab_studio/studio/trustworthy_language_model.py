@@ -412,7 +412,9 @@ class TLM:
 
         return self._event_loop.run_until_complete(
             self._batch_prompt(
-                prompt, capture_exceptions=False, constrain_outputs=constrain_outputs
+                prompt,
+                capture_exceptions=False,
+                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
             ),
         )
 
@@ -447,7 +449,9 @@ class TLM:
 
         return self._event_loop.run_until_complete(
             self._batch_prompt(
-                prompt, capture_exceptions=True, constrain_outputs=constrain_outputs
+                prompt,
+                capture_exceptions=True,
+                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
             ),
         )
 
@@ -488,7 +492,9 @@ class TLM:
                 return cast(TLMResponse, tlm_response)
 
             return await self._batch_prompt(
-                prompt, capture_exceptions=False, constrain_outputs=constrain_outputs
+                prompt,
+                capture_exceptions=False,
+                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
             )
 
     @handle_tlm_exceptions("TLMResponse")

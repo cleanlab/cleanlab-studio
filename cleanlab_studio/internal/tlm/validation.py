@@ -20,7 +20,7 @@ SKIP_VALIDATE_TLM_OPTIONS: bool = (
 def validate_tlm_prompt_kwargs_constrain_outputs(
     prompt: Union[str, Sequence[str]],
     **kwargs: Any,
-) -> Optional[List[str]]:
+) -> Union[Optional[List[str]], Optional[List[Optional[List[str]]]]]:
     # validate kwargs - only allow constrain_outputs
     supported_kwargs = {"constrain_outputs"}
     unsupported_kwargs = set(kwargs.keys()) - supported_kwargs
