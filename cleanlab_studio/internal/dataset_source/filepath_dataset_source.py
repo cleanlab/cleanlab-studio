@@ -1,10 +1,11 @@
 import mimetypes
+import os
 import pathlib
 from typing import Any, Optional
-import os
+
+from cleanlab_studio.errors import InvalidDatasetError, InvalidFilepathError
 
 from .dataset_source import DatasetSource
-from cleanlab_studio.errors import InvalidDatasetError, InvalidFilepathError
 
 
 class FilepathDatasetSource(DatasetSource):
@@ -21,7 +22,13 @@ class FilepathDatasetSource(DatasetSource):
 
         self.dataset_name = dataset_name if dataset_name is not None else filepath.name
         self.file_size = filepath.stat().st_size
-        maybe_file_type = mimetypes.guess_type(filepath)[0]
+
+        maybe_file_type: Optional[str]
+        if filepath.suffix.lower() == ".jsonl":
+            maybe_file_type = "application/json"
+        else:
+            maybe_file_type = mimetypes.guess_type(filepath)[0]
+
         if maybe_file_type is None:
             raise InvalidDatasetError(
                 f"Could not identify type of file at {filepath}. Make sure file name has valid extension"
