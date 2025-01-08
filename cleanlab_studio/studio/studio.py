@@ -1,5 +1,7 @@
 """
 Python API for Cleanlab Studio.
+
+Some methods here apply to other Cleanlab products (e.g. TLM) that also rely on the Cleanlab Studio client.
 """
 
 from __future__ import annotations
