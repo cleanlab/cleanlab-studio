@@ -384,11 +384,11 @@ class TLM:
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the language model.
                 Providing a batch of many prompts here will be faster than calling this method on each prompt separately.
-            **kwargs: Optional keyword arguments to pass to the underlying TLM object. Currently, only `constrain_outputs` is supported.
-                `constrain_outputs` is a list of strings or a list of lists of strings.
-                If a list of strings is provided, each prompt will be constrained to one of the strings in the list.
-                If a list of lists of strings is provided, each prompt will be constrained to one of the strings in the corresponding list.
-                If `constrain_outputs` is not provided, the TLM will not constrain the output.
+            **kwargs: Optional keyword arguments for TLM. When using TLM for multi-class classification, specify `constrain_outputs` as a keyword argument to ensure returned responses are one of the valid classes/categories.
+                `constrain_outputs` is a list of strings (or a list of lists of strings), used to denote the valid classes/categories of interest.
+                We recommend also listing and defining the valid outputs in your prompt as well.
+                If `constrain_outputs` is a list of strings, the response returned for every prompt will be constrained to match one of these values. The last entry in this list is additionally treated as the output to fall back to if the raw LLM output does not resemble any of the categories (for instance, this could be an Other category, or it could be the category you'd prefer to return whenever the LLM is unsure).
+                If you run a list of multiple prompts simultaneously and want to differently constrain each of their outputs, then specify `constrain_outputs` as a list of lists of strings (one list for each prompt).
         Returns:
             TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
