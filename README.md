@@ -1,16 +1,17 @@
 # cleanlab-studio [![Build Status](https://github.com/cleanlab/cleanlab-studio/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-studio/actions?query=workflow%3ACI) [![PyPI](https://img.shields.io/pypi/v/cleanlab-studio.svg)][PyPI] [![py\_versions](https://img.shields.io/badge/python-3.8%2B-blue)](https://pypi.org/pypi/cleanlab-studio/)
 
-Command line and Python library interface to [Cleanlab Studio](https://cleanlab.ai/studio/). Analyze datasets and produce *cleansets* (cleaned datasets) with Cleanlab Studio in a single line of code!
+Command line and Python library interface to [Cleanlab Studio](https://cleanlab.ai/studio/).
 
 - [Installation](#installation)
 - [Quickstart](#quickstart)
 - [Advanced Usage](#advanced-usage)
 - [Documentation/Tutorials](https://help.cleanlab.ai/)
 
+This library also contains a Python client to use the [Trustworthy Language Model](https://help.cleanlab.ai/tlm/).
 
 ## Installation
 
-You can install the Cleanlab Studio client [from PyPI][PyPI] with:
+You can install the client [from PyPI][PyPI] with:
 
 ```bash
 pip install cleanlab-studio
@@ -199,9 +200,9 @@ by [polars.from_epoch](https://pola-rs.github.io/polars/py-polars/html/reference
 ## Other Resources
 
 - [Documentation](https://help.cleanlab.ai/) -- tutorials on how to use Cleanlab Studio and guides to learn key concepts
-- [Blog](https://cleanlab.ai/examples/) -- end-to-end applications, feature announcements, how-it-works explanations, benchmarks
+- [Blog](https://cleanlab.ai/blog/) -- end-to-end applications, feature announcements, how-it-works explanations, benchmarks
 - [Slack Community](https://cleanlab.ai/slack/) -- ask questions, request features, discuss Data-Centric AI with others
-- Need professional help or want demo? Reach out via email: team@cleanlab.ai
+- Need professional help or want demo? Reach out via email: support@cleanlab.ai
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/studio.png" width=80% height=80%>
