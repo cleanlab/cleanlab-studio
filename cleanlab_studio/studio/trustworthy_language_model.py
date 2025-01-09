@@ -440,11 +440,7 @@ class TLM:
 
         Args:
             prompt (Sequence[str]): list of multiple prompts for the TLM
-            kwargs: Optional keyword arguments for TLM. When using TLM for multi-class classification, specify `constrain_outputs` as a keyword argument to ensure returned responses are one of the valid classes/categories.
-                `constrain_outputs` is a list of strings (or a list of lists of strings), used to denote the valid classes/categories of interest.
-                We recommend also listing and defining the valid outputs in your prompt as well.
-                If `constrain_outputs` is a list of strings, the response returned for every prompt will be constrained to match one of these values. The last entry in this list is additionally treated as the output to fall back to if the raw LLM output does not resemble any of the categories (for instance, this could be an Other category, or it could be the category you'd prefer to return whenever the LLM is unsure).
-                If you run a list of multiple prompts simultaneously and want to differently constrain each of their outputs, then specify `constrain_outputs` as a list of lists of strings (one list for each prompt).
+            kwargs: Optional keyword arguments for TLM. This method accepts the same keyword arguments as the [`prompt()`](#method-prompt) method.
         Returns:
             List[TLMResponse]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
                 The returned list will always have the same length as the input list.
@@ -482,11 +478,7 @@ class TLM:
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
-            kwargs: Optional keyword arguments for TLM. When using TLM for multi-class classification, specify `constrain_outputs` as a keyword argument to ensure returned responses are one of the valid classes/categories.
-                `constrain_outputs` is a list of strings (or a list of lists of strings), used to denote the valid classes/categories of interest.
-                We recommend also listing and defining the valid outputs in your prompt as well.
-                If `constrain_outputs` is a list of strings, the response returned for every prompt will be constrained to match one of these values. The last entry in this list is additionally treated as the output to fall back to if the raw LLM output does not resemble any of the categories (for instance, this could be an Other category, or it could be the category you'd prefer to return whenever the LLM is unsure).
-                If you run a list of multiple prompts simultaneously and want to differently constrain each of their outputs, then specify `constrain_outputs` as a list of lists of strings (one list for each prompt).
+            kwargs: Optional keyword arguments for TLM. This method accepts the same keyword arguments as the [`prompt()`](#method-prompt) method.
         Returns:
             TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
