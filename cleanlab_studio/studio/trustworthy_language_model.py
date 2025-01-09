@@ -478,7 +478,7 @@ class TLM:
 
         Args:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
-            kwargs: Optional keyword arguments for TLM. This method accepts the same keyword arguments as the [`prompt()`](#method-prompt) method.
+            kwargs: Optional keyword arguments, the same as for the [`prompt()`](#method-prompt) method.
         Returns:
             TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
