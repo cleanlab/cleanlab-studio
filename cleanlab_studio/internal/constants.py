@@ -10,17 +10,18 @@ _VALID_TLM_MODELS: List[str] = [
     "gpt-4o-mini",
     "o1-preview",
     "claude-3-haiku",
+    "claude-3.5-haiku",
     "claude-3-sonnet",
     "claude-3.5-sonnet",
+    "claude-3.5-sonnet-v2",
+    "nova-micro",
+    "nova-lite",
+    "nova-pro",
 ]
 _TLM_DEFAULT_MODEL: str = "gpt-4o-mini"
 _TLM_MAX_RETRIES: int = 3  # TODO: finalize this number
 _TLM_MAX_TOKEN_RANGE: Dict[str, Tuple[int, int]] = {  # model: (min, max)
-    "gpt-3.5-turbo-16k": (64, 4096),
-    "gpt-4": (64, 4096),
-    "gpt-4o": (64, 4096),
-    "gpt-4o-mini": (64, 4096),
-    "o1-preview": (64, 4096),
+    "default": (64, 4096),
     "claude-3-haiku": (64, 512),
     "claude-3-sonnet": (64, 512),
     "claude-3.5-sonnet": (64, 512),

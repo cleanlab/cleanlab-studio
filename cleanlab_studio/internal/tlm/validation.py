@@ -173,9 +173,10 @@ def validate_tlm_options(options: Any) -> None:
                 raise ValidationError(f"Invalid type {type(val)}, max_tokens must be an integer")
 
             model = options.get("model", _TLM_DEFAULT_MODEL)
-            if val < _TLM_MAX_TOKEN_RANGE[model][0] or val > _TLM_MAX_TOKEN_RANGE[model][1]:
+            max_tokens_range = _TLM_MAX_TOKEN_RANGE.get(model, _TLM_MAX_TOKEN_RANGE["default"])
+            if val < max_tokens_range[0] or val > max_tokens_range[1]:
                 raise ValidationError(
-                    f"Invalid value {val}, max_tokens for {model} must be in the range {_TLM_MAX_TOKEN_RANGE[model]}"
+                    f"Invalid value {val}, max_tokens for {model} must be in the range {max_tokens_range}"
                 )
 
         elif option == "model":
