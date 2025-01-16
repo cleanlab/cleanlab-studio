@@ -40,11 +40,24 @@ def validate_tlm_prompt_kwargs_constrain_outputs(
             ):
                 raise ValidationError("constrain_outputs must be a list of strings")
         elif isinstance(prompt, Sequence):
-            if not isinstance(constrain_outputs, list) or not all(
+            if not isinstance(constrain_outputs, list):
+                raise ValidationError("constrain_outputs must be a list")
+
+            # If it's a list of strings, repeat the list for each prompt
+            if all(isinstance(co, str) for co in constrain_outputs):
+                constrain_outputs = [constrain_outputs] * len(prompt)
+                pass
+            # Check if it's a list of lists of strings
+            elif all(
                 isinstance(co, list) and all(isinstance(s, str) for s in co)
                 for co in constrain_outputs
             ):
-                raise ValidationError("constrain_outputs must be a list of lists of strings")
+                pass
+            else:
+                raise ValidationError(
+                    "constrain_outputs must be a list of strings or a list of lists of strings"
+                )
+
             if len(constrain_outputs) != len(prompt):
                 raise ValidationError("constrain_outputs must have same length as prompt")
 
