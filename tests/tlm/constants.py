@@ -17,6 +17,7 @@ CHARACTERS_PER_TOKEN: int = 4
 
 # Property tests for TLM
 excluded_tlm_models: List[str] = [
+    "claude-3.5-haiku",
     "claude-3-sonnet",
     "claude-3.5-sonnet",
     "claude-3.5-sonnet-v2",
