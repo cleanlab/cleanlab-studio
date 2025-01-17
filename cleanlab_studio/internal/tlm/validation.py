@@ -46,7 +46,6 @@ def validate_tlm_prompt_kwargs_constrain_outputs(
             # If it's a list of strings, repeat the list for each prompt
             if all(isinstance(co, str) for co in constrain_outputs):
                 constrain_outputs = [constrain_outputs] * len(prompt)
-                pass
             # Check if it's a list of lists of strings
             elif all(
                 isinstance(co, list) and all(isinstance(s, str) for s in co)
