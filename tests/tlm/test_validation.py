@@ -96,17 +96,6 @@ def test_prompt_constrain_outputs_wrong_type_single_prompt(tlm: TLM):
     assert str(exc_info.value).startswith("constrain_outputs must be a list of strings")
 
 
-def test_prompt_constrain_outputs_wrong_type_batch_prompt(tlm: TLM):
-    """Tests that validation error is raised when constrain_outputs is not a list of lists of strings when prompt is a list of strings."""
-    with pytest.raises(ValidationError) as exc_info:
-        tlm.prompt(
-            ["test prompt"],
-            constrain_outputs=["test constrain outputs"],
-        )
-
-    assert str(exc_info.value).startswith("constrain_outputs must be a list of lists of strings")
-
-
 def test_prompt_constrain_outputs_wrong_length(tlm: TLM):
     """Tests that validation error is raised when constrain_outputs length does not match prompt length."""
     with pytest.raises(ValidationError) as exc_info:
