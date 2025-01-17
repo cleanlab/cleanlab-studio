@@ -26,6 +26,7 @@ _TLM_MAX_TOKEN_RANGE: Dict[str, Tuple[int, int]] = {  # model: (min, max)
     "claude-3.5-haiku": (64, 512),
     "claude-3-sonnet": (64, 512),
     "claude-3.5-sonnet": (64, 512),
+    "nova-micro": (64, 512),
 }
 TLM_NUM_CANDIDATE_RESPONSES_RANGE: Tuple[int, int] = (1, 20)  # (min, max)
 TLM_NUM_CONSISTENCY_SAMPLES_RANGE: Tuple[int, int] = (0, 20)  # (min, max)
