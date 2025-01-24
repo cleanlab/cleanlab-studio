@@ -822,6 +822,10 @@ class TLMOptions(TypedDict):
         and helping catch answers that are obviously incorrect/bad for a prompt asking for a well-defined answer that LLMs should be able to handle.
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
 
+        reasoning_effort (str, default = "high"): Controls how much the LLM thinks when considering alternative possible responses and double-checking responses.
+        Higher efforts here produce better TLM trustworthiness scores, but at higher costs/runtimes, reduce this value to get faster results.
+        Supported efforts include "none", "low", "medium",` "high".
+
         log (List[str], default = []): optionally specify additional logs or metadata to return.
         For instance, include "explanation" here to get explanations of why a response is scored with low trustworthiness.
 
@@ -837,6 +841,7 @@ class TLMOptions(TypedDict):
     num_candidate_responses: NotRequired[int]
     num_consistency_samples: NotRequired[int]
     use_self_reflection: NotRequired[bool]
+    reasoning_effort: NotRequired[str]
     log: NotRequired[List[str]]
     custom_eval_criteria: NotRequired[List[Dict[str, Any]]]
 
