@@ -13,6 +13,8 @@ from cleanlab_studio.internal.constants import (
     _VALID_TLM_MODELS,
     _VALID_TLM_QUALITY_PRESETS,
     TLM_SIMILARITY_MEASURES,
+    TLM_REASONING_EFFORT_VALUES,
+
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 from cleanlab_studio.studio.trustworthy_language_model import TLM
@@ -87,6 +89,7 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
     add_num_consistency_samples = np.random.choice([True, False])
     add_use_self_reflection = np.random.choice([True, False])
     add_similarity_measure = np.random.choice([True, False])
+    add_reasoning_effort = np.random.choice([True, False])
     add_log_explanation = np.random.choice([True, False])
     add_log_perplexity_score = np.random.choice([True, False])
 
@@ -103,6 +106,8 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
         options["num_consistency_samples"] = int(np.random.randint(0, 10))
     if add_similarity_measure:
         options["similarity_measure"] = random.choice(list(TLM_SIMILARITY_MEASURES))
+    if add_reasoning_effort:
+        options["reasoning_effort"] = random.choice(list(TLM_REASONING_EFFORT_VALUES))
 
     if add_log_explanation or add_log_perplexity_score:
         options["log"] = [

@@ -9,6 +9,7 @@ from cleanlab_studio.internal.constants import (
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
     TLM_SIMILARITY_MEASURES,
+    TLM_REASONING_EFFORT_VALUES,
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
     TLM_VALID_KWARGS,
     TLM_VALID_LOG_OPTIONS,
@@ -236,6 +237,12 @@ def validate_tlm_options(options: Any) -> None:
             if val not in TLM_SIMILARITY_MEASURES:
                 raise ValidationError(
                     f"Invalid value for similarity_measure: {val}, valid measures include: {TLM_SIMILARITY_MEASURES}"
+                )
+
+        elif option == "reasoning_effort":
+            if val not in TLM_REASONING_EFFORT_VALUES:
+                raise ValidationError(
+                    f"Invalid value {val}, reasoning_effort must be one of {TLM_REASONING_EFFORT_VALUES}"
                 )
 
         elif option == "log":
