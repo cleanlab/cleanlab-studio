@@ -822,6 +822,10 @@ class TLMOptions(TypedDict):
         and helping catch answers that are obviously incorrect/bad for a prompt asking for a well-defined answer that LLMs should be able to handle.
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
 
+        similarity_measure (str, default = "semantic"): Controls how the trustworthiness scoring algorithm measures similarity between possible
+        responses/outputs considered by the model. Set this to "string" to get faster results.
+        Supported measures include "semantic" and "string".
+
         reasoning_effort (str, default = "high"): Controls how much the LLM reasons when considering alternative possible responses and double-checking responses.
         Higher efforts here produce better TLM trustworthiness scores, but at higher costs/runtimes, reduce this value to get faster results.
         Supported efforts include "none", "low", "medium", "high".
@@ -841,6 +845,7 @@ class TLMOptions(TypedDict):
     num_candidate_responses: NotRequired[int]
     num_consistency_samples: NotRequired[int]
     use_self_reflection: NotRequired[bool]
+    similarity_measure: NotRequired[str]
     reasoning_effort: NotRequired[str]
     log: NotRequired[List[str]]
     custom_eval_criteria: NotRequired[List[Dict[str, Any]]]
