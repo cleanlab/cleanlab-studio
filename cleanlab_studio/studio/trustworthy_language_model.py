@@ -823,20 +823,21 @@ class TLMOptions(TypedDict):
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
 
         similarity_measure (str, default = "semantic"): Controls how the trustworthiness scoring algorithm measures similarity between possible
-        responses/outputs considered by the model. Set this to "string" to get faster results.
-        Supported measures include "semantic" and "string".
+        responses/outputs considered by the model.
+        Supported similarity measures include "semantic" (based on natural language inference) and "string" (based on character/word overlap).
+        Set this to "string" to get faster results.
 
-        reasoning_effort (str, default = "high"): Controls how much the LLM reasons when considering alternative possible responses and double-checking responses.
-        Higher efforts here produce better TLM trustworthiness scores, but at higher costs/runtimes, reduce this value to get faster results.
-        Supported efforts include "none", "low", "medium", "high".
+        reasoning_effort (str, default = "high"): Controls how much the LLM reasons (number of thinking tokens) when considering alternative possible responses and double-checking responses.
+        Higher efforts here may produce better TLM trustworthiness scores, but at higher runtimes. Reduce this value to get faster results.
+        Supported reasoning efforts include "none", "low", "medium", "high".
 
         log (List[str], default = []): optionally specify additional logs or metadata to return.
         For instance, include "explanation" here to get explanations of why a response is scored with low trustworthiness.
 
         custom_eval_criteria (List[Dict[str, Any]], default = []): optionally specify custom evalution criteria.
         The expected input format is a list of dictionaries, where each dictionary has the following keys:
-        - name: name of the evaluation criteria
-        - criteria: the instruction for the evaluation criteria
+        - name: Name of the evaluation criteria.
+        - criteria: Instructions specifying the evaluation criteria.
         Currently, only one custom evaluation criteria at a time is supported.
     """
 
