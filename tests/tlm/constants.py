@@ -22,6 +22,8 @@ excluded_tlm_models: List[str] = [
     "claude-3.5-sonnet",
     "claude-3.5-sonnet-v2",
     "o1-preview",
+    "o1",
+    "o1-mini",
     "nova-lite",
     "nova-pro",
 ]
@@ -35,6 +37,8 @@ MODELS_WITH_NO_PERPLEXITY_SCORE: List[str] = [
     "claude-3.5-sonnet",
     "claude-3.5-sonnet-v2",
     "o1-preview",
+    "o1",
+    "o1-mini",
     "nova-micro",
     "nova-lite",
     "nova-pro",
