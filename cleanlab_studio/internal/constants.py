@@ -9,6 +9,8 @@ _VALID_TLM_MODELS: List[str] = [
     "gpt-4o",
     "gpt-4o-mini",
     "o1-preview",
+    "o1",
+    "o1-mini",
     "claude-3-haiku",
     "claude-3.5-haiku",
     "claude-3-sonnet",

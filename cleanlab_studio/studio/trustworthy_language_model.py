@@ -795,7 +795,7 @@ class TLMOptions(TypedDict):
     Args:
         model (str, default = "gpt-4o-mini"): underlying base LLM to use (better models yield better results, faster models yield faster/cheaper results).
         - Models currently supported include: "gpt-4o-mini", "gpt-4o", "o1-preview", "gpt-3.5-turbo-16k", "gpt-4", "claude-3.5-sonnet", "claude-3-haiku".
-        - Additional models supported in beta include: "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
+        - Additional models supported in beta include: "o1", "o1-mini", "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
 
         max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
         This number will impact the maximum number of tokens you will see in the output response, and also the number of tokens
