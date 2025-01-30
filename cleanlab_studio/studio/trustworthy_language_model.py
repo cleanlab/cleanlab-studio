@@ -151,14 +151,14 @@ class TLM:
     After you've instantiated the TLM object using [`Studio.TLM()`](../studio/#method-tlm), you can use the instance methods documented on this page. Possible arguments for `Studio.TLM()` are documented below.
 
     Args:
-        quality_preset (TLMQualityPreset, default = "medium"): An optional preset configuration to control the quality of TLM responses and trustworthiness scores vs. runtimes/costs. TLMQualityPreset is a string specifying one of the supported presets: "best", "high", "medium", "low", "base".
+        quality_preset ({"base", "low", "medium", "high", "best"}, default = "medium"): An optional preset configuration to control
+            the quality of TLM responses and trustworthiness scores vs. runtimes/costs.
 
             The "best" and "high" presets return improved LLM responses,
             with "best" also returning more reliable trustworthiness scores than "high".
             The "medium" and "low" presets return standard LLM responses along with associated trustworthiness scores,
             with "medium" producing more reliable trustworthiness scores than low.
             The "base" preset will provide a standard LLM response and a trustworthiness score in the lowest possible latency/cost.
-
 
             Higher presets have increased runtime and cost (and may internally consume more tokens).
             Reduce your preset if you see token-limit errors.
@@ -167,7 +167,8 @@ class TLM:
             These "best" and "high" presets have higher runtime/cost, and are optimized to return more accurate LLM outputs, but not more reliable trustworthiness scores than the "medium" and "low" presets.
 
         options (TLMOptions, optional): a typed dict of advanced configuration options.
-        Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection".
+        Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection",
+        "similarity_measure", "reasoning_effort", "log", "custom_eval_criteria".
         For more details about the options, see the documentation for [TLMOptions](#class-tlmoptions).
         If specified, these override any settings from the choice of `quality_preset`.
 
@@ -395,7 +396,7 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
                 Use it if you want strict error handling and immediate notification of any exceptions/timeouts.
 
-                If running this method on a big batch of prompts: you might lose partially completed results if TLM fails on any one of them.
+                If running this method on a big batch of prompts, you might lose partially completed results if TLM fails on any one of them.
                 To avoid losing partial results for the prompts that TLM did not fail on,
                 you can either call this method on smaller batches of prompts at a time
                 (and save intermediate results between batches), or use the [`try_prompt()`](#method-try_prompt) method instead.
@@ -793,8 +794,8 @@ class TLMOptions(TypedDict):
     You can set custom values for these arguments regardless of the quality preset specified.
 
     Args:
-        model (str, default = "gpt-4o-mini"): underlying base LLM to use (better models yield better results, faster models yield faster/cheaper results).
-        - Models currently supported include: "gpt-4o-mini", "gpt-4o", "o1-preview", "gpt-3.5-turbo-16k", "gpt-4", "claude-3.5-sonnet", "claude-3-haiku".
+        model ({"gpt-4o-mini", "gpt-4o", "o1-preview", "gpt-3.5-turbo-16k", "gpt-4", "claude-3.5-sonnet", "claude-3-haiku"}, default = "gpt-4o-mini"): Underlying
+        base LLM to use (better models yield better results, faster models yield faster/cheaper results).
         - Additional models supported in beta include: "o1", "o1-mini", "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
 
         max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
@@ -822,14 +823,14 @@ class TLMOptions(TypedDict):
         and helping catch answers that are obviously incorrect/bad for a prompt asking for a well-defined answer that LLMs should be able to handle.
         Setting this to False disables the use of self-reflection and may produce worse TLM trustworthiness scores, but will reduce costs/runtimes.
 
-        similarity_measure (str, default = "semantic"): Controls how the trustworthiness scoring algorithm measures similarity between possible
-        responses/outputs considered by the model.
+        similarity_measure ({"semantic", "string"}, default = "semantic"): Controls how the trustworthiness scoring algorithm measures
+        similarity between possible responses/outputs considered by the model.
         Supported similarity measures include "semantic" (based on natural language inference) and "string" (based on character/word overlap).
         Set this to "string" to get faster results.
 
-        reasoning_effort (str, default = "high"): Controls how much the LLM reasons (number of thinking tokens) when considering alternative possible responses and double-checking responses.
+        reasoning_effort ({"none", "low", "medium", "high"}, default = "high"): Controls how much the LLM reasons (number of thinking tokens)
+        when considering alternative possible responses and double-checking responses.
         Higher efforts here may produce better TLM trustworthiness scores, but at higher runtimes. Reduce this value to get faster results.
-        Supported reasoning efforts include "none", "low", "medium", "high".
 
         log (List[str], default = []): optionally specify additional logs or metadata to return.
         For instance, include "explanation" here to get explanations of why a response is scored with low trustworthiness.
