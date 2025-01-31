@@ -24,6 +24,7 @@ excluded_tlm_models: List[str] = [
     "o1-preview",
     "o1",
     "o1-mini",
+    "o3-mini",
     "nova-lite",
     "nova-pro",
 ]
@@ -39,6 +40,7 @@ MODELS_WITH_NO_PERPLEXITY_SCORE: List[str] = [
     "o1-preview",
     "o1",
     "o1-mini",
+    "o3-mini",
     "nova-micro",
     "nova-lite",
     "nova-pro",

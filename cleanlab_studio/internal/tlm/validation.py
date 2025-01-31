@@ -13,6 +13,7 @@ from cleanlab_studio.internal.constants import (
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
     TLM_VALID_KWARGS,
     TLM_VALID_LOG_OPTIONS,
+    TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
 )
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = (
@@ -250,6 +251,10 @@ def validate_tlm_options(options: Any) -> None:
                 raise ValidationError(f"Invalid type {type(val)}, log must be a list of strings.")
 
             invalid_log_options = set(val) - TLM_VALID_LOG_OPTIONS
+
+            model = options.get("model", _TLM_DEFAULT_MODEL)
+            if "explanation" in val and model in TLM_MODELS_NOT_SUPPORTING_EXPLANATION:
+                raise ValidationError(f"Explanation is not supported for this model: {model}. ")
 
             if invalid_log_options:
                 raise ValidationError(
