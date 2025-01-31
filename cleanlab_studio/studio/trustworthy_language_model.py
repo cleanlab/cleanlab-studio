@@ -790,9 +790,10 @@ class TLMOptions(TypedDict):
     You can set custom values for these arguments regardless of the quality preset specified.
 
     Args:
-        model ({"gpt-4o-mini", "gpt-4o", "o1", "o1-mini", "o1-preview", "gpt-3.5-turbo-16k", "gpt-4", "claude-3.5-sonnet-v2", "claude-3.5-sonnet", "claude-3.5-haiku", "claude-3-haiku", "nova-micro", "nova-lite", "nova-pro"}, default = "gpt-4o-mini"):
+        model ({"gpt-4o-mini", "gpt-4o", "o3-mini", "o1", "o1-mini", "o1-preview", "gpt-3.5-turbo-16k", "gpt-4", "claude-3.5-sonnet-v2",
+        "claude-3.5-sonnet", "claude-3.5-haiku", "claude-3-haiku", "nova-micro", "nova-lite", "nova-pro"}, default = "gpt-4o-mini"):
         Underlying base LLM to use (better models yield better results, faster models yield faster/cheaper results).
-        - Models still in beta: "o1", "o1-mini", "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
+        - Models still in beta: "o1", "o3-mini", "o1-mini", "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
         - Recommended models for accuracy: "gpt-4o", "o1", "claude-3.5-sonnet-v2".
         - Recommended models for low latency/costs: "nova-micro", "gpt-4o-mini".
 
