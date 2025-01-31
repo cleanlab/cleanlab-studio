@@ -436,7 +436,7 @@ class TLM:
         failures (errors or timeouts) processing some inputs, the [TLMResponse](#class-tlmresponse) objects in the returned list will contain error messages and retryability information instead of the usual response.
 
         This is the recommended way to run TLM over large datasets with many prompts.
-        It ensures partial results are preserved, even if some individual TLM calls over the dataset fail. 
+        It ensures partial results are preserved, even if some individual TLM calls over the dataset fail.
 
         Args:
             prompt (Sequence[str]): list of multiple prompts for the TLM
