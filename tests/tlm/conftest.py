@@ -14,6 +14,7 @@ from cleanlab_studio.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
     TLM_SIMILARITY_MEASURES,
     TLM_REASONING_EFFORT_VALUES,
+    TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 from cleanlab_studio.studio.trustworthy_language_model import TLM
@@ -89,7 +90,11 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
     add_use_self_reflection = np.random.choice([True, False])
     add_similarity_measure = np.random.choice([True, False])
     add_reasoning_effort = np.random.choice([True, False])
-    add_log_explanation = np.random.choice([True, False])
+    add_log_explanation = (
+        np.random.choice([True, False])
+        if model not in TLM_MODELS_NOT_SUPPORTING_EXPLANATION
+        else False
+    )
     add_log_perplexity_score = np.random.choice([True, False])
 
     if add_max_tokens:
