@@ -167,7 +167,7 @@ class TLM:
             These "best" or "high" presets can additionally improve the LLM response itself, but do not return more reliable trustworthiness scores than "medium" or "low" presets.
 
         options (TLMOptions, optional): a typed dict of advanced configurations you can optionally specify.
-        Available options (keys in this dict): "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection",
+        Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection",
         "similarity_measure", "reasoning_effort", "log", "custom_eval_criteria".
         See detailed documentation under [TLMOptions](#class-tlmoptions).
         If specified, these override any settings from the choice of `quality_preset`
