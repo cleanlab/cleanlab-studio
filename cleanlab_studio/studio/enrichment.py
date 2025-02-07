@@ -17,12 +17,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
 from typing_extensions import NotRequired
+from functools import lru_cache
 
 from cleanlab_studio.errors import EnrichmentProjectError
 from cleanlab_studio.internal.api import api
 from cleanlab_studio.internal.tlm.validation import validate_tlm_options
 from cleanlab_studio.internal.types import JSONDict, TLMQualityPreset
 from cleanlab_studio.studio.trustworthy_language_model import TLMOptions
+from cleanlab_studio.utils.data_enrichment.enrich import run_online
 
 Replacement = Tuple[str, str]
 ROW_ID_COLUMN_NAME = "row_id"
@@ -47,6 +49,13 @@ def _response_timestamp_to_datetime(timestamp_string: str) -> datetime:
     """
     response_timestamp_format_str = "%a, %d %b %Y %H:%M:%S %Z"
     return datetime.strptime(timestamp_string, response_timestamp_format_str)
+
+
+@lru_cache(maxsize=None)
+def _get_run_online():
+    from cleanlab_studio.utils.data_enrichment.enrich import run_online
+
+    return run_online
 
 
 class EnrichmentProject:
@@ -342,9 +351,11 @@ class EnrichmentProject:
                 id=job["id"],
                 status=job["status"],
                 created_at=_response_timestamp_to_datetime(job["created_at"]),
-                updated_at=_response_timestamp_to_datetime(job["updated_at"])
-                if job["updated_at"]
-                else None,
+                updated_at=(
+                    _response_timestamp_to_datetime(job["updated_at"])
+                    if job["updated_at"]
+                    else None
+                ),
                 enrichment_options=EnrichmentOptions(**enrichment_options_dict),  # type: ignore
                 average_trustworthiness_score=job["average_trustworthiness_score"],
                 job_type=job["type"],
@@ -398,6 +409,26 @@ class EnrichmentProject:
         """Resume the latest batch job."""
         latest_job = self._get_latest_job()
         return api.resume_enrichment_job(api_key=self._api_key, job_id=latest_job["id"])
+
+    def run_online(
+        self,
+        data: Union[pd.DataFrame, List[dict]],
+        options: EnrichmentOptions,
+        new_column_name: str,
+    ) -> Dict[str, Any]:
+        """
+        Enrich data in real-time using the same logic as the ``run()`` method. This runs client-side on your local machine, processing one record at a time. 
+
+        Args:
+            data (Union[pd.DataFrame, List[dict]]): The dataset to enrich.
+            options (EnrichmentOptions): See :class:`EnrichmentOptions` for details.
+            new_column_name (str): The name of the new column to store the results.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing information about the enrichment job and the enriched dataset.
+        """
+        job_info = run_online(data, options, new_column_name, self)
+        return job_info
 
 
 class EnrichmentJob(TypedDict):
