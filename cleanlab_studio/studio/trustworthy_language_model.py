@@ -146,7 +146,7 @@ class TLM:
 
     Advanced users can optionally specify TLM configuration options. The documentation below summarizes these options, more details are explained in the [Advanced TLM tutorial](/tlm/tutorials/tlm_advanced/).
 
-    ** The TLM object is not meant to be constructed directly.** Instead, use the [`Studio.TLM()`](../studio/#method-tlm)
+    **The TLM object is not meant to be constructed directly.** Instead, use the [`Studio.TLM()`](../studio/#method-tlm)
     method to configure and instantiate a TLM object.
     After you've instantiated the TLM object using [`Studio.TLM()`](../studio/#method-tlm), you can use the instance methods documented on this page. Possible arguments for `Studio.TLM()` are documented below.
 
@@ -574,7 +574,7 @@ class TLM:
                 this method will raise an exception if any TLM errors or timeouts occur.
                 Use it if immediate notification of any exceptions/timeouts is preferred.
                 You will lose any partial results if an exception is raised.
-                For big datasets: we recommend using [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) instead, and running it in multiple batches.
+                For big datasets, we recommend using [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) instead, and running it in multiple batches.
         """
         validate_tlm_prompt_response(prompt, response)
         processed_response = process_response_and_kwargs(response, kwargs)
