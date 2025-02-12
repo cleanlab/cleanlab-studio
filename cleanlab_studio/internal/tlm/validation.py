@@ -6,14 +6,14 @@ from cleanlab_studio.internal.constants import (
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
+    TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
-    TLM_SIMILARITY_MEASURES,
     TLM_REASONING_EFFORT_VALUES,
+    TLM_SIMILARITY_MEASURES,
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
     TLM_VALID_KWARGS,
     TLM_VALID_LOG_OPTIONS,
-    TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
 )
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = (
@@ -263,9 +263,26 @@ def validate_tlm_options(options: Any) -> None:
 
 
 def process_response_and_kwargs(
+    prompt: Union[str, Sequence[str]],
     response: Union[str, Sequence[str]],
     kwargs_dict: Dict[str, Any],
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+
+    constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs_dict)
+    kwargs_dict["constrain_outputs"] = constrain_outputs
+    if constrain_outputs is not None:
+        # Check each response is one of its allowed constraint outputs
+        if isinstance(response, str):
+            if response not in constrain_outputs:
+                raise ValidationError(
+                    f"Response '{response}' must be one of the constraint outputs: {constrain_outputs}"
+                )
+        else:
+            for i, (resp, constraints) in enumerate(zip(response, constrain_outputs)):
+                if constraints is not None and resp not in constraints:
+                    raise ValidationError(
+                        f"Response '{resp}' at index {i} must be one of the constraint outputs: {constraints}"
+                    )
 
     if not SKIP_VALIDATE_TLM_OPTIONS:
         invalid_kwargs = set(kwargs_dict.keys()) - TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS

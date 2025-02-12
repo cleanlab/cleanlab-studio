@@ -577,7 +577,7 @@ class TLM:
                 For big datasets, we recommend using [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) instead, and running it in multiple batches.
         """
         validate_tlm_prompt_response(prompt, response)
-        processed_response = process_response_and_kwargs(response, kwargs)
+        processed_response = process_response_and_kwargs(prompt, response, kwargs)
 
         if isinstance(prompt, str) and isinstance(processed_response, dict):
             return cast(
@@ -630,7 +630,7 @@ class TLM:
                 use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
         validate_try_tlm_prompt_response(prompt, response)
-        processed_response = process_response_and_kwargs(response, kwargs)
+        processed_response = process_response_and_kwargs(prompt, response, kwargs)
 
         assert isinstance(processed_response, list)
 
@@ -667,7 +667,7 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt_response(prompt, response)
-        processed_response = process_response_and_kwargs(response, kwargs)
+        processed_response = process_response_and_kwargs(prompt, response, kwargs)
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str) and isinstance(processed_response, dict):
@@ -835,8 +835,8 @@ class TLMOptions(TypedDict):
         custom_eval_criteria (List[Dict[str, Any]], default = []): optionally specify custom evalution criteria.
         The expected input format is a list of dictionaries, where each dictionary has the following keys:
         - name: Name of the evaluation criteria.
-        - criteria: Instructions specifying the evaluation criteria. 
-        
+        - criteria: Instructions specifying the evaluation criteria.
+
             Currently, only one custom evaluation criteria at a time is supported.
     """
 

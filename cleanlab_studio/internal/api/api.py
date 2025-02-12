@@ -1029,7 +1029,7 @@ async def tlm_prompt(
 async def tlm_get_confidence_score(
     api_key: str,
     prompt: str,
-    response: str,
+    response: Dict[str, Any],
     quality_preset: str,
     options: Optional[JSONDict],
     rate_handler: TlmRateHandler,

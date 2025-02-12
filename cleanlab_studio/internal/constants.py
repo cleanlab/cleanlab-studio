@@ -36,6 +36,6 @@ TLM_NUM_CONSISTENCY_SAMPLES_RANGE: Tuple[int, int] = (0, 20)  # (min, max)
 TLM_SIMILARITY_MEASURES: Set[str] = {"semantic", "string"}
 TLM_REASONING_EFFORT_VALUES: Set[str] = {"none", "low", "medium", "high"}
 TLM_VALID_LOG_OPTIONS: Set[str] = {"perplexity", "explanation"}
-TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS: Set[str] = {"perplexity"}
+TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS: Set[str] = {"perplexity", "constrain_outputs"}
 TLM_VALID_KWARGS: Set[str] = {"constrain_outputs"}
 TLM_MODELS_NOT_SUPPORTING_EXPLANATION: Set[str] = {"o1-mini", "o1-preview", "o1", "o3-mini"}
