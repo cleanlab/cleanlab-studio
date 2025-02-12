@@ -23,16 +23,18 @@ SKIP_VALIDATE_TLM_OPTIONS: bool = (
 
 def validate_tlm_prompt_kwargs_constrain_outputs(
     prompt: Union[str, Sequence[str]],
+    valid_kwargs_check: bool = True,
     **kwargs: Any,
 ) -> Union[Optional[List[str]], Optional[List[Optional[List[str]]]]]:
-    # validate kwargs - only allow constrain_outputs
-    supported_kwargs = TLM_VALID_KWARGS
-    unsupported_kwargs = set(kwargs.keys()) - supported_kwargs
-    if unsupported_kwargs:
-        raise ValidationError(
-            f"Unsupported keyword arguments: {unsupported_kwargs}. "
-            f"Supported keyword arguments are: {supported_kwargs}"
-        )
+    if valid_kwargs_check:
+        # validate kwargs - only allow constrain_outputs
+        supported_kwargs = TLM_VALID_KWARGS
+        unsupported_kwargs = set(kwargs.keys()) - supported_kwargs
+        if unsupported_kwargs:
+            raise ValidationError(
+                f"Unsupported keyword arguments: {unsupported_kwargs}. "
+                f"Supported keyword arguments are: {supported_kwargs}"
+            )
 
     # validate constrain_outputs and it needs to match with what prompt is whether prompt is a sequence or string
     constrain_outputs = kwargs.get("constrain_outputs")
@@ -268,9 +270,11 @@ def process_response_and_kwargs(
     kwargs_dict: Dict[str, Any],
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
 
-    constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs_dict)
-    kwargs_dict["constrain_outputs"] = constrain_outputs
+    constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(
+        prompt, valid_kwargs_check=False, **kwargs_dict
+    )
     if constrain_outputs is not None:
+        kwargs_dict["constrain_outputs"] = constrain_outputs
         # Check each response is one of its allowed constraint outputs
         if isinstance(response, str):
             if response not in constrain_outputs:

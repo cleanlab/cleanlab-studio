@@ -107,6 +107,58 @@ def test_prompt_constrain_outputs_wrong_length(tlm: TLM):
     assert str(exc_info.value).startswith("constrain_outputs must have same length as prompt")
 
 
+def test_scoring_constrain_outputs_wrong_type_single_prompt(tlm: TLM):
+    """Tests that validation error is raised when constrain_outputs is not a list of strings when prompt is a string."""
+    with pytest.raises(ValidationError) as exc_info:
+        tlm.get_trustworthiness_score(
+            "test prompt",
+            "test response",
+            constrain_outputs="test constrain outputs",
+        )
+
+    assert str(exc_info.value).startswith("constrain_outputs must be a list of strings")
+
+
+def test_scoring_constrain_outputs_wrong_length(tlm: TLM):
+    """Tests that validation error is raised when constrain_outputs length does not match prompt length."""
+    with pytest.raises(ValidationError) as exc_info:
+        tlm.get_trustworthiness_score(
+            ["test prompt"],
+            ["test response"],
+            constrain_outputs=[["test constrain outputs"], ["test constrain outputs"]],
+        )
+
+    assert str(exc_info.value).startswith("constrain_outputs must have same length as prompt")
+
+
+def test_scoring_response_not_in_constrain_outputs(tlm: TLM):
+    """Tests that validation error is raised when response is not in constrain_outputs."""
+    with pytest.raises(ValidationError) as exc_info:
+        tlm.get_trustworthiness_score(
+            "test prompt",
+            "test response",
+            constrain_outputs=["test constrain outputs"],
+        )
+
+    assert str(exc_info.value).startswith(
+        "Response 'test response' must be one of the constraint outputs: ['test constrain outputs']"
+    )
+
+
+def test_scoring_response_not_in_constrain_outputs_batch(tlm: TLM):
+    """Tests that validation error is raised when response is not in constrain_outputs."""
+    with pytest.raises(ValidationError) as exc_info:
+        tlm.get_trustworthiness_score(
+            ["test prompt1", "test prompt2"],
+            ["test response1", "test response2"],
+            constrain_outputs=[["test response1"], ["test constrain outputs"]],
+        )
+
+    assert str(exc_info.value).startswith(
+        "Response 'test response2' at index 1 must be one of the constraint outputs: ['test constrain outputs']"
+    )
+
+
 def test_prompt_too_long_exception_single_prompt(tlm: TLM):
     """Tests that bad request error is raised when prompt is too long when calling tlm.prompt with a single prompt."""
     with pytest.raises(TlmBadRequest) as exc_info:

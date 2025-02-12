@@ -564,6 +564,7 @@ class TLM:
             prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
             response (str | Sequence[str]): existing response (or list of responses) associated with the input prompts.
                 These can be from any LLM or human-written responses.
+            kwargs: Optional keyword arguments, it supports the same arguments as the [`prompt()`](#method-prompt) method such as `constrain_outputs`.
         Returns:
             TLMScore | List[TLMScore]: If a single prompt/response pair was passed in, method returns a [TLMScore](#class-tlmscore) object containing the trustworthiness score and optional log dictionary keys.
 
@@ -618,6 +619,7 @@ class TLM:
         Args:
             prompt (Sequence[str]): list of prompts for the TLM to evaluate
             response (Sequence[str]): list of existing responses corresponding to the input prompts (from any LLM or human-written)
+            kwargs: Optional keyword arguments, it supports the same arguments as the [`prompt()`](#method-prompt) method such as `constrain_outputs`.
         Returns:
             List[TLMScore]: If a list of prompt/responses was passed in, method returns a list of [TLMScore](#class-tlmscore) objects each containing the trustworthiness score and the optional log dictionary keys for each prompt-response pair passed in. For all TLM calls that failed, the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information instead.
 
@@ -659,6 +661,7 @@ class TLM:
         Args:
             prompt (str | Sequence[str]): prompt (or list of prompts) for the TLM to evaluate
             response (str | Sequence[str]): response (or list of responses) corresponding to the input prompts
+            kwargs: Optional keyword arguments, it supports the same arguments as the [`prompt()`](#method-prompt) method such as `constrain_outputs`.
         Returns:
             TLMScore | List[TLMScore]: If a single prompt/response pair was passed in, method returns either a float (representing the output trustworthiness score) or a [TLMScore](#class-tlmscore) object containing both the trustworthiness score and log dictionary keys.
 
