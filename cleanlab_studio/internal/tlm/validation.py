@@ -12,60 +12,13 @@ from cleanlab_studio.internal.constants import (
     TLM_REASONING_EFFORT_VALUES,
     TLM_SIMILARITY_MEASURES,
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
-    TLM_VALID_KWARGS,
     TLM_VALID_LOG_OPTIONS,
+    TLM_VALID_PROMPT_KWARGS,
 )
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = (
     os.environ.get("CLEANLAB_STUDIO_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
 )
-
-
-def validate_tlm_prompt_kwargs_constrain_outputs(
-    prompt: Union[str, Sequence[str]],
-    valid_kwargs_check: bool = True,
-    **kwargs: Any,
-) -> Union[Optional[List[str]], Optional[List[Optional[List[str]]]]]:
-    if valid_kwargs_check:
-        # validate kwargs - only allow constrain_outputs
-        supported_kwargs = TLM_VALID_KWARGS
-        unsupported_kwargs = set(kwargs.keys()) - supported_kwargs
-        if unsupported_kwargs:
-            raise ValidationError(
-                f"Unsupported keyword arguments: {unsupported_kwargs}. "
-                f"Supported keyword arguments are: {supported_kwargs}"
-            )
-
-    # validate constrain_outputs and it needs to match with what prompt is whether prompt is a sequence or string
-    constrain_outputs = kwargs.get("constrain_outputs")
-    if constrain_outputs is not None:
-        if isinstance(prompt, str):
-            if not isinstance(constrain_outputs, list) or not all(
-                isinstance(s, str) for s in constrain_outputs
-            ):
-                raise ValidationError("constrain_outputs must be a list of strings")
-        elif isinstance(prompt, Sequence):
-            if not isinstance(constrain_outputs, list):
-                raise ValidationError("constrain_outputs must be a list")
-
-            # If it's a list of strings, repeat the list for each prompt
-            if all(isinstance(co, str) for co in constrain_outputs):
-                constrain_outputs = [constrain_outputs] * len(prompt)
-            # Check if it's a list of lists of strings
-            elif all(
-                isinstance(co, list) and all(isinstance(s, str) for s in co)
-                for co in constrain_outputs
-            ):
-                pass
-            else:
-                raise ValidationError(
-                    "constrain_outputs must be a list of strings or a list of lists of strings"
-                )
-
-            if len(constrain_outputs) != len(prompt):
-                raise ValidationError("constrain_outputs must have same length as prompt")
-
-    return constrain_outputs
 
 
 def validate_tlm_prompt(prompt: Union[str, Sequence[str]]) -> None:
@@ -264,18 +217,42 @@ def validate_tlm_options(options: Any) -> None:
                 )
 
 
-def process_response_and_kwargs(
+def process_and_validate_kwargs_constrain_outputs(
     prompt: Union[str, Sequence[str]],
-    response: Union[str, Sequence[str]],
     kwargs_dict: Dict[str, Any],
-) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    response: Optional[Union[str, Sequence[str]]] = None,
+) -> None:
+    constrain_outputs = kwargs_dict.get("constrain_outputs")
+    if constrain_outputs is None:
+        return
 
-    constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(
-        prompt, valid_kwargs_check=False, **kwargs_dict
-    )
-    if constrain_outputs is not None:
-        kwargs_dict["constrain_outputs"] = constrain_outputs
-        # Check each response is one of its allowed constraint outputs
+    if isinstance(prompt, str):
+        if not isinstance(constrain_outputs, list) or not all(
+            isinstance(s, str) for s in constrain_outputs
+        ):
+            raise ValidationError("constrain_outputs must be a list of strings")
+    elif isinstance(prompt, Sequence):
+        if not isinstance(constrain_outputs, list):
+            raise ValidationError("constrain_outputs must be a list")
+
+        # If it's a list of strings, repeat the list for each prompt
+        if all(isinstance(co, str) for co in constrain_outputs):
+            constrain_outputs = [constrain_outputs] * len(prompt)
+        # Check if it's a list of lists of strings
+        elif all(
+            isinstance(co, list) and all(isinstance(s, str) for s in co) for co in constrain_outputs
+        ):
+            pass
+        else:
+            raise ValidationError(
+                "constrain_outputs must be a list of strings or a list of lists of strings"
+            )
+
+        if len(constrain_outputs) != len(prompt):
+            raise ValidationError("constrain_outputs must have same length as prompt")
+
+    # Check each response is one of its allowed constraint outputs
+    if response is not None:
         if isinstance(response, str):
             if response not in constrain_outputs:
                 raise ValidationError(
@@ -287,6 +264,33 @@ def process_response_and_kwargs(
                     raise ValidationError(
                         f"Response '{resp}' at index {i} must be one of the constraint outputs: {constraints}"
                     )
+
+    kwargs_dict["constrain_outputs"] = constrain_outputs
+
+
+def tlm_prompt_process_and_validate_kwargs(
+    prompt: Union[str, Sequence[str]],
+    kwargs_dict: Dict[str, Any],
+) -> None:
+    supported_kwargs = TLM_VALID_PROMPT_KWARGS
+    unsupported_kwargs = set(kwargs_dict.keys()) - supported_kwargs
+    if unsupported_kwargs:
+        raise ValidationError(
+            f"Unsupported keyword arguments: {unsupported_kwargs}. "
+            f"Supported keyword arguments are: {supported_kwargs}"
+        )
+
+    process_and_validate_kwargs_constrain_outputs(prompt=prompt, kwargs_dict=kwargs_dict)
+
+
+def tlm_score_process_response_and_kwargs(
+    prompt: Union[str, Sequence[str]],
+    response: Union[str, Sequence[str]],
+    kwargs_dict: Dict[str, Any],
+) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    process_and_validate_kwargs_constrain_outputs(
+        prompt=prompt, kwargs_dict=kwargs_dict, response=response
+    )
 
     if not SKIP_VALIDATE_TLM_OPTIONS:
         invalid_kwargs = set(kwargs_dict.keys()) - TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS

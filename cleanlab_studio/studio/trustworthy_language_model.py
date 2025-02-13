@@ -33,13 +33,14 @@ from cleanlab_studio.internal.constants import (
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
+    TLM_CONSTRAIN_OUTPUTS_KEY,
 )
 from cleanlab_studio.internal.tlm.concurrency import TlmRateHandler
 from cleanlab_studio.internal.tlm.validation import (
-    process_response_and_kwargs,
+    tlm_prompt_process_and_validate_kwargs,
+    tlm_score_process_response_and_kwargs,
     validate_tlm_options,
     validate_tlm_prompt,
-    validate_tlm_prompt_kwargs_constrain_outputs,
     validate_tlm_prompt_response,
     validate_tlm_try_prompt,
     validate_try_tlm_prompt_response,
@@ -401,7 +402,7 @@ class TLM:
                 Use the [`try_prompt()`](#method-try_prompt) method instead and run it on multiple smaller batches.
         """
         validate_tlm_prompt(prompt)
-        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs)
+        tlm_prompt_process_and_validate_kwargs(prompt, kwargs)
         if isinstance(prompt, str):
             return cast(
                 TLMResponse,
@@ -410,7 +411,7 @@ class TLM:
                         prompt,
                         timeout=self._timeout,
                         capture_exceptions=False,
-                        constrain_outputs=constrain_outputs,
+                        constrain_outputs=kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY),
                     ),
                 ),
             )
@@ -419,7 +420,9 @@ class TLM:
             self._batch_prompt(
                 prompt,
                 capture_exceptions=False,
-                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
+                constrain_outputs=cast(
+                    Optional[List[Optional[List[str]]]], kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY)
+                ),
             ),
         )
 
@@ -451,13 +454,15 @@ class TLM:
                 use [`prompt()`](#method-prompt) instead.
         """
         validate_tlm_try_prompt(prompt)
-        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs)
+        tlm_prompt_process_and_validate_kwargs(prompt, kwargs)
 
         return self._event_loop.run_until_complete(
             self._batch_prompt(
                 prompt,
                 capture_exceptions=True,
-                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
+                constrain_outputs=cast(
+                    Optional[List[Optional[List[str]]]], kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY)
+                ),
             ),
         )
 
@@ -485,7 +490,7 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt(prompt)
-        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs)
+        tlm_prompt_process_and_validate_kwargs(prompt, kwargs)
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str):
@@ -494,14 +499,16 @@ class TLM:
                     session,
                     timeout=self._timeout,
                     capture_exceptions=False,
-                    constrain_outputs=constrain_outputs,
+                    constrain_outputs=kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY),
                 )
                 return cast(TLMResponse, tlm_response)
 
             return await self._batch_prompt(
                 prompt,
                 capture_exceptions=False,
-                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
+                constrain_outputs=cast(
+                    Optional[List[Optional[List[str]]]], kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY)
+                ),
             )
 
     @handle_tlm_exceptions("TLMResponse")
@@ -578,7 +585,7 @@ class TLM:
                 For big datasets, we recommend using [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) instead, and running it in multiple batches.
         """
         validate_tlm_prompt_response(prompt, response)
-        processed_response = process_response_and_kwargs(prompt, response, kwargs)
+        processed_response = tlm_score_process_response_and_kwargs(prompt, response, kwargs)
 
         if isinstance(prompt, str) and isinstance(processed_response, dict):
             return cast(
@@ -632,7 +639,7 @@ class TLM:
                 use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
         validate_try_tlm_prompt_response(prompt, response)
-        processed_response = process_response_and_kwargs(prompt, response, kwargs)
+        processed_response = tlm_score_process_response_and_kwargs(prompt, response, kwargs)
 
         assert isinstance(processed_response, list)
 
@@ -670,7 +677,7 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt_response(prompt, response)
-        processed_response = process_response_and_kwargs(prompt, response, kwargs)
+        processed_response = tlm_score_process_response_and_kwargs(prompt, response, kwargs)
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str) and isinstance(processed_response, dict):
