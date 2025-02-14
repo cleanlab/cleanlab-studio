@@ -1,7 +1,7 @@
 """
 Cleanlab's Trustworthy Language Model (TLM) is a large language model that gives more reliable answers and quantifies its uncertainty in these answers.
 
-**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLM()`](/reference/python/studio/#method-tlm) to instantiate a [TLM](#class-tlm) object, and then you can use the methods like [`prompt()`](#method-prompt) and [`get_trustworthiness_score()`](#method-get_trustworthiness_score) documented on this page.
+**This module is not meant to be imported and used directly.** Instead, use [`Studio.TLM()`](/studio/api/python/studio/#method-tlm) to instantiate a [TLM](#class-tlm) object, and then you can use the methods like [`prompt()`](#method-prompt) and [`get_trustworthiness_score()`](#method-get_trustworthiness_score) documented on this page.
 
 Learn how to use TLM via the [quickstart tutorial](/tlm/tutorials/tlm).
 """
@@ -835,8 +835,8 @@ class TLMOptions(TypedDict):
         custom_eval_criteria (List[Dict[str, Any]], default = []): optionally specify custom evalution criteria.
         The expected input format is a list of dictionaries, where each dictionary has the following keys:
         - name: Name of the evaluation criteria.
-        - criteria: Instructions specifying the evaluation criteria. 
-        
+        - criteria: Instructions specifying the evaluation criteria.
+
             Currently, only one custom evaluation criteria at a time is supported.
     """
 
