@@ -31,7 +31,7 @@ from cleanlab_studio.internal.util import (
     init_dataset_source,
     telemetry,
 )
-from cleanlab_studio.utils import tlm_lite, tlm_calibrated
+from cleanlab_studio.utils import tlm_calibrated, tlm_lite
 
 from . import enrichment, inference, trustworthy_language_model
 
@@ -472,7 +472,7 @@ class Studio:
         The rows in the original dataset that failed to be processed are marked as `True` in the `is_not_analyzed` [Cleanlab column](/studio/concepts/cleanlab_columns/#not-analyzed) of the cleanset.
 
         If you want to work with predicted probabilities for an image project, the recommended workflow is to download probabilities with the option `keep_id=True`, and then do a join with the original dataset on the ID column.
-        Alternatively, you can follow the steps [here](/reference/python/studio#method-download_embeddings), and filter out the rows that were not analyzed. The filtered dataset will then have rows that align with the predicted probabilities DataFrame.
+        Alternatively, you can follow the steps [here](/studio/api/python/studio#method-download_embeddings), and filter out the rows that were not analyzed. The filtered dataset will then have rows that align with the predicted probabilities DataFrame.
         """
         pred_probs: Union[npt.NDArray[np.float64], pd.DataFrame] = api.download_array(
             self._api_key, cleanset_id, "pred_probs"
