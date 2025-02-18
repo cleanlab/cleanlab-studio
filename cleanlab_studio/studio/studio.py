@@ -337,7 +337,7 @@ class Studio:
                 feature_columns = dataset_details["distinct_columns"]
                 if label_column is not None and label_column in feature_columns:
                     feature_columns.remove(label_column)
-                print(f"Feature columns not supplied. Using all valid feature columns")
+                print("Feature columns not supplied. Using all valid feature columns")
 
         if text_column is not None:
             if modality != "text":
@@ -623,10 +623,17 @@ class Studio:
         verbose: Optional[bool] = None,
     ) -> trustworthy_language_model.TLM:
         """
-        Instantiate a Trustworthy Language Model (TLM).
-        For more details, see the documentation of:
-        [cleanlab_studio.studio.trustworthy_language_model.TLM](../trustworthy_language_model/#class-tlm)
+        [DEPRECATED] Instantiate a Trustworthy Language Model (TLM).
+        This method is deprecated and will be removed in a future release.
+        Please use the dedicated `cleanlab-tlm` package instead.
         """
+        warnings.warn(
+            "studio.TLM() is deprecated and will be removed in a future release. "
+            "Please use the dedicated `cleanlab-tlm` package instead. "
+            "You can install it with: pip install cleanlab-tlm",
+            FutureWarning,
+            stacklevel=2,
+        )
         return trustworthy_language_model.TLM(
             self._api_key, quality_preset, options=options, timeout=timeout, verbose=verbose
         )
@@ -641,10 +648,17 @@ class Studio:
         verbose: Optional[bool] = None,
     ) -> tlm_lite.TLMLite:
         """
-        Instantiate a version of the Trustworthy Language Model that uses one model for response and another for trustworthiness scoring (reduce costs/latency without reducing response quality).
-        For more details, see the documentation of:
-        [cleanlab_studio.utils.tlm_lite.TLMLite](../utils.tlm_lite/#class-tlmlite)
+        [DEPRECATED] Instantiate a version of the Trustworthy Language Model that uses one model for response and another for trustworthiness scoring.
+        This method is deprecated and will be removed in a future release.
+        Please use the dedicated `cleanlab-tlm` package instead.
         """
+        warnings.warn(
+            "studio.TLMLite() is deprecated and will be removed in a future release. "
+            "Please use the dedicated `cleanlab-tlm` package instead. "
+            "You can install it with: pip install cleanlab-tlm",
+            FutureWarning,
+            stacklevel=2,
+        )
         return tlm_lite.TLMLite(
             self._api_key,
             response_model,
@@ -663,10 +677,17 @@ class Studio:
         verbose: Optional[bool] = None,
     ) -> tlm_calibrated.TLMCalibrated:
         """
-        Instantiate a version of the Trustworthy Language Model that you can calibrate using existing ratings for example prompt-response pairs.
-        For more details, see the documentation of:
-        [cleanlab_studio.utils.tlm_calibrated.TLMCalibrated](../utils.tlm_calibrated/#class-tlmcalibrated)
+        [DEPRECATED] Instantiate a version of the Trustworthy Language Model that you can calibrate using existing ratings.
+        This method is deprecated and will be removed in a future release.
+        Please use the dedicated `cleanlab-tlm` package instead.
         """
+        warnings.warn(
+            "studio.TLMCalibrated() method is deprecated and will be removed in a future release. "
+            "Please use the dedicated `cleanlab-tlm` package instead. "
+            "You can install it with: pip install cleanlab-tlm",
+            FutureWarning,
+            stacklevel=2,
+        )
         return tlm_calibrated.TLMCalibrated(
             self._api_key,
             quality_preset,
